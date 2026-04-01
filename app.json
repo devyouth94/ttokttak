@@ -31,7 +31,15 @@
           "imageWidth": 200
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "ttokttak",
+          "organization": "kimyoungzin"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

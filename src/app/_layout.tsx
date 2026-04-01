@@ -1,10 +1,13 @@
 import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Slot, SplashScreen } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
 import {
   SessionProvider,
   useSession,
 } from "~/features/session/session-provider";
+import { Sentry } from "~/lib/sentry";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -20,11 +23,16 @@ function SplashScreenController() {
   return null;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
-    <SessionProvider>
-      <SplashScreenController />
-      <Slot />
-    </SessionProvider>
+    <SafeAreaProvider>
+      <SessionProvider>
+        <StatusBar style="dark" />
+        <SplashScreenController />
+        <Slot />
+      </SessionProvider>
+    </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
