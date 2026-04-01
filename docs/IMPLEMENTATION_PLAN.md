@@ -11,81 +11,81 @@ UI 시안 검토가 필요할 때는 `PRODUCT_SPEC.md`의 화면 요구사항과
 각 phase는 사용자가 완료 여부를 바로 확인할 수 있는 1~3개 작업 단위로 나눈다.
 각 phase는 아래 작업을 모두 확인하면 완료로 본다.
 
-### Phase 1: App shell
-- Expo app init
-- Expo Router setup
+### 1단계: 앱 셸
+- [x] Expo 앱 초기화
+- [x] Expo Router 설정
 
-### Phase 2: Session and profile bootstrap
-- Supabase client
-- auth/session bootstrap
-- profile timezone initialization
+### 2단계: 세션 및 프로필 부트스트랩
+- [x] Supabase 클라이언트
+- [x] 인증/세션 부트스트랩
+- [x] 프로필 시간대 초기화
 
-### Phase 3: Base app infrastructure
-- base design system
-- Sentry setup
+### 3단계: 기본 앱 인프라
+- [ ] 기본 디자인 시스템
+- [ ] Sentry 설정
 
-### Phase 4: Domain model
-- recurrence types
-- recurrence validation
+### 4단계: 도메인 모델
+- [ ] 반복 규칙 타입
+- [ ] 반복 규칙 검증
 
-### Phase 5: Occurrence calculation
-- occurrence derivation
-- status resolution
+### 5단계: 발생 일정 계산
+- [ ] 발생 일정 계산
+- [ ] 상태 판정
 
-### Phase 6: Anchor and edge cases
-- anchor type logic
-- edge case tests
+### 6단계: 앵커 및 경계 사례
+- [ ] anchorType 로직
+- [ ] 경계 사례 테스트
 
-### Phase 7: Core repositories
-- recurring items repository
-- completion logs repository
+### 7단계: 핵심 리포지토리
+- [ ] 반복 항목 리포지토리
+- [ ] 완료 로그 리포지토리
 
-### Phase 8: Device and reservation repositories
-- devices repository
-- notification reservation repository
+### 8단계: 디바이스 및 예약 리포지토리
+- [ ] 디바이스 리포지토리
+- [ ] 알림 예약 리포지토리
 
-### Phase 9: Account and item setup
-- login
-- create item
-- edit item
+### 9단계: 계정 및 항목 설정
+- [ ] 로그인
+- [ ] 항목 생성
+- [ ] 항목 수정
 
-### Phase 10: Home feed
-- home feed
-- Today / Upcoming / Overdue sections
+### 10단계: 홈 피드
+- [ ] 홈 피드
+- [ ] 오늘 / 예정 / 지연 섹션
 
-### Phase 11: Occurrence actions
-- complete
-- skip
+### 11단계: 발생 일정 액션
+- [ ] 완료
+- [ ] 건너뛰기
 
-### Phase 12: History
-- history
+### 12단계: 히스토리
+- [ ] 히스토리
 
-### Phase 13: Calendar
-- calendar
+### 13단계: 캘린더
+- [ ] 캘린더
 
-### Phase 14: Notification permission and startup sync
-- permission flow
-- sync on app start
+### 14단계: 알림 권한 및 시작 시 동기화
+- [ ] 권한 플로우
+- [ ] 앱 시작 시 동기화
 
-### Phase 15: Notification sync on mutations
-- sync on mutations
+### 15단계: 변경 시 알림 동기화
+- [ ] 변경 시 동기화
 
-### Phase 16: Device-scoped notification persistence
-- device-scoped reservation persistence
+### 16단계: 디바이스 범위 알림 영속화
+- [ ] 디바이스 범위 예약 영속화
 
-### Phase 17: Widget
-- widget read-only
+### 17단계: 위젯
+- [ ] 읽기 전용 위젯
 
-### Phase 18: UX polish
-- empty/loading/error states
-- UX refinement
+### 18단계: UX 다듬기
+- [ ] 빈 상태 / 로딩 / 에러 상태
+- [ ] UX 개선
 
-### Phase 19: QA stabilization
-- bug fixing
+### 19단계: QA 안정화
+- [ ] 버그 수정
 
-### Phase 20: README and demo wrap-up
-- README
-- demo assets
+### 20단계: README 및 데모 마무리
+- [ ] README
+- [ ] 데모 자산
 
 ---
 

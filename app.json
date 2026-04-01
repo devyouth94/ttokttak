@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ttokttak",
+    "name": "똑딱",
     "slug": "ttokttak",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,7 +30,8 @@
           "image": "./assets/splash.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
