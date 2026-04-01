@@ -1,12 +1,10 @@
 import {
   addDays,
-  addMonths,
   addYears,
   differenceInCalendarDays,
   isAfter,
   isBefore,
   isEqual,
-  lastDayOfMonth,
   startOfWeek,
 } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
@@ -76,11 +74,35 @@ function compareLocalDate(a: string, b: string): number {
 /**
  * 월 단위 반복에서 존재하지 않는 일을 월말로 보정해 다음 날짜를 계산한다.
  */
-function addMonthsWithDayCorrection(localDate: string, months: number): string {
-  const currentDate = parseLocalDate(localDate);
-  const targetBaseDate = addMonths(currentDate, months);
-  const targetMonthLastDay = lastDayOfMonth(targetBaseDate).getUTCDate();
-  const dayOfMonth = Math.min(currentDate.getUTCDate(), targetMonthLastDay);
+function getLastDayOfUtcMonth(year: number, monthIndex: number): number {
+  return new Date(
+    Date.UTC(year, monthIndex + 1, 0, CALENDAR_HOUR)
+  ).getUTCDate();
+}
+
+/**
+ * 월 단위 반복에서 존재하지 않는 일을 월말로 보정해 다음 날짜를 계산한다.
+ */
+function addMonthsWithDayCorrection(
+  currentLocalDate: string,
+  referenceLocalDate: string,
+  months: number
+): string {
+  const currentDate = parseLocalDate(currentLocalDate);
+  const referenceDate = parseLocalDate(referenceLocalDate);
+  const targetBaseDate = new Date(
+    Date.UTC(
+      currentDate.getUTCFullYear(),
+      currentDate.getUTCMonth() + months,
+      1,
+      CALENDAR_HOUR
+    )
+  );
+  const targetMonthLastDay = getLastDayOfUtcMonth(
+    targetBaseDate.getUTCFullYear(),
+    targetBaseDate.getUTCMonth()
+  );
+  const dayOfMonth = Math.min(referenceDate.getUTCDate(), targetMonthLastDay);
 
   targetBaseDate.setUTCDate(dayOfMonth);
 
@@ -90,11 +112,26 @@ function addMonthsWithDayCorrection(localDate: string, months: number): string {
 /**
  * 연 단위 반복에서 존재하지 않는 일을 월말로 보정해 다음 날짜를 계산한다.
  */
-function addYearsWithDayCorrection(localDate: string, years: number): string {
-  const currentDate = parseLocalDate(localDate);
-  const targetBaseDate = addYears(currentDate, years);
-  const targetMonthLastDay = lastDayOfMonth(targetBaseDate).getUTCDate();
-  const dayOfMonth = Math.min(currentDate.getUTCDate(), targetMonthLastDay);
+function addYearsWithDayCorrection(
+  currentLocalDate: string,
+  referenceLocalDate: string,
+  years: number
+): string {
+  const currentDate = parseLocalDate(currentLocalDate);
+  const referenceDate = parseLocalDate(referenceLocalDate);
+  const targetBaseDate = new Date(
+    Date.UTC(
+      currentDate.getUTCFullYear() + years,
+      referenceDate.getUTCMonth(),
+      1,
+      CALENDAR_HOUR
+    )
+  );
+  const targetMonthLastDay = getLastDayOfUtcMonth(
+    targetBaseDate.getUTCFullYear(),
+    targetBaseDate.getUTCMonth()
+  );
+  const dayOfMonth = Math.min(referenceDate.getUTCDate(), targetMonthLastDay);
 
   targetBaseDate.setUTCDate(dayOfMonth);
 
@@ -143,7 +180,11 @@ function getAnchorLocalDate(
 /**
  * 반복 규칙 하나를 기준으로 다음 local date를 계산한다.
  */
-function getNextLocalDate(item: RecurringItem, localDate: string): string {
+function getNextLocalDate(
+  item: RecurringItem,
+  localDate: string,
+  referenceLocalDate: string = localDate
+): string {
   switch (item.recurrenceType) {
     case "daily":
       return formatInTimeZone(
@@ -158,11 +199,15 @@ function getNextLocalDate(item: RecurringItem, localDate: string): string {
         "yyyy-MM-dd"
       );
     case "monthly":
-      return addMonthsWithDayCorrection(localDate, 1);
+      return addMonthsWithDayCorrection(localDate, referenceLocalDate, 1);
     case "interval_months":
-      return addMonthsWithDayCorrection(localDate, item.intervalValue ?? 1);
+      return addMonthsWithDayCorrection(
+        localDate,
+        referenceLocalDate,
+        item.intervalValue ?? 1
+      );
     case "yearly":
-      return addYearsWithDayCorrection(localDate, 1);
+      return addYearsWithDayCorrection(localDate, referenceLocalDate, 1);
     default:
       return localDate;
   }
@@ -239,6 +284,7 @@ function getCompletionBasedLocalDates(
   const occurrences: string[] = [];
 
   let currentLocalDate = item.startDateLocal;
+  let currentAnchorLocalDate = item.startDateLocal;
   let occurrenceCount = 0;
 
   while (compareLocalDate(currentLocalDate, endLocalDate) <= 0) {
@@ -259,9 +305,18 @@ function getCompletionBasedLocalDates(
         "yyyy-MM-dd"
       );
 
-      currentLocalDate = getNextLocalDate(item, completedLocalDate);
+      currentAnchorLocalDate = completedLocalDate;
+      currentLocalDate = getNextLocalDate(
+        item,
+        completedLocalDate,
+        currentAnchorLocalDate
+      );
     } else {
-      currentLocalDate = getNextLocalDate(item, currentLocalDate);
+      currentLocalDate = getNextLocalDate(
+        item,
+        currentLocalDate,
+        currentAnchorLocalDate
+      );
     }
 
     occurrenceCount += 1;
@@ -368,7 +423,7 @@ function getOccurrenceLocalDates(
           startLocalDate,
           endLocalDate,
           anchorLocalDate,
-          (localDate) => getNextLocalDate(item, localDate)
+          (localDate) => getNextLocalDate(item, localDate, anchorLocalDate)
         )
       );
     case "interval_days":
@@ -377,7 +432,7 @@ function getOccurrenceLocalDates(
           startLocalDate,
           endLocalDate,
           anchorLocalDate,
-          (localDate) => getNextLocalDate(item, localDate)
+          (localDate) => getNextLocalDate(item, localDate, anchorLocalDate)
         )
       );
     case "weekly":
@@ -389,7 +444,7 @@ function getOccurrenceLocalDates(
           startLocalDate,
           endLocalDate,
           anchorLocalDate,
-          (localDate) => getNextLocalDate(item, localDate)
+          (localDate) => getNextLocalDate(item, localDate, anchorLocalDate)
         )
       );
     case "interval_months":
@@ -398,7 +453,7 @@ function getOccurrenceLocalDates(
           startLocalDate,
           endLocalDate,
           anchorLocalDate,
-          (localDate) => getNextLocalDate(item, localDate)
+          (localDate) => getNextLocalDate(item, localDate, anchorLocalDate)
         )
       );
     case "yearly":
@@ -407,7 +462,7 @@ function getOccurrenceLocalDates(
           startLocalDate,
           endLocalDate,
           anchorLocalDate,
-          (localDate) => getNextLocalDate(item, localDate)
+          (localDate) => getNextLocalDate(item, localDate, anchorLocalDate)
         )
       );
     default:
