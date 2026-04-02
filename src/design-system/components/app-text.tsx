@@ -21,6 +21,7 @@ export function AppText({
 const styles = StyleSheet.create({
   base: {
     color: colors.text,
+    fontFamily: typography.fontFamily.body,
   },
   body: {
     fontSize: typography.body,
@@ -28,20 +29,17 @@ const styles = StyleSheet.create({
   },
   display: {
     fontSize: typography.display,
-    fontWeight: "800",
     letterSpacing: -0.6,
     lineHeight: 36,
   },
   label: {
     color: colors.textMuted,
     fontSize: typography.label,
-    fontWeight: "600",
     letterSpacing: 0.4,
     textTransform: "uppercase",
   },
   title: {
     fontSize: typography.title,
-    fontWeight: "700",
     lineHeight: 28,
   },
 });

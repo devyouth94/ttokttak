@@ -1,9 +1,10 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import { LoginScreen } from "~/features/session/components/login-screen";
 import { useSession } from "~/features/session/session-provider";
 
 export default function IndexScreen() {
@@ -13,9 +14,19 @@ export default function IndexScreen() {
     isConfigured,
     isLoading,
     profile,
+    signInWithGoogle,
     signOut,
     user,
   } = useSession();
+
+  if (!isAuthenticated) {
+    return (
+      <LoginScreen
+        isConfigured={isConfigured}
+        onGooglePress={signInWithGoogle}
+      />
+    );
+  }
 
   const handleSignOut = async () => {
     try {
@@ -48,8 +59,8 @@ export default function IndexScreen() {
         </AppText>
         {!isConfigured ? (
           <AppText style={styles.description}>
-            `.env`에 `EXPO_PUBLIC_SUPABASE_URL`과
-            `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 설정하세요.
+            `.env.local`에 Supabase 값과
+            `EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID`를 설정하세요.
           </AppText>
         ) : null}
       </AppCard>
@@ -98,15 +109,9 @@ export default function IndexScreen() {
         </View>
       ) : null}
 
-      {isAuthenticated ? (
-        <Pressable onPress={handleSignOut} style={styles.button}>
-          <Text style={styles.buttonText}>로그아웃</Text>
-        </Pressable>
-      ) : (
-        <AppText style={styles.footnote}>
-          로그인 화면과 인증 액션은 9단계에서 추가합니다.
-        </AppText>
-      )}
+      <Pressable onPress={handleSignOut} style={styles.button}>
+        <AppText style={styles.buttonText}>로그아웃</AppText>
+      </Pressable>
     </AppScreen>
   );
 }
@@ -123,16 +128,9 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.primaryForeground,
     fontSize: 15,
-    fontWeight: "700",
   },
   description: {
     color: colors.textMuted,
-  },
-  footnote: {
-    color: colors.textSoft,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
   },
   subtitle: {
     color: colors.textMuted,

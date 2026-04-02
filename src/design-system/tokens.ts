@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 export const colors = {
   background: "#FFFFFF",
   surface: "#ffffff",
@@ -36,6 +38,13 @@ export const borderRadius = {
 } as const;
 
 export const typography = {
+  fontFamily: {
+    body: Platform.select({
+      ios: "goorm Sans Code",
+      android: "goorm-sans-code",
+      default: undefined,
+    }),
+  },
   label: 13,
   body: 15,
   title: 20,

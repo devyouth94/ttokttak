@@ -2,6 +2,10 @@ import type { PropsWithChildren } from "react";
 import { createContext, use, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
+import {
+  signInWithGoogleIdToken,
+  signOutFromGoogle,
+} from "~/features/session/google-sign-in";
 import type { ProfileRow } from "~/lib/database.types";
 import { isSupabaseConfigured, supabase } from "~/lib/supabase";
 
@@ -12,6 +16,7 @@ type SessionContextValue = {
   isLoading: boolean;
   profile: ProfileRow | null;
   session: Session | null;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   user: User | null;
 };
@@ -186,6 +191,21 @@ export function SessionProvider({
     isLoading,
     profile,
     session,
+    async signInWithGoogle() {
+      if (!supabase) {
+        throw new Error("Supabase 클라이언트가 설정되지 않았습니다.");
+      }
+
+      const token = await signInWithGoogleIdToken();
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token,
+      });
+
+      if (error) {
+        throw error;
+      }
+    },
     async signOut() {
       if (!supabase) {
         return;
@@ -196,6 +216,8 @@ export function SessionProvider({
       if (error) {
         throw error;
       }
+
+      await signOutFromGoogle();
     },
     user: session?.user ?? null,
   };
