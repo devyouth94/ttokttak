@@ -34,6 +34,13 @@ export type Database = {
         };
         Relationships: [
           {
+            columns: ["device_id"];
+            foreignKeyName: "completion_logs_device_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "devices";
+          },
+          {
             columns: ["item_id"];
             foreignKeyName: "completion_logs_item_id_fkey";
             isOneToOne: false;
@@ -43,6 +50,102 @@ export type Database = {
           {
             columns: ["user_id"];
             foreignKeyName: "completion_logs_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
+      device_notification_reservations: {
+        Row: {
+          created_at: string;
+          device_id: string;
+          id: string;
+          item_id: string;
+          local_notification_id: string;
+          scheduled_at_utc: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          device_id: string;
+          id?: string;
+          item_id: string;
+          local_notification_id: string;
+          scheduled_at_utc: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          device_id?: string;
+          id?: string;
+          item_id?: string;
+          local_notification_id?: string;
+          scheduled_at_utc?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["device_id"];
+            foreignKeyName: "device_notification_reservations_device_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "devices";
+          },
+          {
+            columns: ["item_id"];
+            foreignKeyName: "device_notification_reservations_item_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "recurring_items";
+          },
+          {
+            columns: ["user_id"];
+            foreignKeyName: "device_notification_reservations_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
+      devices: {
+        Row: {
+          created_at: string;
+          device_name: string | null;
+          id: string;
+          is_active: boolean;
+          last_seen_at: string | null;
+          platform: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          device_name?: string | null;
+          id?: string;
+          is_active?: boolean;
+          last_seen_at?: string | null;
+          platform: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          device_name?: string | null;
+          id?: string;
+          is_active?: boolean;
+          last_seen_at?: string | null;
+          platform?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["user_id"];
+            foreignKeyName: "devices_user_id_fkey";
             isOneToOne: false;
             referencedColumns: ["id"];
             referencedRelation: "profiles";
@@ -147,6 +250,15 @@ export type CompletionLogInsert =
   Database["public"]["Tables"]["completion_logs"]["Insert"];
 export type CompletionLogRow =
   Database["public"]["Tables"]["completion_logs"]["Row"];
+export type DeviceInsert = Database["public"]["Tables"]["devices"]["Insert"];
+export type DeviceNotificationReservationInsert =
+  Database["public"]["Tables"]["device_notification_reservations"]["Insert"];
+export type DeviceNotificationReservationRow =
+  Database["public"]["Tables"]["device_notification_reservations"]["Row"];
+export type DeviceNotificationReservationUpdate =
+  Database["public"]["Tables"]["device_notification_reservations"]["Update"];
+export type DeviceRow = Database["public"]["Tables"]["devices"]["Row"];
+export type DeviceUpdate = Database["public"]["Tables"]["devices"]["Update"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type RecurringItemInsert =
   Database["public"]["Tables"]["recurring_items"]["Insert"];

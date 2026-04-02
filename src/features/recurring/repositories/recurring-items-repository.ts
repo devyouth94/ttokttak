@@ -1,19 +1,17 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import type {
   RecurringItem,
   RecurringItemDraft,
 } from "~/features/recurring/domain/types";
 import { validateRecurringItemDraft } from "~/features/recurring/domain/validation";
+import {
+  getRepositoryClient,
+  type RepositoryClient,
+} from "~/features/recurring/repositories/repository-client";
 import type {
-  Database,
   RecurringItemInsert,
   RecurringItemRow,
   RecurringItemUpdate,
 } from "~/lib/database.types";
-import { getSupabaseClient } from "~/lib/supabase";
-
-type RepositoryClient = SupabaseClient<Database>;
 type RecurringItemPatch = Partial<Omit<RecurringItemDraft, "timezone">>;
 
 export type CreateRecurringItemInput = RecurringItemDraft & {
@@ -46,10 +44,6 @@ export type ArchiveRecurringItemOptions = {
   id: string;
   userId: string;
 };
-
-function getClient(client?: RepositoryClient): RepositoryClient {
-  return client ?? getSupabaseClient();
-}
 
 function normalizeTimeLocal(value: string): string {
   return value.slice(0, 5);
@@ -205,7 +199,7 @@ export async function listRecurringItems({
   timezone,
   userId,
 }: ListRecurringItemsOptions): Promise<RecurringItem[]> {
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   let query = supabase
     .from("recurring_items")
     .select("*")
@@ -234,7 +228,7 @@ export async function getRecurringItemById({
   timezone,
   userId,
 }: GetRecurringItemOptions): Promise<RecurringItem | null> {
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   const { data, error } = await supabase
     .from("recurring_items")
     .select("*")
@@ -262,7 +256,7 @@ export async function createRecurringItem(
 ): Promise<RecurringItem> {
   assertValidDraft(input);
 
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   const { data, error } = await supabase
     .from("recurring_items")
     .insert(toRecurringItemInsert(input, input.userId))
@@ -303,7 +297,7 @@ export async function updateRecurringItem(
 
   assertValidDraft(mergedDraft);
 
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   const { data, error } = await supabase
     .from("recurring_items")
     .update(toRecurringItemUpdate(input.patch))
@@ -327,7 +321,7 @@ export async function archiveRecurringItem({
   id,
   userId,
 }: ArchiveRecurringItemOptions): Promise<void> {
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   const { error } = await supabase
     .from("recurring_items")
     .update({ is_archived: true })

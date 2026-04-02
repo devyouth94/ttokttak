@@ -1,14 +1,12 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import type { CompletionLog } from "~/features/recurring/domain/types";
+import {
+  getRepositoryClient,
+  type RepositoryClient,
+} from "~/features/recurring/repositories/repository-client";
 import type {
   CompletionLogInsert,
   CompletionLogRow,
-  Database,
 } from "~/lib/database.types";
-import { getSupabaseClient } from "~/lib/supabase";
-
-type RepositoryClient = SupabaseClient<Database>;
 
 export type CreateCompletionLogInput = {
   actedAtUtc?: string;
@@ -32,10 +30,6 @@ export type ListCompletionLogsInRangeOptions = {
   rangeStartUtc: string;
   userId: string;
 };
-
-function getClient(client?: RepositoryClient): RepositoryClient {
-  return client ?? getSupabaseClient();
-}
 
 /**
  * DB row를 도메인에서 사용하는 completion log 형태로 변환한다.
@@ -77,7 +71,7 @@ export async function listCompletionLogsForItem({
   itemId,
   userId,
 }: ListCompletionLogsForItemOptions): Promise<CompletionLog[]> {
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   const { data, error } = await supabase
     .from("completion_logs")
     .select("*")
@@ -103,7 +97,7 @@ export async function listCompletionLogsInRange({
   rangeStartUtc,
   userId,
 }: ListCompletionLogsInRangeOptions): Promise<CompletionLog[]> {
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   let query = supabase
     .from("completion_logs")
     .select("*")
@@ -132,7 +126,7 @@ export async function createCompletionLog(
   input: CreateCompletionLogInput,
   client?: RepositoryClient
 ): Promise<CompletionLog> {
-  const supabase = getClient(client);
+  const supabase = getRepositoryClient(client);
   const { data, error } = await supabase
     .from("completion_logs")
     .insert(toCompletionLogInsert(input))

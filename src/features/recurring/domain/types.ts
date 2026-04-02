@@ -19,6 +19,7 @@ export const occurrenceStatuses = [
 ] as const;
 
 export const completionActions = ["completed", "skipped"] as const;
+export const devicePlatforms = ["ios", "android", "web", "unknown"] as const;
 
 export const completionBasedRecurrenceTypes = [
   "once",
@@ -33,6 +34,7 @@ export type RecurrenceType = (typeof recurrenceTypes)[number];
 export type AnchorType = (typeof anchorTypes)[number];
 export type OccurrenceStatus = (typeof occurrenceStatuses)[number];
 export type CompletionAction = (typeof completionActions)[number];
+export type DevicePlatform = (typeof devicePlatforms)[number];
 export type CompletionBasedRecurrenceType =
   (typeof completionBasedRecurrenceTypes)[number];
 
@@ -64,6 +66,28 @@ export interface CompletionLog {
   actedAtUtc: string;
   deviceId?: string | null;
   createdAt: string;
+}
+
+export interface Device {
+  id: string;
+  userId: string;
+  platform: DevicePlatform;
+  deviceName?: string | null;
+  isActive: boolean;
+  lastSeenAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeviceNotificationReservation {
+  id: string;
+  userId: string;
+  deviceId: string;
+  itemId: string;
+  scheduledAtUtc: string;
+  localNotificationId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DerivedOccurrence {
