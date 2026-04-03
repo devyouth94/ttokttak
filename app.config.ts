@@ -42,6 +42,7 @@ export default function getAppConfig(): ExpoConfig {
         },
       ],
       "expo-secure-store",
+      "@react-native-community/datetimepicker",
       [
         "@react-native-google-signin/google-signin",
         {
