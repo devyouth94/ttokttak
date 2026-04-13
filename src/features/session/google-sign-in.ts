@@ -21,14 +21,6 @@ async function getConfiguredGoogleSignin() {
   return googleSigninModule;
 }
 
-function getGoogleSignInError(error: unknown): Error {
-  if (error instanceof Error) {
-    return error;
-  }
-
-  return new Error("Google 로그인 중 오류가 발생했습니다.");
-}
-
 export async function signInWithGoogleIdToken(): Promise<string> {
   const googleSigninModule = await getConfiguredGoogleSignin();
 
@@ -58,18 +50,17 @@ export async function signInWithGoogleIdToken(): Promise<string> {
         case googleSigninModule.statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
           throw new Error("Google Play 서비스를 사용할 수 없습니다.");
         default:
-          throw getGoogleSignInError(error);
+          throw error;
       }
     }
 
-    throw getGoogleSignInError(error);
+    throw error instanceof Error
+      ? error
+      : new Error(`Google 로그인 중 오류가 발생했습니다: ${String(error)}`);
   }
 }
 
 export async function signOutFromGoogle(): Promise<void> {
   const googleSigninModule = await getConfiguredGoogleSignin();
-
-  try {
-    await googleSigninModule.GoogleSignin.signOut();
-  } catch {}
+  await googleSigninModule.GoogleSignin.signOut();
 }

@@ -26,49 +26,27 @@ type SessionContextValue = {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 function getDeviceTimeZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 function getDisplayName(user: User): string | null {
   const fullName = user.user_metadata?.full_name;
 
-  if (typeof fullName === "string" && fullName.trim().length > 0) {
-    return fullName.trim();
-  }
-
-  if (typeof user.email === "string" && user.email.length > 0) {
-    return user.email;
-  }
-
-  return null;
+  return typeof fullName === "string" && fullName.trim()
+    ? fullName.trim()
+    : (user.email ?? null);
 }
 
 function getMetadataDisplayName(user: User): string | null {
   const fullName = user.user_metadata?.full_name;
-
-  if (typeof fullName !== "string") {
-    return null;
-  }
-
-  const trimmedValue = fullName.trim();
-
-  return trimmedValue.length > 0 ? trimmedValue : null;
+  return typeof fullName === "string" && fullName.trim()
+    ? fullName.trim()
+    : null;
 }
 
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallbackMessage;
-}
-
-async function ensureProfile(user: User): Promise<ProfileRow | null> {
-  if (!supabase) {
-    return null;
-  }
-
-  const { data: existingProfile, error: fetchError } = await supabase
+async function ensureProfile(user: User): Promise<ProfileRow> {
+  const client = supabase!;
+  const { data: existingProfile, error: fetchError } = await client
     .from("profiles")
     .select("*")
     .eq("id", user.id)
@@ -80,17 +58,17 @@ async function ensureProfile(user: User): Promise<ProfileRow | null> {
 
   if (existingProfile) {
     const metadataDisplayName = getMetadataDisplayName(user);
-    const canSyncDisplayName =
+    const shouldSyncDisplayName =
       metadataDisplayName &&
       metadataDisplayName !== existingProfile.display_name &&
       (!existingProfile.display_name ||
         existingProfile.display_name === user.email);
 
-    if (!canSyncDisplayName) {
+    if (!shouldSyncDisplayName) {
       return existingProfile;
     }
 
-    const { data: updatedProfile, error: updateError } = await supabase
+    const { data: updatedProfile, error: updateError } = await client
       .from("profiles")
       .update({
         display_name: metadataDisplayName,
@@ -106,7 +84,7 @@ async function ensureProfile(user: User): Promise<ProfileRow | null> {
     return updatedProfile;
   }
 
-  const { data: insertedProfile, error: insertError } = await supabase
+  const { data: insertedProfile, error: insertError } = await client
     .from("profiles")
     .insert({
       id: user.id,
@@ -139,13 +117,7 @@ export function SessionProvider({
       return;
     }
 
-    let isMounted = true;
-
     const applySession = async (nextSession: Session | null) => {
-      if (!isMounted) {
-        return;
-      }
-
       setSession(nextSession);
 
       if (!nextSession?.user) {
@@ -160,22 +132,12 @@ export function SessionProvider({
       try {
         const nextProfile = await ensureProfile(nextSession.user);
 
-        if (!isMounted) {
-          return;
-        }
-
         setProfile(nextProfile);
         setErrorMessage(null);
         setIsLoading(false);
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
         setProfile(null);
-        setErrorMessage(
-          getErrorMessage(error, "프로필을 불러오는 중 오류가 발생했습니다.")
-        );
+        setErrorMessage(error instanceof Error ? error.message : String(error));
         setIsLoading(false);
       }
     };
@@ -195,15 +157,9 @@ export function SessionProvider({
 
         await applySession(initialSession);
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
         setSession(null);
         setProfile(null);
-        setErrorMessage(
-          getErrorMessage(error, "세션을 복원하는 중 오류가 발생했습니다.")
-        );
+        setErrorMessage(error instanceof Error ? error.message : String(error));
         setIsLoading(false);
       }
     };
@@ -217,7 +173,6 @@ export function SessionProvider({
     });
 
     return () => {
-      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -230,11 +185,7 @@ export function SessionProvider({
     profile,
     session,
     async signInWithApple() {
-      if (!supabase) {
-        throw new Error("Supabase 클라이언트가 설정되지 않았습니다.");
-      }
-
-      const client = supabase;
+      const client = supabase!;
       const { displayName, familyName, givenName, identityToken } =
         await signInWithAppleIdToken();
       const { data, error } = await client.auth.signInWithIdToken({
@@ -246,50 +197,43 @@ export function SessionProvider({
         throw error;
       }
 
-      if (!displayName && !givenName && !familyName) {
-        return;
+      if (displayName || givenName || familyName) {
+        const metadata: Record<string, string> = {};
+
+        if (displayName) {
+          metadata.full_name = displayName;
+        }
+
+        if (givenName) {
+          metadata.given_name = givenName;
+        }
+
+        if (familyName) {
+          metadata.family_name = familyName;
+        }
+
+        const { error: metadataError } = await client.auth.updateUser({
+          data: metadata,
+        });
+
+        if (metadataError) {
+          throw metadataError;
+        }
       }
 
-      const metadata: Record<string, string> = {};
-
-      if (displayName) {
-        metadata.full_name = displayName;
+      if (displayName && data.user) {
+        await client
+          .from("profiles")
+          .update({
+            display_name: displayName,
+          })
+          .eq("id", data.user.id);
       }
-
-      if (givenName) {
-        metadata.given_name = givenName;
-      }
-
-      if (familyName) {
-        metadata.family_name = familyName;
-      }
-
-      const { error: metadataError } = await client.auth.updateUser({
-        data: metadata,
-      });
-
-      if (metadataError) {
-        return;
-      }
-
-      if (!displayName || !data.user) {
-        return;
-      }
-
-      await client
-        .from("profiles")
-        .update({
-          display_name: displayName,
-        })
-        .eq("id", data.user.id);
     },
     async signInWithGoogle() {
-      if (!supabase) {
-        throw new Error("Supabase 클라이언트가 설정되지 않았습니다.");
-      }
-
+      const client = supabase!;
       const token = await signInWithGoogleIdToken();
-      const { error } = await supabase.auth.signInWithIdToken({
+      const { error } = await client.auth.signInWithIdToken({
         provider: "google",
         token,
       });
@@ -299,11 +243,8 @@ export function SessionProvider({
       }
     },
     async signOut() {
-      if (!supabase) {
-        return;
-      }
-
-      const { error } = await supabase.auth.signOut();
+      const client = supabase!;
+      const { error } = await client.auth.signOut();
 
       if (error) {
         throw error;

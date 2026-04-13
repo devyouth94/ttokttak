@@ -34,39 +34,22 @@ export function LoginScreen({
       return;
     }
 
-    let isMounted = true;
-
     const checkAvailability = async () => {
-      try {
-        const isAvailable = await isAppleSignInAvailable();
-
-        if (isMounted) {
-          setIsAppleAvailable(isAvailable);
-        }
-      } catch {
-        if (isMounted) {
-          setIsAppleAvailable(false);
-        }
-      }
+      const isAvailable = await isAppleSignInAvailable();
+      setIsAppleAvailable(isAvailable);
     };
 
     void checkAvailability();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const handleGooglePress = async () => {
     try {
       await onGooglePress();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Google 로그인 중 오류가 발생했습니다.";
-
-      Alert.alert("Google 로그인 실패", message);
+      Alert.alert(
+        "Google 로그인 실패",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   };
 
@@ -74,12 +57,10 @@ export function LoginScreen({
     try {
       await onApplePress();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Apple 로그인 중 오류가 발생했습니다.";
-
-      Alert.alert("Apple 로그인 실패", message);
+      Alert.alert(
+        "Apple 로그인 실패",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   };
 

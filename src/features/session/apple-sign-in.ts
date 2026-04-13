@@ -21,28 +21,16 @@ function isErrorWithCode(error: unknown): error is ErrorWithCode {
 }
 
 function trimNamePart(value: string | null | undefined): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmedValue = value.trim();
-
-  return trimmedValue.length > 0 ? trimmedValue : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function getDisplayName(
   givenName: string | null,
   familyName: string | null
 ): string | null {
-  const nameParts = [givenName, familyName].filter(
-    (value): value is string => value !== null
-  );
+  const nameParts = [givenName, familyName].filter(Boolean) as string[];
 
-  if (nameParts.length === 0) {
-    return null;
-  }
-
-  return nameParts.join(" ");
+  return nameParts.length > 0 ? nameParts.join(" ") : null;
 }
 
 export async function isAppleSignInAvailable(): Promise<boolean> {
@@ -76,10 +64,8 @@ export async function signInWithAppleIdToken(): Promise<AppleSignInResult> {
       throw new Error("Apple 로그인이 취소되었습니다.");
     }
 
-    if (error instanceof Error) {
-      throw error;
-    }
-
-    throw new Error("Apple 로그인 중 오류가 발생했습니다.");
+    throw error instanceof Error
+      ? error
+      : new Error(`Apple 로그인 중 오류가 발생했습니다: ${String(error)}`);
   }
 }

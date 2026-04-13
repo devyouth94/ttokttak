@@ -25,7 +25,6 @@ import {
   getCustomRecurrenceType,
   getNextRecurrenceFormState,
   getNextStartDateFormState,
-  isCustomRecurrenceType,
   parseLocalDateToDate,
   parseLocalTimeToDate,
   type PickerMode,
@@ -66,9 +65,7 @@ export function useRecurringItemFormScreenController({
   } = pickerState;
 
   const timezone =
-    profile?.timezone ??
-    Intl.DateTimeFormat().resolvedOptions().timeZone ??
-    "UTC";
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const defaultValues = createDefaultFormState();
 
   const {
@@ -101,10 +98,6 @@ export function useRecurringItemFormScreenController({
 
   useEffect(() => {
     if (!isEditMode) {
-      setRequestState((current) => ({
-        ...current,
-        isBootstrapping: false,
-      }));
       return;
     }
 
@@ -121,7 +114,6 @@ export function useRecurringItemFormScreenController({
       return;
     }
 
-    let isMounted = true;
     const currentItemId = itemId;
     const profileTimezone = profile.timezone;
     const userId = user.id;
@@ -140,46 +132,21 @@ export function useRecurringItemFormScreenController({
           userId,
         });
 
-        if (!isMounted) {
-          return;
-        }
-
-        if (!item) {
-          setRequestState((current) => ({
-            ...current,
-            screenError: "반복 항목을 찾을 수 없습니다.",
-          }));
-          return;
-        }
-
         reset(toFormState(item));
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
         setRequestState((current) => ({
           ...current,
-          screenError:
-            error instanceof Error
-              ? error.message
-              : "반복 항목을 불러오는 중 오류가 발생했습니다.",
+          screenError: error instanceof Error ? error.message : String(error),
         }));
       } finally {
-        if (isMounted) {
-          setRequestState((current) => ({
-            ...current,
-            isBootstrapping: false,
-          }));
-        }
+        setRequestState((current) => ({
+          ...current,
+          isBootstrapping: false,
+        }));
       }
     }
 
     void loadItem();
-
-    return () => {
-      isMounted = false;
-    };
   }, [isAuthenticated, isEditMode, isLoading, itemId, profile, reset, user]);
 
   function getErrorMessage(
@@ -191,16 +158,10 @@ export function useRecurringItemFormScreenController({
   }
 
   function clearScreenError(): void {
-    setRequestState((current) => {
-      if (current.screenError === null) {
-        return current;
-      }
-
-      return {
-        ...current,
-        screenError: null,
-      };
-    });
+    setRequestState((current) => ({
+      ...current,
+      screenError: null,
+    }));
   }
 
   function setField<Key extends keyof RecurringItemFormValues>(
@@ -243,10 +204,6 @@ export function useRecurringItemFormScreenController({
   }
 
   function handleOpenCustom(): void {
-    if (isCustomRecurrenceType(recurrenceType)) {
-      return;
-    }
-
     setFields(getNextRecurrenceFormState(getValues(), "interval_days"));
   }
 
@@ -297,12 +254,11 @@ export function useRecurringItemFormScreenController({
   }
 
   function applyPickerValue(mode: PickerMode, selectedDate: Date): void {
-    if (mode === "date") {
+    if (mode === "time") {
+      setField("reminderTimeLocal", formatDateToLocalTime(selectedDate));
+    } else {
       handleChangeStartDate(formatDateToLocalDate(selectedDate));
-      return;
     }
-
-    setField("reminderTimeLocal", formatDateToLocalTime(selectedDate));
   }
 
   function handleStartDatePickerChange(
@@ -467,10 +423,7 @@ export function useRecurringItemFormScreenController({
     } catch (error) {
       setRequestState((current) => ({
         ...current,
-        screenError:
-          error instanceof Error
-            ? error.message
-            : "항목 저장 중 오류가 발생했습니다.",
+        screenError: error instanceof Error ? error.message : String(error),
       }));
     } finally {
       setRequestState((current) => ({

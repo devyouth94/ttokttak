@@ -82,13 +82,7 @@ export function getTodayLocalDate(): string {
 }
 
 export function parseLocalDateToDate(localDate: string): Date {
-  const parsedDate = parse(localDate, "yyyy-MM-dd", new Date());
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return new Date();
-  }
-
-  return parsedDate;
+  return parse(localDate, "yyyy-MM-dd", new Date());
 }
 
 export function formatDateToLocalDate(date: Date): string {
@@ -100,13 +94,7 @@ export function getCurrentLocalTime(): string {
 }
 
 export function parseLocalTimeToDate(localTime: string): Date {
-  const parsedTime = parse(localTime, "HH:mm", new Date());
-
-  if (Number.isNaN(parsedTime.getTime())) {
-    return new Date();
-  }
-
-  return parsedTime;
+  return parse(localTime, "HH:mm", new Date());
 }
 
 export function formatDateToLocalTime(date: Date): string {
@@ -294,10 +282,6 @@ export function getIosPickerChangeHandler(
 
 export function getWeekdayMaskFromDate(dateText: string): number[] {
   const date = new Date(`${dateText}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return [];
-  }
 
   return [date.getDay()];
 }

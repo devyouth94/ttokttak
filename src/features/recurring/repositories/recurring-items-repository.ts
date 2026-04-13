@@ -227,7 +227,7 @@ export async function getRecurringItemById({
   id,
   timezone,
   userId,
-}: GetRecurringItemOptions): Promise<RecurringItem | null> {
+}: GetRecurringItemOptions): Promise<RecurringItem> {
   const supabase = getRepositoryClient(client);
   const { data, error } = await supabase
     .from("recurring_items")
@@ -241,7 +241,7 @@ export async function getRecurringItemById({
   }
 
   if (!data) {
-    return null;
+    throw new Error("반복 항목을 찾을 수 없습니다.");
   }
 
   return toRecurringItem(data, timezone);
@@ -284,10 +284,6 @@ export async function updateRecurringItem(
     timezone: input.timezone,
     userId: input.userId,
   });
-
-  if (!existingItem) {
-    throw new Error("반복 항목을 찾을 수 없습니다.");
-  }
 
   const mergedDraft: RecurringItemDraft = {
     ...toRecurringItemDraftFromEntity(existingItem),
