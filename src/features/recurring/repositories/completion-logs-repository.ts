@@ -23,6 +23,12 @@ export type ListCompletionLogsForItemOptions = {
   userId: string;
 };
 
+export type ListCompletionLogsOptions = {
+  client?: RepositoryClient;
+  itemIds?: string[];
+  userId: string;
+};
+
 export type ListCompletionLogsInRangeOptions = {
   client?: RepositoryClient;
   itemIds?: string[];
@@ -30,6 +36,10 @@ export type ListCompletionLogsInRangeOptions = {
   rangeStartUtc: string;
   userId: string;
 };
+
+function normalizeUtcString(value: string): string {
+  return new Date(value).toISOString();
+}
 
 /**
  * DB row를 도메인에서 사용하는 completion log 형태로 변환한다.
@@ -39,11 +49,11 @@ function toCompletionLog(row: CompletionLogRow): CompletionLog {
     id: row.id,
     userId: row.user_id,
     itemId: row.item_id,
-    scheduledAtUtc: row.scheduled_at_utc,
+    scheduledAtUtc: normalizeUtcString(row.scheduled_at_utc),
     action: row.action as CompletionLog["action"],
-    actedAtUtc: row.acted_at_utc,
+    actedAtUtc: normalizeUtcString(row.acted_at_utc),
     deviceId: row.device_id,
-    createdAt: row.created_at,
+    createdAt: normalizeUtcString(row.created_at),
   };
 }
 
@@ -56,9 +66,11 @@ function toCompletionLogInsert(
   return {
     user_id: input.userId,
     item_id: input.itemId,
-    scheduled_at_utc: input.scheduledAtUtc,
+    scheduled_at_utc: normalizeUtcString(input.scheduledAtUtc),
     action: input.action,
-    acted_at_utc: input.actedAtUtc,
+    acted_at_utc: input.actedAtUtc
+      ? normalizeUtcString(input.actedAtUtc)
+      : undefined,
     device_id: input.deviceId,
   };
 }
@@ -78,6 +90,35 @@ export async function listCompletionLogsForItem({
     .eq("item_id", itemId)
     .eq("user_id", userId)
     .order("scheduled_at_utc", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map(toCompletionLog);
+}
+
+/**
+ * 현재 사용자의 completion log 전체 목록을 조회한다.
+ * itemIds가 있으면 해당 항목들만 포함한다.
+ */
+export async function listCompletionLogs({
+  client,
+  itemIds,
+  userId,
+}: ListCompletionLogsOptions): Promise<CompletionLog[]> {
+  const supabase = getRepositoryClient(client);
+  let query = supabase
+    .from("completion_logs")
+    .select("*")
+    .eq("user_id", userId)
+    .order("scheduled_at_utc", { ascending: true });
+
+  if (itemIds && itemIds.length > 0) {
+    query = query.in("item_id", itemIds);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw error;

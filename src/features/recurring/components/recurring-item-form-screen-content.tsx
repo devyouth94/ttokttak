@@ -10,7 +10,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { CalendarDays, CheckCircle2, Clock3 } from "lucide-react-native";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Trash2,
+} from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
@@ -79,6 +84,12 @@ export function RecurringItemFormScreenContent({
   const screenTitle = getRecurringItemFormScreenTitle(view.isEditMode);
   const { reminderTimeDisplayValue, startDateDisplayValue } =
     getRecurringItemFormDisplayValues(values);
+  const minimumStartDate = parseLocalDateToDate(view.minimumStartDateLocal);
+  const selectedStartDate = parseLocalDateToDate(
+    values.startDateLocal < view.minimumStartDateLocal
+      ? view.minimumStartDateLocal
+      : values.startDateLocal
+  );
 
   return (
     <SafeAreaView
@@ -182,9 +193,10 @@ export function RecurringItemFormScreenContent({
           {picker.isStartDateVisible ? (
             <DateTimePicker
               initialInputMode="default"
+              minimumDate={minimumStartDate}
               mode="date"
               onChange={actions.picker.onStartDatePickerChange}
-              value={parseLocalDateToDate(values.startDateLocal)}
+              value={selectedStartDate}
             />
           ) : null}
 
@@ -197,6 +209,7 @@ export function RecurringItemFormScreenContent({
           ) : null}
 
           <IosPickerModal
+            minimumDate={minimumStartDate}
             mode={picker.iosMode}
             value={picker.iosValue}
             onChange={iosPickerChangeHandler}
@@ -215,6 +228,7 @@ export function RecurringItemFormScreenContent({
             category={values.category}
             completionBasedEnabled={completionBasedEnabled}
             isOpen={view.isAdvancedOpen}
+            recurrenceType={values.recurrenceType}
             onCategoryChange={actions.field.onCategoryChange}
             onSelectAnchorType={actions.recurrence.onSelectAnchorType}
             onToggleOpen={actions.recurrence.onToggleAdvanced}
@@ -222,21 +236,54 @@ export function RecurringItemFormScreenContent({
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable
-            accessibilityRole="button"
-            disabled={view.isSaving}
-            onPress={actions.screen.onSubmit}
-            style={({ pressed }) => [
-              styles.saveButton,
-              view.isSaving ? styles.saveButtonDisabled : undefined,
-              pressed && !view.isSaving ? styles.saveButtonPressed : undefined,
-            ]}
-          >
-            <SaveButtonContent
-              isEditMode={view.isEditMode}
-              isSaving={view.isSaving}
-            />
-          </Pressable>
+          <View style={styles.footerActions}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={view.isDeleting || view.isSaving}
+              onPress={actions.screen.onSubmit}
+              style={({ pressed }) => [
+                styles.saveButton,
+                view.isEditMode ? styles.editSaveButton : undefined,
+                !view.isEditMode ? styles.createSaveButton : undefined,
+                view.isDeleting || view.isSaving
+                  ? styles.saveButtonDisabled
+                  : undefined,
+                pressed && !view.isDeleting && !view.isSaving
+                  ? styles.saveButtonPressed
+                  : undefined,
+              ]}
+            >
+              <SaveButtonContent
+                isEditMode={view.isEditMode}
+                isSaving={view.isSaving}
+              />
+            </Pressable>
+
+            {view.isEditMode ? (
+              <Pressable
+                accessibilityHint="이 리마인더를 삭제합니다."
+                accessibilityLabel="리마인더 삭제"
+                accessibilityRole="button"
+                disabled={view.isDeleting || view.isSaving}
+                onPress={actions.screen.onDelete}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  view.isDeleting || view.isSaving
+                    ? styles.saveButtonDisabled
+                    : undefined,
+                  pressed && !view.isDeleting && !view.isSaving
+                    ? styles.deleteButtonPressed
+                    : undefined,
+                ]}
+              >
+                {view.isDeleting ? (
+                  <ActivityIndicator color={colors.error} />
+                ) : (
+                  <Trash2 color={colors.error} size={18} />
+                )}
+              </Pressable>
+            ) : null}
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

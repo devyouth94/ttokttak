@@ -147,6 +147,25 @@ export function createDefaultFormState(): RecurringItemFormValues {
   };
 }
 
+export function getMinimumStartDateLocal(params: {
+  initialStartDateLocal?: string;
+  isEditMode: boolean;
+  todayLocalDate: string;
+}): string {
+  if (params.isEditMode && params.initialStartDateLocal) {
+    return params.initialStartDateLocal;
+  }
+
+  return params.todayLocalDate;
+}
+
+export function normalizeStartDateSelection(
+  nextValue: string,
+  minimumStartDateLocal: string
+): string {
+  return nextValue < minimumStartDateLocal ? minimumStartDateLocal : nextValue;
+}
+
 function hasValidWeekdayMask(weekdayMask: number[]): boolean {
   if (weekdayMask.length === 0) {
     return false;
@@ -326,11 +345,7 @@ export function getNextRecurrenceFormState(
 
   return {
     ...current,
-    anchorType:
-      current.anchorType === "completion_based" &&
-      !supportsCompletionBased(nextRecurrenceType)
-        ? "fixed"
-        : current.anchorType,
+    anchorType: getNormalizedAnchorType(current.anchorType, nextRecurrenceType),
     intervalValue: requiresIntervalValue(nextRecurrenceType)
       ? current.intervalValue || "1"
       : "",
@@ -350,7 +365,10 @@ export function toDraft(
   timezone: string
 ): RecurringItemDraft {
   return {
-    anchorType: formState.anchorType,
+    anchorType: getNormalizedAnchorType(
+      formState.anchorType,
+      formState.recurrenceType
+    ),
     category: normalizeOptionalText(formState.category),
     description: normalizeOptionalText(formState.description),
     intervalValue: requiresIntervalValue(formState.recurrenceType)
@@ -371,7 +389,7 @@ export function toDraft(
 
 export function toFormState(item: RecurringItem): RecurringItemFormValues {
   return {
-    anchorType: item.anchorType,
+    anchorType: getNormalizedAnchorType(item.anchorType, item.recurrenceType),
     category: item.category ?? "",
     description: item.description ?? "",
     intervalValue: item.intervalValue ? `${item.intervalValue}` : "",
@@ -470,12 +488,39 @@ export function getNotificationStatusText(enabled: boolean): string {
 export function getAdvancedOptionsState(params: {
   anchorType: AnchorType;
   completionBasedEnabled: boolean;
+  recurrenceType: RecurrenceType;
 }): {
   anchorDescription: string;
+  showsAnchorOptions: boolean;
+  showsCompletionBasedOption: boolean;
   showsCompletionBasedHelper: boolean;
 } {
+  const showsAnchorOptions = params.recurrenceType !== "once";
+  const showsCompletionBasedOption =
+    showsAnchorOptions && supportsCompletionBased(params.recurrenceType);
+
   return {
     anchorDescription: getAnchorTypeDescription(params.anchorType),
-    showsCompletionBasedHelper: !params.completionBasedEnabled,
+    showsAnchorOptions,
+    showsCompletionBasedHelper: false,
+    showsCompletionBasedOption,
   };
+}
+
+function getNormalizedAnchorType(
+  anchorType: AnchorType,
+  recurrenceType: RecurrenceType
+): AnchorType {
+  if (recurrenceType === "once") {
+    return "fixed";
+  }
+
+  if (
+    anchorType === "completion_based" &&
+    !supportsCompletionBased(recurrenceType)
+  ) {
+    return "fixed";
+  }
+
+  return anchorType;
 }

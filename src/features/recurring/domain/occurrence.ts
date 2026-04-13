@@ -64,6 +64,10 @@ function toOccurrence(
   };
 }
 
+function toUtcTime(value: string): number {
+  return new Date(value).getTime();
+}
+
 /**
  * 두 local date 문자열을 사전식으로 비교한다.
  */
@@ -529,7 +533,7 @@ export function resolveOccurrenceStatus(
     return "skipped";
   }
 
-  if (scheduledAtUtc < nowUtc) {
+  if (toUtcTime(scheduledAtUtc) < toUtcTime(nowUtc)) {
     return "overdue";
   }
 

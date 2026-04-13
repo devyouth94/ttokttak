@@ -43,13 +43,16 @@ type RecurringItemFormPickerState = {
 type RecurringItemFormViewState = {
   isAdvancedOpen: boolean;
   isBootstrapping: boolean;
+  isDeleting: boolean;
   isEditMode: boolean;
   isSaving: boolean;
+  minimumStartDateLocal: string;
   screenError: string | null;
 };
 
 type RecurringItemFormScreenActions = {
   onBack: () => void;
+  onDelete: () => void;
   onSubmit: () => void;
 };
 

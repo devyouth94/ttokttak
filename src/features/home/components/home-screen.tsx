@@ -1,68 +1,424 @@
-import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { router } from "expo-router";
-import { addDays, format, isSameDay, startOfDay } from "date-fns";
-import { ko } from "date-fns/locale";
-import { ArrowLeft, Bell } from "lucide-react-native";
+import { format, startOfDay } from "date-fns";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bell,
+  Check,
+  RotateCw,
+} from "lucide-react-native";
 
+import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import type { CompletionAction } from "~/features/recurring/domain/types";
+import {
+  createCompletionLog,
+  listCompletionLogs,
+} from "~/features/recurring/repositories/completion-logs-repository";
+import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
 import { useSession } from "~/features/session/session-provider";
 
-const HOME_DATE_RANGE_DAYS = 31;
-type HomeDateOption = {
-  dayLabel: string;
-  id: string;
-  isToday: boolean;
-  title: string;
-  value: string;
+import {
+  buildHomeFeedSections,
+  createHomeDateOptions,
+  getOverdueOccurrencesToResolve,
+  getProfileName,
+  type HomeFeedCard,
+  type HomeFeedSection,
+} from "./home-screen.helpers";
+
+type HomeFeedData = {
+  completionLogs: Awaited<ReturnType<typeof listCompletionLogs>>;
+  items: Awaited<ReturnType<typeof listRecurringItems>>;
 };
 
-function getProfileName(
-  profile: ReturnType<typeof useSession>["profile"]
-): string {
-  if (profile?.display_name?.trim()) {
-    return profile.display_name.trim();
+function getHomeErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
   }
 
-  return "사용자";
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+
+  return String(error);
 }
 
-function createHomeDateOptions(today: Date): HomeDateOption[] {
-  return Array.from({ length: HOME_DATE_RANGE_DAYS }, (_, index) => {
-    const date = addDays(today, index);
-    const id = format(date, "yyyy-MM-dd");
-
-    return {
-      dayLabel: format(date, "EEE", { locale: ko }),
-      id,
-      isToday: index === 0,
-      title: isSameDay(date, today)
-        ? "오늘"
-        : format(date, "M월 d일", { locale: ko }),
-      value: format(date, "d"),
-    };
+async function fetchHomeFeedData({
+  timezone,
+  userId,
+}: {
+  timezone: string;
+  userId: string;
+}): Promise<HomeFeedData> {
+  const items = await listRecurringItems({
+    timezone,
+    userId,
   });
+
+  if (items.length === 0) {
+    return {
+      completionLogs: [],
+      items,
+    };
+  }
+
+  const completionLogs = await listCompletionLogs({
+    itemIds: items.map((item) => item.id),
+    userId,
+  });
+
+  return {
+    completionLogs,
+    items,
+  };
+}
+
+type HomeSectionCardProps = {
+  card: HomeFeedCard;
+  isProcessing: boolean;
+  onAction: (card: HomeFeedCard, action: CompletionAction) => void;
+  showsActions: boolean;
+};
+
+function HomeSectionCard({
+  card,
+  isProcessing,
+  onAction,
+  showsActions,
+}: HomeSectionCardProps): React.JSX.Element {
+  const metaLine = [card.metaLabel, card.timeLabel]
+    .filter((value): value is string => Boolean(value))
+    .join(" · ");
+
+  return (
+    <AppCard>
+      <View style={styles.cardRow}>
+        <Pressable
+          accessibilityHint="반복 항목 상세 화면으로 이동합니다."
+          accessibilityLabel={`${card.item.title} 상세 보기`}
+          accessibilityRole="button"
+          onPress={() => {
+            router.push({
+              params: { itemId: card.item.id },
+              pathname: "/items/[itemId]",
+            });
+          }}
+          style={({ pressed }) => [
+            styles.cardBodyButton,
+            pressed && styles.cardBodyButtonPressed,
+          ]}
+        >
+          <View style={styles.cardCopy}>
+            <AppText style={styles.cardTitle} variant="title">
+              {card.item.title}
+            </AppText>
+            <AppText style={styles.cardMeta}>{metaLine}</AppText>
+            <AppText style={styles.cardRule}>{card.recurrenceLabel}</AppText>
+          </View>
+        </Pressable>
+
+        {showsActions ? (
+          <View style={styles.cardActionRow}>
+            <Pressable
+              accessibilityHint="이 일정 occurrence를 건너뜁니다."
+              accessibilityLabel={`${card.item.title} 건너뛰기`}
+              accessibilityRole="button"
+              disabled={isProcessing}
+              onPress={() => {
+                onAction(card, "skipped");
+              }}
+              style={({ pressed }) => [
+                styles.iconActionButton,
+                styles.skipButton,
+                pressed && styles.secondaryActionPressed,
+              ]}
+            >
+              <ArrowRight color={colors.textMuted} size={16} />
+            </Pressable>
+
+            <Pressable
+              accessibilityHint="이 일정 occurrence를 완료 처리합니다."
+              accessibilityLabel={`${card.item.title} 완료`}
+              accessibilityRole="button"
+              disabled={isProcessing}
+              onPress={() => {
+                onAction(card, "completed");
+              }}
+              style={({ pressed }) => [
+                styles.iconActionButton,
+                styles.completeButton,
+                pressed && styles.primaryActionPressed,
+              ]}
+            >
+              <Check color={colors.text} size={16} />
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+    </AppCard>
+  );
+}
+
+type HomeFeedSectionBlockProps = {
+  isLoading: boolean;
+  onAction: (card: HomeFeedCard, action: CompletionAction) => void;
+  processingOccurrenceIds: string[];
+  selectedDateIsToday: boolean;
+  section: HomeFeedSection;
+};
+
+function HomeFeedSectionBlock({
+  isLoading,
+  onAction,
+  processingOccurrenceIds,
+  selectedDateIsToday,
+  section,
+}: HomeFeedSectionBlockProps): React.JSX.Element {
+  const showsActions =
+    section.id === "overdue" ||
+    (section.id === "selected-date" && selectedDateIsToday);
+
+  return (
+    <View style={styles.feedSection}>
+      <AppText style={styles.feedSectionTitle} variant="title">
+        {section.title}
+      </AppText>
+
+      {isLoading ? (
+        <AppCard>
+          <View style={styles.sectionState}>
+            <ActivityIndicator color={colors.primary} size="small" />
+            <AppText style={styles.sectionStateText}>
+              일정을 불러오는 중입니다.
+            </AppText>
+          </View>
+        </AppCard>
+      ) : section.items.length === 0 ? (
+        <AppCard>
+          <View style={styles.sectionState}>
+            <AppText style={styles.sectionStateText}>
+              {section.emptyMessage}
+            </AppText>
+          </View>
+        </AppCard>
+      ) : (
+        section.items.map((card) => (
+          <HomeSectionCard
+            card={card}
+            isProcessing={processingOccurrenceIds.includes(card.id)}
+            key={card.id}
+            onAction={onAction}
+            showsActions={showsActions}
+          />
+        ))
+      )}
+    </View>
+  );
+}
+
+type FeedErrorCardProps = {
+  message: string;
+  onRetry: () => void;
+};
+
+function FeedErrorCard({
+  message,
+  onRetry,
+}: FeedErrorCardProps): React.JSX.Element {
+  return (
+    <AppCard>
+      <View style={styles.errorCard}>
+        <View style={styles.errorCopy}>
+          <AppText style={styles.errorTitle} variant="title">
+            홈 피드를 불러오지 못했습니다.
+          </AppText>
+          <AppText style={styles.errorDescription}>{message}</AppText>
+        </View>
+
+        <Pressable
+          accessibilityHint="홈 피드를 다시 불러옵니다."
+          accessibilityLabel="홈 피드 재시도"
+          accessibilityRole="button"
+          onPress={onRetry}
+          style={({ pressed }) => [
+            styles.retryButton,
+            pressed && styles.secondaryActionPressed,
+          ]}
+        >
+          <RotateCw color={colors.text} size={16} />
+          <AppText style={styles.retryButtonText}>재시도</AppText>
+        </Pressable>
+      </View>
+    </AppCard>
+  );
 }
 
 export function HomeScreen(): React.JSX.Element {
-  const { profile } = useSession();
+  const { profile, user } = useSession();
+  const userId = user!.id;
   const [selectedDateId, setSelectedDateId] = useState(() =>
     format(startOfDay(new Date()), "yyyy-MM-dd")
   );
+  const [completionLogs, setCompletionLogs] = useState<
+    Awaited<ReturnType<typeof listCompletionLogs>>
+  >([]);
+  const [items, setItems] = useState<
+    Awaited<ReturnType<typeof listRecurringItems>>
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [processingOccurrenceIds, setProcessingOccurrenceIds] = useState<
+    string[]
+  >([]);
   const dateScrollRef = useRef<ScrollView>(null);
 
   const profileName = getProfileName(profile);
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const today = startOfDay(new Date());
   const dateOptions = createHomeDateOptions(today);
+  const defaultDateId = dateOptions[0].id;
   const selectedDateOption =
     dateOptions.find((option) => option.id === selectedDateId) ??
     dateOptions[0];
-  const showsTodayFeed = selectedDateOption.isToday;
-  const visibleSections = showsTodayFeed
-    ? ["Overdue", selectedDateOption.title, "Upcoming"]
-    : [selectedDateOption.title];
+  const feedSections = buildHomeFeedSections({
+    completionLogs,
+    items,
+    now: new Date(),
+    selectedDateId: selectedDateOption.id,
+    timezone,
+  }).map((section) => ({
+    ...section,
+    items: section.items.filter(
+      (item) => !processingOccurrenceIds.includes(item.id)
+    ),
+  }));
+
+  useEffect(() => {
+    if (selectedDateId === selectedDateOption.id) {
+      return;
+    }
+
+    setSelectedDateId(defaultDateId);
+    dateScrollRef.current?.scrollTo({
+      animated: true,
+      x: 0,
+      y: 0,
+    });
+  }, [defaultDateId, selectedDateId, selectedDateOption.id]);
+
+  useEffect(() => {
+    const loadFeed = async () => {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      try {
+        const nextFeed = await fetchHomeFeedData({
+          timezone,
+          userId,
+        });
+
+        setItems(nextFeed.items);
+        setCompletionLogs(nextFeed.completionLogs);
+      } catch (error) {
+        setErrorMessage(getHomeErrorMessage(error));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadFeed();
+  }, [timezone, userId]);
+
+  const reloadFeed = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const nextFeed = await fetchHomeFeedData({
+        timezone,
+        userId,
+      });
+
+      setItems(nextFeed.items);
+      setCompletionLogs(nextFeed.completionLogs);
+    } catch (error) {
+      setErrorMessage(getHomeErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOccurrenceAction = async (
+    card: HomeFeedCard,
+    action: CompletionAction
+  ) => {
+    setProcessingOccurrenceIds((current) =>
+      current.includes(card.id) ? current : [...current, card.id]
+    );
+    setErrorMessage(null);
+
+    try {
+      const occurrencesToResolve = getOverdueOccurrencesToResolve({
+        card,
+        completionLogs,
+        now: new Date(),
+        timezone,
+      });
+      const existingScheduledAtUtcSet = new Set(
+        completionLogs
+          .filter((log) => log.itemId === card.item.id)
+          .map((log) => log.scheduledAtUtc)
+      );
+      const pendingOccurrences = occurrencesToResolve.filter(
+        (occurrence) =>
+          !existingScheduledAtUtcSet.has(occurrence.scheduledAtUtc)
+      );
+
+      if (pendingOccurrences.length > 0) {
+        await Promise.all(
+          pendingOccurrences.map((occurrence) =>
+            createCompletionLog({
+              action,
+              itemId: card.item.id,
+              scheduledAtUtc: occurrence.scheduledAtUtc,
+              userId,
+            })
+          )
+        );
+      }
+
+      const nextFeed = await fetchHomeFeedData({
+        timezone,
+        userId,
+      });
+
+      setItems(nextFeed.items);
+      setCompletionLogs(nextFeed.completionLogs);
+    } catch (error) {
+      setErrorMessage(getHomeErrorMessage(error));
+    } finally {
+      setProcessingOccurrenceIds((current) =>
+        current.filter((occurrenceId) => occurrenceId !== card.id)
+      );
+    }
+  };
 
   return (
     <AppScreen contentStyle={styles.screenContent}>
@@ -157,7 +513,7 @@ export function HomeScreen(): React.JSX.Element {
               })}
             </ScrollView>
 
-            {!showsTodayFeed ? (
+            {!selectedDateOption.isToday ? (
               <Pressable
                 accessibilityHint="오늘 기준 홈 피드로 즉시 돌아갑니다."
                 accessibilityLabel="오늘로 돌아가기"
@@ -185,23 +541,21 @@ export function HomeScreen(): React.JSX.Element {
             ) : null}
           </View>
 
-          <View style={styles.previewCard}>
-            <AppText variant="label">카드 섹션 기준</AppText>
-            <AppText style={styles.previewTitle} variant="title">
-              {selectedDateOption.title}
-            </AppText>
-            <AppText style={styles.previewDescription}>
-              {showsTodayFeed
-                ? "오늘을 선택한 상태라서 overdue와 upcoming이 함께 보입니다."
-                : "선택한 날짜의 예정된 일정만 카드 섹션에 노출됩니다."}
-            </AppText>
-            <View style={styles.sectionTagList}>
-              {visibleSections.map((section) => (
-                <View key={section} style={styles.sectionTag}>
-                  <AppText style={styles.sectionTagText}>{section}</AppText>
-                </View>
-              ))}
-            </View>
+          {errorMessage ? (
+            <FeedErrorCard message={errorMessage} onRetry={reloadFeed} />
+          ) : null}
+
+          <View style={styles.feedSectionList}>
+            {feedSections.map((section) => (
+              <HomeFeedSectionBlock
+                isLoading={isLoading}
+                key={section.id}
+                onAction={handleOccurrenceAction}
+                processingOccurrenceIds={processingOccurrenceIds}
+                selectedDateIsToday={selectedDateOption.isToday}
+                section={section}
+              />
+            ))}
           </View>
         </ScrollView>
       </View>
@@ -217,9 +571,54 @@ const styles = StyleSheet.create({
   carouselSection: {
     gap: spacing.md,
   },
+  cardActionRow: {
+    alignItems: "center",
+    gap: spacing.sm,
+    justifyContent: "flex-start",
+  },
+  cardBodyButton: {
+    flex: 1,
+  },
+  cardBodyButtonPressed: {
+    opacity: 0.88,
+  },
+  cardCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  cardMeta: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  cardRule: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  cardRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  cardTitle: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  completeButton: {
+    backgroundColor: colors.surfaceHigh,
+  },
   contentContainer: {
     gap: spacing.xl,
     paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+  },
+  iconActionButton: {
+    alignItems: "center",
+    borderRadius: borderRadius.pill,
+    justifyContent: "center",
+    height: 36,
+    width: 36,
   },
   dateChip: {
     alignItems: "center",
@@ -257,6 +656,29 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 24,
   },
+  errorCard: {
+    gap: spacing.md,
+  },
+  errorCopy: {
+    gap: spacing.xs,
+  },
+  errorDescription: {
+    color: colors.textMuted,
+  },
+  errorTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  feedSection: {
+    gap: spacing.md,
+  },
+  feedSectionList: {
+    gap: spacing.xl,
+  },
+  feedSectionTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
   header: {
     alignItems: "center",
     flexDirection: "row",
@@ -281,41 +703,45 @@ const styles = StyleSheet.create({
   iconButtonPressed: {
     opacity: 0.88,
   },
-  previewCard: {
-    backgroundColor: colors.surfaceLow,
-    borderRadius: borderRadius.lg,
-    gap: spacing.sm,
-    padding: spacing.lg,
+  primaryActionPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
-  previewDescription: {
-    color: colors.textMuted,
+  retryButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.surfaceHigh,
+    borderRadius: borderRadius.pill,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  previewTitle: {
-    fontSize: 24,
-    lineHeight: 30,
+  retryButtonText: {
+    color: colors.text,
   },
   screenContent: {
-    paddingHorizontal: spacing.lg,
     position: "relative",
   },
   screenRoot: {
     flex: 1,
   },
-  sectionTag: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  secondaryActionPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
-  sectionTagList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  sectionState: {
+    alignItems: "center",
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    justifyContent: "center",
+    minHeight: 88,
   },
-  sectionTagText: {
-    fontSize: 14,
-    lineHeight: 20,
+  sectionStateText: {
+    color: colors.textMuted,
+    textAlign: "center",
+  },
+  skipButton: {
+    backgroundColor: colors.surfaceHigh,
   },
   title: {
     color: colors.text,
@@ -325,8 +751,8 @@ const styles = StyleSheet.create({
   },
   todayDot: {
     backgroundColor: colors.primary,
-    bottom: 8,
     borderRadius: borderRadius.pill,
+    bottom: 8,
     height: 6,
     position: "absolute",
     width: 6,
@@ -335,8 +761,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryForeground,
   },
   todayShortcutButton: {
-    alignSelf: "flex-end",
     alignItems: "center",
+    alignSelf: "flex-end",
     borderRadius: borderRadius.pill,
     flexDirection: "row",
     gap: spacing.xs,

@@ -92,6 +92,9 @@ export const styles = StyleSheet.create({
   compactInput: {
     minHeight: 52,
   },
+  createSaveButton: {
+    width: "100%",
+  },
   customRecurrenceComposer: {
     flexDirection: "row",
     gap: spacing.sm,
@@ -162,7 +165,23 @@ export const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   dateField: {
-    flex: 1.18,
+    flex: 1.1,
+  },
+  deleteButton: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderColor: colors.outlineSoft,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 56,
+    width: 56,
+  },
+  deleteButtonPressed: {
+    opacity: 0.9,
+  },
+  editSaveButton: {
+    flex: 1,
   },
   errorCard: {
     gap: spacing.xs,
@@ -196,6 +215,10 @@ export const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
+  footerActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
   iconInputShell: {
     alignItems: "center",
     backgroundColor: colors.surfaceLow,
@@ -210,7 +233,8 @@ export const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     flexShrink: 1,
-    fontSize: typography.body,
+    fontSize: typography.label,
+    lineHeight: 18,
   },
   inlineAction: {
     alignSelf: "flex-start",
@@ -406,7 +430,7 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   timeField: {
-    flex: 0.82,
+    flex: 0.9,
   },
   unitChip: {
     alignItems: "center",

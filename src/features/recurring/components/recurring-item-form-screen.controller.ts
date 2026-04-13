@@ -10,6 +10,7 @@ import {
   type RecurrenceType,
 } from "~/features/recurring/domain/types";
 import {
+  archiveRecurringItem,
   createRecurringItem,
   getRecurringItemById,
   updateRecurringItem,
@@ -23,8 +24,11 @@ import {
   formatDateToLocalTime,
   getCompletionBasedEnabled,
   getCustomRecurrenceType,
+  getMinimumStartDateLocal,
   getNextRecurrenceFormState,
   getNextStartDateFormState,
+  getTodayLocalDate,
+  normalizeStartDateSelection,
   parseLocalDateToDate,
   parseLocalTimeToDate,
   type PickerMode,
@@ -43,12 +47,20 @@ export function useRecurringItemFormScreenController({
   itemId,
 }: UseRecurringItemFormScreenControllerParams): RecurringItemFormScreenModel {
   const isEditMode = Boolean(itemId);
+  const todayLocalDate = getTodayLocalDate();
   const { isAuthenticated, isLoading, profile, user } = useSession();
   const [requestState, setRequestState] = useState({
     isBootstrapping: isEditMode,
+    isDeleting: false,
     isSaving: false,
     screenError: null as string | null,
   });
+  const [minimumStartDateLocal, setMinimumStartDateLocal] = useState(
+    getMinimumStartDateLocal({
+      isEditMode,
+      todayLocalDate,
+    })
+  );
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [pickerState, setPickerState] = useState({
     iosPickerMode: null as PickerMode | null,
@@ -56,7 +68,7 @@ export function useRecurringItemFormScreenController({
     isStartDatePickerVisible: false,
     isTimePickerVisible: false,
   });
-  const { isBootstrapping, isSaving, screenError } = requestState;
+  const { isBootstrapping, isDeleting, isSaving, screenError } = requestState;
   const {
     iosPickerMode,
     iosPickerValue,
@@ -132,6 +144,13 @@ export function useRecurringItemFormScreenController({
           userId,
         });
 
+        setMinimumStartDateLocal(
+          getMinimumStartDateLocal({
+            initialStartDateLocal: item.startDateLocal,
+            isEditMode: true,
+            todayLocalDate,
+          })
+        );
         reset(toFormState(item));
       } catch (error) {
         setRequestState((current) => ({
@@ -147,7 +166,16 @@ export function useRecurringItemFormScreenController({
     }
 
     void loadItem();
-  }, [isAuthenticated, isEditMode, isLoading, itemId, profile, reset, user]);
+  }, [
+    isAuthenticated,
+    isEditMode,
+    isLoading,
+    itemId,
+    profile,
+    reset,
+    todayLocalDate,
+    user,
+  ]);
 
   function getErrorMessage(
     name: keyof RecurringItemFormValues
@@ -222,7 +250,12 @@ export function useRecurringItemFormScreenController({
   }
 
   function handleChangeStartDate(nextValue: string): void {
-    setFields(getNextStartDateFormState(getValues(), nextValue));
+    const normalizedValue = normalizeStartDateSelection(
+      nextValue,
+      minimumStartDateLocal
+    );
+
+    setFields(getNextStartDateFormState(getValues(), normalizedValue));
   }
 
   function syncIosPickerValue(
@@ -298,7 +331,11 @@ export function useRecurringItemFormScreenController({
         iosPickerMode: mode,
         iosPickerValue:
           mode === "date"
-            ? parseLocalDateToDate(startDateLocal)
+            ? parseLocalDateToDate(
+                startDateLocal < minimumStartDateLocal
+                  ? minimumStartDateLocal
+                  : startDateLocal
+              )
             : parseLocalTimeToDate(reminderTimeLocal),
       }));
       return;
@@ -368,6 +405,26 @@ export function useRecurringItemFormScreenController({
     })();
   }
 
+  function handleDeletePress(): void {
+    if (!isEditMode || !itemId || !user) {
+      return;
+    }
+
+    Alert.alert("리마인더 삭제", "이 리마인더를 삭제할까요?", [
+      {
+        style: "cancel",
+        text: "취소",
+      },
+      {
+        style: "destructive",
+        text: "삭제",
+        onPress: () => {
+          void handleDeleteConfirm(itemId, user.id);
+        },
+      },
+    ]);
+  }
+
   function handleToggleAdvanced(): void {
     setIsAdvancedOpen((current) => !current);
   }
@@ -433,6 +490,36 @@ export function useRecurringItemFormScreenController({
     }
   }
 
+  async function handleDeleteConfirm(
+    currentItemId: string,
+    userId: string
+  ): Promise<void> {
+    setRequestState((current) => ({
+      ...current,
+      isDeleting: true,
+      screenError: null,
+    }));
+
+    try {
+      await archiveRecurringItem({
+        id: currentItemId,
+        userId,
+      });
+
+      router.replace("/");
+    } catch (error) {
+      setRequestState((current) => ({
+        ...current,
+        screenError: error instanceof Error ? error.message : String(error),
+      }));
+    } finally {
+      setRequestState((current) => ({
+        ...current,
+        isDeleting: false,
+      }));
+    }
+  }
+
   const fieldErrors = {
     anchor: getErrorMessage("anchorType"),
     interval: getErrorMessage("intervalValue"),
@@ -463,8 +550,10 @@ export function useRecurringItemFormScreenController({
   const viewState = {
     isAdvancedOpen,
     isBootstrapping,
+    isDeleting,
     isEditMode,
     isSaving,
+    minimumStartDateLocal,
     screenError,
   };
 
@@ -495,6 +584,7 @@ export function useRecurringItemFormScreenController({
     },
     screen: {
       onBack: handleBack,
+      onDelete: handleDeletePress,
       onSubmit: handleSubmitPress,
     },
   };

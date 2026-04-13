@@ -340,6 +340,7 @@ type AdvancedOptionsSectionProps = {
   category: string;
   completionBasedEnabled: boolean;
   isOpen: boolean;
+  recurrenceType: RecurrenceType;
   onCategoryChange: (value: string) => void;
   onSelectAnchorType: (anchorType: AnchorType) => void;
   onToggleOpen: () => void;
@@ -387,29 +388,41 @@ export function AdvancedOptionsSection({
   category,
   completionBasedEnabled,
   isOpen,
+  recurrenceType,
   onCategoryChange,
   onSelectAnchorType,
   onToggleOpen,
 }: AdvancedOptionsSectionProps): React.JSX.Element {
-  const { anchorDescription, showsCompletionBasedHelper } =
-    getAdvancedOptionsState({
-      anchorType,
-      completionBasedEnabled,
-    });
-  const anchorOptionButtons = anchorOptions.map((option) => {
-    const disabled =
-      option.value === "completion_based" && !completionBasedEnabled;
-
-    return (
-      <AnchorOptionButton
-        disabled={disabled}
-        key={option.value}
-        label={option.label}
-        onPress={() => onSelectAnchorType(option.value)}
-        selected={anchorType === option.value}
-      />
-    );
+  const {
+    anchorDescription,
+    showsAnchorOptions,
+    showsCompletionBasedHelper,
+    showsCompletionBasedOption,
+  } = getAdvancedOptionsState({
+    anchorType,
+    completionBasedEnabled,
+    recurrenceType,
   });
+  const anchorOptionButtons = anchorOptions
+    .filter(
+      (option) =>
+        option.value === "fixed" ||
+        (option.value === "completion_based" && showsCompletionBasedOption)
+    )
+    .map((option) => {
+      const disabled =
+        option.value === "completion_based" && !completionBasedEnabled;
+
+      return (
+        <AnchorOptionButton
+          disabled={disabled}
+          key={option.value}
+          label={option.label}
+          onPress={() => onSelectAnchorType(option.value)}
+          selected={anchorType === option.value}
+        />
+      );
+    });
 
   const advancedContent = isOpen ? (
     <View style={styles.advancedContent}>
@@ -425,20 +438,22 @@ export function AdvancedOptionsSection({
         />
       </View>
 
-      <View style={styles.field}>
-        <AppText style={styles.subFieldLabel}>다음 일정 계산 방식</AppText>
-        <View style={styles.anchorCard}>{anchorOptionButtons}</View>
-        <AppText style={styles.anchorDescription}>{anchorDescription}</AppText>
-      </View>
-
-      {showsCompletionBasedHelper ? (
-        <AppText style={styles.advancedHelperText}>
-          현재 반복 규칙에서는 완료 기준 계산을 지원하지 않습니다.
-        </AppText>
-      ) : null}
-
-      {anchorError ? (
-        <AppText style={styles.fieldError}>{anchorError}</AppText>
+      {showsAnchorOptions ? (
+        <View style={styles.field}>
+          <AppText style={styles.subFieldLabel}>다음 일정 계산 방식</AppText>
+          <View style={styles.anchorCard}>{anchorOptionButtons}</View>
+          <AppText style={styles.anchorDescription}>
+            {anchorDescription}
+          </AppText>
+          {showsCompletionBasedHelper ? (
+            <AppText style={styles.advancedHelperText}>
+              현재 반복 규칙에서는 완료 기준 계산을 지원하지 않습니다.
+            </AppText>
+          ) : null}
+          {anchorError ? (
+            <AppText style={styles.fieldError}>{anchorError}</AppText>
+          ) : null}
+        </View>
       ) : null}
     </View>
   ) : null;
@@ -467,6 +482,7 @@ export function AdvancedOptionsSection({
 }
 
 type IosPickerModalProps = {
+  minimumDate?: Date;
   mode: "date" | "time" | null;
   value: Date;
   onChange: (event: DateTimePickerEvent, selectedDate?: Date) => void;
@@ -475,6 +491,7 @@ type IosPickerModalProps = {
 };
 
 export function IosPickerModal({
+  minimumDate,
   mode,
   value,
   onChange,
@@ -519,6 +536,7 @@ export function IosPickerModal({
           {mode ? (
             <DateTimePicker
               display="spinner"
+              minimumDate={mode === "date" ? minimumDate : undefined}
               mode={mode}
               onChange={onChange}
               value={value}
