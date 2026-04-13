@@ -196,31 +196,6 @@ export const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  headerButton: {
-    alignItems: "center",
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
-  headerButtonPressed: {
-    opacity: 0.7,
-  },
-  headerSpacer: {
-    width: 28,
-  },
-  headerTitle: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: "700",
-  },
   iconInputShell: {
     alignItems: "center",
     backgroundColor: colors.surfaceLow,

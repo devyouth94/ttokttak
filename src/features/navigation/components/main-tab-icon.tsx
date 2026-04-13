@@ -17,7 +17,6 @@ export function MainTabIcon({
       <Icon
         color={focused ? colors.primaryForeground : "#CFCFD4"}
         size={focused ? 18 : 17}
-        strokeWidth={2.2}
       />
     </View>
   );

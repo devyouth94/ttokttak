@@ -1,6 +1,6 @@
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, usePathname } from "expo-router";
+import { type Href, router, usePathname } from "expo-router";
 import {
   CalendarDays,
   History,
@@ -15,7 +15,7 @@ import { MainTabIcon } from "~/features/navigation/components/main-tab-icon";
 type MainTabKey = "home" | "calendar" | "history" | "settings";
 
 type MainTabItem = {
-  href: string;
+  href: Href;
   icon: typeof House;
   key: MainTabKey;
 };

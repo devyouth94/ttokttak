@@ -314,7 +314,7 @@ export function NotificationSection({
   return (
     <View style={styles.notificationCard}>
       <View style={styles.notificationIconWrap}>
-        <Bell color={colors.text} size={18} strokeWidth={2} />
+        <Bell color={colors.text} size={18} />
       </View>
       <View style={styles.notificationCopy}>
         <AppText style={styles.notificationTitle}>알림</AppText>
@@ -455,9 +455,9 @@ export function AdvancedOptionsSection({
       >
         <AppText style={styles.fieldLabel}>고급 옵션</AppText>
         {isOpen ? (
-          <ChevronUp color={colors.textMuted} size={18} strokeWidth={2} />
+          <ChevronUp color={colors.textMuted} size={18} />
         ) : (
-          <ChevronDown color={colors.textMuted} size={18} strokeWidth={2} />
+          <ChevronDown color={colors.textMuted} size={18} />
         )}
       </Pressable>
 

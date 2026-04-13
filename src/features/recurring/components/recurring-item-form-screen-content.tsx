@@ -10,14 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import {
-  ArrowLeft,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-} from "lucide-react-native";
+import { CalendarDays, CheckCircle2, Clock3 } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
+import { ScreenHeader } from "~/design-system/components/screen-header";
 import { colors } from "~/design-system/tokens";
 
 import { type RecurringItemFormScreenContentProps } from "./recurring-item-form-screen.contracts";
@@ -93,23 +89,7 @@ export function RecurringItemFormScreenContent({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.header}>
-          <Pressable
-            accessibilityHint="이전 화면으로 돌아갑니다."
-            accessibilityRole="button"
-            onPress={actions.screen.onBack}
-            style={({ pressed }) => [
-              styles.headerButton,
-              pressed ? styles.headerButtonPressed : undefined,
-            ]}
-          >
-            <ArrowLeft color={colors.text} size={22} strokeWidth={2.2} />
-          </Pressable>
-          <AppText style={styles.headerTitle} variant="title">
-            {screenTitle}
-          </AppText>
-          <View style={styles.headerSpacer} />
-        </View>
+        <ScreenHeader onBack={actions.screen.onBack} title={screenTitle} />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -182,13 +162,7 @@ export function RecurringItemFormScreenContent({
           <View style={styles.row}>
             <PickerField
               error={errors.startDate}
-              icon={
-                <CalendarDays
-                  color={colors.textMuted}
-                  size={18}
-                  strokeWidth={2}
-                />
-              }
+              icon={<CalendarDays color={colors.textMuted} size={18} />}
               label="시작일"
               onPress={actions.picker.onOpenDatePicker}
               value={startDateDisplayValue}
@@ -197,9 +171,7 @@ export function RecurringItemFormScreenContent({
 
             <PickerField
               error={errors.reminderTime}
-              icon={
-                <Clock3 color={colors.textMuted} size={18} strokeWidth={2} />
-              }
+              icon={<Clock3 color={colors.textMuted} size={18} />}
               label="알림 시간"
               onPress={actions.picker.onOpenTimePicker}
               value={reminderTimeDisplayValue}
@@ -283,11 +255,7 @@ function SaveButtonContent({
 
   return (
     <View style={styles.saveButtonContent}>
-      <CheckCircle2
-        color={colors.primaryForeground}
-        size={18}
-        strokeWidth={2.4}
-      />
+      <CheckCircle2 color={colors.primaryForeground} size={18} />
       <AppText style={styles.saveButtonText}>{buttonLabel}</AppText>
     </View>
   );
