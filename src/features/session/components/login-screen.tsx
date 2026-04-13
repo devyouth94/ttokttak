@@ -84,7 +84,7 @@ export function LoginScreen({
   };
 
   return (
-    <AppScreen>
+    <AppScreen contentStyle={styles.screenContent}>
       <View style={styles.container}>
         <View style={styles.header}>
           <AppText style={styles.brand}>ttokttak</AppText>
@@ -232,5 +232,9 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 260,
     textAlign: "center",
+  },
+  screenContent: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
 });
