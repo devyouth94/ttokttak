@@ -1,12 +1,12 @@
 import type { PropsWithChildren } from "react";
-import { StyleSheet, Text, type TextStyle } from "react-native";
+import { type StyleProp, StyleSheet, Text, type TextStyle } from "react-native";
 
 import { colors, typography } from "~/design-system/tokens";
 
 type AppTextVariant = "body" | "display" | "label" | "title";
 
 type AppTextProps = PropsWithChildren<{
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   variant?: AppTextVariant;
 }>;
 

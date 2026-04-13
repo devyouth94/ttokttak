@@ -29,6 +29,14 @@ export type ListCompletionLogsOptions = {
   userId: string;
 };
 
+export type ListCompletionLogsPageOptions = {
+  client?: RepositoryClient;
+  itemIds?: string[];
+  pageOffset: number;
+  pageSize: number;
+  userId: string;
+};
+
 export type ListCompletionLogsInRangeOptions = {
   client?: RepositoryClient;
   itemIds?: string[];
@@ -39,6 +47,18 @@ export type ListCompletionLogsInRangeOptions = {
 
 function normalizeUtcString(value: string): string {
   return new Date(value).toISOString();
+}
+
+function applyItemIdsFilter<
+  TQuery extends {
+    in(column: string, values: string[]): TQuery;
+  },
+>(query: TQuery, itemIds?: string[]): TQuery {
+  if (!itemIds?.length) {
+    return query;
+  }
+
+  return query.in("item_id", itemIds);
 }
 
 /**
@@ -108,15 +128,44 @@ export async function listCompletionLogs({
   userId,
 }: ListCompletionLogsOptions): Promise<CompletionLog[]> {
   const supabase = getRepositoryClient(client);
-  let query = supabase
-    .from("completion_logs")
-    .select("*")
-    .eq("user_id", userId)
-    .order("scheduled_at_utc", { ascending: true });
+  const query = applyItemIdsFilter(
+    supabase
+      .from("completion_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("scheduled_at_utc", { ascending: true }),
+    itemIds
+  );
 
-  if (itemIds && itemIds.length > 0) {
-    query = query.in("item_id", itemIds);
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
   }
+
+  return data.map(toCompletionLog);
+}
+
+/**
+ * 현재 사용자의 completion log를 최신 예정 시각 기준 페이지 단위로 조회한다.
+ */
+export async function listCompletionLogsPage({
+  client,
+  itemIds,
+  pageOffset,
+  pageSize,
+  userId,
+}: ListCompletionLogsPageOptions): Promise<CompletionLog[]> {
+  const supabase = getRepositoryClient(client);
+  const query = applyItemIdsFilter(
+    supabase
+      .from("completion_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("scheduled_at_utc", { ascending: false })
+      .range(pageOffset, pageOffset + pageSize - 1),
+    itemIds
+  );
 
   const { data, error } = await query;
 
@@ -139,17 +188,16 @@ export async function listCompletionLogsInRange({
   userId,
 }: ListCompletionLogsInRangeOptions): Promise<CompletionLog[]> {
   const supabase = getRepositoryClient(client);
-  let query = supabase
-    .from("completion_logs")
-    .select("*")
-    .eq("user_id", userId)
-    .gte("scheduled_at_utc", rangeStartUtc)
-    .lte("scheduled_at_utc", rangeEndUtc)
-    .order("scheduled_at_utc", { ascending: true });
-
-  if (itemIds && itemIds.length > 0) {
-    query = query.in("item_id", itemIds);
-  }
+  const query = applyItemIdsFilter(
+    supabase
+      .from("completion_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("scheduled_at_utc", rangeStartUtc)
+      .lte("scheduled_at_utc", rangeEndUtc)
+      .order("scheduled_at_utc", { ascending: true }),
+    itemIds
+  );
 
   const { data, error } = await query;
 

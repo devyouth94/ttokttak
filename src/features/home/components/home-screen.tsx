@@ -7,6 +7,8 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { format, startOfDay } from "date-fns";
 import {
   ArrowLeft,
@@ -21,12 +23,13 @@ import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
-import {
-  createCompletionLog,
-  listCompletionLogs,
-} from "~/features/recurring/repositories/completion-logs-repository";
-import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
+import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
+import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
+import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
+import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
+import { createCompletionLog } from "~/features/recurring/repositories/completion-logs-repository";
 import { useSession } from "~/features/session/session-provider";
+import { getErrorMessage } from "~/lib/errors/get-error-message";
 
 import {
   buildHomeFeedSections,
@@ -36,58 +39,6 @@ import {
   type HomeFeedCard,
   type HomeFeedSection,
 } from "./home-screen.helpers";
-
-type HomeFeedData = {
-  completionLogs: Awaited<ReturnType<typeof listCompletionLogs>>;
-  items: Awaited<ReturnType<typeof listRecurringItems>>;
-};
-
-function getHomeErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-  ) {
-    return error.message;
-  }
-
-  return String(error);
-}
-
-async function fetchHomeFeedData({
-  timezone,
-  userId,
-}: {
-  timezone: string;
-  userId: string;
-}): Promise<HomeFeedData> {
-  const items = await listRecurringItems({
-    timezone,
-    userId,
-  });
-
-  if (items.length === 0) {
-    return {
-      completionLogs: [],
-      items,
-    };
-  }
-
-  const completionLogs = await listCompletionLogs({
-    itemIds: items.map((item) => item.id),
-    userId,
-  });
-
-  return {
-    completionLogs,
-    items,
-  };
-}
 
 type HomeSectionCardProps = {
   card: HomeFeedCard;
@@ -270,33 +221,62 @@ function FeedErrorCard({
 }
 
 export function HomeScreen(): React.JSX.Element {
-  const { profile, user } = useSession();
-  const userId = user!.id;
+  const { profile } = useSession();
+  const { isReady, timezone, userId } = useRecurringFeedContext();
+  const queryClient = useQueryClient();
+  const isFocused = useIsFocused();
   const [selectedDateId, setSelectedDateId] = useState(() =>
     format(startOfDay(new Date()), "yyyy-MM-dd")
   );
-  const [completionLogs, setCompletionLogs] = useState<
-    Awaited<ReturnType<typeof listCompletionLogs>>
-  >([]);
-  const [items, setItems] = useState<
-    Awaited<ReturnType<typeof listRecurringItems>>
-  >([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
+    null
+  );
   const [processingOccurrenceIds, setProcessingOccurrenceIds] = useState<
     string[]
   >([]);
   const dateScrollRef = useRef<ScrollView>(null);
+  const hasFocusedOnceRef = useRef(false);
 
   const profileName = getProfileName(profile);
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const itemsQuery = useRecurringItemsQuery({
+    enabled: isReady,
+    timezone,
+    userId,
+  });
+  const items = itemsQuery.data ?? [];
+  const completionLogsQuery = useCompletionLogsQuery({
+    enabled: isReady,
+    itemIds: items.map((item) => item.id),
+    userId,
+  });
+  const completionLogs = completionLogsQuery.data ?? [];
+  const refetchItems = itemsQuery.refetch;
+  const refetchCompletionLogs = completionLogsQuery.refetch;
+  const refetchFeed = async (): Promise<void> => {
+    await Promise.all([refetchItems(), refetchCompletionLogs()]);
+  };
+  const isLoading =
+    itemsQuery.isPending || (items.length > 0 && completionLogsQuery.isPending);
+  const errorMessage =
+    actionErrorMessage ??
+    (itemsQuery.error
+      ? getErrorMessage(itemsQuery.error)
+      : completionLogsQuery.error
+        ? getErrorMessage(completionLogsQuery.error)
+        : null);
   const today = startOfDay(new Date());
   const dateOptions = createHomeDateOptions(today);
-  const defaultDateId = dateOptions[0].id;
+  const todayOption = dateOptions[0];
   const selectedDateOption =
-    dateOptions.find((option) => option.id === selectedDateId) ??
-    dateOptions[0];
+    dateOptions.find((option) => option.id === selectedDateId) ?? todayOption;
+  const processingOccurrenceIdSet = new Set(processingOccurrenceIds);
+  const scrollDateOptionsToStart = (): void => {
+    dateScrollRef.current?.scrollTo({
+      animated: true,
+      x: 0,
+      y: 0,
+    });
+  };
   const feedSections = buildHomeFeedSections({
     completionLogs,
     items,
@@ -306,73 +286,53 @@ export function HomeScreen(): React.JSX.Element {
   }).map((section) => ({
     ...section,
     items: section.items.filter(
-      (item) => !processingOccurrenceIds.includes(item.id)
+      (item) => !processingOccurrenceIdSet.has(item.id)
     ),
   }));
 
   useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
     if (selectedDateId === selectedDateOption.id) {
       return;
     }
 
-    setSelectedDateId(defaultDateId);
-    dateScrollRef.current?.scrollTo({
-      animated: true,
-      x: 0,
-      y: 0,
-    });
-  }, [defaultDateId, selectedDateId, selectedDateOption.id]);
+    setSelectedDateId(todayOption.id);
+    scrollDateOptionsToStart();
+  }, [isReady, selectedDateId, selectedDateOption.id, todayOption.id]);
 
   useEffect(() => {
-    const loadFeed = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
+    if (!isFocused || !isReady || !userId) {
+      return;
+    }
 
-      try {
-        const nextFeed = await fetchHomeFeedData({
-          timezone,
-          userId,
-        });
+    if (!hasFocusedOnceRef.current) {
+      hasFocusedOnceRef.current = true;
+      return;
+    }
 
-        setItems(nextFeed.items);
-        setCompletionLogs(nextFeed.completionLogs);
-      } catch (error) {
-        setErrorMessage(getHomeErrorMessage(error));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadFeed();
-  }, [timezone, userId]);
+    void Promise.all([refetchItems(), refetchCompletionLogs()]);
+  }, [isFocused, isReady, refetchCompletionLogs, refetchItems, userId]);
 
   const reloadFeed = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const nextFeed = await fetchHomeFeedData({
-        timezone,
-        userId,
-      });
-
-      setItems(nextFeed.items);
-      setCompletionLogs(nextFeed.completionLogs);
-    } catch (error) {
-      setErrorMessage(getHomeErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
+    setActionErrorMessage(null);
+    await refetchFeed();
   };
 
   const handleOccurrenceAction = async (
     card: HomeFeedCard,
     action: CompletionAction
   ) => {
+    if (!userId) {
+      return;
+    }
+
     setProcessingOccurrenceIds((current) =>
       current.includes(card.id) ? current : [...current, card.id]
     );
-    setErrorMessage(null);
+    setActionErrorMessage(null);
 
     try {
       const occurrencesToResolve = getOverdueOccurrencesToResolve({
@@ -404,21 +364,28 @@ export function HomeScreen(): React.JSX.Element {
         );
       }
 
-      const nextFeed = await fetchHomeFeedData({
-        timezone,
-        userId,
+      await queryClient.invalidateQueries({
+        queryKey: recurringQueryKeys.user(userId),
       });
-
-      setItems(nextFeed.items);
-      setCompletionLogs(nextFeed.completionLogs);
+      await refetchFeed();
     } catch (error) {
-      setErrorMessage(getHomeErrorMessage(error));
+      setActionErrorMessage(getErrorMessage(error));
     } finally {
       setProcessingOccurrenceIds((current) =>
         current.filter((occurrenceId) => occurrenceId !== card.id)
       );
     }
   };
+
+  if (!isReady || !userId) {
+    return (
+      <AppScreen>
+        <View style={styles.loadingState}>
+          <ActivityIndicator color={colors.primary} size="small" />
+        </View>
+      </AppScreen>
+    );
+  }
 
   return (
     <AppScreen contentStyle={styles.screenContent}>
@@ -519,12 +486,8 @@ export function HomeScreen(): React.JSX.Element {
                 accessibilityLabel="오늘로 돌아가기"
                 accessibilityRole="button"
                 onPress={() => {
-                  setSelectedDateId(dateOptions[0].id);
-                  dateScrollRef.current?.scrollTo({
-                    animated: true,
-                    x: 0,
-                    y: 0,
-                  });
+                  setSelectedDateId(todayOption.id);
+                  scrollDateOptionsToStart();
                 }}
                 style={({ pressed }) => [
                   styles.todayShortcutButton,
@@ -610,8 +573,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     gap: spacing.xl,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   iconActionButton: {
     alignItems: "center",
@@ -702,6 +666,11 @@ const styles = StyleSheet.create({
   },
   iconButtonPressed: {
     opacity: 0.88,
+  },
+  loadingState: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
   },
   primaryActionPressed: {
     opacity: 0.9,

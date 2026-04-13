@@ -18,6 +18,10 @@ import type {
   DerivedOccurrence,
   RecurringItem,
 } from "~/features/recurring/domain/types";
+import {
+  formatLocalDateTitle,
+  formatLocalTimeLabel,
+} from "~/features/recurring/utils/recurring-display";
 import type { ProfileRow } from "~/lib/database.types";
 
 export const HOME_DATE_RANGE_DAYS = 15;
@@ -247,7 +251,7 @@ function getSelectedDateTitle(selectedDateId: string, today: Date): string {
     return "오늘";
   }
 
-  return format(selectedDate, "M월 d일", { locale: ko });
+  return formatLocalDateTitle(selectedDateId);
 }
 
 function getUtcDayRange(
@@ -311,9 +315,7 @@ function getMetaLabel(
 }
 
 function getTimeLabel(localTime: string): string {
-  const parsedTime = parse(localTime, "HH:mm", new Date());
-
-  return format(parsedTime, "a h:mm", { locale: ko });
+  return formatLocalTimeLabel(localTime);
 }
 
 function getRecurrenceLabel(item: RecurringItem): string {

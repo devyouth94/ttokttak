@@ -1,0 +1,16 @@
+import { useSession } from "~/features/session/session-provider";
+
+export function useRecurringFeedContext(): {
+  isReady: boolean;
+  timezone: string;
+  userId: string | null;
+} {
+  const { isAuthenticated, profile, user } = useSession();
+
+  return {
+    isReady: isAuthenticated && Boolean(user?.id),
+    timezone:
+      profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+    userId: user?.id ?? null,
+  };
+}
