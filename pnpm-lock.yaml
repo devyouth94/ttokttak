@@ -41,6 +41,9 @@ importers:
       expo:
         specifier: ~55.0.9
         version: 55.0.9(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.7)(expo-router@55.0.8)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      expo-apple-authentication:
+        specifier: ^55.0.13
+        version: 55.0.13(expo@55.0.9)(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))
       expo-constants:
         specifier: ~55.0.9
         version: 55.0.9(expo@55.0.9)(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(typescript@5.9.3)
@@ -2637,6 +2640,12 @@ packages:
   expect@29.7.0:
     resolution: {integrity: sha512-2Zks0hf1VLFYI1kbh0I5jP3KHHyCHpkfyHBzsSXRFgl/Bg9mWYfMW8oD+PdMPlEwy5HNsR9JutYy6pMeOh61nw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+
+  expo-apple-authentication@55.0.13:
+    resolution: {integrity: sha512-Qvh3DmhXqhtWOe7BC9e7UVApR3XS1qE7+68tVLqb3KI/sET7QV9KT5JgOJogWmmCJVxA/kaot0M136yvW1pdWA==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
 
   expo-asset@55.0.10:
     resolution: {integrity: sha512-wxjNBKIaDyachq7oJgVlWVFzZ6SnNpJFJhkkcymXoTPt5O3XmDM+a6fT91xQQawCXTyZuCc1sNxKMetEofeYkg==}
@@ -8223,6 +8232,11 @@ snapshots:
       jest-matcher-utils: 29.7.0
       jest-message-util: 29.7.0
       jest-util: 29.7.0
+
+  expo-apple-authentication@55.0.13(expo@55.0.9)(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)):
+    dependencies:
+      expo: 55.0.9(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.7)(expo-router@55.0.8)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      react-native: 0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
 
   expo-asset@55.0.10(expo@55.0.9)(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3):
     dependencies:

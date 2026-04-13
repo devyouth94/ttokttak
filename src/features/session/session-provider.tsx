@@ -2,6 +2,7 @@ import type { PropsWithChildren } from "react";
 import { createContext, use, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
+import { signInWithAppleIdToken } from "~/features/session/apple-sign-in";
 import {
   signInWithGoogleIdToken,
   signOutFromGoogle,
@@ -16,6 +17,7 @@ type SessionContextValue = {
   isLoading: boolean;
   profile: ProfileRow | null;
   session: Session | null;
+  signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   user: User | null;
@@ -39,6 +41,18 @@ function getDisplayName(user: User): string | null {
   }
 
   return null;
+}
+
+function getMetadataDisplayName(user: User): string | null {
+  const fullName = user.user_metadata?.full_name;
+
+  if (typeof fullName !== "string") {
+    return null;
+  }
+
+  const trimmedValue = fullName.trim();
+
+  return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -65,7 +79,31 @@ async function ensureProfile(user: User): Promise<ProfileRow | null> {
   }
 
   if (existingProfile) {
-    return existingProfile;
+    const metadataDisplayName = getMetadataDisplayName(user);
+    const canSyncDisplayName =
+      metadataDisplayName &&
+      metadataDisplayName !== existingProfile.display_name &&
+      (!existingProfile.display_name ||
+        existingProfile.display_name === user.email);
+
+    if (!canSyncDisplayName) {
+      return existingProfile;
+    }
+
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from("profiles")
+      .update({
+        display_name: metadataDisplayName,
+      })
+      .eq("id", user.id)
+      .select("*")
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return updatedProfile;
   }
 
   const { data: insertedProfile, error: insertError } = await supabase
@@ -191,6 +229,60 @@ export function SessionProvider({
     isLoading,
     profile,
     session,
+    async signInWithApple() {
+      if (!supabase) {
+        throw new Error("Supabase 클라이언트가 설정되지 않았습니다.");
+      }
+
+      const client = supabase;
+      const { displayName, familyName, givenName, identityToken } =
+        await signInWithAppleIdToken();
+      const { data, error } = await client.auth.signInWithIdToken({
+        provider: "apple",
+        token: identityToken,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!displayName && !givenName && !familyName) {
+        return;
+      }
+
+      const metadata: Record<string, string> = {};
+
+      if (displayName) {
+        metadata.full_name = displayName;
+      }
+
+      if (givenName) {
+        metadata.given_name = givenName;
+      }
+
+      if (familyName) {
+        metadata.family_name = familyName;
+      }
+
+      const { error: metadataError } = await client.auth.updateUser({
+        data: metadata,
+      });
+
+      if (metadataError) {
+        return;
+      }
+
+      if (!displayName || !data.user) {
+        return;
+      }
+
+      await client
+        .from("profiles")
+        .update({
+          display_name: displayName,
+        })
+        .eq("id", data.user.id);
+    },
     async signInWithGoogle() {
       if (!supabase) {
         throw new Error("Supabase 클라이언트가 설정되지 않았습니다.");

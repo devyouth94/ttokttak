@@ -13,6 +13,7 @@ export default function getAppConfig(): ExpoConfig {
     userInterfaceStyle: "automatic",
     ios: {
       bundleIdentifier: "com.youngzin.ttokttak",
+      usesAppleSignIn: true,
     },
     android: {
       adaptiveIcon: {
@@ -42,6 +43,7 @@ export default function getAppConfig(): ExpoConfig {
         },
       ],
       "expo-secure-store",
+      "expo-apple-authentication",
       "@react-native-community/datetimepicker",
       [
         "@react-native-google-signin/google-signin",

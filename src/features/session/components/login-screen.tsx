@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
@@ -12,25 +13,50 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import { isAppleSignInAvailable } from "~/features/session/apple-sign-in";
 
 type LoginScreenProps = {
   isConfigured: boolean;
+  onApplePress: () => Promise<void>;
   onGooglePress: () => Promise<void>;
 };
 
-function showPendingLoginMessage(provider: "apple" | "google"): void {
-  const providerLabel = provider === "google" ? "Google" : "Apple";
-
-  Alert.alert(
-    `${providerLabel} 로그인 준비 중`,
-    `${providerLabel} 로그인 연결은 다음 작업에서 이어서 구현합니다.`
-  );
-}
-
 export function LoginScreen({
   isConfigured,
+  onApplePress,
   onGooglePress,
 }: LoginScreenProps): React.JSX.Element {
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") {
+      setIsAppleAvailable(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const checkAvailability = async () => {
+      try {
+        const isAvailable = await isAppleSignInAvailable();
+
+        if (isMounted) {
+          setIsAppleAvailable(isAvailable);
+        }
+      } catch {
+        if (isMounted) {
+          setIsAppleAvailable(false);
+        }
+      }
+    };
+
+    void checkAvailability();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleGooglePress = async () => {
     try {
       await onGooglePress();
@@ -41,6 +67,19 @@ export function LoginScreen({
           : "Google 로그인 중 오류가 발생했습니다.";
 
       Alert.alert("Google 로그인 실패", message);
+    }
+  };
+
+  const handleApplePress = async () => {
+    try {
+      await onApplePress();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Apple 로그인 중 오류가 발생했습니다.";
+
+      Alert.alert("Apple 로그인 실패", message);
     }
   };
 
@@ -71,27 +110,29 @@ export function LoginScreen({
             <AppText style={styles.googleButtonText}>Google로 로그인</AppText>
           </Pressable>
 
-          <Pressable
-            accessibilityHint="Apple 계정으로 로그인"
-            accessibilityRole="button"
-            disabled={!isConfigured}
-            onPress={() => showPendingLoginMessage("apple")}
-            style={({ pressed }) => [
-              styles.socialButton,
-              styles.appleButton,
-              !isConfigured && styles.disabledButton,
-              pressed && isConfigured && styles.applePressedButton,
-            ]}
-          >
-            <AppleLogoIcon />
-            <AppText style={styles.appleButtonText}>Apple로 로그인</AppText>
-          </Pressable>
+          {isAppleAvailable ? (
+            <Pressable
+              accessibilityHint="Apple 계정으로 로그인"
+              accessibilityRole="button"
+              disabled={!isConfigured}
+              onPress={handleApplePress}
+              style={({ pressed }) => [
+                styles.socialButton,
+                styles.appleButton,
+                !isConfigured && styles.disabledButton,
+                pressed && isConfigured && styles.applePressedButton,
+              ]}
+            >
+              <AppleLogoIcon size={17} />
+              <AppText style={styles.appleButtonText}>Apple로 로그인</AppText>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.footer}>
           {!isConfigured ? (
             <AppText style={styles.notice}>
-              로그인 연결을 위해 Supabase와 Google 설정이 먼저 필요합니다.
+              로그인 연결을 위해 Supabase 설정이 먼저 필요합니다.
             </AppText>
           ) : null}
           <AppText style={styles.legal}>

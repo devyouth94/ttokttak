@@ -57,6 +57,7 @@ export default function IndexScreen(): React.JSX.Element {
     isConfigured,
     isLoading,
     profile,
+    signInWithApple,
     signInWithGoogle,
     signOut,
     user,
@@ -119,6 +120,7 @@ export default function IndexScreen(): React.JSX.Element {
     return (
       <LoginScreen
         isConfigured={isConfigured}
+        onApplePress={signInWithApple}
         onGooglePress={signInWithGoogle}
       />
     );
