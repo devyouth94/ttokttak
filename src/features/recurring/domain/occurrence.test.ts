@@ -3,6 +3,7 @@ import {
   getOccurrencesInRange,
   resolveOccurrenceStatus,
 } from "~/features/recurring/domain/occurrence";
+import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
 import type {
   CompletionLog,
   RecurringItem,
@@ -171,5 +172,60 @@ describe("resolveOccurrenceStatus", () => {
         timezone
       )
     ).toBe("overdue");
+  });
+});
+
+describe("getOccurrencesToResolve", () => {
+  it("대표 상태가 overdue면 같은 항목의 미해결 overdue를 한 번에 반환한다", () => {
+    const item = createItem({
+      intervalValue: 3,
+      recurrenceType: "interval_days",
+      startDateLocal: "2026-04-04",
+    });
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-04-04T00:00:00.000Z",
+      "2026-04-10T03:00:00.000Z",
+      timezone,
+      [],
+      "2026-04-10T03:00:00.000Z"
+    );
+
+    const resolvedOccurrences = getOccurrencesToResolve({
+      completionLogs: [],
+      item,
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      primaryOccurrence: occurrences[1] ?? null,
+      timezone,
+    });
+
+    expect(
+      resolvedOccurrences.map((occurrence) => occurrence.localDate)
+    ).toEqual(["2026-04-04", "2026-04-07"]);
+  });
+
+  it("대표 상태가 scheduled면 해당 occurrence만 반환한다", () => {
+    const item = createItem({
+      recurrenceType: "once",
+      startDateLocal: "2026-04-10",
+    });
+    const occurrence = getOccurrencesInRange(
+      item,
+      "2026-04-10T00:00:00.000Z",
+      "2026-04-10T23:59:59.999Z",
+      timezone,
+      [],
+      "2026-04-10T03:00:00.000Z"
+    )[0];
+
+    const resolvedOccurrences = getOccurrencesToResolve({
+      completionLogs: [],
+      item,
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      primaryOccurrence: occurrence ?? null,
+      timezone,
+    });
+
+    expect(resolvedOccurrences).toEqual([occurrence]);
   });
 });

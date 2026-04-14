@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
-import { Check, RotateCw, X } from "lucide-react-native";
+import { RotateCw } from "lucide-react-native";
 
 import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
@@ -21,93 +21,44 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import { HistoryEntryCard } from "~/features/history/components/history-entry-card";
 import { useInfiniteCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
-import {
-  buildHistorySections,
-  type HistoryEntry,
-} from "./history-screen.helpers";
+import { buildHistorySections } from "./history-screen.helpers";
 
-function HistoryStatusIcon({
-  action,
-}: Pick<HistoryEntry, "action">): React.JSX.Element {
-  const isCompleted = action === "completed";
-
+function HistoryCard({
+  entry,
+}: {
+  entry: {
+    action: "completed" | "skipped";
+    itemId: string;
+    scheduledAtUtc: string;
+    statusLabel: string;
+    timeLabel: string;
+    title: string;
+  };
+}): React.JSX.Element {
   return (
-    <View
-      style={[
-        styles.statusIcon,
-        isCompleted ? styles.statusIconCompleted : styles.statusIconSkipped,
-      ]}
-    >
-      {isCompleted ? (
-        <Check color={colors.primaryForeground} size={14} />
-      ) : (
-        <X color={colors.primaryForeground} size={14} />
-      )}
-    </View>
-  );
-}
-
-function HistoryStatusBadge({
-  action,
-  statusLabel,
-}: Pick<HistoryEntry, "action" | "statusLabel">): React.JSX.Element {
-  const isCompleted = action === "completed";
-  const badgeStyle = isCompleted
-    ? styles.statusBadgeCompleted
-    : styles.statusBadgeSkipped;
-  const textStyle = isCompleted
-    ? styles.statusBadgeTextCompleted
-    : styles.statusBadgeTextSkipped;
-
-  return (
-    <View style={[styles.statusBadge, badgeStyle]}>
-      <AppText style={[styles.statusBadgeText, textStyle]} variant="label">
-        {statusLabel}
-      </AppText>
-    </View>
-  );
-}
-
-function HistoryCard({ entry }: { entry: HistoryEntry }): React.JSX.Element {
-  return (
-    <AppCard>
-      <View style={styles.cardRow}>
-        <HistoryStatusIcon action={entry.action} />
-
-        <Pressable
-          accessibilityHint="반복 항목 상세 화면으로 이동합니다."
-          accessibilityLabel={`${entry.title} 상세 보기`}
-          accessibilityRole="button"
-          onPress={() => {
-            router.push({
-              params: { itemId: entry.itemId },
-              pathname: "/items/[itemId]",
-            });
-          }}
-          style={({ pressed }) => [
-            styles.cardBodyButton,
-            pressed && styles.cardBodyButtonPressed,
-          ]}
-        >
-          <View style={styles.cardCopy}>
-            <AppText style={styles.cardTitle} variant="title">
-              {entry.title}
-            </AppText>
-            <AppText style={styles.cardMeta}>{entry.timeLabel}</AppText>
-          </View>
-        </Pressable>
-
-        <HistoryStatusBadge
-          action={entry.action}
-          statusLabel={entry.statusLabel}
-        />
-      </View>
-    </AppCard>
+    <HistoryEntryCard
+      action={entry.action}
+      onPress={() => {
+        router.push({
+          params: {
+            itemId: entry.itemId,
+            scheduledAtUtc: entry.scheduledAtUtc,
+          },
+          pathname: "/items/[itemId]",
+        });
+      }}
+      pressableAccessibilityHint="반복 항목 상세 화면으로 이동합니다."
+      pressableAccessibilityLabel={`${entry.title} 상세 보기`}
+      statusLabel={entry.statusLabel}
+      timeLabel={entry.timeLabel}
+      title={entry.title}
+    />
   );
 }
 
@@ -165,6 +116,7 @@ export function HistoryScreen(): React.JSX.Element {
   const [manualErrorMessage, setManualErrorMessage] = useState<string | null>(
     null
   );
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const hasFocusedOnceRef = useRef(false);
   const itemsQuery = useRecurringItemsQuery({
     enabled: isReady,
@@ -186,8 +138,6 @@ export function HistoryScreen(): React.JSX.Element {
   };
   const isLoading =
     itemsQuery.isPending || (items.length > 0 && completionLogsQuery.isPending);
-  const isRefreshing =
-    itemsQuery.isRefetching || completionLogsQuery.isRefetching;
   const errorMessage =
     manualErrorMessage ??
     (itemsQuery.error
@@ -226,9 +176,24 @@ export function HistoryScreen(): React.JSX.Element {
     void Promise.all([refetchItems(), refetchCompletionLogs()]);
   }, [isFocused, isReady, refetchCompletionLogs, refetchItems, userId]);
 
-  const reloadFeed = async () => {
+  const reloadFeed = async ({
+    showsRefreshingIndicator = false,
+  }: {
+    showsRefreshingIndicator?: boolean;
+  } = {}) => {
     setManualErrorMessage(null);
-    await refetchFeed();
+
+    if (showsRefreshingIndicator) {
+      setIsManualRefreshing(true);
+    }
+
+    try {
+      await refetchFeed();
+    } finally {
+      if (showsRefreshingIndicator) {
+        setIsManualRefreshing(false);
+      }
+    }
   };
 
   const handleEndReached = () => {
@@ -292,9 +257,9 @@ export function HistoryScreen(): React.JSX.Element {
             refreshControl={
               <RefreshControl
                 onRefresh={() => {
-                  void reloadFeed();
+                  void reloadFeed({ showsRefreshingIndicator: true });
                 }}
-                refreshing={isRefreshing}
+                refreshing={isManualRefreshing}
                 tintColor={colors.primary}
               />
             }
@@ -328,33 +293,9 @@ export function HistoryScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  cardBodyButton: {
-    borderRadius: borderRadius.md,
-    flex: 1,
-  },
-  cardBodyButtonPressed: {
-    opacity: 0.88,
-  },
-  cardCopy: {
-    gap: spacing.xs,
-  },
-  cardMeta: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-  },
-  cardRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  cardTitle: {
-    fontSize: 17,
-    lineHeight: 24,
-  },
   contentContainer: {
     paddingBottom: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.lg,
   },
   footerLoading: {
     paddingBottom: spacing.lg,
@@ -427,45 +368,5 @@ const styles = StyleSheet.create({
     fontSize: typography.label,
     lineHeight: typography.label,
     marginBottom: spacing.sm,
-  },
-  statusBadge: {
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    justifyContent: "center",
-    minWidth: 72,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  statusBadgeCompleted: {
-    backgroundColor: colors.secondaryContainer,
-    borderColor: "#D3E8D6",
-  },
-  statusBadgeSkipped: {
-    backgroundColor: "#FDEEEE",
-    borderColor: "#F5D5D5",
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    letterSpacing: 0.3,
-  },
-  statusBadgeTextCompleted: {
-    color: colors.secondaryForeground,
-  },
-  statusBadgeTextSkipped: {
-    color: colors.error,
-  },
-  statusIcon: {
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
-  statusIconCompleted: {
-    backgroundColor: colors.secondary,
-  },
-  statusIconSkipped: {
-    backgroundColor: colors.error,
   },
 });

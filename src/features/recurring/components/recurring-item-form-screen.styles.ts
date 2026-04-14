@@ -173,8 +173,8 @@ export const styles = StyleSheet.create({
     borderColor: colors.outlineSoft,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
+    height: 44,
     justifyContent: "center",
-    minHeight: 56,
     width: 56,
   },
   deleteButtonPressed: {
@@ -210,12 +210,14 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
   },
   footer: {
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: colors.background,
+    minHeight: 60,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   footerActions: {
+    alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
   },
@@ -383,8 +385,8 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#333333",
     borderRadius: borderRadius.lg,
+    height: 44,
     justifyContent: "center",
-    minHeight: 56,
     paddingHorizontal: spacing.lg,
   },
   saveButtonContent: {
@@ -405,8 +407,9 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     gap: spacing.lg,
-    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   secondaryRecurrenceRow: {
     flexDirection: "row",

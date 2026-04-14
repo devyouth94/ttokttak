@@ -12,10 +12,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format, startOfDay } from "date-fns";
 import {
   ArrowLeft,
-  ArrowRight,
   Bell,
   Check,
   RotateCw,
+  SkipForward,
 } from "lucide-react-native";
 
 import { AppCard } from "~/design-system/components/app-card";
@@ -100,7 +100,7 @@ function HomeSectionCard({
                 pressed && styles.secondaryActionPressed,
               ]}
             >
-              <ArrowRight color={colors.textMuted} size={16} />
+              <SkipForward color={colors.textMuted} size={16} />
             </Pressable>
 
             <Pressable

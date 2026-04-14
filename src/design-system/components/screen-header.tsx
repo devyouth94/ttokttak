@@ -74,6 +74,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
+    borderBottomColor: colors.outlineSoft,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     height: 60,
     justifyContent: "space-between",

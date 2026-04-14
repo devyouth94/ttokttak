@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
+import {
+  getRecurringItemById,
+  listRecurringItems,
+} from "~/features/recurring/repositories/recurring-items-repository";
 
 import { recurringQueryKeys } from "./recurring-query-keys";
 
@@ -21,5 +24,32 @@ export function useRecurringItemsQuery({
         userId: userId!,
       }),
     queryKey: recurringQueryKeys.items(userId ?? "anonymous", timezone),
+  });
+}
+
+export function useRecurringItemByIdQuery({
+  enabled,
+  itemId,
+  timezone,
+  userId,
+}: {
+  enabled: boolean;
+  itemId: string | null;
+  timezone: string;
+  userId: string | null;
+}) {
+  return useQuery({
+    enabled: enabled && Boolean(userId) && Boolean(itemId),
+    queryFn: async () =>
+      getRecurringItemById({
+        id: itemId!,
+        timezone,
+        userId: userId!,
+      }),
+    queryKey: recurringQueryKeys.item(
+      userId ?? "anonymous",
+      timezone,
+      itemId ?? "unknown"
+    ),
   });
 }

@@ -1,40 +1,21 @@
-import { StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 
-import { AppScreen } from "~/design-system/components/app-screen";
-import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
-import { colors, spacing } from "~/design-system/tokens";
+import { RecurringItemDetailScreen } from "~/features/recurring/components/recurring-item-detail-screen";
 
 export default function RecurringItemDetailPage(): React.JSX.Element {
-  return (
-    <AppScreen contentStyle={styles.screenContent}>
-      <ScreenHeader
-        onBack={() => {
-          router.back();
-        }}
-        title="리마인더 상세"
-      />
+  const { itemId, scheduledAtUtc } = useLocalSearchParams<{
+    itemId?: string | string[];
+    scheduledAtUtc?: string | string[];
+  }>();
+  const normalizedItemId = Array.isArray(itemId) ? itemId[0] : itemId;
+  const normalizedScheduledAtUtc = Array.isArray(scheduledAtUtc)
+    ? scheduledAtUtc[0]
+    : scheduledAtUtc;
 
-      <View style={styles.content}>
-        <AppText style={styles.message}>상세 화면은 준비 중입니다.</AppText>
-      </View>
-    </AppScreen>
+  return (
+    <RecurringItemDetailScreen
+      itemId={normalizedItemId}
+      scheduledAtUtc={normalizedScheduledAtUtc}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  message: {
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  screenContent: {
-    gap: spacing.lg,
-  },
-});

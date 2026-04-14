@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import {
@@ -35,6 +36,7 @@ function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
           </Stack>
+          <PortalHost />
         </SessionProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

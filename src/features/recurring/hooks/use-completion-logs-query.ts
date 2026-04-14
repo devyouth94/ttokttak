@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type { CompletionLog } from "~/features/recurring/domain/types";
 import {
   listCompletionLogs,
+  listCompletionLogsForItem,
   listCompletionLogsPage,
 } from "~/features/recurring/repositories/completion-logs-repository";
 
@@ -27,6 +28,29 @@ export function useCompletionLogsQuery({
         userId: userId!,
       }),
     queryKey: recurringQueryKeys.completionLogs(userId ?? "anonymous", itemIds),
+  });
+}
+
+export function useCompletionLogsForItemQuery({
+  enabled,
+  itemId,
+  userId,
+}: {
+  enabled: boolean;
+  itemId: string | null;
+  userId: string | null;
+}) {
+  return useQuery({
+    enabled: enabled && Boolean(userId) && Boolean(itemId),
+    queryFn: async () =>
+      listCompletionLogsForItem({
+        itemId: itemId!,
+        userId: userId!,
+      }),
+    queryKey: recurringQueryKeys.completionLogsForItem(
+      userId ?? "anonymous",
+      itemId ?? "unknown"
+    ),
   });
 }
 

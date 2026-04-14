@@ -13,6 +13,7 @@ import {
   getOccurrenceIdentity,
   getOccurrencesInRange,
 } from "~/features/recurring/domain/occurrence";
+import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
 import type {
   CompletionLog,
   DerivedOccurrence,
@@ -230,18 +231,13 @@ export function getOverdueOccurrencesToResolve({
   now: Date;
   timezone: string;
 }): DerivedOccurrence[] {
-  if (card.sectionId !== "overdue") {
-    return [card.occurrence];
-  }
-
-  return getOccurrencesInRange(
-    card.item,
-    getUtcDayRange(card.item.startDateLocal, timezone).startUtc,
-    card.occurrence.scheduledAtUtc,
-    timezone,
+  return getOccurrencesToResolve({
     completionLogs,
-    now.toISOString()
-  ).filter((occurrence) => occurrence.status === "overdue");
+    item: card.item,
+    now,
+    primaryOccurrence: card.occurrence,
+    timezone,
+  });
 }
 
 function getSelectedDateTitle(selectedDateId: string, today: Date): string {

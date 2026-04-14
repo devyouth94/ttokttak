@@ -262,7 +262,30 @@ UI 정책:
 
 - 홈에서는 오래된 overdue 전체를 다 보여주지 않고 최근 항목 위주로 제한 노출
 
-## 10. Completion Flow
+## 10. Occurrence Action Visibility
+
+완료, 건너뛰기 같은 occurrence 액션은
+현재 처리 가능한 미해결 occurrence에만 노출한다.
+
+기준:
+
+- 상세 화면이 특정 occurrence를 기준으로 열렸다면 그 occurrence의 상태와 날짜를 기준으로 판단
+- `status == overdue`면 노출
+- `status == scheduled` 이고 `localDate == today(local timezone)`면 노출
+- `status == scheduled` 이지만 오늘 이후 future date면 숨김
+- `status == completed`면 숨김
+- `status == skipped`면 숨김
+- 대표 occurrence가 없으면 숨김
+
+의도:
+
+- 과거 기록 기준 상세와 현재 actionable occurrence를 섞어서 보이지 않는다.
+- 이미 처리한 occurrence에는 중복 액션을 보이지 않는다.
+- future occurrence에는 성급한 처리 액션을 보이지 않는다.
+- 오늘 일정과 놓친 일정만 바로 처리할 수 있게 한다.
+- 홈 화면과 상세 화면이 같은 기준을 사용한다.
+
+## 11. Completion Flow
 
 ### completeOccurrence(itemId, scheduledAtUtc)
 
