@@ -100,7 +100,7 @@ function HomeSectionCard({
                 pressed && styles.secondaryActionPressed,
               ]}
             >
-              <SkipForward color={colors.textMuted} size={16} />
+              <SkipForward color={colors.statusSkippedText} size={16} />
             </Pressable>
 
             <Pressable
@@ -117,7 +117,7 @@ function HomeSectionCard({
                 pressed && styles.primaryActionPressed,
               ]}
             >
-              <Check color={colors.text} size={16} />
+              <Check color={colors.statusCompletedText} size={16} />
             </Pressable>
           </View>
         ) : null}
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   completeButton: {
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.statusCompletedSoft,
   },
   contentContainer: {
     gap: spacing.xl,
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   skipButton: {
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.statusSkippedSoft,
   },
   title: {
     color: colors.text,

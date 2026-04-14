@@ -408,7 +408,7 @@ function DetailActionBar({
               pressed && !disabled && styles.primaryActionButtonPressed,
             ]}
           >
-            <Check color={colors.text} size={18} />
+            <Check color={colors.statusCompletedText} size={18} />
             <AppText style={styles.primaryActionButtonText}>완료</AppText>
           </Pressable>
 
@@ -426,7 +426,7 @@ function DetailActionBar({
               pressed && !disabled && styles.secondaryActionButtonPressed,
             ]}
           >
-            <SkipForward color={colors.textMuted} size={18} />
+            <SkipForward color={colors.statusSkippedText} size={18} />
             <AppText style={styles.secondaryActionButtonText}>
               {isProcessing ? "처리 중..." : "건너뛰기"}
             </AppText>
@@ -1035,7 +1035,7 @@ const styles = StyleSheet.create({
   },
   primaryActionButton: {
     alignItems: "center",
-    backgroundColor: colors.secondaryContainer,
+    backgroundColor: colors.statusCompletedSoft,
     borderRadius: borderRadius.lg,
     flex: 1,
     flexDirection: "row",
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   primaryActionButtonText: {
-    color: colors.text,
+    color: colors.statusCompletedText,
     fontSize: typography.body,
     fontWeight: "600",
     lineHeight: 22,
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   secondaryActionButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.statusSkippedSoft,
     borderRadius: borderRadius.lg,
     flex: 1,
     flexDirection: "row",
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   secondaryActionButtonText: {
-    color: colors.textMuted,
+    color: colors.statusSkippedText,
     fontSize: typography.body,
     fontWeight: "600",
     lineHeight: 22,
@@ -1109,10 +1109,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceHigh,
   },
   stateCardOverdue: {
-    backgroundColor: "#68746a",
+    backgroundColor: colors.statusOverdue,
   },
   stateCardScheduled: {
-    backgroundColor: "#5f7268",
+    backgroundColor: colors.statusScheduled,
   },
   stateDateEmpty: {
     fontSize: typography.title,

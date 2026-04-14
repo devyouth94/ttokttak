@@ -4,11 +4,13 @@ import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   type AnchorType,
   type RecurrenceType,
 } from "~/features/recurring/domain/types";
+import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import {
   archiveRecurringItem,
   createRecurringItem,
@@ -48,6 +50,7 @@ export function useRecurringItemFormScreenController({
 }: UseRecurringItemFormScreenControllerParams): RecurringItemFormScreenModel {
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
+  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, profile, user } = useSession();
   const [requestState, setRequestState] = useState({
     isBootstrapping: isEditMode,
@@ -476,6 +479,9 @@ export function useRecurringItemFormScreenController({
         });
       }
 
+      await queryClient.invalidateQueries({
+        queryKey: recurringQueryKeys.user(user.id),
+      });
       router.replace("/");
     } catch (error) {
       setRequestState((current) => ({
@@ -506,6 +512,9 @@ export function useRecurringItemFormScreenController({
         userId,
       });
 
+      await queryClient.invalidateQueries({
+        queryKey: recurringQueryKeys.user(userId),
+      });
       router.replace("/");
     } catch (error) {
       setRequestState((current) => ({

@@ -147,22 +147,22 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   statusBadgeCompleted: {
-    backgroundColor: colors.secondaryContainer,
+    backgroundColor: colors.statusCompletedSoft,
     borderColor: "#D3E8D6",
   },
   statusBadgeSkipped: {
-    backgroundColor: "#FDEEEE",
-    borderColor: "#F5D5D5",
+    backgroundColor: colors.statusSkippedSoft,
+    borderColor: "#F6D8BC",
   },
   statusBadgeText: {
     fontSize: 11,
     letterSpacing: 0.3,
   },
   statusBadgeTextCompleted: {
-    color: colors.secondaryForeground,
+    color: colors.statusCompletedText,
   },
   statusBadgeTextSkipped: {
-    color: colors.error,
+    color: colors.statusSkippedText,
   },
   statusIcon: {
     alignItems: "center",
@@ -172,9 +172,9 @@ const styles = StyleSheet.create({
     width: 28,
   },
   statusIconCompleted: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.statusCompleted,
   },
   statusIconSkipped: {
-    backgroundColor: colors.error,
+    backgroundColor: colors.statusSkipped,
   },
 });
