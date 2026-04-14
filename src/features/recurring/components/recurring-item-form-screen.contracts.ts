@@ -46,8 +46,10 @@ type RecurringItemFormViewState = {
   isDeleting: boolean;
   isEditMode: boolean;
   isSaving: boolean;
+  isStartDateEditable: boolean;
   minimumStartDateLocal: string;
   screenError: string | null;
+  showsEditEffectNotice: boolean;
 };
 
 type RecurringItemFormScreenActions = {

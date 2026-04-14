@@ -253,6 +253,10 @@ export function useRecurringItemFormScreenController({
   }
 
   function handleChangeStartDate(nextValue: string): void {
+    if (isEditMode) {
+      return;
+    }
+
     const normalizedValue = normalizeStartDateSelection(
       nextValue,
       minimumStartDateLocal
@@ -353,6 +357,10 @@ export function useRecurringItemFormScreenController({
   }
 
   function openDatePicker(): void {
+    if (isEditMode) {
+      return;
+    }
+
     openPicker("date");
   }
 
@@ -465,7 +473,6 @@ export function useRecurringItemFormScreenController({
             notificationsEnabled: draft.notificationsEnabled,
             recurrenceType: draft.recurrenceType,
             reminderTimeLocal: draft.reminderTimeLocal,
-            startDateLocal: draft.startDateLocal,
             title: draft.title,
             weekdayMask: draft.weekdayMask,
           },
@@ -562,8 +569,10 @@ export function useRecurringItemFormScreenController({
     isDeleting,
     isEditMode,
     isSaving,
+    isStartDateEditable: !isEditMode,
     minimumStartDateLocal,
     screenError,
+    showsEditEffectNotice: isEditMode,
   };
 
   const contentActions = {

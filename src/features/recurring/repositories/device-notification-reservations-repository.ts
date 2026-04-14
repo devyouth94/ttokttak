@@ -33,6 +33,14 @@ export type DeleteDeviceNotificationReservationsOptions = {
   userId: string;
 };
 
+export type DeleteFutureDeviceNotificationReservationsOptions = {
+  client?: RepositoryClient;
+  deviceId: string;
+  effectiveFromUtc: string;
+  itemId: string;
+  userId: string;
+};
+
 /**
  * DB row를 도메인에서 사용하는 notification reservation 형태로 변환한다.
  */
@@ -155,6 +163,30 @@ export async function deleteDeviceNotificationReservations({
     .eq("device_id", deviceId)
     .eq("user_id", userId)
     .in("id", reservationIds);
+
+  if (error) {
+    throw error;
+  }
+}
+
+/**
+ * 수정 시점 이후 미래 reservation metadata만 삭제한다.
+ */
+export async function deleteFutureDeviceNotificationReservations({
+  client,
+  deviceId,
+  effectiveFromUtc,
+  itemId,
+  userId,
+}: DeleteFutureDeviceNotificationReservationsOptions): Promise<void> {
+  const supabase = getRepositoryClient(client);
+  const { error } = await supabase
+    .from("device_notification_reservations")
+    .delete()
+    .eq("device_id", deviceId)
+    .eq("user_id", userId)
+    .eq("item_id", itemId)
+    .gte("scheduled_at_utc", effectiveFromUtc);
 
   if (error) {
     throw error;

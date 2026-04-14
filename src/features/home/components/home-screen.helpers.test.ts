@@ -6,6 +6,7 @@ import {
 import type {
   CompletionLog,
   RecurringItem,
+  RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 
 const timezone = "Asia/Seoul";
@@ -42,6 +43,26 @@ function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
     itemId: "item-1",
     scheduledAtUtc: "2026-04-12T00:00:00.000Z",
     userId: "user-1",
+    ...overrides,
+  };
+}
+
+function createVersion(
+  overrides: Partial<RecurringItemScheduleVersion> = {}
+): RecurringItemScheduleVersion {
+  return {
+    id: "version-1",
+    itemId: "item-1",
+    userId: "user-1",
+    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
+    recurrenceType: "daily",
+    intervalValue: null,
+    weekdayMask: null,
+    reminderTimeLocal: "09:00",
+    anchorType: "fixed",
+    seedStartDateLocal: "2026-04-10",
+    notificationsEnabled: true,
+    createdAt: "2026-04-01T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -202,5 +223,46 @@ describe("buildHomeFeedSections", () => {
     expect(
       occurrencesToResolve.map((occurrence) => occurrence.localDate)
     ).toEqual(["2026-04-04", "2026-04-07"]);
+  });
+
+  it("수정된 version이 있으면 홈 섹션도 미래 occurrence만 새 규칙으로 보여준다", () => {
+    const sections = buildHomeFeedSections({
+      completionLogs: [],
+      items: [
+        createItem({
+          id: "edited-item",
+          intervalValue: 3,
+          recurrenceType: "interval_days",
+          scheduleVersions: [
+            createVersion({
+              id: "version-1",
+              intervalValue: 3,
+              itemId: "edited-item",
+              recurrenceType: "interval_days",
+              seedStartDateLocal: "2026-04-10",
+            }),
+            createVersion({
+              effectiveFromUtc: "2026-04-14T01:00:00.000Z",
+              id: "version-2",
+              intervalValue: 4,
+              itemId: "edited-item",
+              recurrenceType: "interval_days",
+              seedStartDateLocal: "2026-04-17",
+            }),
+          ],
+          startDateLocal: "2026-04-10",
+          title: "수정된 일정",
+        }),
+      ],
+      now: new Date("2026-04-14T03:00:00.000Z"),
+      selectedDateId: "2026-04-14",
+      timezone,
+    });
+
+    const upcomingSection = sections.find(
+      (section) => section.id === "upcoming"
+    );
+
+    expect(upcomingSection?.items[0]?.occurrence.localDate).toBe("2026-04-17");
   });
 });

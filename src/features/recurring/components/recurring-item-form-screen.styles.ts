@@ -204,6 +204,11 @@ export const styles = StyleSheet.create({
     fontSize: typography.label,
     lineHeight: 18,
   },
+  fieldHelper: {
+    color: colors.textMuted,
+    fontSize: typography.label,
+    lineHeight: 18,
+  },
   fieldLabel: {
     color: colors.textMuted,
     fontSize: typography.body,
@@ -231,6 +236,9 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
   },
+  iconInputShellDisabled: {
+    opacity: 0.58,
+  },
   iconInputValue: {
     color: colors.text,
     flex: 1,
@@ -252,6 +260,30 @@ export const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: colors.error,
+  },
+  infoCard: {
+    backgroundColor: colors.surfaceLow,
+    borderColor: "#ececec",
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  infoSubtext: {
+    color: colors.textMuted,
+    fontSize: typography.label,
+    lineHeight: 18,
+  },
+  infoText: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  infoTitle: {
+    color: colors.textMuted,
+    fontSize: typography.label,
+    fontWeight: "700",
   },
   intervalInput: {
     minWidth: 0,
@@ -368,6 +400,9 @@ export const styles = StyleSheet.create({
   },
   primaryTextInput: {
     minHeight: 56,
+  },
+  pickerFieldPressed: {
+    opacity: 0.8,
   },
   quickRecurrenceGrid: {
     flexDirection: "row",

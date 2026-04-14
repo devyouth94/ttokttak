@@ -19,6 +19,7 @@ import type {
   DerivedOccurrence,
   RecurringItem,
 } from "~/features/recurring/domain/types";
+import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
 import {
   formatLocalDateTitle,
   formatLocalTimeLabel,
@@ -269,6 +270,10 @@ function toHomeFeedCard(
   sectionId: HomeFeedSection["id"],
   todayLocalDate: string
 ): HomeFeedCard {
+  const currentSchedule = getCurrentScheduleVersion(item);
+  const reminderTimeLocal =
+    currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
+
   return {
     id: getOccurrenceIdentity(item.id, occurrence.scheduledAtUtc),
     item,
@@ -277,9 +282,7 @@ function toHomeFeedCard(
     recurrenceLabel: getRecurrenceLabel(item),
     sectionId,
     timeLabel:
-      sectionId === "selected-date"
-        ? null
-        : getTimeLabel(item.reminderTimeLocal),
+      sectionId === "selected-date" ? null : getTimeLabel(reminderTimeLocal),
   };
 }
 
@@ -289,8 +292,12 @@ function getMetaLabel(
   occurrence: DerivedOccurrence,
   todayLocalDate: string
 ): string {
+  const currentSchedule = getCurrentScheduleVersion(item);
+  const reminderTimeLocal =
+    currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
+
   if (sectionId === "selected-date") {
-    return getTimeLabel(item.reminderTimeLocal);
+    return getTimeLabel(reminderTimeLocal);
   }
 
   if (sectionId === "upcoming") {
@@ -315,24 +322,26 @@ function getTimeLabel(localTime: string): string {
 }
 
 function getRecurrenceLabel(item: RecurringItem): string {
-  switch (item.recurrenceType) {
+  const currentSchedule = getCurrentScheduleVersion(item);
+  const recurrenceType = currentSchedule?.recurrenceType ?? item.recurrenceType;
+  const intervalValue = currentSchedule?.intervalValue ?? item.intervalValue;
+  const weekdayMask = currentSchedule?.weekdayMask ?? item.weekdayMask;
+
+  switch (recurrenceType) {
     case "once":
       return "한 번";
     case "daily":
       return "매일";
     case "interval_days":
-      return `${item.intervalValue ?? 1}일마다`;
+      return `${intervalValue ?? 1}일마다`;
     case "weekly":
-      return getWeeklyLabel("매주", item.weekdayMask);
+      return getWeeklyLabel("매주", weekdayMask);
     case "interval_weeks":
-      return getWeeklyLabel(
-        `${item.intervalValue ?? 1}주마다`,
-        item.weekdayMask
-      );
+      return getWeeklyLabel(`${intervalValue ?? 1}주마다`, weekdayMask);
     case "monthly":
       return "매달";
     case "interval_months":
-      return `${item.intervalValue ?? 1}달마다`;
+      return `${intervalValue ?? 1}달마다`;
     case "yearly":
       return "매년";
     default:

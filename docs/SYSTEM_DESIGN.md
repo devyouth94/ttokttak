@@ -75,7 +75,7 @@
   - 로그인 상태 복원
   - 현재 사용자와 현재 기기 식별
 - **Repositories**
-  - recurring items, completion logs, devices, notification reservation metadata 조회/저장
+  - recurring item 메타, schedule versions, completion logs, devices, notification reservation metadata 조회/저장
 - **Domain services**
   - recurrence calculation
   - occurrence derivation
@@ -90,7 +90,7 @@
 ### Data flow overview
 
 1. 사용자가 항목을 생성/수정/완료/건너뜀한다.
-2. mutation은 서버에 item 또는 completion log를 저장한다.
+2. mutation은 서버에 item 메타, schedule version, completion log를 저장한다.
 3. 저장된 데이터와 사용자 timezone을 기준으로 occurrence를 다시 계산한다.
 4. 계산 결과로 홈/히스토리/달력/위젯에 필요한 파생 목록을 만든다.
 5. 알림이 필요한 occurrence만 현재 기기 기준으로 다시 예약한다.
@@ -145,6 +145,7 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 - users / profiles
 - devices
 - recurring_items
+- recurring_item_schedule_versions
 - completion_logs
 
 ### Derived concepts
@@ -261,6 +262,8 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 - 앞으로 14일 범위만 예약
 - 항목 변경 시 관련 알림 재계산
 - 앱 시작 시 전체 동기화 보정
+- item edit로 인한 reservation 삭제 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위만 포함한다
+- item edit 후 생성 대상은 새 schedule version 기준 future occurrence만 포함한다
 
 ### Why not schedule everything forever
 
@@ -286,6 +289,11 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 4. 더 이상 유효하지 않은 알림 취소
 5. 새 occurrence에 대한 알림 예약
 6. 예약된 notification id를 device-scoped metadata에 저장
+
+phase 16 메모:
+
+- phase 16에서는 삭제/생성 경계 계약만 고정한다.
+- 실제 local notification orchestration 연결은 phase 18 범위다.
 
 전제조건:
 
@@ -355,7 +363,8 @@ MVP에서는 “여러 기기 동시 편집에 대한 완전한 conflict UX” �
 
 - `profiles.timezone`: IANA timezone string
 - `recurring_items.start_date_local`: local calendar date
-- `recurring_items.reminder_time_local`: local time string
+- `recurring_item_schedule_versions.reminder_time_local`: local time string
+- `recurring_item_schedule_versions`는 recurrence rule source of truth다
 - 필요한 시점에 local datetime을 timezone 기준으로 UTC로 변환
 
 ### Interpretation

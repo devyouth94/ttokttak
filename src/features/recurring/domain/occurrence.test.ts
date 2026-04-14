@@ -7,6 +7,7 @@ import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-
 import type {
   CompletionLog,
   RecurringItem,
+  RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 
 const timezone = "Asia/Seoul";
@@ -43,6 +44,26 @@ function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
     actedAtUtc: "2026-04-01T02:00:00.000Z",
     deviceId: null,
     createdAt: "2026-04-01T02:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function createVersion(
+  overrides: Partial<RecurringItemScheduleVersion> = {}
+): RecurringItemScheduleVersion {
+  return {
+    id: "version-1",
+    itemId: "item-1",
+    userId: "user-1",
+    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
+    recurrenceType: "daily",
+    intervalValue: null,
+    weekdayMask: null,
+    reminderTimeLocal: "09:00",
+    anchorType: "fixed",
+    seedStartDateLocal: "2026-04-01",
+    notificationsEnabled: true,
+    createdAt: "2026-04-01T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -135,6 +156,109 @@ describe("getOccurrencesInRange", () => {
     );
 
     expect(nextOccurrence?.localDate).toBe("2026-04-13");
+  });
+
+  it("규칙 수정 후에는 새 version이 미래 occurrence만 덮어쓴다", () => {
+    const item = createItem({
+      intervalValue: 3,
+      recurrenceType: "interval_days",
+      scheduleVersions: [
+        createVersion({
+          id: "version-1",
+          intervalValue: 3,
+          recurrenceType: "interval_days",
+          seedStartDateLocal: "2026-04-10",
+        }),
+        createVersion({
+          id: "version-2",
+          effectiveFromUtc: "2026-04-14T01:00:00.000Z",
+          intervalValue: 4,
+          recurrenceType: "interval_days",
+          seedStartDateLocal: "2026-04-17",
+        }),
+      ],
+      startDateLocal: "2026-04-10",
+    });
+
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-04-10T00:00:00.000Z",
+      "2026-04-23T23:59:59.999Z",
+      timezone,
+      [],
+      "2026-04-14T01:00:00.000Z"
+    );
+
+    expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
+      "2026-04-10",
+      "2026-04-13",
+      "2026-04-17",
+      "2026-04-21",
+    ]);
+  });
+
+  it("completion_based 수정 version은 edit 이전 마지막 completed를 초기 anchor로 이어받는다", () => {
+    const item = createItem({
+      anchorType: "completion_based",
+      recurrenceType: "interval_days",
+      intervalValue: 3,
+      scheduleVersions: [
+        createVersion({
+          anchorType: "completion_based",
+          id: "version-1",
+          intervalValue: 3,
+          recurrenceType: "interval_days",
+          seedStartDateLocal: "2026-04-10",
+        }),
+        createVersion({
+          anchorType: "completion_based",
+          effectiveFromUtc: "2026-04-14T01:00:00.000Z",
+          id: "version-2",
+          intervalValue: 4,
+          recurrenceType: "interval_days",
+          seedStartDateLocal: "2026-04-17",
+        }),
+      ],
+      startDateLocal: "2026-04-10",
+    });
+    const completedLog = createLog({
+      actedAtUtc: "2026-04-13T02:00:00.000Z",
+      scheduledAtUtc: "2026-04-13T00:00:00.000Z",
+    });
+
+    const nextOccurrence = getNextOccurrence(
+      item,
+      "2026-04-14T01:00:00.000Z",
+      timezone,
+      [completedLog]
+    );
+
+    expect(nextOccurrence?.localDate).toBe("2026-04-17");
+  });
+
+  it("생성일이 오늘이면 시간이 지났어도 첫 occurrence를 오늘로 유지한다", () => {
+    const item = createItem({
+      createdAt: "2026-04-14T08:00:00.000Z",
+      intervalValue: 3,
+      recurrenceType: "interval_days",
+      startDateLocal: "2026-04-14",
+    });
+
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-04-14T00:00:00.000Z",
+      "2026-04-20T23:59:59.999Z",
+      timezone,
+      [],
+      "2026-04-14T08:00:00.000Z"
+    );
+
+    expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
+      "2026-04-14",
+      "2026-04-17",
+      "2026-04-20",
+    ]);
+    expect(occurrences[0]?.status).toBe("scheduled");
   });
 });
 

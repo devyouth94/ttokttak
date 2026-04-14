@@ -178,55 +178,37 @@ export type Database = {
       };
       recurring_items: {
         Row: {
-          anchor_type: string;
           category: string | null;
           created_at: string;
           description: string | null;
           id: string;
-          interval_value: number | null;
           is_archived: boolean;
-          notifications_enabled: boolean;
-          recurrence_type: string;
-          reminder_time_local: string;
           start_date_local: string;
           title: string;
           updated_at: string;
           user_id: string;
-          weekday_mask: number[] | null;
         };
         Insert: {
-          anchor_type?: string;
           category?: string | null;
           created_at?: string;
           description?: string | null;
           id?: string;
-          interval_value?: number | null;
           is_archived?: boolean;
-          notifications_enabled?: boolean;
-          recurrence_type: string;
-          reminder_time_local: string;
           start_date_local: string;
           title: string;
           updated_at?: string;
           user_id: string;
-          weekday_mask?: number[] | null;
         };
         Update: {
-          anchor_type?: string;
           category?: string | null;
           created_at?: string;
           description?: string | null;
           id?: string;
-          interval_value?: number | null;
           is_archived?: boolean;
-          notifications_enabled?: boolean;
-          recurrence_type?: string;
-          reminder_time_local?: string;
           start_date_local?: string;
           title?: string;
           updated_at?: string;
           user_id?: string;
-          weekday_mask?: number[] | null;
         };
         Relationships: [
           {
@@ -238,9 +220,109 @@ export type Database = {
           },
         ];
       };
+      recurring_item_schedule_versions: {
+        Row: {
+          anchor_type: string;
+          created_at: string;
+          effective_from_utc: string;
+          id: string;
+          interval_value: number | null;
+          item_id: string;
+          notifications_enabled: boolean;
+          recurrence_type: string;
+          reminder_time_local: string;
+          seed_start_date_local: string;
+          user_id: string;
+          weekday_mask: number[] | null;
+        };
+        Insert: {
+          anchor_type?: string;
+          created_at?: string;
+          effective_from_utc: string;
+          id?: string;
+          interval_value?: number | null;
+          item_id: string;
+          notifications_enabled?: boolean;
+          recurrence_type: string;
+          reminder_time_local: string;
+          seed_start_date_local: string;
+          user_id: string;
+          weekday_mask?: number[] | null;
+        };
+        Update: {
+          anchor_type?: string;
+          created_at?: string;
+          effective_from_utc?: string;
+          id?: string;
+          interval_value?: number | null;
+          item_id?: string;
+          notifications_enabled?: boolean;
+          recurrence_type?: string;
+          reminder_time_local?: string;
+          seed_start_date_local?: string;
+          user_id?: string;
+          weekday_mask?: number[] | null;
+        };
+        Relationships: [
+          {
+            columns: ["item_id"];
+            foreignKeyName: "recurring_item_schedule_versions_item_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "recurring_items";
+          },
+          {
+            columns: ["user_id"];
+            foreignKeyName: "recurring_item_schedule_versions_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_recurring_item_with_initial_version: {
+        Args: {
+          p_anchor_type: string;
+          p_category: string | null;
+          p_description: string | null;
+          p_effective_from_utc: string;
+          p_interval_value: number | null;
+          p_is_archived: boolean;
+          p_notifications_enabled: boolean;
+          p_recurrence_type: string;
+          p_reminder_time_local: string;
+          p_seed_start_date_local: string;
+          p_start_date_local: string;
+          p_title: string;
+          p_user_id: string;
+          p_weekday_mask: number[] | null;
+        };
+        Returns: string;
+      };
+      update_recurring_item_with_edit_policy: {
+        Args: {
+          p_anchor_type?: string | null;
+          p_category: string | null;
+          p_description: string | null;
+          p_effective_from_utc?: string | null;
+          p_has_rule_changes: boolean;
+          p_interval_value?: number | null;
+          p_is_archived: boolean;
+          p_item_id: string;
+          p_notifications_enabled?: boolean | null;
+          p_recurrence_type?: string | null;
+          p_reminder_time_local?: string | null;
+          p_seed_start_date_local?: string | null;
+          p_title: string;
+          p_user_id: string;
+          p_weekday_mask?: number[] | null;
+        };
+        Returns: string;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
@@ -266,3 +348,7 @@ export type RecurringItemRow =
   Database["public"]["Tables"]["recurring_items"]["Row"];
 export type RecurringItemUpdate =
   Database["public"]["Tables"]["recurring_items"]["Update"];
+export type RecurringItemScheduleVersionInsert =
+  Database["public"]["Tables"]["recurring_item_schedule_versions"]["Insert"];
+export type RecurringItemScheduleVersionRow =
+  Database["public"]["Tables"]["recurring_item_schedule_versions"]["Row"];

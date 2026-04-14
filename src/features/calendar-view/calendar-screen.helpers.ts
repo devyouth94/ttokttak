@@ -178,7 +178,7 @@ export function createCalendarMarkedDates({
   selectedDate: string;
   todayDate: string;
 }): MarkedDates {
-  const markedDates = Object.fromEntries(
+  const markedDates: MarkedDates = Object.fromEntries(
     Object.values(daySummaries).map((summary) => [
       summary.localDate,
       {
@@ -190,7 +190,7 @@ export function createCalendarMarkedDates({
         marked: summary.hasEntries,
       },
     ])
-  ) satisfies MarkedDates;
+  );
   const selectedMarkedDate = markedDates[selectedDate] ?? {};
   markedDates[selectedDate] = {
     ...selectedMarkedDate,

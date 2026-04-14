@@ -32,17 +32,26 @@ export interface RecurringItem {
   title: string;
   description?: string | null;
   category?: string | null;
-  recurrenceType: RecurrenceType;
-  intervalValue?: number | null;
-  weekdayMask?: number[] | null;
   startDateLocal: string; // YYYY-MM-DD
-  reminderTimeLocal?: string; // HH:mm
-  notificationsEnabled: boolean;
-  anchorType: AnchorType;
   timezone: string;
   isArchived: boolean;
   createdAt: string; // UTC ISO
   updatedAt: string; // UTC ISO
+}
+
+export interface RecurringItemScheduleVersion {
+  id: string;
+  itemId: string;
+  userId: string;
+  effectiveFromUtc: string; // UTC ISO
+  recurrenceType: RecurrenceType;
+  intervalValue?: number | null;
+  weekdayMask?: number[] | null;
+  reminderTimeLocal: string; // HH:mm
+  notificationsEnabled: boolean;
+  anchorType: AnchorType;
+  seedStartDateLocal: string; // YYYY-MM-DD
+  createdAt: string; // UTC ISO
 }
 
 export interface CompletionLog {
@@ -68,15 +77,18 @@ export interface DerivedOccurrence {
 
 ### Type Notes
 
-- `RecurringItem`은 저장되는 원본 엔티티다.
+- `RecurringItem`은 item identity와 메타를 가진다.
+- recurrence 관련 source of truth는 `RecurringItemScheduleVersion` 목록이다.
 - `occurrence`는 `RecurringItem`과 로그를 기준으로 계산되는 파생 개념이며 별도 row로 저장하지 않는다.
 - `recurrenceType`이 `interval_days`, `interval_weeks`, `interval_months`면 `intervalValue`가 필요하다.
 - `recurrenceType`이 `weekly`, `interval_weeks`면 `weekdayMask`가 필요하다.
-- `startDateLocal`은 반복 계산의 local 시작 기준일이다.
+- `startDateLocal`은 항목의 원래 시작점이며 생성 후 수정하지 않는다.
+- `seedStartDateLocal`은 해당 version이 책임지는 첫 future occurrence local date다.
 - `reminderTimeLocal`은 local timezone 기준 예정 시각이다.
+- 생성 시 시작일이 오늘이면 알림 시간이 이미 지났더라도 첫 occurrence는 오늘로 유지한다.
 - MVP에서는 `reminderTimeLocal`을 필수 입력으로 보고 검증한다.
 - `notificationsEnabled = false`여도 overdue 판단과 정렬 기준이 필요하므로 값은 유지한다.
-- `notificationsEnabled = false`인 item은 알림 예약 대상에서는 제외된다.
+- `notificationsEnabled = false`인 version은 알림 예약 대상에서는 제외된다.
 - `anchorType`은 다음 future occurrence 계산 기준만 바꾸며, occurrence 상태 판정 규칙 자체를 바꾸지는 않는다.
 - `isArchived = true`인 item은 활성 화면과 future notification 대상에서 제외하는 방향을 기본으로 본다.
 - `CompletionLog`는 `(itemId, scheduledAtUtc)` 기준으로 특정 occurrence에 연결된다.
@@ -90,6 +102,15 @@ Occurrence는 저장된 row가 아니라 계산 결과이므로 식별 기준이
 
 - identity: `(item_id, scheduled_at_utc)`
 - 이유: completion / skip 로그를 정확히 연결하기 위해
+
+## 2.1 Schedule Version Policy
+
+- 각 item은 시간순 `schedule version` 목록을 가진다.
+- version 활성 구간 시작은 자신의 `effectiveFromUtc`다.
+- version 활성 구간 끝은 다음 version의 `effectiveFromUtc` 직전이다.
+- version은 자신의 `seedStartDateLocal`부터 occurrence를 생성한다.
+- 생성 결과 중 `scheduledAtUtc < effectiveFromUtc` 값은 버린다.
+- 수정은 과거 occurrence를 다시 계산하지 않고 미래 occurrence만 바꾼다.
 
 ## 3. Recurrence Rules
 
@@ -155,6 +176,8 @@ Occurrence는 저장된 row가 아니라 계산 결과이므로 식별 기준이
 
 - `completed`만 anchor를 이동시킴
 - `skipped`는 anchor를 이동시키지 않음
+- 새 version 시작 시 edit 이전 마지막 `completed`는 초기 anchor 결정에만 사용한다.
+- 새 version occurrence는 `seedStartDateLocal` 이후부터만 생성한다.
 
 예시:
 
@@ -195,23 +218,26 @@ MVP에서는 reminder time을 필수로 둔다. 이 값은 알림 발송 여부�
 ```ts
 getOccurrencesInRange(
   item,
+  scheduleVersions,
   rangeStartUtc,
   rangeEndUtc,
   timezone,
-  completionLogs,
+  completionLogs
 );
 ```
 
 - 지정 범위 내 occurrence 계산
 - 각 occurrence의 상태까지 resolve
+- item 메타, schedule version 목록, completion log를 함께 사용한다.
 
 ### getNextOccurrence
 
 ```ts
-getNextOccurrence(item, nowUtc, timezone, completionLogs);
+getNextOccurrence(item, scheduleVersions, nowUtc, timezone, completionLogs);
 ```
 
 - 현재 이후 가장 가까운 occurrence 계산
+- version 경계를 따라 현재 시점 이후 첫 future occurrence를 찾는다.
 
 ### getLastCompletedLog
 
@@ -353,10 +379,13 @@ UI 정책:
 
 ### editItem(item)
 
-1. item 저장
-2. 미래 occurrence 재계산
-3. 과거 completion log는 유지
-4. 앱 시작 또는 즉시 sync에서 알림 재예약
+1. item 메타와 기존 version 목록 조회
+2. 메타만 바뀌면 item 메타만 저장
+3. 규칙 영향 필드가 바뀌면 `effectiveFromUtc` 확정
+4. 수정 시점 이후 첫 future occurrence local date 계산
+5. 새 schedule version 저장
+6. 과거 completion log는 유지
+7. 앱 시작 또는 즉시 sync에서 미래 알림만 재예약
 
 전제조건:
 
@@ -364,14 +393,11 @@ UI 정책:
 - 현재 사용자 세션과 사용자 timezone이 유효해야 한다.
 - 수정 대상 item을 서버 기준 최신 상태로 읽을 수 있어야 한다.
 
-주의:
-
-- 반복 규칙을 크게 바꾸면 과거 로그와 미래 occurrence의 의미가 달라질 수 있음
-
 MVP 확정 정책:
 
 - 과거 log는 immutable
 - 수정은 미래 occurrence 계산에만 반영
+- `startDateLocal`은 edit 모드와 저장 계층 모두에서 수정 불가
 - 수정 영향이 큰 경우 “변경은 이후 일정에 적용됩니다” 같은 안내 문구를 표시한다
 
 예상 예외:
@@ -386,6 +412,7 @@ MVP 확정 정책:
 - mutation 성공 후 미래 occurrence를 다시 계산한다.
 - 홈, 캘린더, 히스토리에서 서버 기준 최신 상태를 다시 반영한다.
 - 현재 기기 기준 notification sync를 다시 실행한다.
+- notification sync 삭제 대상은 `scheduled_at_utc >= effective_from_utc` 미래 reservation으로 제한한다.
 - 동일 occurrence가 다른 기기에서 먼저 처리된 경우 최신 상태를 재조회하고 짧은 안내 메시지를 1회 표시한다.
 
 ## 13. Delete Item Flow
@@ -424,6 +451,11 @@ MVP 확정 정책:
 7. 유효하지 않은 예약 취소
 8. 새 예약 생성
 9. device notification metadata upsert
+
+phase 16 메모:
+
+- phase 16에서는 edit 이후 미래 reservation 삭제/재생성 경계만 고정한다.
+- 실제 현재 기기 notification orchestration 연결은 phase 18 범위다.
 
 전제조건:
 
@@ -486,7 +518,7 @@ function resolveOccurrenceStatus(
   scheduledAtUtc: string,
   logsByOccurrence: Map<string, CompletionLog>,
   nowUtc: string,
-  timezone: string,
+  timezone: string
 ): OccurrenceStatus {
   const log = logsByOccurrence.get(scheduledAtUtc);
 
@@ -501,7 +533,7 @@ function resolveOccurrenceStatus(
 function shouldIncludeInToday(
   localDate: string,
   todayLocalDate: string,
-  status: OccurrenceStatus,
+  status: OccurrenceStatus
 ) {
   return localDate === todayLocalDate && status === "scheduled";
 }

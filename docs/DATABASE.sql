@@ -50,22 +50,41 @@ create table if not exists public.recurring_items (
   description text,
   category text,
 
-  recurrence_type text not null,
-  interval_value integer,
-  weekday_mask integer[],
-
   start_date_local date not null,
-  reminder_time_local time not null,
-
-  notifications_enabled boolean not null default true,
-  anchor_type text not null default 'fixed',
 
   is_archived boolean not null default false,
 
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-  constraint recurring_items_recurrence_type_check check (
+create index if not exists idx_recurring_items_user_id
+  on public.recurring_items(user_id);
+
+create index if not exists idx_recurring_items_user_archived
+  on public.recurring_items(user_id, is_archived);
+
+-- =========================================================
+-- recurring_item_schedule_versions
+-- recurring rule source of truth
+-- =========================================================
+create table if not exists public.recurring_item_schedule_versions (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.recurring_items(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+
+  effective_from_utc timestamptz not null,
+  recurrence_type text not null,
+  interval_value integer,
+  weekday_mask integer[],
+  reminder_time_local time not null,
+  anchor_type text not null default 'fixed',
+  seed_start_date_local date not null,
+  notifications_enabled boolean not null default true,
+
+  created_at timestamptz not null default now(),
+
+  constraint recurring_item_schedule_versions_recurrence_type_check check (
     recurrence_type in (
       'once',
       'daily',
@@ -77,24 +96,19 @@ create table if not exists public.recurring_items (
       'yearly'
     )
   ),
-
-  constraint recurring_items_anchor_type_check check (
+  constraint recurring_item_schedule_versions_anchor_type_check check (
     anchor_type in ('fixed', 'completion_based')
   ),
-
-  constraint recurring_items_interval_positive_check check (
+  constraint recurring_item_schedule_versions_interval_positive_check check (
     interval_value is null or interval_value >= 1
   )
 );
 
-create index if not exists idx_recurring_items_user_id
-  on public.recurring_items(user_id);
+create index if not exists idx_schedule_versions_item_effective
+  on public.recurring_item_schedule_versions(item_id, effective_from_utc);
 
-create index if not exists idx_recurring_items_user_archived
-  on public.recurring_items(user_id, is_archived);
-
-create index if not exists idx_recurring_items_notifications_enabled
-  on public.recurring_items(user_id, notifications_enabled);
+create index if not exists idx_schedule_versions_user_created
+  on public.recurring_item_schedule_versions(user_id, created_at desc);
 
 -- =========================================================
 -- completion_logs
@@ -173,6 +187,156 @@ begin
 end;
 $$;
 
+create or replace function public.create_recurring_item_with_initial_version(
+  p_user_id uuid,
+  p_title text,
+  p_description text,
+  p_category text,
+  p_start_date_local date,
+  p_is_archived boolean,
+  p_effective_from_utc timestamptz,
+  p_recurrence_type text,
+  p_interval_value integer,
+  p_weekday_mask integer[],
+  p_reminder_time_local time,
+  p_anchor_type text,
+  p_seed_start_date_local date,
+  p_notifications_enabled boolean
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_item_id uuid;
+begin
+  insert into public.recurring_items (
+    user_id,
+    title,
+    description,
+    category,
+    start_date_local,
+    is_archived
+  )
+  values (
+    p_user_id,
+    p_title,
+    p_description,
+    p_category,
+    p_start_date_local,
+    p_is_archived
+  )
+  returning id into v_item_id;
+
+  insert into public.recurring_item_schedule_versions (
+    item_id,
+    user_id,
+    effective_from_utc,
+    recurrence_type,
+    interval_value,
+    weekday_mask,
+    reminder_time_local,
+    anchor_type,
+    seed_start_date_local,
+    notifications_enabled
+  )
+  values (
+    v_item_id,
+    p_user_id,
+    p_effective_from_utc,
+    p_recurrence_type,
+    p_interval_value,
+    p_weekday_mask,
+    p_reminder_time_local,
+    p_anchor_type,
+    p_seed_start_date_local,
+    p_notifications_enabled
+  );
+
+  return v_item_id;
+end;
+$$;
+
+create or replace function public.update_recurring_item_with_edit_policy(
+  p_item_id uuid,
+  p_user_id uuid,
+  p_title text,
+  p_description text,
+  p_category text,
+  p_is_archived boolean,
+  p_has_rule_changes boolean,
+  p_effective_from_utc timestamptz default null,
+  p_recurrence_type text default null,
+  p_interval_value integer default null,
+  p_weekday_mask integer[] default null,
+  p_reminder_time_local time default null,
+  p_anchor_type text default null,
+  p_seed_start_date_local date default null,
+  p_notifications_enabled boolean default null
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_updated_item_id uuid;
+begin
+  update public.recurring_items
+  set
+    title = p_title,
+    description = p_description,
+    category = p_category,
+    is_archived = p_is_archived
+  where id = p_item_id
+    and user_id = p_user_id
+  returning id into v_updated_item_id;
+
+  if v_updated_item_id is null then
+    raise exception '반복 항목을 찾을 수 없습니다.';
+  end if;
+
+  if p_has_rule_changes then
+    if p_effective_from_utc is null
+      or p_recurrence_type is null
+      or p_reminder_time_local is null
+      or p_anchor_type is null
+      or p_seed_start_date_local is null
+      or p_notifications_enabled is null then
+      raise exception '규칙 변경 저장 인자가 부족합니다.';
+    end if;
+
+    insert into public.recurring_item_schedule_versions (
+      item_id,
+      user_id,
+      effective_from_utc,
+      recurrence_type,
+      interval_value,
+      weekday_mask,
+      reminder_time_local,
+      anchor_type,
+      seed_start_date_local,
+      notifications_enabled
+    )
+    values (
+      p_item_id,
+      p_user_id,
+      p_effective_from_utc,
+      p_recurrence_type,
+      p_interval_value,
+      p_weekday_mask,
+      p_reminder_time_local,
+      p_anchor_type,
+      p_seed_start_date_local,
+      p_notifications_enabled
+    );
+  end if;
+
+  return p_item_id;
+end;
+$$;
+
 drop trigger if exists trg_profiles_set_updated_at on public.profiles;
 create trigger trg_profiles_set_updated_at
 before update on public.profiles
@@ -199,6 +363,7 @@ for each row execute function public.set_updated_at();
 alter table public.profiles enable row level security;
 alter table public.devices enable row level security;
 alter table public.recurring_items enable row level security;
+alter table public.recurring_item_schedule_versions enable row level security;
 alter table public.completion_logs enable row level security;
 alter table public.device_notification_reservations enable row level security;
 
@@ -268,6 +433,31 @@ using (auth.uid() = user_id);
 drop policy if exists "recurring_items_delete_own" on public.recurring_items;
 create policy "recurring_items_delete_own"
 on public.recurring_items
+for delete
+using (auth.uid() = user_id);
+
+-- recurring_item_schedule_versions
+drop policy if exists "schedule_versions_select_own" on public.recurring_item_schedule_versions;
+create policy "schedule_versions_select_own"
+on public.recurring_item_schedule_versions
+for select
+using (auth.uid() = user_id);
+
+drop policy if exists "schedule_versions_insert_own" on public.recurring_item_schedule_versions;
+create policy "schedule_versions_insert_own"
+on public.recurring_item_schedule_versions
+for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "schedule_versions_update_own" on public.recurring_item_schedule_versions;
+create policy "schedule_versions_update_own"
+on public.recurring_item_schedule_versions
+for update
+using (auth.uid() = user_id);
+
+drop policy if exists "schedule_versions_delete_own" on public.recurring_item_schedule_versions;
+create policy "schedule_versions_delete_own"
+on public.recurring_item_schedule_versions
 for delete
 using (auth.uid() = user_id);
 

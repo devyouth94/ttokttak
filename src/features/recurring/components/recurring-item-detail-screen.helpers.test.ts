@@ -8,6 +8,7 @@ import {
 import type {
   CompletionLog,
   RecurringItem,
+  RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 
 const timezone = "Asia/Seoul";
@@ -44,6 +45,26 @@ function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
     itemId: "item-1",
     scheduledAtUtc: "2026-04-10T00:00:00.000Z",
     userId: "user-1",
+    ...overrides,
+  };
+}
+
+function createVersion(
+  overrides: Partial<RecurringItemScheduleVersion> = {}
+): RecurringItemScheduleVersion {
+  return {
+    id: "version-1",
+    itemId: "item-1",
+    userId: "user-1",
+    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
+    recurrenceType: "daily",
+    intervalValue: null,
+    weekdayMask: null,
+    reminderTimeLocal: "09:00",
+    anchorType: "fixed",
+    seedStartDateLocal: "2026-04-08",
+    notificationsEnabled: true,
+    createdAt: "2026-04-01T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -316,5 +337,40 @@ describe("recurring item detail helpers", () => {
         timezone,
       })
     ).toBe(false);
+  });
+
+  it("상세 화면도 latest schedule version 기준 현재 규칙과 다음 일정을 보여준다", () => {
+    const item = createItem({
+      intervalValue: 3,
+      recurrenceType: "interval_days",
+      reminderTimeLocal: "09:00",
+      scheduleVersions: [
+        createVersion({
+          id: "version-1",
+          intervalValue: 3,
+          recurrenceType: "interval_days",
+          seedStartDateLocal: "2026-04-08",
+        }),
+        createVersion({
+          effectiveFromUtc: "2026-04-14T01:00:00.000Z",
+          id: "version-2",
+          intervalValue: 4,
+          recurrenceType: "interval_days",
+          reminderTimeLocal: "21:30",
+          seedStartDateLocal: "2026-04-16",
+        }),
+      ],
+    });
+
+    const viewModel = buildRecurringItemDetailViewModel({
+      completionLogs: [],
+      item,
+      now: new Date("2026-04-14T03:00:00.000Z"),
+      timezone,
+    });
+
+    expect(viewModel.nextOccurrence?.localDate).toBe("2026-04-16");
+    expect(viewModel.nextOccurrence?.localTime).toBe("21:30");
+    expect(viewModel.metaEntries[0]?.value).toBe("4일마다");
   });
 });

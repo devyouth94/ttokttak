@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceHigh,
   },
   metaActionButtonText: {
-    color: colors.textSecondary,
+    color: colors.secondary,
     fontSize: typography.body,
     fontWeight: "600",
     lineHeight: 22,

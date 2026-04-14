@@ -38,6 +38,21 @@ export type DevicePlatform = (typeof devicePlatforms)[number];
 export type CompletionBasedRecurrenceType =
   (typeof completionBasedRecurrenceTypes)[number];
 
+export interface RecurringItemScheduleVersion {
+  id: string;
+  itemId: string;
+  userId: string;
+  effectiveFromUtc: string;
+  recurrenceType: RecurrenceType;
+  intervalValue?: number | null;
+  weekdayMask?: number[] | null;
+  reminderTimeLocal: string;
+  anchorType: AnchorType;
+  seedStartDateLocal: string;
+  notificationsEnabled: boolean;
+  createdAt: string;
+}
+
 export interface RecurringItem {
   id: string;
   userId: string;
@@ -55,6 +70,24 @@ export interface RecurringItem {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  scheduleVersions?: RecurringItemScheduleVersion[];
+}
+
+export function getCurrentScheduleVersion(
+  item: RecurringItem
+): RecurringItemScheduleVersion | null {
+  if (!item.scheduleVersions?.length) {
+    return null;
+  }
+
+  return (
+    item.scheduleVersions
+      .slice()
+      .sort((left, right) =>
+        left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
+      )
+      .at(-1) ?? null
+  );
 }
 
 export interface CompletionLog {

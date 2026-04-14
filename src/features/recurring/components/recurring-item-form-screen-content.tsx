@@ -63,6 +63,8 @@ type SaveButtonContentProps = {
 };
 
 type PickerFieldProps = {
+  description?: string;
+  disabled?: boolean;
   error?: string;
   icon: React.JSX.Element;
   label: string;
@@ -172,6 +174,12 @@ export function RecurringItemFormScreenContent({
 
           <View style={styles.row}>
             <PickerField
+              description={
+                view.isEditMode
+                  ? "시작일은 생성 후 변경할 수 없습니다."
+                  : undefined
+              }
+              disabled={!view.isStartDateEditable}
               error={errors.startDate}
               icon={<CalendarDays color={colors.textMuted} size={18} />}
               label="시작일"
@@ -233,6 +241,20 @@ export function RecurringItemFormScreenContent({
             onSelectAnchorType={actions.recurrence.onSelectAnchorType}
             onToggleOpen={actions.recurrence.onToggleAdvanced}
           />
+
+          {view.showsEditEffectNotice ? (
+            <View style={styles.infoCard}>
+              <AppText style={styles.infoTitle} variant="title">
+                수정 적용 방식
+              </AppText>
+              <AppText style={styles.infoText}>
+                변경은 이후 일정에만 적용됩니다.
+              </AppText>
+              <AppText style={styles.infoSubtext}>
+                과거 기록은 유지되고, 다음 일정부터 새 규칙이 적용됩니다.
+              </AppText>
+            </View>
+          ) : null}
         </ScrollView>
 
         <View style={styles.footer}>
@@ -309,6 +331,8 @@ function SaveButtonContent({
 }
 
 function PickerField({
+  description,
+  disabled = false,
   error,
   icon,
   label,
@@ -321,16 +345,22 @@ function PickerField({
       <AppText style={styles.fieldLabel}>{label}</AppText>
       <Pressable
         accessibilityRole="button"
+        disabled={disabled}
         onPress={onPress}
-        style={[
+        style={({ pressed }) => [
           styles.iconInputShell,
           styles.compactInput,
+          disabled ? styles.iconInputShellDisabled : undefined,
           error ? styles.inputError : undefined,
+          pressed && !disabled ? styles.pickerFieldPressed : undefined,
         ]}
       >
         {icon}
         <AppText style={styles.iconInputValue}>{value}</AppText>
       </Pressable>
+      {description ? (
+        <AppText style={styles.fieldHelper}>{description}</AppText>
+      ) : null}
       {error ? <AppText style={styles.fieldError}>{error}</AppText> : null}
     </View>
   );

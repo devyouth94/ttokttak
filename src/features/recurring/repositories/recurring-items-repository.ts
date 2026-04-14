@@ -1,18 +1,29 @@
+import { fromZonedTime } from "date-fns-tz";
+
+import { getFirstFutureOccurrenceLocalDateAfterEdit } from "~/features/recurring/domain/occurrence";
 import type {
   RecurringItem,
   RecurringItemDraft,
+  RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 import { validateRecurringItemDraft } from "~/features/recurring/domain/validation";
+import { listCompletionLogsForItem } from "~/features/recurring/repositories/completion-logs-repository";
 import {
   getRepositoryClient,
   type RepositoryClient,
 } from "~/features/recurring/repositories/repository-client";
 import type {
-  RecurringItemInsert,
   RecurringItemRow,
-  RecurringItemUpdate,
+  RecurringItemScheduleVersionRow,
 } from "~/lib/database.types";
+
 type RecurringItemPatch = Partial<Omit<RecurringItemDraft, "timezone">>;
+
+type RecurringItemWithVersionsRow = RecurringItemRow & {
+  recurring_item_schedule_versions?: RecurringItemScheduleVersionRow[] | null;
+};
+
+const recurringItemSelect = "*, recurring_item_schedule_versions(*)";
 
 export type CreateRecurringItemInput = RecurringItemDraft & {
   userId: string;
@@ -49,37 +60,80 @@ function normalizeTimeLocal(value: string): string {
   return value.slice(0, 5);
 }
 
+function toScheduleVersion(
+  row: RecurringItemScheduleVersionRow
+): RecurringItemScheduleVersion {
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    userId: row.user_id,
+    effectiveFromUtc: new Date(row.effective_from_utc).toISOString(),
+    recurrenceType: row.recurrence_type as RecurringItem["recurrenceType"],
+    intervalValue: row.interval_value,
+    weekdayMask: row.weekday_mask,
+    reminderTimeLocal: normalizeTimeLocal(row.reminder_time_local),
+    anchorType: row.anchor_type as RecurringItem["anchorType"],
+    seedStartDateLocal: row.seed_start_date_local,
+    notificationsEnabled: row.notifications_enabled,
+    createdAt: new Date(row.created_at).toISOString(),
+  };
+}
+
+function getSortedScheduleVersions(
+  row: RecurringItemWithVersionsRow
+): RecurringItemScheduleVersion[] {
+  return (row.recurring_item_schedule_versions ?? [])
+    .map(toScheduleVersion)
+    .sort((left, right) =>
+      left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
+    );
+}
+
+function getLatestScheduleVersion(
+  row: RecurringItemWithVersionsRow
+): RecurringItemScheduleVersion {
+  const versions = getSortedScheduleVersions(row);
+  const latestVersion = versions[versions.length - 1];
+
+  if (!latestVersion) {
+    throw new Error("반복 규칙 버전을 찾을 수 없습니다.");
+  }
+
+  return latestVersion;
+}
+
 /**
  * DB row를 도메인에서 사용하는 반복 항목 형태로 변환한다.
- * 시간대는 row가 아니라 현재 사용자 프로필 값을 사용한다.
+ * 현재 규칙 표시는 latest schedule version 기준으로 계산한다.
  */
 function toRecurringItem(
-  row: RecurringItemRow,
+  row: RecurringItemWithVersionsRow,
   timezone: string
 ): RecurringItem {
+  const latestVersion = getLatestScheduleVersion(row);
+  const scheduleVersions = getSortedScheduleVersions(row);
+
   return {
     id: row.id,
     userId: row.user_id,
     title: row.title,
     description: row.description,
     category: row.category,
-    recurrenceType: row.recurrence_type as RecurringItem["recurrenceType"],
-    intervalValue: row.interval_value,
-    weekdayMask: row.weekday_mask,
+    recurrenceType: latestVersion.recurrenceType,
+    intervalValue: latestVersion.intervalValue,
+    weekdayMask: latestVersion.weekdayMask,
     startDateLocal: row.start_date_local,
-    reminderTimeLocal: normalizeTimeLocal(row.reminder_time_local),
-    notificationsEnabled: row.notifications_enabled,
-    anchorType: row.anchor_type as RecurringItem["anchorType"],
+    reminderTimeLocal: latestVersion.reminderTimeLocal,
+    notificationsEnabled: latestVersion.notificationsEnabled,
+    anchorType: latestVersion.anchorType,
     timezone,
     isArchived: row.is_archived,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    scheduleVersions,
   };
 }
 
-/**
- * 기존 엔티티를 검증용 draft 형태로 펼친다.
- */
 function toRecurringItemDraftFromEntity(
   item: RecurringItem
 ): RecurringItemDraft {
@@ -99,9 +153,6 @@ function toRecurringItemDraftFromEntity(
   };
 }
 
-/**
- * 반복 항목 draft가 문서 기준 검증 규칙을 통과하는지 확인한다.
- */
 function assertValidDraft(draft: RecurringItemDraft): void {
   const issues = validateRecurringItemDraft(draft);
 
@@ -112,87 +163,57 @@ function assertValidDraft(draft: RecurringItemDraft): void {
   throw new Error(issues.map((issue) => issue.message).join(" "));
 }
 
-/**
- * 생성용 draft를 recurring_items insert payload로 변환한다.
- */
-function toRecurringItemInsert(
-  draft: RecurringItemDraft,
-  userId: string
-): RecurringItemInsert {
-  return {
-    user_id: userId,
-    title: draft.title,
-    description: draft.description,
-    category: draft.category,
-    recurrence_type: draft.recurrenceType,
-    interval_value: draft.intervalValue,
-    weekday_mask: draft.weekdayMask,
-    start_date_local: draft.startDateLocal,
-    reminder_time_local: draft.reminderTimeLocal,
-    notifications_enabled: draft.notificationsEnabled,
-    anchor_type: draft.anchorType,
-    is_archived: draft.isArchived,
-  };
+function hasRuleChanges(
+  item: RecurringItem,
+  draft: RecurringItemDraft
+): boolean {
+  return (
+    item.recurrenceType !== draft.recurrenceType ||
+    item.intervalValue !== draft.intervalValue ||
+    item.reminderTimeLocal !== draft.reminderTimeLocal ||
+    item.notificationsEnabled !== draft.notificationsEnabled ||
+    item.anchorType !== draft.anchorType ||
+    JSON.stringify(item.weekdayMask ?? null) !==
+      JSON.stringify(draft.weekdayMask ?? null)
+  );
 }
 
-/**
- * 수정 patch를 recurring_items update payload로 변환한다.
- * 시간대는 프로필 값이므로 update 대상에 포함하지 않는다.
- */
-function toRecurringItemUpdate(patch: RecurringItemPatch): RecurringItemUpdate {
-  const update: RecurringItemUpdate = {};
-
-  if (patch.title !== undefined) {
-    update.title = patch.title;
-  }
-
-  if (patch.description !== undefined) {
-    update.description = patch.description;
-  }
-
-  if (patch.category !== undefined) {
-    update.category = patch.category;
-  }
-
-  if (patch.recurrenceType !== undefined) {
-    update.recurrence_type = patch.recurrenceType;
-  }
-
-  if (patch.intervalValue !== undefined) {
-    update.interval_value = patch.intervalValue;
-  }
-
-  if (patch.weekdayMask !== undefined) {
-    update.weekday_mask = patch.weekdayMask;
-  }
-
-  if (patch.startDateLocal !== undefined) {
-    update.start_date_local = patch.startDateLocal;
-  }
-
-  if (patch.reminderTimeLocal !== undefined) {
-    update.reminder_time_local = patch.reminderTimeLocal;
-  }
-
-  if (patch.notificationsEnabled !== undefined) {
-    update.notifications_enabled = patch.notificationsEnabled;
-  }
-
-  if (patch.anchorType !== undefined) {
-    update.anchor_type = patch.anchorType;
-  }
-
-  if (patch.isArchived !== undefined) {
-    update.is_archived = patch.isArchived;
-  }
-
-  return update;
+function hasMetaChanges(
+  item: RecurringItem,
+  draft: RecurringItemDraft
+): boolean {
+  return (
+    item.title !== draft.title ||
+    item.description !== draft.description ||
+    item.category !== draft.category ||
+    item.isArchived !== draft.isArchived
+  );
 }
 
-/**
- * 현재 사용자의 반복 항목 목록을 조회한다.
- * 기본값은 활성 항목만 반환하고, 필요하면 archive 항목도 함께 포함한다.
- */
+async function getRecurringItemRowById(params: {
+  client?: RepositoryClient;
+  id: string;
+  userId: string;
+}): Promise<RecurringItemWithVersionsRow> {
+  const supabase = getRepositoryClient(params.client);
+  const { data, error } = await supabase
+    .from("recurring_items")
+    .select(recurringItemSelect)
+    .eq("id", params.id)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("반복 항목을 찾을 수 없습니다.");
+  }
+
+  return data as RecurringItemWithVersionsRow;
+}
+
 export async function listRecurringItems({
   client,
   includeArchived = false,
@@ -202,7 +223,7 @@ export async function listRecurringItems({
   const supabase = getRepositoryClient(client);
   let query = supabase
     .from("recurring_items")
-    .select("*")
+    .select(recurringItemSelect)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -216,40 +237,27 @@ export async function listRecurringItems({
     throw error;
   }
 
-  return data.map((row) => toRecurringItem(row, timezone));
+  return (data as RecurringItemWithVersionsRow[]).map((row) =>
+    toRecurringItem(row, timezone)
+  );
 }
 
-/**
- * 현재 사용자가 소유한 반복 항목 하나를 조회한다.
- */
 export async function getRecurringItemById({
   client,
   id,
   timezone,
   userId,
 }: GetRecurringItemOptions): Promise<RecurringItem> {
-  const supabase = getRepositoryClient(client);
-  const { data, error } = await supabase
-    .from("recurring_items")
-    .select("*")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("반복 항목을 찾을 수 없습니다.");
-  }
-
-  return toRecurringItem(data, timezone);
+  return toRecurringItem(
+    await getRecurringItemRowById({
+      client,
+      id,
+      userId,
+    }),
+    timezone
+  );
 }
 
-/**
- * 검증을 통과한 반복 항목을 생성하고, 도메인 형태로 반환한다.
- */
 export async function createRecurringItem(
   input: CreateRecurringItemInput,
   client?: RepositoryClient
@@ -257,23 +265,42 @@ export async function createRecurringItem(
   assertValidDraft(input);
 
   const supabase = getRepositoryClient(client);
-  const { data, error } = await supabase
-    .from("recurring_items")
-    .insert(toRecurringItemInsert(input, input.userId))
-    .select("*")
-    .single();
+  const effectiveFromUtc = fromZonedTime(
+    `${input.startDateLocal}T00:00:00.000`,
+    input.timezone
+  ).toISOString();
+  const { data, error } = await supabase.rpc(
+    "create_recurring_item_with_initial_version",
+    {
+      p_anchor_type: input.anchorType,
+      p_category: input.category ?? null,
+      p_description: input.description ?? null,
+      p_effective_from_utc: effectiveFromUtc,
+      p_interval_value: input.intervalValue ?? null,
+      p_is_archived: input.isArchived,
+      p_notifications_enabled: input.notificationsEnabled,
+      p_recurrence_type: input.recurrenceType,
+      p_reminder_time_local: input.reminderTimeLocal,
+      p_seed_start_date_local: input.startDateLocal,
+      p_start_date_local: input.startDateLocal,
+      p_title: input.title,
+      p_user_id: input.userId,
+      p_weekday_mask: input.weekdayMask ?? null,
+    }
+  );
 
   if (error) {
     throw error;
   }
 
-  return toRecurringItem(data, input.timezone);
+  return getRecurringItemById({
+    client,
+    id: data,
+    timezone: input.timezone,
+    userId: input.userId,
+  });
 }
 
-/**
- * 기존 반복 항목을 부분 수정한다.
- * 수정 전후를 합쳐 다시 검증한 뒤 서버에 저장한다.
- */
 export async function updateRecurringItem(
   input: UpdateRecurringItemInput,
   client?: RepositoryClient
@@ -288,30 +315,79 @@ export async function updateRecurringItem(
   const mergedDraft: RecurringItemDraft = {
     ...toRecurringItemDraftFromEntity(existingItem),
     ...input.patch,
+    startDateLocal: existingItem.startDateLocal,
     timezone: input.timezone,
   };
 
   assertValidDraft(mergedDraft);
 
+  const metaChanged = hasMetaChanges(existingItem, mergedDraft);
+  const ruleChanged = hasRuleChanges(existingItem, mergedDraft);
   const supabase = getRepositoryClient(client);
-  const { data, error } = await supabase
-    .from("recurring_items")
-    .update(toRecurringItemUpdate(input.patch))
-    .eq("id", input.id)
-    .eq("user_id", input.userId)
-    .select("*")
-    .single();
+  const hasAnyChanges = metaChanged || ruleChanged;
 
-  if (error) {
-    throw error;
+  if (hasAnyChanges) {
+    const effectiveFromUtc = new Date().toISOString();
+    const completionLogs = await listCompletionLogsForItem({
+      client,
+      itemId: input.id,
+      userId: input.userId,
+    });
+    const seedStartDateLocal =
+      getFirstFutureOccurrenceLocalDateAfterEdit({
+        completionLogs,
+        effectiveFromUtc,
+        item: existingItem,
+        nextSchedule: {
+          anchorType: mergedDraft.anchorType,
+          intervalValue: mergedDraft.intervalValue,
+          recurrenceType: mergedDraft.recurrenceType,
+          reminderTimeLocal: mergedDraft.reminderTimeLocal,
+          weekdayMask: mergedDraft.weekdayMask,
+        },
+        timezone: input.timezone,
+      }) ?? existingItem.startDateLocal;
+
+    const { error } = await supabase.rpc(
+      "update_recurring_item_with_edit_policy",
+      {
+        p_anchor_type: ruleChanged ? mergedDraft.anchorType : null,
+        p_category: mergedDraft.category ?? null,
+        p_description: mergedDraft.description ?? null,
+        p_effective_from_utc: ruleChanged ? effectiveFromUtc : null,
+        p_has_rule_changes: ruleChanged,
+        p_interval_value: ruleChanged
+          ? (mergedDraft.intervalValue ?? null)
+          : null,
+        p_is_archived: mergedDraft.isArchived,
+        p_item_id: input.id,
+        p_notifications_enabled: ruleChanged
+          ? mergedDraft.notificationsEnabled
+          : null,
+        p_recurrence_type: ruleChanged ? mergedDraft.recurrenceType : null,
+        p_reminder_time_local: ruleChanged
+          ? mergedDraft.reminderTimeLocal
+          : null,
+        p_seed_start_date_local: ruleChanged ? seedStartDateLocal : null,
+        p_title: mergedDraft.title,
+        p_user_id: input.userId,
+        p_weekday_mask: ruleChanged ? (mergedDraft.weekdayMask ?? null) : null,
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
   }
 
-  return toRecurringItem(data, mergedDraft.timezone);
+  return getRecurringItemById({
+    client,
+    id: input.id,
+    timezone: input.timezone,
+    userId: input.userId,
+  });
 }
 
-/**
- * 반복 항목을 삭제 대신 archive 상태로 전환한다.
- */
 export async function archiveRecurringItem({
   client,
   id,

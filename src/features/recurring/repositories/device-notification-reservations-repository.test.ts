@@ -1,5 +1,6 @@
 import {
   deleteDeviceNotificationReservations,
+  deleteFutureDeviceNotificationReservations,
   listDeviceNotificationReservations,
   upsertDeviceNotificationReservations,
 } from "~/features/recurring/repositories/device-notification-reservations-repository";
@@ -110,5 +111,32 @@ describe("device notification reservations repository", () => {
     });
 
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("수정 시점 이후 미래 reservation만 삭제한다", async () => {
+    const query = createAwaitableQuery(
+      {
+        data: null,
+        error: null,
+      },
+      ["delete", "eq", "gte"]
+    );
+    const from = jest.fn(() => query);
+
+    await deleteFutureDeviceNotificationReservations({
+      client: { from } as never,
+      deviceId: "device-1",
+      effectiveFromUtc: "2026-04-14T01:00:00.000Z",
+      itemId: "item-1",
+      userId: "user-1",
+    });
+
+    expect(query.eq).toHaveBeenNthCalledWith(1, "device_id", "device-1");
+    expect(query.eq).toHaveBeenNthCalledWith(2, "user_id", "user-1");
+    expect(query.eq).toHaveBeenNthCalledWith(3, "item_id", "item-1");
+    expect(query.gte).toHaveBeenCalledWith(
+      "scheduled_at_utc",
+      "2026-04-14T01:00:00.000Z"
+    );
   });
 });

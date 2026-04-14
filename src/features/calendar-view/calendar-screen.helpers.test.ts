@@ -12,6 +12,7 @@ import {
 import type {
   CompletionLog,
   RecurringItem,
+  RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 
 const timezone = "Asia/Seoul";
@@ -48,6 +49,26 @@ function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
     itemId: "item-1",
     scheduledAtUtc: "2026-04-12T00:00:00.000Z",
     userId: "user-1",
+    ...overrides,
+  };
+}
+
+function createVersion(
+  overrides: Partial<RecurringItemScheduleVersion> = {}
+): RecurringItemScheduleVersion {
+  return {
+    id: "version-1",
+    itemId: "item-1",
+    userId: "user-1",
+    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
+    recurrenceType: "daily",
+    intervalValue: null,
+    weekdayMask: null,
+    reminderTimeLocal: "09:00",
+    anchorType: "fixed",
+    seedStartDateLocal: "2026-04-10",
+    notificationsEnabled: true,
+    createdAt: "2026-04-01T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -270,5 +291,43 @@ describe("calendar-screen.helpers", () => {
       "건너뜀 일정",
       "예정 일정 B",
     ]);
+  });
+
+  it("수정된 version이 있으면 달력도 새 future occurrence만 표시한다", () => {
+    const summaries = buildCalendarDaySummaries({
+      completionLogs: [],
+      items: [
+        createItem({
+          id: "edited-item",
+          intervalValue: 3,
+          recurrenceType: "interval_days",
+          scheduleVersions: [
+            createVersion({
+              id: "version-1",
+              intervalValue: 3,
+              itemId: "edited-item",
+              recurrenceType: "interval_days",
+              seedStartDateLocal: "2026-04-10",
+            }),
+            createVersion({
+              effectiveFromUtc: "2026-04-14T01:00:00.000Z",
+              id: "version-2",
+              intervalValue: 4,
+              itemId: "edited-item",
+              recurrenceType: "interval_days",
+              seedStartDateLocal: "2026-04-17",
+            }),
+          ],
+          startDateLocal: "2026-04-10",
+        }),
+      ],
+      now: new Date("2026-04-14T03:00:00.000Z"),
+      timezone,
+      visibleMonth: "2026-04",
+    });
+
+    expect(summaries["2026-04-17"]?.hasEntries).toBe(true);
+    expect(summaries["2026-04-21"]?.hasEntries).toBe(true);
+    expect(summaries["2026-04-16"]).toBeUndefined();
   });
 });
