@@ -44,3 +44,6 @@ app-example
 
 # Serena
 .serena/
+
+# Supabase local state
+supabase/.temp/
