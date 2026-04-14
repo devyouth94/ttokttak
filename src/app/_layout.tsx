@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
+import { NotificationBootstrapProvider } from "~/features/notifications/notification-bootstrap";
 import {
   SessionProvider,
   useSession,
@@ -31,12 +32,14 @@ function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
-          <StatusBar style="dark" />
-          <SplashScreenController />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-          <PortalHost />
+          <NotificationBootstrapProvider>
+            <StatusBar style="dark" />
+            <SplashScreenController />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+            <PortalHost />
+          </NotificationBootstrapProvider>
         </SessionProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

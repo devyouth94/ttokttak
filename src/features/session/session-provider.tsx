@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { createContext, use, useEffect, useState } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 import { signInWithAppleIdToken } from "~/features/session/apple-sign-in";
 import {
@@ -11,11 +11,13 @@ import type { ProfileRow } from "~/lib/database.types";
 import { isSupabaseConfigured, supabase } from "~/lib/supabase";
 
 type SessionContextValue = {
+  authEvent: AuthChangeEvent | "BOOTSTRAP" | null;
   errorMessage: string | null;
   isAuthenticated: boolean;
   isConfigured: boolean;
   isLoading: boolean;
   profile: ProfileRow | null;
+  sessionRevision: number;
   session: Session | null;
   signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -104,8 +106,12 @@ async function ensureProfile(user: User): Promise<ProfileRow> {
 export function SessionProvider({
   children,
 }: PropsWithChildren): React.JSX.Element {
+  const [authEvent, setAuthEvent] = useState<
+    AuthChangeEvent | "BOOTSTRAP" | null
+  >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const [sessionRevision, setSessionRevision] = useState(0);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -117,7 +123,12 @@ export function SessionProvider({
       return;
     }
 
-    const applySession = async (nextSession: Session | null) => {
+    const applySession = async (
+      nextSession: Session | null,
+      nextAuthEvent: AuthChangeEvent | "BOOTSTRAP"
+    ) => {
+      setAuthEvent(nextAuthEvent);
+      setSessionRevision((previous) => previous + 1);
       setSession(nextSession);
 
       if (!nextSession?.user) {
@@ -155,8 +166,10 @@ export function SessionProvider({
           throw error;
         }
 
-        await applySession(initialSession);
+        await applySession(initialSession, "BOOTSTRAP");
       } catch (error) {
+        setAuthEvent("BOOTSTRAP");
+        setSessionRevision((previous) => previous + 1);
         setSession(null);
         setProfile(null);
         setErrorMessage(error instanceof Error ? error.message : String(error));
@@ -168,8 +181,8 @@ export function SessionProvider({
 
     const {
       data: { subscription },
-    } = client.auth.onAuthStateChange((_event, nextSession) => {
-      void applySession(nextSession);
+    } = client.auth.onAuthStateChange((nextAuthEvent, nextSession) => {
+      void applySession(nextSession, nextAuthEvent);
     });
 
     return () => {
@@ -178,11 +191,13 @@ export function SessionProvider({
   }, []);
 
   const value: SessionContextValue = {
+    authEvent,
     errorMessage,
     isAuthenticated: Boolean(session?.user),
     isConfigured: isSupabaseConfigured,
     isLoading,
     profile,
+    sessionRevision,
     session,
     async signInWithApple() {
       const client = supabase!;

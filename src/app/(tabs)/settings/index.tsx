@@ -1,20 +1,15 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  AppState,
-  Linking,
-  Platform,
   Pressable,
   ScrollView,
   type StyleProp,
   StyleSheet,
-  Switch,
   type TextStyle,
   View,
 } from "react-native";
 import Constants from "expo-constants";
-import * as Notifications from "expo-notifications";
 import { ExternalLink, LogOut } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
@@ -26,6 +21,7 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { useSession } from "~/features/session/session-provider";
 
 type SectionTitleProps = {
@@ -118,12 +114,57 @@ function SettingsValueRow({
   );
 }
 
+function getNotificationStatusText(
+  status: ReturnType<typeof useNotificationBootstrap>["permission"]["status"]
+): string {
+  if (status === "granted") {
+    return "사용 중";
+  }
+
+  if (status === "unsupported") {
+    return "지원 안 됨";
+  }
+
+  return "꺼짐";
+}
+
+function getNotificationSyncStatusText(
+  lastSyncState: ReturnType<typeof useNotificationBootstrap>["lastSyncState"]
+): string {
+  if (!lastSyncState) {
+    return "대기 중";
+  }
+
+  if (lastSyncState.status === "running") {
+    return "확인 중";
+  }
+
+  if (lastSyncState.status === "succeeded") {
+    return lastSyncState.reason === "app-start"
+      ? "앱 시작 시 반영됨"
+      : "세션 복원 후 반영됨";
+  }
+
+  if (lastSyncState.status === "failed") {
+    return "실패";
+  }
+
+  return "건너뜀";
+}
+
 export default function SettingsTabPage(): React.JSX.Element {
   const { profile, signOut, user } = useSession();
+  const {
+    isPermissionLoading,
+    isRequestingPermission,
+    isSyncing,
+    lastSyncState,
+    openSettings,
+    permission,
+    requestPermission,
+    retrySync,
+  } = useNotificationBootstrap();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
-  const [notificationPermissionLabel, setNotificationPermissionLabel] =
-    useState("확인 중");
 
   const profileName = profile?.display_name?.trim();
   const metadataName = user?.user_metadata?.full_name;
@@ -139,35 +180,6 @@ export default function SettingsTabPage(): React.JSX.Element {
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
-
-  useEffect(() => {
-    async function refreshNotificationPermission(): Promise<void> {
-      if (Platform.OS === "web") {
-        setNotificationPermissionLabel("지원 안 됨");
-        return;
-      }
-
-      try {
-        const permission = await Notifications.getPermissionsAsync();
-
-        setNotificationPermissionLabel(permission.granted ? "허용됨" : "꺼짐");
-      } catch {
-        setNotificationPermissionLabel("확인 실패");
-      }
-    }
-
-    void refreshNotificationPermission();
-
-    const subscription = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "active") {
-        void refreshNotificationPermission();
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
 
   async function handleSignOut(): Promise<void> {
     if (isSigningOut) {
@@ -190,9 +202,31 @@ export default function SettingsTabPage(): React.JSX.Element {
 
   async function handleOpenSystemSettings(): Promise<void> {
     try {
-      await Linking.openSettings();
+      await openSettings();
     } catch {
       Alert.alert("설정 열기 실패", "기기 설정을 열 수 없습니다.");
+    }
+  }
+
+  async function handleRequestNotificationPermission(): Promise<void> {
+    try {
+      await requestPermission();
+    } catch (error) {
+      Alert.alert(
+        "권한 요청 실패",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
+
+  async function handleRetrySync(): Promise<void> {
+    try {
+      await retrySync();
+    } catch (error) {
+      Alert.alert(
+        "동기화 재시도 실패",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 
@@ -232,35 +266,80 @@ export default function SettingsTabPage(): React.JSX.Element {
         <View style={styles.section}>
           <SectionTitle title="알림" />
           <SettingsCard>
-            <SettingsRow
-              accessory={
-                <Switch
-                  onValueChange={setIsNotificationsEnabled}
-                  thumbColor={colors.primaryForeground}
-                  trackColor={{
-                    false: colors.outlineSoft,
-                    true: colors.text,
-                  }}
-                  value={isNotificationsEnabled}
-                />
-              }
-              description="앱 알림과 리마인더를 받습니다."
+            <SettingsValueRow
               isFirst
               title="앱 알림"
+              value={getNotificationStatusText(permission.status)}
             />
             <SettingsValueRow
               title="권한 상태"
-              value={notificationPermissionLabel}
+              value={isPermissionLoading ? "확인 중" : permission.label}
             />
-            <SettingsRow
-              accessory={<ExternalLink color={colors.outlineSoft} size={16} />}
-              isPressable
-              isSeparated={false}
-              onPress={() => {
-                void handleOpenSystemSettings();
-              }}
-              title="시스템 설정 열기"
+            <SettingsValueRow
+              title="시작 동기화"
+              value={getNotificationSyncStatusText(lastSyncState)}
             />
+            {lastSyncState?.status === "failed" ? (
+              <SettingsRow
+                description={lastSyncState.detail}
+                isSeparated={
+                  permission.canRequest || permission.canOpenSettings
+                }
+                title="실패 상세"
+              />
+            ) : null}
+            {permission.canRequest ? (
+              <SettingsRow
+                accessory={
+                  isRequestingPermission ? (
+                    <ActivityIndicator color={colors.text} size="small" />
+                  ) : (
+                    <ExternalLink color={colors.outlineSoft} size={16} />
+                  )
+                }
+                description="앱 시작 동기화를 위해 알림 권한이 필요합니다."
+                isPressable
+                isSeparated={!permission.canOpenSettings}
+                onPress={() => {
+                  void handleRequestNotificationPermission();
+                }}
+                title="권한 요청"
+              />
+            ) : null}
+            {!permission.canRequest &&
+            permission.status === "granted" &&
+            lastSyncState?.status === "failed" ? (
+              <SettingsRow
+                accessory={
+                  isSyncing ? (
+                    <ActivityIndicator color={colors.text} size="small" />
+                  ) : (
+                    <ExternalLink color={colors.outlineSoft} size={16} />
+                  )
+                }
+                description="실패 상태를 다시 확인합니다."
+                isPressable
+                isSeparated={permission.canOpenSettings}
+                onPress={() => {
+                  void handleRetrySync();
+                }}
+                title="동기화 다시 시도"
+              />
+            ) : null}
+            {permission.canOpenSettings ? (
+              <SettingsRow
+                accessory={
+                  <ExternalLink color={colors.outlineSoft} size={16} />
+                }
+                description="권한이 꺼져 있으면 시스템 설정에서 다시 허용해야 합니다."
+                isPressable
+                isSeparated={false}
+                onPress={() => {
+                  void handleOpenSystemSettings();
+                }}
+                title="시스템 설정 열기"
+              />
+            ) : null}
           </SettingsCard>
         </View>
 
