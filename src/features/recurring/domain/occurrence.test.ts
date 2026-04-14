@@ -138,18 +138,38 @@ describe("getOccurrencesInRange", () => {
 });
 
 describe("resolveOccurrenceStatus", () => {
-  it("범위 경계에 걸린 occurrence를 inclusive 하게 상태 판정한다", () => {
+  it("같은 로컬 날짜의 occurrence는 시간이 지나도 scheduled로 유지한다", () => {
     const scheduledAtUtc = "2026-04-01T00:00:00.000Z";
 
     expect(
-      resolveOccurrenceStatus(scheduledAtUtc, new Map(), scheduledAtUtc)
+      resolveOccurrenceStatus(
+        scheduledAtUtc,
+        new Map(),
+        "2026-04-01T03:00:00.000Z",
+        timezone
+      )
     ).toBe("scheduled");
+  });
+
+  it("로컬 날짜가 지나면 overdue로 바뀐다", () => {
+    const scheduledAtUtc = "2026-04-01T00:00:00.000Z";
+
     expect(
       resolveOccurrenceStatus(
         scheduledAtUtc,
         new Map([[scheduledAtUtc, createLog({ action: "completed" })]]),
-        "2026-04-02T00:00:00.000Z"
+        "2026-04-02T00:00:00.000Z",
+        timezone
       )
     ).toBe("completed");
+
+    expect(
+      resolveOccurrenceStatus(
+        scheduledAtUtc,
+        new Map(),
+        "2026-04-02T00:00:00.000Z",
+        timezone
+      )
+    ).toBe("overdue");
   });
 });

@@ -59,13 +59,10 @@ function toOccurrence(
     status: resolveOccurrenceStatus(
       scheduledAtUtc,
       logsByScheduledAtUtc,
-      nowUtc.toISOString()
+      nowUtc.toISOString(),
+      timezone
     ),
   };
-}
-
-function toUtcTime(value: string): number {
-  return new Date(value).getTime();
 }
 
 /**
@@ -521,7 +518,8 @@ function isOnOrAfter(target: Date, compare: Date): boolean {
 export function resolveOccurrenceStatus(
   scheduledAtUtc: string,
   logsByScheduledAtUtc: Map<string, CompletionLog>,
-  nowUtc: string
+  nowUtc: string,
+  timezone: string
 ): OccurrenceStatus {
   const matchedLog = logsByScheduledAtUtc.get(scheduledAtUtc);
 
@@ -533,7 +531,14 @@ export function resolveOccurrenceStatus(
     return "skipped";
   }
 
-  if (toUtcTime(scheduledAtUtc) < toUtcTime(nowUtc)) {
+  const scheduledLocalDate = formatInTimeZone(
+    scheduledAtUtc,
+    timezone,
+    "yyyy-MM-dd"
+  );
+  const nowLocalDate = formatInTimeZone(nowUtc, timezone, "yyyy-MM-dd");
+
+  if (compareLocalDate(scheduledLocalDate, nowLocalDate) < 0) {
     return "overdue";
   }
 

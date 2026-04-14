@@ -242,8 +242,8 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 ### Resolution rules
 
 1. 특정 occurrence에 대응하는 completion log가 있으면 completed/skipped
-2. completion log가 없고 scheduled datetime이 현재보다 과거면 overdue
-3. completion log가 없고 scheduled datetime이 현재 이상이면 scheduled
+2. completion log가 없고 scheduled local date가 오늘보다 이전이면 overdue
+3. completion log가 없고 scheduled local date가 오늘이면 scheduled
 
 ### Important note
 

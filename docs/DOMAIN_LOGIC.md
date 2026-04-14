@@ -186,7 +186,7 @@ Occurrence는 저장된 row가 아니라 계산 결과이므로 식별 기준이
 2. user timezone으로 해석한다.
 3. UTC ISO로 변환한다.
 
-MVP에서는 reminder time을 필수로 둔다. 이 값은 알림 발송 여부와 별개로 overdue 판단과 정렬 기준에도 사용한다.
+MVP에서는 reminder time을 필수로 둔다. 이 값은 알림 발송 여부와 별개로 예정 일시 계산, 정렬, 화면 표시 기준에 사용한다.
 
 ## 7. Range Query Functions
 
@@ -238,7 +238,7 @@ getLastCompletedLog(itemId, logs);
 1. `scheduledAtUtc`에 대응하는 log를 찾는다.
 2. `log.action === "completed"`면 `completed`
 3. `log.action === "skipped"`면 `skipped`
-4. log가 없고 `scheduledAtUtc < nowUtc`면 `overdue`
+4. log가 없고 `scheduledLocalDate < today(local timezone)`면 `overdue`
 5. 나머지는 `scheduled`
 
 ## 9. Home Feed Construction
@@ -463,12 +463,13 @@ function resolveOccurrenceStatus(
   scheduledAtUtc: string,
   logsByOccurrence: Map<string, CompletionLog>,
   nowUtc: string,
+  timezone: string,
 ): OccurrenceStatus {
   const log = logsByOccurrence.get(scheduledAtUtc);
 
   if (log?.action === "completed") return "completed";
   if (log?.action === "skipped") return "skipped";
-  if (scheduledAtUtc < nowUtc) return "overdue";
+  if (scheduledLocalDate < todayLocalDate) return "overdue";
   return "scheduled";
 }
 ```

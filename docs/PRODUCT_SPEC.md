@@ -113,8 +113,9 @@
 
 ### Scenario C: 일정 놓침
 1. 사용자는 오늘 해야 하는 항목을 완료하지 못했다.
-2. 해당 occurrence는 자동으로 넘어가지 않고 overdue 상태가 된다.
-3. 홈 화면의 overdue 섹션에서 확인할 수 있다.
+2. 오늘 날짜가 지나기 전까지는 오늘 섹션에 남아 있다.
+3. 날짜가 넘어가면 해당 occurrence는 자동으로 넘어가지 않고 overdue 상태가 된다.
+4. 홈 화면의 overdue 섹션에서 확인할 수 있다.
 4. 사용자는 나중에 완료 또는 건너뜀 처리할 수 있다.
 
 ---
@@ -175,7 +176,7 @@
 
 ### 7.1.1 Reminder time requirement
 - `reminder_time_local`은 알림 발송 여부와 무관하게 모든 item의 필수 값이다
-- `notifications_enabled = false`여도 예정 시각 계산, overdue 판단, 정렬, 화면 표시 기준으로 사용한다
+- `notifications_enabled = false`여도 예정 시각 계산, 정렬, 화면 표시 기준으로 사용한다
 
 #### fixed
 원래 예정일 기준으로 다음 일정을 계산한다.

@@ -93,7 +93,7 @@ describe("buildHomeFeedSections", () => {
     expect(sections[2]?.items[0]?.metaLabel).toBe("3일 후");
   });
 
-  it("놓친 일정은 같은 항목당 최신 overdue 1개만 노출한다", () => {
+  it("놓친 일정은 오늘 이전 날짜 중 같은 항목당 최신 overdue 1개만 노출한다", () => {
     const sections = buildHomeFeedSections({
       completionLogs: [],
       items: [
@@ -114,7 +114,7 @@ describe("buildHomeFeedSections", () => {
 
     expect(overdueSection?.items).toHaveLength(1);
     expect(overdueSection?.items[0]?.item.title).toBe("치약 교체");
-    expect(overdueSection?.items[0]?.metaLabel).toBe("오늘 지남");
+    expect(overdueSection?.items[0]?.metaLabel).toBe("3일 지남");
   });
 
   it("오늘이 아닌 날짜를 선택하면 해당 날짜 섹션만 만든다", () => {
@@ -201,6 +201,6 @@ describe("buildHomeFeedSections", () => {
 
     expect(
       occurrencesToResolve.map((occurrence) => occurrence.localDate)
-    ).toEqual(["2026-04-04", "2026-04-07", "2026-04-10"]);
+    ).toEqual(["2026-04-04", "2026-04-07"]);
   });
 });
