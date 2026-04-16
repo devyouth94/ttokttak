@@ -22,7 +22,7 @@ create index if not exists idx_profiles_timezone on public.profiles(timezone);
 
 -- =========================================================
 -- devices
--- device-scoped notification metadata 관리용
+-- 기기 식별과 마지막 활성 상태 관리용
 -- =========================================================
 create table if not exists public.devices (
   id uuid primary key default gen_random_uuid(),
@@ -38,6 +38,50 @@ create table if not exists public.devices (
 
 create index if not exists idx_devices_user_id on public.devices(user_id);
 create index if not exists idx_devices_user_active on public.devices(user_id, is_active);
+
+-- =========================================================
+-- device_push_tokens
+-- 원격 푸시 토큰 등록 상태 관리용
+-- =========================================================
+create table if not exists public.device_push_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  device_id uuid not null references public.devices(id) on delete cascade,
+  platform text not null,
+  push_provider text not null,
+  push_token text not null,
+  is_active boolean not null default true,
+  permission_status text not null default 'granted',
+  last_registered_at timestamptz not null default now(),
+  deactivated_at timestamptz,
+  deactivation_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint device_push_tokens_platform_check check (
+    platform in ('ios', 'android')
+  ),
+  constraint device_push_tokens_provider_check check (
+    push_provider in ('apns', 'fcm')
+  ),
+  constraint device_push_tokens_permission_status_check check (
+    permission_status in ('granted', 'denied')
+  ),
+  constraint device_push_tokens_deactivation_reason_check check (
+    deactivation_reason is null or
+    deactivation_reason in ('logout', 'permission-denied', 'delivery-failed')
+  ),
+  constraint device_push_tokens_device_provider_unique unique (
+    device_id,
+    push_provider
+  )
+);
+
+create index if not exists idx_device_push_tokens_user_active
+  on public.device_push_tokens(user_id, is_active);
+create index if not exists idx_device_push_tokens_device_active
+  on public.device_push_tokens(device_id, is_active);
+create index if not exists idx_device_push_tokens_token
+  on public.device_push_tokens(push_token);
 
 -- =========================================================
 -- recurring_items
@@ -148,7 +192,7 @@ create index if not exists idx_completion_logs_user_created_at
 
 -- =========================================================
 -- device_notification_reservations
--- 각 기기에서 예약한 로컬 알림 추적용
+-- 로컬 알림 전환 이전 구조. 원격 푸시 전환 뒤 축소 또는 폐기 대상
 -- =========================================================
 create table if not exists public.device_notification_reservations (
   id uuid primary key default gen_random_uuid(),

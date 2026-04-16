@@ -1,6 +1,7 @@
 # Notification Phase Checkpoints
 
 이 문서는 17~19단계 알림 구현을 바로 진행하기 위한 세부 체크포인트다.
+직접 APNs + FCM 기반 원격 푸시 전환 체크포인트는 `REMOTE_PUSH_MIGRATION_CHECKPOINTS.md`를 따른다.
 제품 범위는 `PRODUCT_SPEC.md`를 따른다.
 구성요소 책임과 데이터 흐름은 `SYSTEM_DESIGN.md`를 따른다.
 동기화 규칙과 경계 조건은 `DOMAIN_LOGIC.md`를 따른다.

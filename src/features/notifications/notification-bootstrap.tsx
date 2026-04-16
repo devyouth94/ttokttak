@@ -9,6 +9,11 @@ import {
 } from "react";
 import { AppState } from "react-native";
 
+import { addCurrentDevicePushTokenListener } from "~/features/notifications/device-push-token";
+import {
+  deactivateCurrentDevicePushTokens,
+  registerCurrentDevicePushToken,
+} from "~/features/notifications/device-push-token-registration";
 import { resolveNotificationSyncReason } from "~/features/notifications/notification-bootstrap.helpers";
 import {
   getNotificationPermissionState,
@@ -146,10 +151,12 @@ export function NotificationBootstrapProvider({
   const [lastSyncState, setLastSyncState] =
     useState<NotificationSyncState | null>(null);
   const appStartSyncUserIdRef = useRef<string | null>(null);
+  const lastPushTokenSyncKeyRef = useRef<string | null>(null);
   const lastSessionRestoreStateRef = useRef<{
     revision: number;
     userId: string;
   } | null>(null);
+  const lastSignedInUserIdRef = useRef<string | null>(null);
   const isSyncRunningRef = useRef(false);
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -188,6 +195,32 @@ export function NotificationBootstrapProvider({
       }
     }, []);
 
+  const syncPushToken = useCallback(
+    async (userId: string): Promise<void> => {
+      try {
+        await registerCurrentDevicePushToken(userId);
+        lastPushTokenSyncKeyRef.current = `${userId}:${sessionRevision}`;
+      } catch {
+        // 실제 기기 전환 전까지는 토큰 등록 실패를 조용히 무시한다.
+      }
+    },
+    [sessionRevision]
+  );
+
+  const deactivatePushToken = useCallback(
+    async (
+      userId: string,
+      reason: "logout" | "permission-denied"
+    ): Promise<void> => {
+      try {
+        await deactivateCurrentDevicePushTokens(userId, reason);
+      } catch {
+        // 비활성화 실패는 다음 세션 복원 시 다시 정리한다.
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     void refreshPermission();
 
@@ -201,6 +234,60 @@ export function NotificationBootstrapProvider({
       subscription.remove();
     };
   }, [refreshPermission]);
+
+  useEffect(() => {
+    if (user?.id) {
+      lastSignedInUserIdRef.current = user.id;
+      return;
+    }
+
+    if (authEvent !== "SIGNED_OUT" || !lastSignedInUserIdRef.current) {
+      return;
+    }
+
+    const signedOutUserId = lastSignedInUserIdRef.current;
+    lastSignedInUserIdRef.current = null;
+    lastPushTokenSyncKeyRef.current = null;
+
+    void deactivatePushToken(signedOutUserId, "logout");
+  }, [authEvent, deactivatePushToken, user?.id]);
+
+  useEffect(() => {
+    if (isLoading || !user?.id || permission.status !== "granted") {
+      return;
+    }
+
+    const nextSyncKey = `${user.id}:${sessionRevision}`;
+
+    if (lastPushTokenSyncKeyRef.current === nextSyncKey) {
+      return;
+    }
+
+    void syncPushToken(user.id);
+  }, [isLoading, permission.status, sessionRevision, syncPushToken, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || permission.status !== "granted") {
+      return;
+    }
+
+    const subscription = addCurrentDevicePushTokenListener(() => {
+      return syncPushToken(user.id);
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [permission.status, syncPushToken, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || permission.status !== "denied") {
+      return;
+    }
+
+    lastPushTokenSyncKeyRef.current = null;
+    void deactivatePushToken(user.id, "permission-denied");
+  }, [deactivatePushToken, permission.status, user?.id]);
 
   useEffect(() => {
     if (!user?.id) {

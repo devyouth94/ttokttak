@@ -75,7 +75,7 @@
   - 로그인 상태 복원
   - 현재 사용자와 현재 기기 식별
 - **Repositories**
-  - recurring item 메타, schedule versions, completion logs, devices, notification reservation metadata 조회/저장
+  - recurring item 메타, schedule versions, completion logs, devices, device push token 조회/저장
 - **Domain services**
   - recurrence calculation
   - occurrence derivation
@@ -83,7 +83,7 @@
   - next occurrence logic
 - **Notification scheduler**
   - 현재 기기 기준 예약/취소 수행
-  - device-scoped metadata 동기화
+  - 원격 푸시 토큰 등록 상태 동기화
 - **Presentation surfaces**
   - 홈, 상세, 히스토리, 달력, 설정, 위젯에 필요한 파생 데이터를 조합
 
@@ -99,7 +99,7 @@
 
 - 서버 row가 원본 데이터다.
 - occurrence와 화면 목록은 저장하지 않고 계산한다.
-- 로컬 알림은 계산 결과를 반영하는 파생 상태다.
+- 로컬 알림과 원격 푸시 토큰은 계산 결과를 반영하는 파생 상태다.
 
 전제조건:
 
@@ -134,7 +134,7 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 
 ### Notifications
 
-알림 자체는 source of truth가 아니다. DB 기준으로 occurrence를 다시 계산하고, 그 결과에 따라 로컬 알림을 예약한다.
+알림 자체는 source of truth가 아니다. DB 기준으로 occurrence를 다시 계산하고, 그 결과에 따라 로컬 알림 예약 또는 원격 푸시 발송 대상을 다시 맞춘다.
 
 ---
 
@@ -144,6 +144,7 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 
 - users / profiles
 - devices
+- device_push_tokens
 - recurring_items
 - recurring_item_schedule_versions
 - completion_logs
@@ -325,14 +326,15 @@ phase 16 메모:
 
 ### Why devices table exists
 
-- 알림은 로컬 디바이스에서만 울린다
-- 어느 기기에서 어떤 알림을 예약했는지 추적해야 한다
+- 같은 계정의 여러 기기를 구분해야 한다
+- 토큰과 발송 실패를 기기 단위로 추적해야 한다
 
 ### Key rule
 
-- 각 기기는 자신의 로컬 알림만 예약/취소한다
+- `devices`는 기기 identity를 유지한다
+- `device_push_tokens`는 현재 발송 가능한 토큰만 유지한다
 - 서버는 아이템/로그 데이터의 source of truth
-- 알림 예약 메타데이터는 device-scoped로 관리한다
+- 로컬 예약 메타데이터는 전환 완료 뒤 legacy 구조로 축소한다
 
 ### Practical implication
 

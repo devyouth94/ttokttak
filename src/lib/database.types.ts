@@ -111,6 +111,69 @@ export type Database = {
           },
         ];
       };
+      device_push_tokens: {
+        Row: {
+          created_at: string;
+          deactivated_at: string | null;
+          deactivation_reason: string | null;
+          device_id: string;
+          id: string;
+          is_active: boolean;
+          last_registered_at: string;
+          permission_status: string;
+          platform: string;
+          push_provider: string;
+          push_token: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          deactivated_at?: string | null;
+          deactivation_reason?: string | null;
+          device_id: string;
+          id?: string;
+          is_active?: boolean;
+          last_registered_at?: string;
+          permission_status?: string;
+          platform: string;
+          push_provider: string;
+          push_token: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          deactivated_at?: string | null;
+          deactivation_reason?: string | null;
+          device_id?: string;
+          id?: string;
+          is_active?: boolean;
+          last_registered_at?: string;
+          permission_status?: string;
+          platform?: string;
+          push_provider?: string;
+          push_token?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["device_id"];
+            foreignKeyName: "device_push_tokens_device_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "devices";
+          },
+          {
+            columns: ["user_id"];
+            foreignKeyName: "device_push_tokens_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
       devices: {
         Row: {
           created_at: string;
@@ -339,6 +402,12 @@ export type DeviceNotificationReservationRow =
   Database["public"]["Tables"]["device_notification_reservations"]["Row"];
 export type DeviceNotificationReservationUpdate =
   Database["public"]["Tables"]["device_notification_reservations"]["Update"];
+export type DevicePushTokenInsert =
+  Database["public"]["Tables"]["device_push_tokens"]["Insert"];
+export type DevicePushTokenRow =
+  Database["public"]["Tables"]["device_push_tokens"]["Row"];
+export type DevicePushTokenUpdate =
+  Database["public"]["Tables"]["device_push_tokens"]["Update"];
 export type DeviceRow = Database["public"]["Tables"]["devices"]["Row"];
 export type DeviceUpdate = Database["public"]["Tables"]["devices"]["Update"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];

@@ -20,6 +20,7 @@ export default function getAppConfig(): ExpoConfig {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
+      googleServicesFile: "./.google/google-services.json",
       predictiveBackGestureEnabled: false,
       package: "com.youngzin.ttokttak",
     },

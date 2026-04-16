@@ -20,6 +20,13 @@ export const occurrenceStatuses = [
 
 export const completionActions = ["completed", "skipped"] as const;
 export const devicePlatforms = ["ios", "android", "web", "unknown"] as const;
+export const pushProviders = ["apns", "fcm"] as const;
+export const devicePushTokenPermissionStatuses = ["granted", "denied"] as const;
+export const devicePushTokenDeactivationReasons = [
+  "logout",
+  "permission-denied",
+  "delivery-failed",
+] as const;
 
 export const completionBasedRecurrenceTypes = [
   "once",
@@ -35,6 +42,11 @@ export type AnchorType = (typeof anchorTypes)[number];
 export type OccurrenceStatus = (typeof occurrenceStatuses)[number];
 export type CompletionAction = (typeof completionActions)[number];
 export type DevicePlatform = (typeof devicePlatforms)[number];
+export type PushProvider = (typeof pushProviders)[number];
+export type DevicePushTokenPermissionStatus =
+  (typeof devicePushTokenPermissionStatuses)[number];
+export type DevicePushTokenDeactivationReason =
+  (typeof devicePushTokenDeactivationReasons)[number];
 export type CompletionBasedRecurrenceType =
   (typeof completionBasedRecurrenceTypes)[number];
 
@@ -108,6 +120,22 @@ export interface Device {
   deviceName?: string | null;
   isActive: boolean;
   lastSeenAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DevicePushToken {
+  id: string;
+  userId: string;
+  deviceId: string;
+  platform: Extract<DevicePlatform, "android" | "ios">;
+  pushProvider: PushProvider;
+  pushToken: string;
+  isActive: boolean;
+  permissionStatus: DevicePushTokenPermissionStatus;
+  lastRegisteredAt: string;
+  deactivatedAt?: string | null;
+  deactivationReason?: DevicePushTokenDeactivationReason | null;
   createdAt: string;
   updatedAt: string;
 }
