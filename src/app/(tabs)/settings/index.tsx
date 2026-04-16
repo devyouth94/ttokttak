@@ -140,9 +140,15 @@ function getNotificationSyncStatusText(
   }
 
   if (lastSyncState.status === "succeeded") {
-    return lastSyncState.reason === "app-start"
-      ? "앱 시작 시 반영됨"
-      : "세션 복원 후 반영됨";
+    if (lastSyncState.reason === "app-start") {
+      return "앱 시작 시 반영됨";
+    }
+
+    if (lastSyncState.reason === "session-restored") {
+      return "세션 복원 후 반영됨";
+    }
+
+    return "변경 후 반영됨";
   }
 
   if (lastSyncState.status === "failed") {
@@ -276,7 +282,7 @@ export default function SettingsTabPage(): React.JSX.Element {
               value={isPermissionLoading ? "확인 중" : permission.label}
             />
             <SettingsValueRow
-              title="시작 동기화"
+              title="최근 동기화"
               value={getNotificationSyncStatusText(lastSyncState)}
             />
             {lastSyncState?.status === "failed" ? (

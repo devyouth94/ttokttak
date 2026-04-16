@@ -9,22 +9,18 @@ import {
 } from "react";
 import { AppState } from "react-native";
 
-import {
-  getCurrentDeviceName,
-  getCurrentDevicePlatform,
-  getOrCreateNotificationDeviceId,
-} from "~/features/notifications/device-identity";
-import {
-  type NotificationSyncReason,
-  resolveNotificationSyncReason,
-} from "~/features/notifications/notification-bootstrap.helpers";
+import { resolveNotificationSyncReason } from "~/features/notifications/notification-bootstrap.helpers";
 import {
   getNotificationPermissionState,
   type NotificationPermissionState,
   openNotificationSettings,
   requestNotificationPermission,
 } from "~/features/notifications/notification-permission";
-import { upsertDevice } from "~/features/recurring/repositories/devices-repository";
+import { syncCurrentDeviceNotifications } from "~/features/notifications/notification-sync";
+import type {
+  NotificationSyncReason,
+  NotificationSyncScope,
+} from "~/features/notifications/notification-sync.helpers";
 import { useSession } from "~/features/session/session-provider";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
@@ -34,6 +30,13 @@ type NotificationSyncState = {
   status: "failed" | "running" | "skipped" | "succeeded";
   updatedAt: string;
 };
+
+type MutationNotificationSyncReason =
+  | "item-archived"
+  | "item-created"
+  | "item-updated"
+  | "occurrence-completed"
+  | "occurrence-skipped";
 
 type NotificationBootstrapContextValue = {
   isPermissionLoading: boolean;
@@ -45,6 +48,10 @@ type NotificationBootstrapContextValue = {
   refreshPermission: () => Promise<NotificationPermissionState>;
   requestPermission: () => Promise<NotificationPermissionState>;
   retrySync: () => Promise<void>;
+  syncAfterMutation: (params: {
+    reason: MutationNotificationSyncReason;
+    scope: NotificationSyncScope;
+  }) => Promise<void>;
 };
 
 const initialPermissionState: NotificationPermissionState = {
@@ -57,24 +64,17 @@ const initialPermissionState: NotificationPermissionState = {
 const NotificationBootstrapContext =
   createContext<NotificationBootstrapContextValue | null>(null);
 
-async function syncNotificationBootstrap(
-  userId: string,
-  reason: NotificationSyncReason
-): Promise<NotificationSyncState> {
-  const deviceId = await getOrCreateNotificationDeviceId();
-
-  await upsertDevice({
-    deviceName: getCurrentDeviceName(),
-    id: deviceId,
-    isActive: true,
-    lastSeenAt: new Date().toISOString(),
-    platform: getCurrentDevicePlatform(),
-    userId,
-  });
+async function syncNotifications(params: {
+  reason: NotificationSyncReason;
+  scope: NotificationSyncScope;
+  timezone: string;
+  userId: string;
+}): Promise<NotificationSyncState> {
+  const result = await syncCurrentDeviceNotifications(params);
 
   return {
-    detail: "현재 기기 동기화 진입점을 갱신했습니다.",
-    reason,
+    detail: result.detail,
+    reason: result.reason,
     status: "succeeded",
     updatedAt: new Date().toISOString(),
   };
@@ -85,29 +85,38 @@ async function runNotificationSync(params: {
   setIsSyncing: (running: boolean) => void;
   setLastSyncState: (state: NotificationSyncState) => void;
   setSyncRunning: (running: boolean) => void;
+  scope: NotificationSyncScope;
+  timezone: string;
   userId: string;
   onSuccess?: () => void;
 }): Promise<void> {
   const {
     onSuccess,
     reason,
+    scope,
     setIsSyncing,
     setLastSyncState,
     setSyncRunning,
+    timezone,
     userId,
   } = params;
 
   setIsSyncing(true);
   setSyncRunning(true);
   setLastSyncState({
-    detail: "현재 기기 동기화 진입점을 확인하고 있습니다.",
+    detail: "현재 기기 알림을 다시 맞추고 있습니다.",
     reason,
     status: "running",
     updatedAt: new Date().toISOString(),
   });
 
   try {
-    const result = await syncNotificationBootstrap(userId, reason);
+    const result = await syncNotifications({
+      reason,
+      scope,
+      timezone,
+      userId,
+    });
 
     onSuccess?.();
     setLastSyncState(result);
@@ -127,7 +136,7 @@ async function runNotificationSync(params: {
 export function NotificationBootstrapProvider({
   children,
 }: PropsWithChildren): React.JSX.Element {
-  const { authEvent, isLoading, sessionRevision, user } = useSession();
+  const { authEvent, isLoading, profile, sessionRevision, user } = useSession();
   const [permission, setPermission] = useState<NotificationPermissionState>(
     initialPermissionState
   );
@@ -142,6 +151,8 @@ export function NotificationBootstrapProvider({
     userId: string;
   } | null>(null);
   const isSyncRunningRef = useRef(false);
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const setSyncRunning = useCallback((running: boolean) => {
     isSyncRunningRef.current = running;
@@ -227,9 +238,11 @@ export function NotificationBootstrapProvider({
         }
       },
       reason,
+      scope: { type: "all" },
       setIsSyncing,
       setLastSyncState,
       setSyncRunning,
+      timezone,
       userId: user.id,
     });
   }, [
@@ -238,6 +251,7 @@ export function NotificationBootstrapProvider({
     permission.status,
     sessionRevision,
     setSyncRunning,
+    timezone,
     user?.id,
   ]);
 
@@ -252,12 +266,43 @@ export function NotificationBootstrapProvider({
 
     await runNotificationSync({
       reason: "session-restored",
+      scope: { type: "all" },
       setIsSyncing,
       setLastSyncState,
       setSyncRunning,
+      timezone,
       userId: user.id,
     });
-  }, [permission.status, setSyncRunning, user?.id]);
+  }, [permission.status, setSyncRunning, timezone, user?.id]);
+
+  const syncAfterMutation = useCallback(
+    async ({
+      reason,
+      scope,
+    }: {
+      reason: MutationNotificationSyncReason;
+      scope: NotificationSyncScope;
+    }): Promise<void> => {
+      if (
+        !user?.id ||
+        permission.status !== "granted" ||
+        isSyncRunningRef.current
+      ) {
+        return;
+      }
+
+      await runNotificationSync({
+        reason,
+        scope,
+        setIsSyncing,
+        setLastSyncState,
+        setSyncRunning,
+        timezone,
+        userId: user.id,
+      });
+    },
+    [permission.status, setSyncRunning, timezone, user?.id]
+  );
 
   const value: NotificationBootstrapContextValue = {
     isPermissionLoading,
@@ -269,6 +314,7 @@ export function NotificationBootstrapProvider({
     refreshPermission,
     requestPermission,
     retrySync,
+    syncAfterMutation,
   };
 
   return (
@@ -283,7 +329,7 @@ export function useNotificationBootstrap(): NotificationBootstrapContextValue {
 
   if (!context) {
     throw new Error(
-      "NotificationBootstrapProvider 내부에서만 useNotificationBootstrap을 사용할 수 있습니다."
+      "useNotificationBootstrap는 NotificationBootstrapProvider 안에서만 사용할 수 있습니다."
     );
   }
 

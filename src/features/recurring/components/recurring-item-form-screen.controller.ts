@@ -6,6 +6,7 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -52,6 +53,7 @@ export function useRecurringItemFormScreenController({
   const todayLocalDate = getTodayLocalDate();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, profile, user } = useSession();
+  const { syncAfterMutation } = useNotificationBootstrap();
   const [requestState, setRequestState] = useState({
     isBootstrapping: isEditMode,
     isDeleting: false,
@@ -462,6 +464,8 @@ export function useRecurringItemFormScreenController({
 
     try {
       if (isEditMode && itemId) {
+        const syncEffectiveFromUtc = new Date().toISOString();
+
         await updateRecurringItem({
           id: itemId,
           patch: {
@@ -479,10 +483,28 @@ export function useRecurringItemFormScreenController({
           timezone,
           userId: user.id,
         });
+
+        await syncAfterMutation({
+          reason: "item-updated",
+          scope: {
+            effectiveFromUtc: syncEffectiveFromUtc,
+            itemId,
+            type: "item",
+          },
+        });
       } else {
-        await createRecurringItem({
+        const createdItem = await createRecurringItem({
           ...draft,
           userId: user.id,
+        });
+
+        await syncAfterMutation({
+          reason: "item-created",
+          scope: {
+            effectiveFromUtc: new Date().toISOString(),
+            itemId: createdItem.id,
+            type: "item",
+          },
         });
       }
 
@@ -517,6 +539,15 @@ export function useRecurringItemFormScreenController({
       await archiveRecurringItem({
         id: currentItemId,
         userId,
+      });
+
+      await syncAfterMutation({
+        reason: "item-archived",
+        scope: {
+          effectiveFromUtc: new Date().toISOString(),
+          itemId: currentItemId,
+          type: "item",
+        },
       });
 
       await queryClient.invalidateQueries({

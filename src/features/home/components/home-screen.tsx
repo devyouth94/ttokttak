@@ -22,6 +22,7 @@ import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
@@ -222,6 +223,7 @@ function FeedErrorCard({
 
 export function HomeScreen(): React.JSX.Element {
   const { profile } = useSession();
+  const { syncAfterMutation } = useNotificationBootstrap();
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const queryClient = useQueryClient();
   const isFocused = useIsFocused();
@@ -363,6 +365,18 @@ export function HomeScreen(): React.JSX.Element {
           )
         );
       }
+
+      await syncAfterMutation({
+        reason:
+          action === "completed"
+            ? "occurrence-completed"
+            : "occurrence-skipped",
+        scope: {
+          effectiveFromUtc: new Date().toISOString(),
+          itemId: card.item.id,
+          type: "item",
+        },
+      });
 
       await queryClient.invalidateQueries({
         queryKey: recurringQueryKeys.user(userId),

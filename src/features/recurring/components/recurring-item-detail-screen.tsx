@@ -32,6 +32,7 @@ import {
   typography,
 } from "~/design-system/tokens";
 import { HistoryEntryCard } from "~/features/history/components/history-entry-card";
+import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import {
   buildRecurringItemDetailViewModel,
   getItemDetailBasisOccurrence,
@@ -445,6 +446,7 @@ export function RecurringItemDetailScreen({
   scheduledAtUtc?: string;
 }): React.JSX.Element {
   const { isReady, timezone, userId } = useRecurringFeedContext();
+  const { syncAfterMutation } = useNotificationBootstrap();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
@@ -569,6 +571,18 @@ export function RecurringItemDetailScreen({
         );
       }
 
+      await syncAfterMutation({
+        reason:
+          action === "completed"
+            ? "occurrence-completed"
+            : "occurrence-skipped",
+        scope: {
+          effectiveFromUtc: new Date().toISOString(),
+          itemId: item.id,
+          type: "item",
+        },
+      });
+
       await queryClient.invalidateQueries({
         queryKey: recurringQueryKeys.user(userId),
       });
@@ -604,6 +618,16 @@ export function RecurringItemDetailScreen({
         id: item.id,
         userId,
       });
+
+      await syncAfterMutation({
+        reason: "item-archived",
+        scope: {
+          effectiveFromUtc: new Date().toISOString(),
+          itemId: item.id,
+          type: "item",
+        },
+      });
+
       await queryClient.invalidateQueries({
         queryKey: recurringQueryKeys.user(userId),
       });
