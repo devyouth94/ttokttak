@@ -1,6 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
 const googleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME!;
+const iconBackgroundColor = "#FCF2E4";
 
 export default function getAppConfig(): ExpoConfig {
   return {
@@ -18,7 +19,7 @@ export default function getAppConfig(): ExpoConfig {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff",
+        backgroundColor: iconBackgroundColor,
       },
       googleServicesFile: "./.google/google-services.json",
       predictiveBackGestureEnabled: false,
@@ -38,7 +39,7 @@ export default function getAppConfig(): ExpoConfig {
       [
         "expo-splash-screen",
         {
-          backgroundColor: "#ffffff",
+          backgroundColor: iconBackgroundColor,
           image: "./assets/splash.png",
           imageWidth: 200,
         },
