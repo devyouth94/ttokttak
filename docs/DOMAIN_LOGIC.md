@@ -88,7 +88,7 @@ export interface DerivedOccurrence {
 - 생성 시 시작일이 오늘이면 알림 시간이 이미 지났더라도 첫 occurrence는 오늘로 유지한다.
 - MVP에서는 `reminderTimeLocal`을 필수 입력으로 보고 검증한다.
 - `notificationsEnabled = false`여도 overdue 판단과 정렬 기준이 필요하므로 값은 유지한다.
-- `notificationsEnabled = false`인 version은 알림 예약 대상에서는 제외된다.
+- `notificationsEnabled = false`인 version은 알림 발송 대상에서 제외된다.
 - `anchorType`은 다음 future occurrence 계산 기준만 바꾸며, occurrence 상태 판정 규칙 자체를 바꾸지는 않는다.
 - `isArchived = true`인 item은 활성 화면과 future notification 대상에서 제외하는 방향을 기본으로 본다.
 - `CompletionLog`는 `(itemId, scheduledAtUtc)` 기준으로 특정 occurrence에 연결된다.
@@ -385,7 +385,7 @@ UI 정책:
 4. 수정 시점 이후 첫 future occurrence local date 계산
 5. 새 schedule version 저장
 6. 과거 completion log는 유지
-7. 앱 시작 또는 즉시 sync에서 미래 알림만 재예약
+7. mutation 직후 미래 원격 푸시 job을 재계산
 
 전제조건:
 
@@ -411,8 +411,8 @@ MVP 확정 정책:
 
 - mutation 성공 후 미래 occurrence를 다시 계산한다.
 - 홈, 캘린더, 히스토리에서 서버 기준 최신 상태를 다시 반영한다.
-- 현재 기기 기준 notification sync를 다시 실행한다.
-- notification sync 삭제 대상은 `scheduled_at_utc >= effective_from_utc` 미래 reservation으로 제한한다.
+- 서버 발송 job을 다시 계산한다.
+- job 재계산 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위로 제한한다.
 - 동일 occurrence가 다른 기기에서 먼저 처리된 경우 최신 상태를 재조회하고 짧은 안내 메시지를 1회 표시한다.
 
 ## 13. Delete Item Flow
@@ -439,42 +439,6 @@ MVP 확정 정책:
 
 ## 14. Notification Delivery Logic
 
-### syncRemoteNotificationDeliveryJobs(userId, nowUtc)
-
-1. 현재 사용자 timezone 조회
-2. `notificationsEnabled = true` 아이템 조회
-3. `range = [now, now + 14 days]`
-4. 각 아이템 occurrence 계산
-5. `scheduled` 상태만 추림
-6. 기존 서버 발송 job 조회
-7. 유효하지 않은 job 취소
-8. 새 job upsert
-
-전제조건:
-
-- `userId`, `nowUtc`가 모두 현재 실행 컨텍스트와 일치해야 한다.
-- 사용자 timezone과 알림 대상 item 데이터를 조회할 수 있어야 한다.
-- 현재 기기의 기존 예약 metadata를 읽고 쓸 수 있어야 한다.
-
-예상 예외:
-
-- notification permission denied
-- network error
-- auth expired
-- invalid recurrence config
-
-후속 액션:
-
-- 유효하지 않은 예약은 취소하고 새 예약 결과를 metadata에 반영한다.
-- 실패 시 재시도 가능한 동기화 경로를 남기고, 서버 데이터를 source of truth로 유지한다.
-
-device-scoped metadata 예시:
-
-- itemId
-- scheduledAtUtc
-- localNotificationId
-- deviceId
-
 ### syncRemotePushJobs(userId, nowUtc)
 
 1. 현재 사용자 timezone 조회
@@ -491,6 +455,7 @@ dedupe key 규칙:
 - `reminder:${userId}:${itemId}:${scheduledAtUtc}`
 - 같은 occurrence에는 job이 1개만 존재한다.
 - 재시도는 같은 job row에서 처리한다.
+- stale job은 삭제하지 않고 `cancelled`로 전환한다.
 
 job 상태 규칙:
 
@@ -516,6 +481,20 @@ attempt 기록 규칙:
 - provider message id와 provider error code를 함께 저장한다.
 - 무효 token 오류면 해당 token을 `delivery-failed`로 비활성화한다.
 
+token 선택 규칙:
+
+- `device_push_tokens.is_active = true`
+- `permission_status = 'granted'`
+- iOS token은 `push_provider = 'apns'`만 사용한다.
+- Android token은 `push_provider = 'fcm'`만 사용한다.
+- 활성 token이 여러 개면 모두 발송한다.
+
+provider 오류 규칙:
+
+- APNs `BadDeviceToken`, `Unregistered`는 무효 token으로 본다.
+- FCM `UNREGISTERED`, `INVALID_ARGUMENT`는 무효 token으로 본다.
+- 무효 token은 재시도하지 않는다.
+
 재시도 규칙:
 
 - 네트워크 오류, provider 5xx, rate limit만 재시도한다.
@@ -534,7 +513,6 @@ attempt 기록 규칙:
 - completion log는 append-only 성격 유지
 - row마다 `createdAt`, `updatedAt` 유지
 - item 업데이트 후 서버 재조회
-- 기기별 notification reservation은 분리 저장
 - 원격 푸시는 활성 token 전체 fan-out을 기본값으로 사용
 - token 실패는 기기 전체 실패가 아니라 token 단위로 기록
 

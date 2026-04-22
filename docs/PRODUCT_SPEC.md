@@ -252,12 +252,11 @@
 ### 7.5 Notification strategy
 
 - 알림은 예정 시각 1회만 발송
-- 항목 생성/수정/삭제/완료/건너뜀 시 관련 알림 재스케줄
-- 앱 시작 시 전체 동기화로 보정
-- 앞으로 14일 범위의 occurrence만 예약
-- 항목 수정 시에는 수정 시점 이후 미래 reservation만 재조정 대상으로 본다
-- 구성요소 책임과 예약/취소 흐름은 `SYSTEM_DESIGN.md`의 Notification Design을 따른다.
-- 상태 계산과 동기화 절차의 세부 규칙은 `DOMAIN_LOGIC.md`의 Notification Sync Logic을 따른다.
+- 항목 생성/수정/삭제/완료/건너뜀 시 관련 원격 푸시 발송 job을 재계산
+- 앞으로 14일 범위의 occurrence만 발송 job으로 관리
+- 항목 수정 시에는 수정 시점 이후 미래 job만 재조정 대상으로 본다
+- 구성요소 책임과 발송 흐름은 `SYSTEM_DESIGN.md`의 Notification Design을 따른다.
+- 상태 계산과 동기화 절차의 세부 규칙은 `DOMAIN_LOGIC.md`의 Notification Delivery Logic을 따른다.
 
 ---
 
@@ -292,7 +291,7 @@
 - UTC 저장
 - 사용자 timezone 별도 저장
 - 입력/표시 기준은 사용자 timezone
-- 알림 예약 시 UTC로 변환
+- 알림 발송 시각은 UTC로 변환
 - 저장 패턴과 해석 규칙은 `SYSTEM_DESIGN.md`와 `DOMAIN_LOGIC.md`를 따른다.
 
 ---
@@ -330,8 +329,8 @@
 ### FR-03 Item edit/delete
 
 - 사용자는 기존 항목을 수정/삭제할 수 있어야 한다.
-- 수정/삭제 시 예약된 알림이 재조정되어야 한다.
-- 규칙 영향 수정 시 재조정 대상은 수정 시점 이후 미래 예약만 포함한다.
+- 수정/삭제 시 원격 푸시 발송 job이 재조정되어야 한다.
+- 규칙 영향 수정 시 재조정 대상은 수정 시점 이후 미래 job만 포함한다.
 
 ### FR-04 Occurrence visibility
 
@@ -487,7 +486,7 @@
 ### Portfolio success
 
 - 제품 정의부터 설계, UX, 앱 구현, 인프라 연결까지 일관된 스토리를 설명할 수 있다
-- 반복 규칙, 상태 모델, 알림 재스케줄링 구조를 명확히 설명할 수 있다
+- 반복 규칙, 상태 모델, 알림 발송 job 재계산 구조를 명확히 설명할 수 있다
 - MVP 범위 통제와 확장 전략을 설명할 수 있다
 
 ---

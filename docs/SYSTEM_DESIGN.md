@@ -29,7 +29,7 @@
 - 사용자 timezone 기반 로컬 입력/표시
 - UTC 저장
 - occurrence는 저장하지 않고 계산
-- 가까운 14일 범위만 알림 예약
+- 가까운 14일 범위만 원격 푸시 발송 job 생성
 - 멀티 디바이스 확장 가능한 모델
 
 ### Terminology baseline
@@ -64,7 +64,7 @@
    - next occurrence logic
 4. **Infrastructure**
    - Supabase repositories
-   - notification scheduler
+   - notification bootstrap
    - remote push delivery worker
    - timezone utils
    - auth/session
@@ -82,9 +82,10 @@
   - occurrence derivation
   - status resolution
   - next occurrence logic
-- **Notification scheduler**
-  - 현재 기기 기준 예약/취소 수행
-  - 원격 푸시 토큰 등록 상태 동기화
+- **Notification bootstrap**
+  - 알림 권한 상태 확인
+  - 현재 기기 원격 푸시 토큰 등록/비활성화
+  - mutation 이후 서버 발송 job 재계산 요청
 - **Remote push delivery worker**
   - future occurrence 기준 발송 job upsert
   - APNs / FCM fan-out 발송
@@ -123,7 +124,7 @@
 
 - mutation 성공 후 서버 기준 파생 목록을 다시 조회한다.
 - 홈, 히스토리, 달력, 위젯은 재계산 결과를 다시 반영한다.
-- 알림이 켜진 항목은 현재 기기 기준 notification sync를 다시 실행한다.
+- 알림이 켜진 항목은 서버 발송 job을 다시 계산한다.
 
 ---
 
@@ -264,48 +265,56 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 
 ### Policy
 
-- 알림은 occurrence 예정 시각에 1회 발송
-- 앞으로 14일 범위만 예약
-- 항목 변경 시 관련 알림 재계산
-- 앱 시작 시 전체 동기화 보정
-- item edit로 인한 reservation 삭제 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위만 포함한다
-- item edit 후 생성 대상은 새 schedule version 기준 future occurrence만 포함한다
+- 알림은 occurrence 예정 시각에 1회 원격 푸시로 발송한다.
+- 앞으로 14일 범위만 서버 발송 job으로 관리한다.
+- 항목 생성, 수정, 완료, 건너뜀, 보관 뒤 관련 발송 job을 재계산한다.
+- item edit로 인한 재계산 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위만 포함한다.
+- item edit 후 생성 대상은 새 schedule version 기준 future occurrence만 포함한다.
+- 앱은 로컬 알림을 예약하지 않는다.
+- 앱은 푸시 권한 확인과 현재 기기 token 등록만 맡는다.
 
-### Why not schedule everything forever
+### Why not create jobs forever
 
 - 변경/삭제 대응이 어려움
 - 장기 일정 관리가 비효율적
-- 예약 상태와 데이터 정합성이 깨질 수 있음
+- 발송 상태와 데이터 정합성이 깨질 수 있음
 
 ### Notification sync triggers
 
-- app start
-- auth session restored
 - item created
 - item updated
 - item archived or deleted
 - occurrence completed
 - occurrence skipped
 
-### Scheduling algorithm
+### App token lifecycle
 
-1. 현재 사용자와 현재 기기 확인
-2. 14일 범위 내 relevant occurrence 계산
-3. 기존 기기 알림 예약 목록 확인
-4. 더 이상 유효하지 않은 알림 취소
-5. 새 occurrence에 대한 알림 예약
-6. 예약된 notification id를 device-scoped metadata에 저장
+1. 로그인 직후 세션 복원 시 현재 기기 token을 등록한다.
+2. 알림 권한 허용 직후 현재 기기 token을 등록한다.
+3. `addPushTokenListener`로 token 갱신 시 다시 등록한다.
+4. 로그아웃 시 현재 기기 token을 `logout`으로 비활성화한다.
+5. 권한 거부 시 현재 기기 token을 `permission-denied`로 비활성화한다.
+6. provider가 만료 token을 반환하면 worker가 `delivery-failed`로 비활성화한다.
 
-phase 16 메모:
+### Remote push delivery algorithm
 
-- phase 16에서는 삭제/생성 경계 계약만 고정한다.
-- 실제 local notification orchestration 연결은 phase 18 범위다.
+1. future occurrence 계산 결과를 기준으로 `notification_delivery_jobs`를 upsert 한다.
+2. job의 `dedupe_key`로 occurrence 단위 중복 생성을 막는다.
+3. Supabase `pg_cron`이 매분 Edge Function worker를 호출한다.
+4. worker가 `status in ('pending', 'retrying')` 이고 `deliver_at_utc <= now()` 인 job을 조회한다.
+5. 조회 시점의 활성 `device_push_tokens`를 읽는다.
+6. iOS + `apns` token은 APNs 직접 발송으로 보낸다.
+7. Android + `fcm` token은 FCM 직접 발송으로 보낸다.
+8. token별 결과를 `notification_delivery_attempts`에 남긴다.
+9. job 요약 상태와 재시도 시각을 갱신한다.
+10. 무효 token은 `delivery-failed`로 비활성화한다.
 
 전제조건:
 
 - auth/session 계층이 현재 사용자와 현재 기기를 식별할 수 있어야 한다.
 - 사용자 timezone과 item 데이터가 서버에서 조회 가능해야 한다.
 - 알림은 `notifications_enabled = true`인 항목만 대상으로 한다.
+- Edge Function에는 APNs/FCM secret이 설정되어 있어야 한다.
 
 예상 예외:
 
@@ -313,24 +322,13 @@ phase 16 메모:
 - network error
 - auth expired
 - invalid recurrence config
+- provider credential error
 
 운영 후속 액션:
 
-- 예약 결과는 현재 기기용 metadata에만 반영한다.
-- 실패 시 홈에서 오류를 명확히 보여주고 재시도 가능한 액션을 제공한다.
+- 발송 결과는 job과 attempt row에 기록한다.
+- 실패 원인은 provider error code와 Edge Function 로그에서 확인한다.
 - 권한 거부 상태면 설정 이동 경로를 제공하고, 데이터 자체는 서버 기준으로 유지한다.
-
-### Remote push delivery algorithm
-
-1. future occurrence 계산 결과를 기준으로 `notification_delivery_jobs`를 upsert 한다.
-2. job의 `dedupe_key`로 occurrence 단위 중복 생성을 막는다.
-3. worker가 `deliver_at_utc <= now()` 인 pending job을 조회한다.
-4. 조회 시점의 활성 `device_push_tokens`를 읽는다.
-5. iOS token은 APNs 직접 발송으로 보낸다.
-6. Android token은 FCM 직접 발송으로 보낸다.
-7. token별 결과를 `notification_delivery_attempts`에 남긴다.
-8. job 요약 상태와 재시도 시각을 갱신한다.
-9. 무효 token은 `delivery-failed`로 비활성화한다.
 
 핵심 원칙:
 
@@ -338,6 +336,27 @@ phase 16 메모:
 - attempt는 token 단위 fan-out 결과를 가진다.
 - 멀티 디바이스 기본값은 활성 token 전체 발송이다.
 - 재시도는 같은 job row에서 관리하고 새 dedupe key를 만들지 않는다.
+
+### Provider configuration
+
+Edge Function secret:
+
+- `APNS_KEY_ID`
+- `APNS_TEAM_ID`
+- `APNS_BUNDLE_ID`
+- `APNS_PRIVATE_KEY`
+- `APNS_USE_SANDBOX`
+- `FCM_PROJECT_ID`
+- `FCM_CLIENT_EMAIL`
+- `FCM_PRIVATE_KEY`
+- `FCM_PRIVATE_KEY_ID`
+
+운영 규칙:
+
+- 개발 빌드는 `APNS_USE_SANDBOX=true`를 사용한다.
+- TestFlight와 운영 빌드는 `APNS_USE_SANDBOX=false`를 사용한다.
+- provider secret은 앱 클라이언트에 노출하지 않는다.
+
 ---
 
 ## 9. Device Model and Multi-device Strategy
@@ -359,7 +378,7 @@ phase 16 메모:
 - `notification_delivery_jobs`는 occurrence 단위 발송 기준 row다
 - `notification_delivery_attempts`는 token 단위 결과 log다
 - 서버는 아이템/로그 데이터의 source of truth
-- 로컬 예약 메타데이터는 전환 완료 뒤 legacy 구조로 축소한다
+- 로컬 알림 예약 metadata는 사용하지 않는다
 
 ### Practical implication
 
