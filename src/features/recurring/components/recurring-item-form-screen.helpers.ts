@@ -1,5 +1,11 @@
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { format, parse } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  format,
+  parse,
+  startOfWeek,
+} from "date-fns";
 import { ko } from "date-fns/locale";
 import { z } from "zod/v4";
 
@@ -36,6 +42,7 @@ export type RecurrenceSectionState = {
 
 const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const MAX_FIRST_REMINDER_LOOKAHEAD_DAYS = 3710;
 
 export const weekdayOptions = [
   { label: "월", value: 1 },
@@ -118,13 +125,18 @@ export function getRecurringItemFormScreenTitle(isEditMode: boolean): string {
 }
 
 export function getRecurringItemFormDisplayValues(formState: {
+  intervalValue: string;
   reminderTimeLocal: string;
+  recurrenceType: RecurrenceType;
   startDateLocal: string;
+  weekdayMask: number[];
 }): {
+  firstReminderHelperText: string | null;
   reminderTimeDisplayValue: string;
   startDateDisplayValue: string;
 } {
   return {
+    firstReminderHelperText: getFirstReminderHelperText(formState),
     reminderTimeDisplayValue: formatLocalTimeForDisplay(
       formState.reminderTimeLocal
     ),
@@ -283,10 +295,76 @@ export function supportsCompletionBased(
   );
 }
 
+export function getFirstReminderHelperText(formState: {
+  intervalValue: string;
+  recurrenceType: RecurrenceType;
+  startDateLocal: string;
+  weekdayMask: number[];
+}): string | null {
+  const firstReminderLocalDate = getFirstWeeklyOccurrenceLocalDate(formState);
+
+  if (
+    !firstReminderLocalDate ||
+    firstReminderLocalDate === formState.startDateLocal
+  ) {
+    return null;
+  }
+
+  return `첫 알림일은 ${format(
+    parseLocalDateToDate(firstReminderLocalDate),
+    "M월 d일 EEEE",
+    { locale: ko }
+  )}입니다.`;
+}
+
 export function getCompletionBasedEnabled(
   recurrenceType: RecurrenceType
 ): boolean {
   return supportsCompletionBased(recurrenceType);
+}
+
+function getFirstWeeklyOccurrenceLocalDate(formState: {
+  intervalValue: string;
+  recurrenceType: RecurrenceType;
+  startDateLocal: string;
+  weekdayMask: number[];
+}): string | null {
+  if (!requiresWeekdayMask(formState.recurrenceType)) {
+    return null;
+  }
+
+  if (formState.weekdayMask.length === 0) {
+    return null;
+  }
+
+  const intervalValue =
+    formState.recurrenceType === "interval_weeks"
+      ? Number.parseInt(formState.intervalValue, 10)
+      : 1;
+  const weekInterval =
+    Number.isInteger(intervalValue) && intervalValue > 0 ? intervalValue : 1;
+  const selectedWeekdaySet = new Set(formState.weekdayMask);
+  const startDate = parseLocalDateToDate(formState.startDateLocal);
+  const startWeek = startOfWeek(startDate, { weekStartsOn: 0 });
+  let cursor = startDate;
+  let dayOffset = 0;
+
+  while (dayOffset <= MAX_FIRST_REMINDER_LOOKAHEAD_DAYS) {
+    const cursorWeek = startOfWeek(cursor, { weekStartsOn: 0 });
+    const weeksFromStart = differenceInCalendarDays(cursorWeek, startWeek) / 7;
+    const matchesWeekInterval =
+      formState.recurrenceType === "weekly" ||
+      weeksFromStart % weekInterval === 0;
+
+    if (selectedWeekdaySet.has(cursor.getDay()) && matchesWeekInterval) {
+      return formatDateToLocalDate(cursor);
+    }
+
+    cursor = addDays(cursor, 1);
+    dayOffset += 1;
+  }
+
+  return null;
 }
 
 export function getIosPickerChangeHandler(

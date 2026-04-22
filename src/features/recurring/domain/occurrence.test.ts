@@ -158,6 +158,55 @@ describe("getOccurrencesInRange", () => {
     expect(nextOccurrence?.localDate).toBe("2026-04-13");
   });
 
+  it("weekly 첫 occurrence는 start date 이후 가장 가까운 선택 요일로 계산한다", () => {
+    const item = createItem({
+      recurrenceType: "weekly",
+      startDateLocal: "2026-04-22",
+      weekdayMask: [5],
+    });
+
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-04-21T15:00:00.000Z",
+      "2026-05-08T14:59:59.999Z",
+      timezone,
+      [],
+      "2026-04-22T03:00:00.000Z"
+    );
+
+    expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
+      "2026-04-24",
+      "2026-05-01",
+      "2026-05-08",
+    ]);
+  });
+
+  it("interval_weeks 첫 occurrence도 start date 이후 선택 요일과 주차 간격을 모두 지킨다", () => {
+    const item = createItem({
+      intervalValue: 2,
+      recurrenceType: "interval_weeks",
+      startDateLocal: "2026-04-22",
+      weekdayMask: [1, 5],
+    });
+
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-04-21T15:00:00.000Z",
+      "2026-05-22T14:59:59.999Z",
+      timezone,
+      [],
+      "2026-04-22T03:00:00.000Z"
+    );
+
+    expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
+      "2026-04-24",
+      "2026-05-04",
+      "2026-05-08",
+      "2026-05-18",
+      "2026-05-22",
+    ]);
+  });
+
   it("규칙 수정 후에는 새 version이 미래 occurrence만 덮어쓴다", () => {
     const item = createItem({
       intervalValue: 3,

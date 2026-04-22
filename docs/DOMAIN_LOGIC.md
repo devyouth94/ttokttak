@@ -131,11 +131,15 @@ Occurrence는 저장된 row가 아니라 계산 결과이므로 식별 기준이
 
 - 선택한 weekday에 매주 발생
 - weekday가 하나도 없으면 invalid
+- 첫 occurrence는 start date 이상인 가장 가까운 선택 weekday다
+- start date가 선택 weekday가 아니면 start date 당일 occurrence는 만들지 않는다
 
 ### interval_weeks
 
 - start date가 속한 주를 기준으로 `n`주마다 발생
 - weekday가 하나도 없으면 invalid
+- 첫 occurrence도 start date 이상인 선택 weekday만 허용한다
+- start date가 속한 주의 선택 weekday가 이미 지났으면 다음 유효 interval 주차에서 찾는다
 
 ### monthly
 

@@ -67,7 +67,10 @@ function HomeSectionCard({
           accessibilityRole="button"
           onPress={() => {
             router.push({
-              params: { itemId: card.item.id },
+              params: {
+                itemId: card.item.id,
+                scheduledAtUtc: card.occurrence.scheduledAtUtc,
+              },
               pathname: "/items/[itemId]",
             });
           }}

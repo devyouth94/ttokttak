@@ -13,12 +13,6 @@ import type {
 } from "~/features/recurring/domain/types";
 import { formatUtcTimeInTimezone } from "~/features/recurring/utils/recurring-display";
 
-const calendarMarkerStatusOrder = [
-  "scheduled",
-  "completed",
-  "skipped",
-  "overdue",
-] as const;
 const MAX_VISIBLE_MARKERS = 3;
 
 const markerColorByStatus: Record<CalendarMarkerStatus, string> = {
@@ -28,7 +22,7 @@ const markerColorByStatus: Record<CalendarMarkerStatus, string> = {
   skipped: colors.statusSkipped,
 };
 
-export type CalendarMarkerStatus = (typeof calendarMarkerStatusOrder)[number];
+export type CalendarMarkerStatus = OccurrenceStatus;
 
 export type CalendarDaySummary = {
   hasEntries: boolean;
@@ -127,7 +121,7 @@ export function buildCalendarDaySummaries({
   );
   const summaryMap = new Map<
     string,
-    { occurrenceCount: number; statuses: CalendarMarkerStatus[] }
+    { occurrenceCount: number; occurrences: DerivedOccurrence[] }
   >();
 
   items.forEach((item) => {
@@ -143,11 +137,11 @@ export function buildCalendarDaySummaries({
     occurrences.forEach((occurrence) => {
       const summary = summaryMap.get(occurrence.localDate) ?? {
         occurrenceCount: 0,
-        statuses: [],
+        occurrences: [],
       };
 
       summary.occurrenceCount += 1;
-      summary.statuses.push(toCalendarMarkerStatus(occurrence));
+      summary.occurrences.push(occurrence);
       summaryMap.set(occurrence.localDate, summary);
     });
   });
@@ -158,7 +152,7 @@ export function buildCalendarDaySummaries({
       {
         hasEntries: summary.occurrenceCount > 0,
         localDate,
-        markerStatuses: sortCalendarMarkerStatuses(summary.statuses),
+        markerStatuses: getCalendarMarkerStatusesByTime(summary.occurrences),
         occurrenceCount: summary.occurrenceCount,
         overflowCount: Math.max(
           0,
@@ -283,22 +277,21 @@ function createLocalDateUtcRange(
   };
 }
 
-function sortCalendarMarkerStatuses(
-  statuses: Iterable<CalendarMarkerStatus>
+function getCalendarMarkerStatusesByTime(
+  occurrences: DerivedOccurrence[]
 ): CalendarMarkerStatus[] {
-  return Array.from(statuses)
-    .sort(
-      (left, right) =>
-        calendarMarkerStatusOrder.indexOf(left) -
-        calendarMarkerStatusOrder.indexOf(right)
-    )
-    .slice(0, MAX_VISIBLE_MARKERS);
+  return occurrences
+    .slice()
+    .sort(compareOccurrencesByScheduledAtUtc)
+    .slice(0, MAX_VISIBLE_MARKERS)
+    .map((occurrence) => occurrence.status);
 }
 
-function toCalendarMarkerStatus(
-  occurrence: DerivedOccurrence
-): CalendarMarkerStatus {
-  return occurrence.status;
+function compareOccurrencesByScheduledAtUtc(
+  left: DerivedOccurrence,
+  right: DerivedOccurrence
+): number {
+  return left.scheduledAtUtc.localeCompare(right.scheduledAtUtc);
 }
 
 function compareCalendarEntries(

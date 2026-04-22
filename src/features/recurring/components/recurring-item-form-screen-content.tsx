@@ -84,8 +84,11 @@ export function RecurringItemFormScreenContent({
   view,
 }: RecurringItemFormScreenContentProps): React.JSX.Element {
   const screenTitle = getRecurringItemFormScreenTitle(view.isEditMode);
-  const { reminderTimeDisplayValue, startDateDisplayValue } =
-    getRecurringItemFormDisplayValues(values);
+  const {
+    firstReminderHelperText,
+    reminderTimeDisplayValue,
+    startDateDisplayValue,
+  } = getRecurringItemFormDisplayValues(values);
   const minimumStartDate = parseLocalDateToDate(view.minimumStartDateLocal);
   const selectedStartDate = parseLocalDateToDate(
     values.startDateLocal < view.minimumStartDateLocal
@@ -197,6 +200,12 @@ export function RecurringItemFormScreenContent({
               variantStyle={styles.timeField}
             />
           </View>
+
+          {firstReminderHelperText ? (
+            <AppText style={styles.fieldHelper}>
+              {firstReminderHelperText}
+            </AppText>
+          ) : null}
 
           {picker.isStartDateVisible ? (
             <DateTimePicker

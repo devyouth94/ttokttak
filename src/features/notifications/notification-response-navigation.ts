@@ -3,7 +3,7 @@ import { router } from "expo-router";
 
 type ReminderNotificationPayload = {
   itemId: string;
-  scheduledAtUtc?: string;
+  scheduledAtUtc: string;
   source: "recurring-item";
 };
 
@@ -19,8 +19,7 @@ function isReminderNotificationPayload(
   return (
     candidate.source === "recurring-item" &&
     typeof candidate.itemId === "string" &&
-    (typeof candidate.scheduledAtUtc === "string" ||
-      typeof candidate.scheduledAtUtc === "undefined")
+    typeof candidate.scheduledAtUtc === "string"
   );
 }
 

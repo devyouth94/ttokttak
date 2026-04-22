@@ -326,6 +326,21 @@ function getNextFixedLocalDate(
   }
 }
 
+function getInitialOccurrenceLocalDate(
+  schedule: ScheduleContext
+): string | null {
+  switch (schedule.recurrenceType) {
+    case "weekly":
+    case "interval_weeks":
+      return getNextWeeklyCandidateLocalDate(
+        schedule,
+        schedule.seedStartDateLocal
+      );
+    default:
+      return schedule.seedStartDateLocal;
+  }
+}
+
 function getInitialCompletionAnchorLocalDate(
   itemId: string,
   effectiveFromUtc: string,
@@ -415,7 +430,7 @@ function collectOccurrencesForVersion(params: {
         completionLogs
       )
     : schedule.seedStartDateLocal;
-  let currentLocalDate: string | null = schedule.seedStartDateLocal;
+  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
   let currentAnchorLocalDate = initialAnchorLocalDate;
   let occurrenceCount = 0;
 
@@ -514,7 +529,7 @@ function findNextOccurrenceForVersion(params: {
         completionLogs
       )
     : schedule.seedStartDateLocal;
-  let currentLocalDate: string | null = schedule.seedStartDateLocal;
+  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
   let currentAnchorLocalDate = initialAnchorLocalDate;
   let occurrenceCount = 0;
 
@@ -625,7 +640,7 @@ function findFirstFutureLocalDate(params: {
   const isCompletionBased =
     schedule.anchorType === "completion_based" &&
     supportsCompletionBasedRecurrence(schedule.recurrenceType);
-  let currentLocalDate: string | null = schedule.seedStartDateLocal;
+  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
   let currentAnchorLocalDate = initialAnchorLocalDate;
   let occurrenceCount = 0;
 

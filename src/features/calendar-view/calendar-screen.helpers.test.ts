@@ -115,7 +115,7 @@ describe("calendar-screen.helpers", () => {
     expect(clampVisibleMonth("2026-03", null)).toBe("2026-03");
   });
 
-  it("월 상태 도트는 일정별 상태를 최대 3개까지 보여주고 초과 개수를 따로 계산한다", () => {
+  it("월 상태 도트는 시간순으로 최대 3개까지 보여주고 초과 개수를 따로 계산한다", () => {
     const daySummaries = buildCalendarDaySummaries({
       completionLogs: [
         createLog({
@@ -171,7 +171,7 @@ describe("calendar-screen.helpers", () => {
     expect(daySummaries["2026-04-12"]).toEqual({
       hasEntries: true,
       localDate: "2026-04-12",
-      markerStatuses: ["completed", "skipped", "overdue"],
+      markerStatuses: ["overdue", "overdue", "completed"],
       occurrenceCount: 6,
       overflowCount: 3,
     });
