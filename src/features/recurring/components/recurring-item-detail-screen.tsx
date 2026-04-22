@@ -525,6 +525,15 @@ export function RecurringItemDetailScreen({
     await Promise.all([itemQuery.refetch(), completionLogsQuery.refetch()]);
   };
 
+  const navigateAfterOccurrenceAction = (): void => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/");
+  };
+
   const handleRetry = (): void => {
     setActionErrorMessage(null);
     void refetchDetail();
@@ -587,6 +596,7 @@ export function RecurringItemDetailScreen({
         queryKey: recurringQueryKeys.user(userId),
       });
       await refetchDetail();
+      navigateAfterOccurrenceAction();
     } catch (actionError) {
       setActionErrorMessage(getErrorMessage(actionError));
     } finally {
