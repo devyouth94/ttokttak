@@ -3,8 +3,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Href, router, usePathname } from "expo-router";
 import {
   CalendarDays,
-  History,
   House,
+  ListTodo,
   Plus,
   Settings2,
 } from "lucide-react-native";
@@ -12,7 +12,7 @@ import {
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import { MainTabIcon } from "~/features/navigation/components/main-tab-icon";
 
-type MainTabKey = "home" | "calendar" | "history" | "settings";
+type MainTabKey = "home" | "calendar" | "schedule" | "settings";
 
 type MainTabItem = {
   href: Href;
@@ -27,7 +27,7 @@ const CREATE_BUTTON_BOTTOM_OFFSET = TAB_BAR_HEIGHT + spacing.lg;
 const TAB_ITEMS: MainTabItem[] = [
   { href: "/(tabs)/home", icon: House, key: "home" },
   { href: "/(tabs)/calendar", icon: CalendarDays, key: "calendar" },
-  { href: "/(tabs)/history", icon: History, key: "history" },
+  { href: "/(tabs)/schedule", icon: ListTodo, key: "schedule" },
   { href: "/(tabs)/settings", icon: Settings2, key: "settings" },
 ];
 
@@ -127,8 +127,8 @@ function resolveLabel(key: MainTabKey): string {
       return "홈";
     case "calendar":
       return "캘린더";
-    case "history":
-      return "히스토리";
+    case "schedule":
+      return "일정";
     case "settings":
       return "설정";
   }

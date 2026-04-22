@@ -5,7 +5,12 @@ import { colors } from "~/design-system/tokens";
 import { MainTabShell } from "~/features/navigation/components/main-tab-shell";
 import { useSession } from "~/features/session/session-provider";
 
-const TAB_ROOT_PATHS = new Set(["/home", "/calendar", "/history", "/settings"]);
+const TAB_ROOT_PATHS = new Set([
+  "/home",
+  "/calendar",
+  "/schedule",
+  "/settings",
+]);
 
 export default function TabsLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useSession();
@@ -33,7 +38,7 @@ export default function TabsLayout(): React.JSX.Element {
       >
         <Tabs.Screen name="home" options={{ title: "홈" }} />
         <Tabs.Screen name="calendar" options={{ title: "캘린더" }} />
-        <Tabs.Screen name="history" options={{ title: "히스토리" }} />
+        <Tabs.Screen name="schedule" options={{ title: "일정" }} />
         <Tabs.Screen name="settings" options={{ title: "설정" }} />
       </Tabs>
     </MainTabShell>
