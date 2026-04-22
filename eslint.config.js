@@ -5,10 +5,19 @@ const eslintPluginPrettier = require("eslint-plugin-prettier");
 const simpleImportSort = require("eslint-plugin-simple-import-sort");
 
 module.exports = defineConfig([
+  {
+    ignores: [
+      "dist/*",
+      ".expo/*",
+      "node_modules/*",
+      "ios/*",
+      "android/*",
+      "supabase/functions/**/*",
+    ],
+  },
   expoConfig,
   eslintConfigPrettier,
   {
-    ignores: ["dist/*", ".expo/*", "node_modules/*", "ios/*", "android/*"],
     plugins: {
       prettier: eslintPluginPrettier,
       "simple-import-sort": simpleImportSort,
