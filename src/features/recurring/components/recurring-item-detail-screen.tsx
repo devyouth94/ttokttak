@@ -440,9 +440,11 @@ function DetailActionBar({
 
 export function RecurringItemDetailScreen({
   itemId,
+  returnTo,
   scheduledAtUtc,
 }: {
   itemId?: string;
+  returnTo?: string;
   scheduledAtUtc?: string;
 }): React.JSX.Element {
   const { isReady, timezone, userId } = useRecurringFeedContext();
@@ -610,7 +612,10 @@ export function RecurringItemDetailScreen({
     }
 
     router.push({
-      params: { itemId },
+      params: {
+        itemId,
+        ...(returnTo ? { returnTo } : {}),
+      },
       pathname: "/items/[itemId]/edit",
     });
   };

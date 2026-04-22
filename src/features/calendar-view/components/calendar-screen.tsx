@@ -371,6 +371,7 @@ export function CalendarScreen(): React.JSX.Element {
                   router.push({
                     params: {
                       itemId: entry.itemId,
+                      returnTo: "/calendar",
                       scheduledAtUtc: entry.scheduledAtUtc,
                     },
                     pathname: "/items/[itemId]",

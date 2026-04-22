@@ -48,6 +48,7 @@ function HistoryCard({
         router.push({
           params: {
             itemId: entry.itemId,
+            returnTo: "/history",
             scheduledAtUtc: entry.scheduledAtUtc,
           },
           pathname: "/items/[itemId]",

@@ -82,6 +82,7 @@ export function navigateFromNotificationResponse(
   router.push({
     params: {
       itemId: payload.itemId,
+      returnTo: "/home",
       scheduledAtUtc: payload.scheduledAtUtc,
     },
     pathname: "/items/[itemId]",

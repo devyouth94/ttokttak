@@ -69,6 +69,7 @@ function HomeSectionCard({
             router.push({
               params: {
                 itemId: card.item.id,
+                returnTo: "/home",
                 scheduledAtUtc: card.occurrence.scheduledAtUtc,
               },
               pathname: "/items/[itemId]",

@@ -37,8 +37,8 @@ export default function TabsLayout(): React.JSX.Element {
         }}
       >
         <Tabs.Screen name="home" options={{ title: "홈" }} />
+        <Tabs.Screen name="schedule" options={{ title: "목록" }} />
         <Tabs.Screen name="calendar" options={{ title: "캘린더" }} />
-        <Tabs.Screen name="schedule" options={{ title: "일정" }} />
         <Tabs.Screen name="settings" options={{ title: "설정" }} />
       </Tabs>
     </MainTabShell>

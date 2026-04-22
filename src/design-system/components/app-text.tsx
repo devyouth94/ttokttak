@@ -1,21 +1,39 @@
 import type { PropsWithChildren } from "react";
-import { type StyleProp, StyleSheet, Text, type TextStyle } from "react-native";
+import {
+  type StyleProp,
+  StyleSheet,
+  Text,
+  type TextProps,
+  type TextStyle,
+} from "react-native";
 
 import { colors, typography } from "~/design-system/tokens";
 
 type AppTextVariant = "body" | "display" | "label" | "title";
 
-type AppTextProps = PropsWithChildren<{
-  style?: StyleProp<TextStyle>;
-  variant?: AppTextVariant;
-}>;
+type AppTextProps = PropsWithChildren<
+  Pick<TextProps, "ellipsizeMode" | "numberOfLines"> & {
+    style?: StyleProp<TextStyle>;
+    variant?: AppTextVariant;
+  }
+>;
 
 export function AppText({
   children,
+  ellipsizeMode,
+  numberOfLines,
   style,
   variant = "body",
 }: AppTextProps): React.JSX.Element {
-  return <Text style={[styles.base, styles[variant], style]}>{children}</Text>;
+  return (
+    <Text
+      ellipsizeMode={ellipsizeMode}
+      numberOfLines={numberOfLines}
+      style={[styles.base, styles[variant], style]}
+    >
+      {children}
+    </Text>
+  );
 }
 
 const styles = StyleSheet.create({

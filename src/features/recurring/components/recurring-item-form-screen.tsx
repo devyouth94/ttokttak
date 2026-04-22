@@ -14,12 +14,17 @@ import { RecurringItemFormScreenContent } from "./recurring-item-form-screen-con
 
 type RecurringItemFormScreenProps = {
   itemId?: string;
+  returnTo?: string;
 };
 
 export function RecurringItemFormScreen({
   itemId,
+  returnTo,
 }: RecurringItemFormScreenProps): React.JSX.Element {
-  const screenModel = useRecurringItemFormScreenController({ itemId });
+  const screenModel = useRecurringItemFormScreenController({
+    itemId,
+    returnTo,
+  });
   const completionBasedEnabled = getCompletionBasedEnabled(
     screenModel.values.recurrenceType
   );

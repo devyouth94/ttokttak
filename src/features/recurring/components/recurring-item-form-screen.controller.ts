@@ -44,10 +44,12 @@ import {
 
 type UseRecurringItemFormScreenControllerParams = {
   itemId?: string;
+  returnTo?: string;
 };
 
 export function useRecurringItemFormScreenController({
   itemId,
+  returnTo,
 }: UseRecurringItemFormScreenControllerParams): RecurringItemFormScreenModel {
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
@@ -511,7 +513,7 @@ export function useRecurringItemFormScreenController({
       await queryClient.invalidateQueries({
         queryKey: recurringQueryKeys.user(user.id),
       });
-      router.replace("/");
+      router.replace(getSafeReturnPath(returnTo));
     } catch (error) {
       setRequestState((current) => ({
         ...current,
@@ -646,4 +648,18 @@ export function useRecurringItemFormScreenController({
     values: displayValues,
     view: viewState,
   };
+}
+
+function getSafeReturnPath(
+  returnTo?: string
+): "/" | "/calendar" | "/home" | "/schedule" {
+  if (
+    returnTo === "/calendar" ||
+    returnTo === "/home" ||
+    returnTo === "/schedule"
+  ) {
+    return returnTo;
+  }
+
+  return "/";
 }

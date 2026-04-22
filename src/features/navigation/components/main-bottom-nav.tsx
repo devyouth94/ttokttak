@@ -26,15 +26,15 @@ const CREATE_BUTTON_BOTTOM_OFFSET = TAB_BAR_HEIGHT + spacing.lg;
 
 const TAB_ITEMS: MainTabItem[] = [
   { href: "/(tabs)/home", icon: House, key: "home" },
-  { href: "/(tabs)/calendar", icon: CalendarDays, key: "calendar" },
   { href: "/(tabs)/schedule", icon: ListTodo, key: "schedule" },
+  { href: "/(tabs)/calendar", icon: CalendarDays, key: "calendar" },
   { href: "/(tabs)/settings", icon: Settings2, key: "settings" },
 ];
 
 export function MainBottomNav(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const showCreateButton = pathname === "/home";
+  const showCreateButton = pathname === "/home" || pathname === "/schedule";
 
   return (
     <View
@@ -97,7 +97,10 @@ export function MainBottomNav(): React.JSX.Element {
           accessibilityRole="button"
           hitSlop={12}
           onPress={() => {
-            router.push("/items/new");
+            router.push({
+              params: { returnTo: pathname },
+              pathname: "/items/new",
+            });
           }}
           style={[
             styles.createButton,
@@ -128,7 +131,7 @@ function resolveLabel(key: MainTabKey): string {
     case "calendar":
       return "캘린더";
     case "schedule":
-      return "일정";
+      return "목록";
     case "settings":
       return "설정";
   }
