@@ -20,15 +20,21 @@ export type ReminderListEntry = {
   title: string;
 };
 
+export type ReminderListSortMode = "createdDesc" | "titleAsc" | "nextAsc";
+
+export const DEFAULT_REMINDER_LIST_SORT_MODE: ReminderListSortMode = "nextAsc";
+
 export function buildReminderListEntries({
   completionLogs,
   items,
   now,
+  sortMode = DEFAULT_REMINDER_LIST_SORT_MODE,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
   now: Date;
+  sortMode?: ReminderListSortMode;
   timezone: string;
 }): ReminderListEntry[] {
   const nowUtc = now.toISOString();
@@ -59,7 +65,7 @@ export function buildReminderListEntries({
         title: item.title,
       };
     })
-    .sort(compareReminderListEntries);
+    .sort((left, right) => compareReminderListEntries(left, right, sortMode));
 }
 
 export function formatReminderListNextOccurrenceLabel(
@@ -98,6 +104,42 @@ export function formatReminderListNextOccurrenceLabel(
 
 function compareReminderListEntries(
   left: ReminderListEntry,
+  right: ReminderListEntry,
+  sortMode: ReminderListSortMode
+): number {
+  if (sortMode === "titleAsc") {
+    return compareByTitleAsc(left, right);
+  }
+
+  if (sortMode === "nextAsc") {
+    return compareByNextScheduledAtAsc(left, right);
+  }
+
+  return compareByCreatedAtDesc(left, right);
+}
+
+function compareByCreatedAtDesc(
+  left: ReminderListEntry,
+  right: ReminderListEntry
+): number {
+  return (
+    right.item.createdAt.localeCompare(left.item.createdAt) ||
+    compareByTitleAsc(left, right)
+  );
+}
+
+function compareByTitleAsc(
+  left: ReminderListEntry,
+  right: ReminderListEntry
+): number {
+  return (
+    left.title.localeCompare(right.title, "ko") ||
+    compareByCreatedAtDescOnly(left, right)
+  );
+}
+
+function compareByNextScheduledAtAsc(
+  left: ReminderListEntry,
   right: ReminderListEntry
 ): number {
   if (!left.nextScheduledAtUtc && right.nextScheduledAtUtc) {
@@ -108,5 +150,19 @@ function compareReminderListEntries(
     return -1;
   }
 
-  return 0;
+  if (!left.nextScheduledAtUtc || !right.nextScheduledAtUtc) {
+    return compareByCreatedAtDesc(left, right);
+  }
+
+  return (
+    left.nextScheduledAtUtc.localeCompare(right.nextScheduledAtUtc) ||
+    compareByCreatedAtDesc(left, right)
+  );
+}
+
+function compareByCreatedAtDescOnly(
+  left: ReminderListEntry,
+  right: ReminderListEntry
+): number {
+  return right.item.createdAt.localeCompare(left.item.createdAt);
 }

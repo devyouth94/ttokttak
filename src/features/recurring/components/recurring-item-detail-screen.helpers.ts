@@ -83,6 +83,12 @@ export function shouldShowOccurrenceActions({
   );
 }
 
+export function shouldShowDetailStatusCard(item: RecurringItem): boolean {
+  const currentSchedule = getCurrentScheduleVersion(item);
+
+  return (currentSchedule?.recurrenceType ?? item.recurrenceType) !== "once";
+}
+
 export function getItemDetailBasisOccurrence({
   completionLogs,
   item,
@@ -166,7 +172,7 @@ export function buildRecurringItemDetailViewModel({
 
   return {
     historyPreview: buildHistoryPreview(completionLogs, timezone),
-    metaEntries: buildMetaEntries(item),
+    metaEntries: buildMetaEntries(item, timezone),
     nextOccurrence,
     overdueOccurrences,
     primaryOccurrence,
@@ -201,7 +207,10 @@ export function buildHistoryPreview(
     }));
 }
 
-export function buildMetaEntries(item: RecurringItem): ItemDetailMetaEntry[] {
+export function buildMetaEntries(
+  item: RecurringItem,
+  timezone: string
+): ItemDetailMetaEntry[] {
   const currentSchedule = getCurrentScheduleVersion(item);
   const anchorType = currentSchedule?.anchorType ?? item.anchorType;
   const notificationsEnabled =
@@ -235,7 +244,23 @@ export function buildMetaEntries(item: RecurringItem): ItemDetailMetaEntry[] {
       label: "알림",
       value: notificationsEnabled ? "사용" : "중지",
     },
+    {
+      id: "created-at",
+      label: "생성일",
+      value: formatCreatedAtMetaValue(item.createdAt, timezone),
+    },
   ];
+}
+
+function formatCreatedAtMetaValue(createdAt: string, timezone: string): string {
+  return [
+    formatInTimeZone(createdAt, timezone, "yyyy년 M월 d일", {
+      locale: ko,
+    }),
+    formatInTimeZone(createdAt, timezone, "a h:mm", {
+      locale: ko,
+    }),
+  ].join("\n");
 }
 
 function getAnchorTypeInfoDescription(

@@ -3,6 +3,7 @@ import {
   buildMetaEntries,
   buildRecurringItemDetailViewModel,
   getItemDetailBasisOccurrence,
+  shouldShowDetailStatusCard,
   shouldShowOccurrenceActions,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import type {
@@ -176,10 +177,12 @@ describe("recurring item detail helpers", () => {
     const entries = buildMetaEntries(
       createItem({
         anchorType: "completion_based",
+        createdAt: "2026-04-01T00:00:00.000Z",
         notificationsEnabled: false,
         recurrenceType: "weekly",
         weekdayMask: [1, 4],
-      })
+      }),
+      timezone
     );
 
     expect(entries).toEqual([
@@ -196,6 +199,11 @@ describe("recurring item detail helpers", () => {
         value: "완료일 기준",
       },
       { id: "notifications", label: "알림", value: "중지" },
+      {
+        id: "created-at",
+        label: "생성일",
+        value: "2026년 4월 1일\n오전 9:00",
+      },
     ]);
   });
 
@@ -214,6 +222,20 @@ describe("recurring item detail helpers", () => {
         timezone,
       })
     ).toBe(true);
+  });
+
+  it("한 번 리마인더는 상세 상태 카드를 숨긴다", () => {
+    expect(
+      shouldShowDetailStatusCard(
+        createItem({
+          recurrenceType: "once",
+        })
+      )
+    ).toBe(false);
+  });
+
+  it("반복 리마인더는 상세 상태 카드를 노출한다", () => {
+    expect(shouldShowDetailStatusCard(createItem())).toBe(true);
   });
 
   it("대표 상태가 오늘 scheduled면 액션 버튼을 노출한다", () => {

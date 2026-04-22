@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +9,8 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, Plus } from "lucide-react-native";
+import * as Select from "@rn-primitives/select";
+import { Check, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
 
 import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
@@ -27,8 +28,19 @@ import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring
 
 import {
   buildReminderListEntries,
+  DEFAULT_REMINDER_LIST_SORT_MODE,
   type ReminderListEntry,
+  type ReminderListSortMode,
 } from "../reminder-list.helpers";
+
+const sortOptions: {
+  label: string;
+  value: ReminderListSortMode;
+}[] = [
+  { label: "최근 생성순", value: "createdDesc" },
+  { label: "제목순", value: "titleAsc" },
+  { label: "다음 예정일 빠른순", value: "nextAsc" },
+];
 
 function ReminderCard({
   entry,
@@ -86,6 +98,81 @@ function ReminderCard({
         <ChevronRight color={colors.textMuted} size={18} />
       </Pressable>
     </AppCard>
+  );
+}
+
+function SortControl({
+  onChange,
+  value,
+}: {
+  onChange: (value: ReminderListSortMode) => void;
+  value: ReminderListSortMode;
+}): React.JSX.Element {
+  const selectedOption = getSortOption(value);
+
+  return (
+    <Select.Root
+      onValueChange={(nextOption) => {
+        const nextSortMode = parseSortMode(nextOption?.value);
+
+        if (nextSortMode) {
+          onChange(nextSortMode);
+        }
+      }}
+      value={selectedOption}
+    >
+      <Select.Trigger asChild>
+        <Pressable
+          accessibilityHint="리마인더 목록 정렬 메뉴를 엽니다."
+          accessibilityLabel={`정렬: ${selectedOption.label}`}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.sortTrigger,
+            pressed ? styles.pressed : undefined,
+          ]}
+        >
+          <Select.Value
+            numberOfLines={1}
+            placeholder="정렬 선택"
+            style={styles.sortTriggerText}
+          />
+          <ChevronDown color={colors.textMuted} size={16} />
+        </Pressable>
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Overlay closeOnPress style={styles.sortMenuOverlay} />
+        <Select.Content
+          align="start"
+          avoidCollisions
+          insets={{
+            bottom: spacing.lg,
+            left: spacing.lg,
+            right: spacing.lg,
+            top: spacing.lg,
+          }}
+          side="bottom"
+          sideOffset={6}
+          style={styles.sortMenuContent}
+        >
+          {sortOptions.map((option) => (
+            <Select.Item
+              accessibilityHint={`${option.label}으로 정렬합니다.`}
+              closeOnPress
+              key={option.value}
+              label={option.label}
+              style={styles.sortMenuItem}
+              value={option.value}
+            >
+              <Select.ItemText style={styles.sortMenuItemText} />
+              <Select.ItemIndicator style={styles.sortMenuIndicator}>
+                <Check color={colors.text} size={16} />
+              </Select.ItemIndicator>
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
   );
 }
 
@@ -147,6 +234,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }): React.JSX.Element {
 }
 
 export function ReminderListScreen(): React.JSX.Element {
+  const [sortMode, setSortMode] = useState<ReminderListSortMode>(
+    DEFAULT_REMINDER_LIST_SORT_MODE
+  );
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const itemsQuery = useRecurringItemsQuery({
     enabled: isReady,
@@ -166,9 +256,10 @@ export function ReminderListScreen(): React.JSX.Element {
         completionLogs: completionLogsQuery.data ?? [],
         items,
         now: new Date(),
+        sortMode,
         timezone,
       }),
-    [completionLogsQuery.data, items, timezone]
+    [completionLogsQuery.data, items, sortMode, timezone]
   );
   const isInitialLoading =
     !isReady ||
@@ -215,6 +306,11 @@ export function ReminderListScreen(): React.JSX.Element {
           ]}
           data={entries}
           keyExtractor={keyExtractor}
+          ListHeaderComponent={
+            entries.length > 0 ? (
+              <SortControl onChange={setSortMode} value={sortMode} />
+            ) : null
+          }
           ListEmptyComponent={<EmptyState />}
           refreshControl={
             <RefreshControl
@@ -233,6 +329,21 @@ export function ReminderListScreen(): React.JSX.Element {
 
 function keyExtractor(entry: ReminderListEntry): string {
   return entry.id;
+}
+
+function getSortOption(value: ReminderListSortMode): {
+  label: string;
+  value: ReminderListSortMode;
+} {
+  return (
+    sortOptions.find((option) => option.value === value) ?? sortOptions[0]!
+  );
+}
+
+function parseSortMode(value: string | undefined): ReminderListSortMode | null {
+  const option = sortOptions.find((candidate) => candidate.value === value);
+
+  return option?.value ?? null;
 }
 
 const styles = StyleSheet.create({
@@ -346,5 +457,66 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     flex: 1,
+  },
+  sortMenuContent: {
+    backgroundColor: colors.surface,
+    borderColor: colors.outlineSoft,
+    borderRadius: borderRadius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    minWidth: 180,
+    padding: spacing.xs,
+    shadowColor: "#000",
+    shadowOffset: {
+      height: 6,
+      width: 0,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  sortMenuIndicator: {
+    alignItems: "center",
+    height: 18,
+    justifyContent: "center",
+    width: 18,
+  },
+  sortMenuItem: {
+    alignItems: "center",
+    borderRadius: borderRadius.md,
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  sortMenuItemText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: typography.label,
+    lineHeight: 18,
+  },
+  sortMenuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sortTrigger: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.surfaceHigh,
+    borderColor: colors.outlineSoft,
+    borderRadius: borderRadius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    maxWidth: 210,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  sortTriggerText: {
+    color: colors.text,
+    fontSize: 12,
+    letterSpacing: 0,
+    lineHeight: 16,
+    minWidth: 0,
   },
 });

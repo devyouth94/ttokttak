@@ -71,7 +71,7 @@ describe("reminder-list helpers", () => {
     );
   });
 
-  it("다음 예정이 없는 리마인더는 목록 아래로 보낸다", () => {
+  it("다음 예정일 빠른순에서는 다음 예정이 없는 리마인더를 목록 아래로 보낸다", () => {
     const entries = buildReminderListEntries({
       completionLogs: [],
       items: [
@@ -96,6 +96,127 @@ describe("reminder-list helpers", () => {
 
     expect(entries.map((entry) => entry.id)).toEqual(["daily", "past-once"]);
     expect(entries[1]?.nextOccurrenceLabel).toBe("예정 없음");
+  });
+
+  it("기본 정렬은 다음 예정일 빠른순이다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          createdAt: "2026-04-20T00:00:00.000Z",
+          id: "late",
+          reminderTimeLocal: "12:00",
+          title: "늦은 리마인더",
+        }),
+        createRecurringItem({
+          createdAt: "2026-04-21T00:00:00.000Z",
+          id: "early",
+          reminderTimeLocal: "10:00",
+          title: "빠른 리마인더",
+        }),
+      ],
+      now: new Date("2026-04-22T00:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries.map((entry) => entry.id)).toEqual(["early", "late"]);
+  });
+
+  it("최근 생성순에서는 다음 예정이 없어도 생성일 기준으로 정렬한다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          createdAt: "2026-04-20T00:00:00.000Z",
+          id: "daily",
+          title: "먼저 만든 리마인더",
+        }),
+        createRecurringItem({
+          createdAt: "2026-04-21T00:00:00.000Z",
+          id: "past-once",
+          recurrenceType: "once",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-21",
+          title: "나중에 만든 리마인더",
+        }),
+      ],
+      now: new Date("2026-04-22T00:00:00.000Z"),
+      sortMode: "createdDesc",
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries.map((entry) => entry.id)).toEqual(["past-once", "daily"]);
+  });
+
+  it("제목순으로 정렬한다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          id: "beta",
+          title: "청소",
+        }),
+        createRecurringItem({
+          id: "alpha",
+          title: "물 마시기",
+        }),
+      ],
+      now: new Date("2026-04-22T00:00:00.000Z"),
+      sortMode: "titleAsc",
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries.map((entry) => entry.id)).toEqual(["alpha", "beta"]);
+  });
+
+  it("다음 예정일 빠른순으로 정렬한다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          id: "late",
+          reminderTimeLocal: "12:00",
+          title: "늦은 리마인더",
+        }),
+        createRecurringItem({
+          id: "early",
+          reminderTimeLocal: "10:00",
+          title: "빠른 리마인더",
+        }),
+      ],
+      now: new Date("2026-04-22T00:00:00.000Z"),
+      sortMode: "nextAsc",
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries.map((entry) => entry.id)).toEqual(["early", "late"]);
+  });
+
+  it("제목순에서는 다음 예정이 없어도 제목 기준으로 정렬한다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          id: "past-once",
+          recurrenceType: "once",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-22",
+          title: "가장 앞 제목",
+        }),
+        createRecurringItem({
+          id: "daily",
+          recurrenceType: "daily",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-22",
+          title: "하루 리마인더",
+        }),
+      ],
+      now: new Date("2026-04-22T03:00:00.000Z"),
+      sortMode: "titleAsc",
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries.map((entry) => entry.id)).toEqual(["past-once", "daily"]);
   });
 });
 

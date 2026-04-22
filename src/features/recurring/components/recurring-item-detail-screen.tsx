@@ -39,6 +39,7 @@ import {
   getSummaryNotificationLabel,
   type ItemDetailHistoryEntry,
   type ItemDetailMetaEntry,
+  shouldShowDetailStatusCard,
   shouldShowOccurrenceActions,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
@@ -790,13 +791,15 @@ export function RecurringItemDetailScreen({
                     value={getSummaryNotificationLabel(item)}
                   />
 
-                  <DetailStateCard
-                    dateLabel={viewModel.statusCard.dateLabel}
-                    kind={viewModel.statusCard.kind}
-                    metaLabel={viewModel.statusCard.metaLabel}
-                    timeLabel={null}
-                    title={viewModel.statusCard.title}
-                  />
+                  {shouldShowDetailStatusCard(item) ? (
+                    <DetailStateCard
+                      dateLabel={viewModel.statusCard.dateLabel}
+                      kind={viewModel.statusCard.kind}
+                      metaLabel={viewModel.statusCard.metaLabel}
+                      timeLabel={null}
+                      title={viewModel.statusCard.title}
+                    />
+                  ) : null}
 
                   <View style={styles.sectionBlock}>
                     <DetailSectionTitle title="상세 정보" />
