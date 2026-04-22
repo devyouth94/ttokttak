@@ -1,0 +1,8 @@
+drop policy if exists "device_notification_reservations_select_own" on public.device_notification_reservations;
+drop policy if exists "device_notification_reservations_insert_own" on public.device_notification_reservations;
+drop policy if exists "device_notification_reservations_update_own" on public.device_notification_reservations;
+drop policy if exists "device_notification_reservations_delete_own" on public.device_notification_reservations;
+
+drop trigger if exists trg_device_notification_reservations_set_updated_at on public.device_notification_reservations;
+
+drop table if exists public.device_notification_reservations;

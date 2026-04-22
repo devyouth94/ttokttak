@@ -128,47 +128,14 @@ function getNotificationStatusText(
   return "꺼짐";
 }
 
-function getNotificationSyncStatusText(
-  lastSyncState: ReturnType<typeof useNotificationBootstrap>["lastSyncState"]
-): string {
-  if (!lastSyncState) {
-    return "대기 중";
-  }
-
-  if (lastSyncState.status === "running") {
-    return "확인 중";
-  }
-
-  if (lastSyncState.status === "succeeded") {
-    if (lastSyncState.reason === "app-start") {
-      return "앱 시작 시 반영됨";
-    }
-
-    if (lastSyncState.reason === "session-restored") {
-      return "세션 복원 후 반영됨";
-    }
-
-    return "변경 후 반영됨";
-  }
-
-  if (lastSyncState.status === "failed") {
-    return "실패";
-  }
-
-  return "건너뜀";
-}
-
 export default function SettingsTabPage(): React.JSX.Element {
   const { profile, signOut, user } = useSession();
   const {
     isPermissionLoading,
     isRequestingPermission,
-    isSyncing,
-    lastSyncState,
     openSettings,
     permission,
     requestPermission,
-    retrySync,
   } = useNotificationBootstrap();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -225,17 +192,6 @@ export default function SettingsTabPage(): React.JSX.Element {
     }
   }
 
-  async function handleRetrySync(): Promise<void> {
-    try {
-      await retrySync();
-    } catch (error) {
-      Alert.alert(
-        "동기화 재시도 실패",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
-  }
-
   return (
     <AppScreen>
       <ScreenHeader title="설정" />
@@ -281,19 +237,6 @@ export default function SettingsTabPage(): React.JSX.Element {
               title="권한 상태"
               value={isPermissionLoading ? "확인 중" : permission.label}
             />
-            <SettingsValueRow
-              title="최근 동기화"
-              value={getNotificationSyncStatusText(lastSyncState)}
-            />
-            {lastSyncState?.status === "failed" ? (
-              <SettingsRow
-                description={lastSyncState.detail}
-                isSeparated={
-                  permission.canRequest || permission.canOpenSettings
-                }
-                title="실패 상세"
-              />
-            ) : null}
             {permission.canRequest ? (
               <SettingsRow
                 accessory={
@@ -303,33 +246,13 @@ export default function SettingsTabPage(): React.JSX.Element {
                     <ExternalLink color={colors.outlineSoft} size={16} />
                   )
                 }
-                description="앱 시작 동기화를 위해 알림 권한이 필요합니다."
+                description="원격 푸시 토큰 등록을 위해 알림 권한이 필요합니다."
                 isPressable
                 isSeparated={!permission.canOpenSettings}
                 onPress={() => {
                   void handleRequestNotificationPermission();
                 }}
                 title="권한 요청"
-              />
-            ) : null}
-            {!permission.canRequest &&
-            permission.status === "granted" &&
-            lastSyncState?.status === "failed" ? (
-              <SettingsRow
-                accessory={
-                  isSyncing ? (
-                    <ActivityIndicator color={colors.text} size="small" />
-                  ) : (
-                    <ExternalLink color={colors.outlineSoft} size={16} />
-                  )
-                }
-                description="실패 상태를 다시 확인합니다."
-                isPressable
-                isSeparated={permission.canOpenSettings}
-                onPress={() => {
-                  void handleRetrySync();
-                }}
-                title="동기화 다시 시도"
               />
             ) : null}
             {permission.canOpenSettings ? (
