@@ -56,61 +56,6 @@ export type Database = {
           },
         ];
       };
-      device_notification_reservations: {
-        Row: {
-          created_at: string;
-          device_id: string;
-          id: string;
-          item_id: string;
-          local_notification_id: string;
-          scheduled_at_utc: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          device_id: string;
-          id?: string;
-          item_id: string;
-          local_notification_id: string;
-          scheduled_at_utc: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string;
-          device_id?: string;
-          id?: string;
-          item_id?: string;
-          local_notification_id?: string;
-          scheduled_at_utc?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            columns: ["device_id"];
-            foreignKeyName: "device_notification_reservations_device_id_fkey";
-            isOneToOne: false;
-            referencedColumns: ["id"];
-            referencedRelation: "devices";
-          },
-          {
-            columns: ["item_id"];
-            foreignKeyName: "device_notification_reservations_item_id_fkey";
-            isOneToOne: false;
-            referencedColumns: ["id"];
-            referencedRelation: "recurring_items";
-          },
-          {
-            columns: ["user_id"];
-            foreignKeyName: "device_notification_reservations_user_id_fkey";
-            isOneToOne: false;
-            referencedColumns: ["id"];
-            referencedRelation: "profiles";
-          },
-        ];
-      };
       device_push_tokens: {
         Row: {
           created_at: string;
@@ -168,6 +113,182 @@ export type Database = {
           {
             columns: ["user_id"];
             foreignKeyName: "device_push_tokens_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
+      notification_delivery_attempts: {
+        Row: {
+          attempt_number: number;
+          attempted_at: string;
+          created_at: string;
+          device_id: string | null;
+          id: string;
+          job_id: string;
+          platform: string;
+          provider_error_code: string | null;
+          provider_error_message: string | null;
+          provider_message_id: string | null;
+          push_provider: string;
+          push_token: string;
+          push_token_id: string | null;
+          response_payload: Record<string, unknown>;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          attempt_number: number;
+          attempted_at?: string;
+          created_at?: string;
+          device_id?: string | null;
+          id?: string;
+          job_id: string;
+          platform: string;
+          provider_error_code?: string | null;
+          provider_error_message?: string | null;
+          provider_message_id?: string | null;
+          push_provider: string;
+          push_token: string;
+          push_token_id?: string | null;
+          response_payload?: Record<string, unknown>;
+          status: string;
+          user_id: string;
+        };
+        Update: {
+          attempt_number?: number;
+          attempted_at?: string;
+          created_at?: string;
+          device_id?: string | null;
+          id?: string;
+          job_id?: string;
+          platform?: string;
+          provider_error_code?: string | null;
+          provider_error_message?: string | null;
+          provider_message_id?: string | null;
+          push_provider?: string;
+          push_token?: string;
+          push_token_id?: string | null;
+          response_payload?: Record<string, unknown>;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["device_id"];
+            foreignKeyName: "notification_delivery_attempts_device_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "devices";
+          },
+          {
+            columns: ["job_id"];
+            foreignKeyName: "notification_delivery_attempts_job_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "notification_delivery_jobs";
+          },
+          {
+            columns: ["push_token_id"];
+            foreignKeyName: "notification_delivery_attempts_push_token_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "device_push_tokens";
+          },
+          {
+            columns: ["user_id"];
+            foreignKeyName: "notification_delivery_attempts_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
+      notification_delivery_jobs: {
+        Row: {
+          body: string;
+          cancel_reason: string | null;
+          cancelled_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          dedupe_key: string;
+          deliver_at_utc: string;
+          failure_count: number;
+          id: string;
+          item_id: string;
+          item_scheduled_at_utc: string;
+          last_attempted_at: string | null;
+          next_retry_at: string | null;
+          notification_kind: string;
+          payload: Record<string, unknown>;
+          retry_count: number;
+          status: string;
+          success_count: number;
+          target_token_count: number;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          body: string;
+          cancel_reason?: string | null;
+          cancelled_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          dedupe_key: string;
+          deliver_at_utc: string;
+          failure_count?: number;
+          id?: string;
+          item_id: string;
+          item_scheduled_at_utc: string;
+          last_attempted_at?: string | null;
+          next_retry_at?: string | null;
+          notification_kind?: string;
+          payload?: Record<string, unknown>;
+          retry_count?: number;
+          status?: string;
+          success_count?: number;
+          target_token_count?: number;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          cancel_reason?: string | null;
+          cancelled_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          dedupe_key?: string;
+          deliver_at_utc?: string;
+          failure_count?: number;
+          id?: string;
+          item_id?: string;
+          item_scheduled_at_utc?: string;
+          last_attempted_at?: string | null;
+          next_retry_at?: string | null;
+          notification_kind?: string;
+          payload?: Record<string, unknown>;
+          retry_count?: number;
+          status?: string;
+          success_count?: number;
+          target_token_count?: number;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["item_id"];
+            foreignKeyName: "notification_delivery_jobs_item_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "recurring_items";
+          },
+          {
+            columns: ["user_id"];
+            foreignKeyName: "notification_delivery_jobs_user_id_fkey";
             isOneToOne: false;
             referencedColumns: ["id"];
             referencedRelation: "profiles";
@@ -396,18 +517,24 @@ export type CompletionLogInsert =
 export type CompletionLogRow =
   Database["public"]["Tables"]["completion_logs"]["Row"];
 export type DeviceInsert = Database["public"]["Tables"]["devices"]["Insert"];
-export type DeviceNotificationReservationInsert =
-  Database["public"]["Tables"]["device_notification_reservations"]["Insert"];
-export type DeviceNotificationReservationRow =
-  Database["public"]["Tables"]["device_notification_reservations"]["Row"];
-export type DeviceNotificationReservationUpdate =
-  Database["public"]["Tables"]["device_notification_reservations"]["Update"];
 export type DevicePushTokenInsert =
   Database["public"]["Tables"]["device_push_tokens"]["Insert"];
 export type DevicePushTokenRow =
   Database["public"]["Tables"]["device_push_tokens"]["Row"];
 export type DevicePushTokenUpdate =
   Database["public"]["Tables"]["device_push_tokens"]["Update"];
+export type NotificationDeliveryAttemptInsert =
+  Database["public"]["Tables"]["notification_delivery_attempts"]["Insert"];
+export type NotificationDeliveryAttemptRow =
+  Database["public"]["Tables"]["notification_delivery_attempts"]["Row"];
+export type NotificationDeliveryAttemptUpdate =
+  Database["public"]["Tables"]["notification_delivery_attempts"]["Update"];
+export type NotificationDeliveryJobInsert =
+  Database["public"]["Tables"]["notification_delivery_jobs"]["Insert"];
+export type NotificationDeliveryJobRow =
+  Database["public"]["Tables"]["notification_delivery_jobs"]["Row"];
+export type NotificationDeliveryJobUpdate =
+  Database["public"]["Tables"]["notification_delivery_jobs"]["Update"];
 export type DeviceRow = Database["public"]["Tables"]["devices"]["Row"];
 export type DeviceUpdate = Database["public"]["Tables"]["devices"]["Update"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];

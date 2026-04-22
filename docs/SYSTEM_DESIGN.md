@@ -65,6 +65,7 @@
 4. **Infrastructure**
    - Supabase repositories
    - notification scheduler
+   - remote push delivery worker
    - timezone utils
    - auth/session
    - logging/monitoring
@@ -84,6 +85,10 @@
 - **Notification scheduler**
   - 현재 기기 기준 예약/취소 수행
   - 원격 푸시 토큰 등록 상태 동기화
+- **Remote push delivery worker**
+  - future occurrence 기준 발송 job upsert
+  - APNs / FCM fan-out 발송
+  - token 단위 성공/실패 기록
 - **Presentation surfaces**
   - 홈, 상세, 히스토리, 달력, 설정, 위젯에 필요한 파생 데이터를 조합
 
@@ -93,13 +98,13 @@
 2. mutation은 서버에 item 메타, schedule version, completion log를 저장한다.
 3. 저장된 데이터와 사용자 timezone을 기준으로 occurrence를 다시 계산한다.
 4. 계산 결과로 홈/히스토리/달력/위젯에 필요한 파생 목록을 만든다.
-5. 알림이 필요한 occurrence만 현재 기기 기준으로 다시 예약한다.
+5. 알림이 필요한 occurrence만 서버 발송 job으로 다시 맞춘다.
 
 핵심 원칙:
 
 - 서버 row가 원본 데이터다.
 - occurrence와 화면 목록은 저장하지 않고 계산한다.
-- 로컬 알림과 원격 푸시 토큰은 계산 결과를 반영하는 파생 상태다.
+- 원격 푸시 발송 job은 계산 결과를 반영하는 파생 상태다.
 
 전제조건:
 
@@ -134,7 +139,7 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 
 ### Notifications
 
-알림 자체는 source of truth가 아니다. DB 기준으로 occurrence를 다시 계산하고, 그 결과에 따라 로컬 알림 예약 또는 원격 푸시 발송 대상을 다시 맞춘다.
+알림 자체는 source of truth가 아니다. DB 기준으로 occurrence를 다시 계산하고, 그 결과에 따라 원격 푸시 발송 대상을 다시 맞춘다.
 
 ---
 
@@ -315,6 +320,24 @@ phase 16 메모:
 - 실패 시 홈에서 오류를 명확히 보여주고 재시도 가능한 액션을 제공한다.
 - 권한 거부 상태면 설정 이동 경로를 제공하고, 데이터 자체는 서버 기준으로 유지한다.
 
+### Remote push delivery algorithm
+
+1. future occurrence 계산 결과를 기준으로 `notification_delivery_jobs`를 upsert 한다.
+2. job의 `dedupe_key`로 occurrence 단위 중복 생성을 막는다.
+3. worker가 `deliver_at_utc <= now()` 인 pending job을 조회한다.
+4. 조회 시점의 활성 `device_push_tokens`를 읽는다.
+5. iOS token은 APNs 직접 발송으로 보낸다.
+6. Android token은 FCM 직접 발송으로 보낸다.
+7. token별 결과를 `notification_delivery_attempts`에 남긴다.
+8. job 요약 상태와 재시도 시각을 갱신한다.
+9. 무효 token은 `delivery-failed`로 비활성화한다.
+
+핵심 원칙:
+
+- job은 occurrence 단위 상태를 가진다.
+- attempt는 token 단위 fan-out 결과를 가진다.
+- 멀티 디바이스 기본값은 활성 token 전체 발송이다.
+- 재시도는 같은 job row에서 관리하고 새 dedupe key를 만들지 않는다.
 ---
 
 ## 9. Device Model and Multi-device Strategy
@@ -333,6 +356,8 @@ phase 16 메모:
 
 - `devices`는 기기 identity를 유지한다
 - `device_push_tokens`는 현재 발송 가능한 토큰만 유지한다
+- `notification_delivery_jobs`는 occurrence 단위 발송 기준 row다
+- `notification_delivery_attempts`는 token 단위 결과 log다
 - 서버는 아이템/로그 데이터의 source of truth
 - 로컬 예약 메타데이터는 전환 완료 뒤 legacy 구조로 축소한다
 
@@ -454,7 +479,7 @@ src/
     edit-item/
     complete-occurrence/
     skip-occurrence/
-    notification-sync/
+    notification-delivery-sync/
     home-feed/
     calendar-view/
   shared/
@@ -496,7 +521,7 @@ src/
 - recurrence / occurrence domain logic
 - item CRUD
 - home / history / calendar
-- notification sync
+- remote push sync
 
 ### Hardening and finish
 
@@ -513,5 +538,5 @@ src/
 2. 고정형과 완료 기준형을 한 UX 안에서 어떻게 공존시켰는가
 3. overdue 상태를 자동 미루기 없이 어떻게 처리했는가
 4. occurrence를 저장하지 않고 계산하는 이유
-5. 서버 중심 구조에서 로컬 알림을 어떻게 동기화했는가
+5. 서버 중심 구조에서 원격 푸시 발송 대상을 어떻게 동기화했는가
 6. 멀티 디바이스 확장을 고려했지만 MVP 복잡도를 어떻게 통제했는가

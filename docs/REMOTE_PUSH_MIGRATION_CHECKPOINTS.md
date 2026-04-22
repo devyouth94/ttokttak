@@ -104,7 +104,6 @@
 - [x] 신규 서버 테이블 또는 스키마 변경안을 정리한다.
   - [x] `devices`는 유지한다.
   - [x] `device_push_tokens`를 추가한다.
-  - [x] `device_notification_reservations`는 legacy 구조로 두고 원격 푸시 전환 뒤 축소 또는 폐기한다.
 - [x] 앱 토큰 수집 시점을 정리한다.
   - [x] 로그인 직후 세션 복원 시 현재 기기 토큰을 등록한다.
   - [x] 권한 허용 직후 현재 기기 토큰을 등록한다.
@@ -123,10 +122,6 @@
   - `device_id + push_provider` 단위로 현재 활성 토큰 1건만 유지한다.
   - `platform`, `push_provider`, `push_token`, `permission_status`, `is_active`, `last_registered_at`을 저장한다.
   - 비활성화 시 `deactivated_at`, `deactivation_reason`을 남긴다.
-- `device_notification_reservations`
-  - 로컬 알림 동기화가 남아 있는 동안만 유지한다.
-  - 원격 푸시 발송 구조가 안정화되면 축소 또는 폐기한다.
-
 ### 완료 체크포인트
 
 - [x] 토큰 저장 구조가 정리됐다.
@@ -144,22 +139,73 @@
 
 ### 네가 할 것
 
-- [ ] 서버 발송 흐름을 정리한다.
-  - [ ] 발송 job 생성
-  - [ ] 발송 시점 조회
-  - [ ] APNs 발송
-  - [ ] FCM 발송
-  - [ ] 성공/실패 기록
-- [ ] 중복 방지 키를 정리한다.
-- [ ] 멀티 디바이스 정책을 정리한다.
-  - [ ] 기본값은 활성 토큰 전체 발송으로 둔다.
-- [ ] 실패 재시도와 만료 토큰 정리 규칙을 정리한다.
+- [x] 서버 발송 흐름을 정리한다.
+  - [x] 발송 job 생성
+  - [x] 발송 시점 조회
+  - [x] APNs 발송
+  - [x] FCM 발송
+  - [x] 성공/실패 기록
+- [x] 중복 방지 키를 정리한다.
+- [x] 멀티 디바이스 정책을 정리한다.
+  - [x] 기본값은 활성 토큰 전체 발송으로 둔다.
+- [x] 실패 재시도와 만료 토큰 정리 규칙을 정리한다.
+
+### 정리 결과
+
+- 서버는 `notification_delivery_jobs`와 `notification_delivery_attempts`를 기준으로 발송 상태를 관리한다.
+- job은 occurrence 단위 source row다.
+  - `user_id + item_id + notification_kind + item_scheduled_at_utc` 의미를 `dedupe_key`로 고정한다.
+  - 같은 occurrence에 대해 중복 job을 만들지 않는다.
+- attempt는 token 단위 fan-out 결과 row다.
+  - 한 job이 여러 활성 토큰으로 분기될 수 있다.
+  - APNs와 FCM 결과를 같은 attempt 모델에 기록한다.
+- 발송 worker 흐름은 아래 순서를 따른다.
+  1. mutation 또는 재계산 작업이 future occurrence 기준 job을 upsert 한다.
+  2. worker가 `status in ('pending', 'retrying')` 이고 `deliver_at_utc <= now()` 인 job을 조회한다.
+  3. 조회 시점의 활성 `device_push_tokens`를 읽는다.
+  4. iOS + `apns` 토큰은 APNs 직접 발송을 수행한다.
+  5. Android + `fcm` 토큰은 FCM 직접 발송을 수행한다.
+  6. token별 성공/실패를 attempt row로 남긴다.
+  7. job summary 상태를 `succeeded`, `partially-failed`, `failed`, `cancelled` 중 하나로 갱신한다.
+- 멀티 디바이스 기본 정책은 활성 토큰 전체 발송이다.
+  - 같은 사용자라도 활성 token이 여러 개면 모두 발송한다.
+  - 디바이스별 성공/실패는 attempt row에서 따로 본다.
+- 토큰 선택 규칙은 아래를 따른다.
+  - `device_push_tokens.is_active = true`
+  - `permission_status = 'granted'`
+  - `platform = 'ios'` 이면 `push_provider = 'apns'`
+  - `platform = 'android'` 이면 `push_provider = 'fcm'`
+- job 상태 규칙은 아래를 따른다.
+  - 활성 토큰이 하나도 없으면 `cancelled`와 `cancel_reason = 'no-active-tokens'`로 정리한다.
+  - 모든 token이 성공하면 `succeeded`다.
+  - 일부 성공, 일부 실패면 `partially-failed`다.
+  - 전부 실패했고 재시도 가능 오류가 남아 있으면 `retrying`으로 둔다.
+  - 전부 실패했고 재시도 한도를 넘기면 `failed`다.
+- 재시도 규칙은 아래를 따른다.
+  - 네트워크 오류, APNs 5xx, FCM 5xx, rate limit은 재시도 대상이다.
+  - backoff는 `1분 -> 5분 -> 15분` 3회로 제한한다.
+  - 재시도 시 새 job을 만들지 않고 같은 job의 `next_retry_at`만 갱신한다.
+- 만료 토큰 정리 규칙은 아래를 따른다.
+  - APNs `BadDeviceToken`, `Unregistered`
+  - FCM `UNREGISTERED`, `INVALID_ARGUMENT`
+  - 위 오류는 `device_push_tokens.is_active = false` 와 `deactivation_reason = 'delivery-failed'`로 정리한다.
+  - 만료 토큰은 재시도 대상에서 제외한다.
+- 운영 환경변수 이름은 아래처럼 고정한다.
+  - `APNS_KEY_ID`
+  - `APNS_TEAM_ID`
+  - `APNS_BUNDLE_ID`
+  - `APNS_PRIVATE_KEY`
+  - `FCM_PROJECT_ID`
+  - `FCM_CLIENT_EMAIL`
+  - `FCM_PRIVATE_KEY`
+  - `FCM_PRIVATE_KEY_ID`
+- 위 비밀값은 앱 클라이언트가 아니라 서버 worker 또는 Edge Function 런타임에서만 사용한다.
 
 ### 완료 체크포인트
 
-- [ ] 서버 발송 플로우가 결정됐다.
-- [ ] 중복 방지 규칙이 결정됐다.
-- [ ] 멀티 디바이스 정책이 결정됐다.
+- [x] 서버 발송 플로우가 결정됐다.
+- [x] 중복 방지 규칙이 결정됐다.
+- [x] 멀티 디바이스 정책이 결정됐다.
 
 ## 8. Phase 5. 도메인 mutation 연동
 
@@ -169,19 +215,34 @@
 
 ### 네가 할 것
 
-- [ ] 아래 mutation 뒤에 서버 발송 계획 재계산을 연결한다.
-  - [ ] create
-  - [ ] update
-  - [ ] complete
-  - [ ] skip
-  - [ ] archive
-- [ ] 수정 시 `effective_from_utc` 이후 미래 occurrence만 재조정되게 유지한다.
-- [ ] 과거 log immutable 규칙을 유지한다.
+- [x] 아래 mutation 뒤에 서버 발송 계획 재계산을 연결한다.
+  - [x] create
+  - [x] update
+  - [x] complete
+  - [x] skip
+  - [x] archive
+- [x] 수정 시 `effective_from_utc` 이후 미래 occurrence만 재조정되게 유지한다.
+- [x] 과거 log immutable 규칙을 유지한다.
+
+### 정리 결과
+
+- `syncAfterMutation`는 mutation 뒤 서버 발송 job 재계산을 먼저 실행한다.
+- 서버 발송 job 재계산은 현재 기기 권한이 없어도 실행된다.
+- scope 규칙은 item 단위 미래 occurrence 재계산 기준으로 유지한다.
+  - create: 생성 직후 item scope로 future job 생성
+  - update: `effective_from_utc` 이후 future job만 재계산
+  - complete: 완료 뒤 해당 item future job 재계산
+  - skip: 건너뜀 뒤 해당 item future job 재계산
+  - archive: 해당 item future job cancel
+- 재계산 대상은 앞으로 14일 범위를 유지한다.
+- stale job은 삭제하지 않고 `cancelled`로 전환한다.
+- 새로운 future occurrence는 `dedupe_key` 기준 upsert 한다.
+- completion log는 기존 append-only 규칙을 그대로 유지한다.
 
 ### 완료 체크포인트
 
-- [ ] 주요 mutation 뒤 서버 발송 계획이 다시 맞춰진다.
-- [ ] 수정 이후 과거 occurrence는 유지된다.
+- [x] 주요 mutation 뒤 서버 발송 계획이 다시 맞춰진다.
+- [x] 수정 이후 과거 occurrence는 유지된다.
 
 ## 9. Phase 6. 검증
 

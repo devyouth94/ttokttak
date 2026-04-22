@@ -93,7 +93,6 @@ UI 시안 검토가 필요할 때는 `PRODUCT_SPEC.md`의 화면 요구사항과
 - [x] 시작일 수정 제한 / 알림 시간 수정 허용
 - [x] 수정 영향 안내 문구
 
-17~19단계 로컬 알림 체크포인트는 `NOTIFICATION_PHASE_CHECKPOINTS.md`를 따른다.
 원격 푸시 전환 체크포인트는 `REMOTE_PUSH_MIGRATION_CHECKPOINTS.md`를 따른다.
 
 ### 17단계: 알림 권한 및 시작 시 동기화

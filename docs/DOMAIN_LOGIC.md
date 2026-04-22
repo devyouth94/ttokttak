@@ -426,7 +426,6 @@ MVP 확정 정책:
 전제조건:
 
 - 삭제 대상 item을 현재 사용자 소유 데이터로 확인할 수 있어야 한다.
-- 현재 기기 알림 예약 metadata를 조회할 수 있어야 한다.
 
 예상 예외:
 
@@ -435,31 +434,25 @@ MVP 확정 정책:
 
 후속 액션:
 
-- 미래 occurrence와 관련된 현재 기기 알림을 취소한다.
+- 미래 occurrence와 관련된 서버 발송 job을 취소한다.
 - 홈, 캘린더, 히스토리에서 archive 반영 후 서버 기준 최신 상태를 다시 반영한다.
 
-## 14. Notification Sync Logic
+## 14. Notification Delivery Logic
 
-### syncNotificationsForCurrentDevice(userId, deviceId, nowUtc)
+### syncRemoteNotificationDeliveryJobs(userId, nowUtc)
 
 1. 현재 사용자 timezone 조회
 2. `notificationsEnabled = true` 아이템 조회
 3. `range = [now, now + 14 days]`
 4. 각 아이템 occurrence 계산
 5. `scheduled` 상태만 추림
-6. 현재 기기의 기존 예약 메타데이터 조회
-7. 유효하지 않은 예약 취소
-8. 새 예약 생성
-9. device notification metadata upsert
-
-phase 16 메모:
-
-- phase 16에서는 edit 이후 미래 reservation 삭제/재생성 경계만 고정한다.
-- 실제 현재 기기 notification orchestration 연결은 phase 18 범위다.
+6. 기존 서버 발송 job 조회
+7. 유효하지 않은 job 취소
+8. 새 job upsert
 
 전제조건:
 
-- `userId`, `deviceId`, `nowUtc`가 모두 현재 실행 컨텍스트와 일치해야 한다.
+- `userId`, `nowUtc`가 모두 현재 실행 컨텍스트와 일치해야 한다.
 - 사용자 timezone과 알림 대상 item 데이터를 조회할 수 있어야 한다.
 - 현재 기기의 기존 예약 metadata를 읽고 쓸 수 있어야 한다.
 
@@ -482,6 +475,54 @@ device-scoped metadata 예시:
 - localNotificationId
 - deviceId
 
+### syncRemotePushJobs(userId, nowUtc)
+
+1. 현재 사용자 timezone 조회
+2. `notificationsEnabled = true` 아이템 조회
+3. `range = [now, now + 14 days]`
+4. 각 아이템 occurrence 계산
+5. `scheduled` 상태만 추림
+6. occurrence별 `dedupeKey` 생성
+7. future job upsert
+8. 필요 없는 future job cancel
+
+dedupe key 규칙:
+
+- `reminder:${userId}:${itemId}:${scheduledAtUtc}`
+- 같은 occurrence에는 job이 1개만 존재한다.
+- 재시도는 같은 job row에서 처리한다.
+
+job 상태 규칙:
+
+- `pending`: 아직 발송 시각 전이거나 첫 발송 대기
+- `processing`: worker가 현재 fan-out 중
+- `retrying`: 재시도 대기 중
+- `succeeded`: 모든 활성 token 발송 성공
+- `partially-failed`: 일부 token만 성공
+- `failed`: 재시도 종료 후 최종 실패
+- `cancelled`: 더 이상 보낼 필요가 없음
+
+cancel 규칙:
+
+- item archive 시 future job을 `cancelled`로 전환한다.
+- completion / skip 시 해당 occurrence와 future 재계산 범위 밖 job을 `cancelled`로 전환한다.
+- edit 시 `effective_from_utc` 이후 future job만 다시 계산한다.
+- 활성 token이 없으면 `cancel_reason = 'no-active-tokens'`로 끝낸다.
+
+attempt 기록 규칙:
+
+- APNs / FCM 호출마다 token별 attempt row를 1건 남긴다.
+- 성공과 실패를 모두 기록한다.
+- provider message id와 provider error code를 함께 저장한다.
+- 무효 token 오류면 해당 token을 `delivery-failed`로 비활성화한다.
+
+재시도 규칙:
+
+- 네트워크 오류, provider 5xx, rate limit만 재시도한다.
+- backoff는 1분, 5분, 15분 3회다.
+- `next_retry_at <= nowUtc`가 되면 같은 job을 다시 처리한다.
+- 영구 실패와 무효 token은 재시도하지 않는다.
+
 ## 15. Multi-device Notes
 
 목표:
@@ -494,6 +535,8 @@ device-scoped metadata 예시:
 - row마다 `createdAt`, `updatedAt` 유지
 - item 업데이트 후 서버 재조회
 - 기기별 notification reservation은 분리 저장
+- 원격 푸시는 활성 token 전체 fan-out을 기본값으로 사용
+- token 실패는 기기 전체 실패가 아니라 token 단위로 기록
 
 향후 문제 영역:
 
