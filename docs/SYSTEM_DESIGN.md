@@ -91,14 +91,14 @@
   - APNs / FCM fan-out 발송
   - token 단위 성공/실패 기록
 - **Presentation surfaces**
-  - 홈, 상세, 히스토리, 달력, 설정, 위젯에 필요한 파생 데이터를 조합
+  - 홈, 목록, 상세, 달력, 설정, 위젯에 필요한 파생 데이터를 조합
 
 ### Data flow overview
 
 1. 사용자가 항목을 생성/수정/완료/건너뜀한다.
 2. mutation은 서버에 item 메타, schedule version, completion log를 저장한다.
 3. 저장된 데이터와 사용자 timezone을 기준으로 occurrence를 다시 계산한다.
-4. 계산 결과로 홈/히스토리/달력/위젯에 필요한 파생 목록을 만든다.
+4. 계산 결과로 홈/목록/상세/달력/위젯에 필요한 파생 목록을 만든다.
 5. 알림이 필요한 occurrence만 서버 발송 job으로 다시 맞춘다.
 
 핵심 원칙:
@@ -123,7 +123,7 @@
 후속 액션:
 
 - mutation 성공 후 서버 기준 파생 목록을 다시 조회한다.
-- 홈, 히스토리, 달력, 위젯은 재계산 결과를 다시 반영한다.
+- 홈, 목록, 상세, 달력, 위젯은 재계산 결과를 다시 반영한다.
 - 알림이 켜진 항목은 서버 발송 job을 다시 계산한다.
 
 ---
@@ -479,8 +479,8 @@ app/
     login.tsx
   (tabs)/
     home.tsx
+    schedule.tsx
     calendar.tsx
-    history.tsx
     settings.tsx
   item/
     new.tsx
@@ -500,6 +500,7 @@ src/
     skip-occurrence/
     notification-delivery-sync/
     home-feed/
+    reminder-list/
     calendar-view/
   shared/
     ui/
@@ -539,7 +540,7 @@ src/
 
 - recurrence / occurrence domain logic
 - item CRUD
-- home / history / calendar
+- home / reminder list / item detail / calendar
 - remote push sync
 
 ### Hardening and finish

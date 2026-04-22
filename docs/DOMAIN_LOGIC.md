@@ -322,7 +322,7 @@ UI 정책:
 1. occurrence identity 확인
 2. `action = completed` 로그 생성
 3. 서버 저장
-4. 홈/히스토리 쿼리 무효화
+4. 관련 쿼리 무효화
 5. 현재 기기 notification sync 실행
 
 전제조건:
@@ -344,7 +344,7 @@ UI 정책:
 
 후속 액션:
 
-- mutation 성공 후 서버 기준 홈/히스토리 데이터를 다시 읽는다.
+- mutation 성공 후 서버 기준 홈, 목록, 상세 데이터를 다시 읽는다.
 - 현재 기기 기준 notification sync를 다시 실행한다.
 
 ## 11. Skip Flow
@@ -376,7 +376,7 @@ UI 정책:
 
 후속 액션:
 
-- mutation 성공 후 서버 기준 홈/히스토리 데이터를 다시 읽는다.
+- mutation 성공 후 서버 기준 홈, 목록, 상세 데이터를 다시 읽는다.
 - 현재 기기 기준 notification sync를 다시 실행한다.
 
 ## 12. Edit Item Flow
@@ -414,7 +414,7 @@ MVP 확정 정책:
 후속 액션:
 
 - mutation 성공 후 미래 occurrence를 다시 계산한다.
-- 홈, 캘린더, 히스토리에서 서버 기준 최신 상태를 다시 반영한다.
+- 홈, 목록, 상세, 캘린더에서 서버 기준 최신 상태를 다시 반영한다.
 - 서버 발송 job을 다시 계산한다.
 - job 재계산 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위로 제한한다.
 - 동일 occurrence가 다른 기기에서 먼저 처리된 경우 최신 상태를 재조회하고 짧은 안내 메시지를 1회 표시한다.
@@ -425,7 +425,7 @@ MVP 확정 정책:
 
 1. 사용자 액션은 delete로 보이되, 현재 스키마 기준 내부 상태는 `is_archived = true`로 반영
 2. future notification 취소
-3. 홈, 캘린더, 히스토리에서 제외
+3. 홈, 목록, 캘린더에서 제외
 
 전제조건:
 
@@ -439,7 +439,7 @@ MVP 확정 정책:
 후속 액션:
 
 - 미래 occurrence와 관련된 서버 발송 job을 취소한다.
-- 홈, 캘린더, 히스토리에서 archive 반영 후 서버 기준 최신 상태를 다시 반영한다.
+- 홈, 목록, 캘린더에서 archive 반영 후 서버 기준 최신 상태를 다시 반영한다.
 
 ## 14. Notification Delivery Logic
 

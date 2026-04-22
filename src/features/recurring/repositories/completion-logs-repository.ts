@@ -29,14 +29,6 @@ export type ListCompletionLogsOptions = {
   userId: string;
 };
 
-export type ListCompletionLogsPageOptions = {
-  client?: RepositoryClient;
-  itemIds?: string[];
-  pageOffset: number;
-  pageSize: number;
-  userId: string;
-};
-
 export type ListCompletionLogsInRangeOptions = {
   client?: RepositoryClient;
   itemIds?: string[];
@@ -134,36 +126,6 @@ export async function listCompletionLogs({
       .select("*")
       .eq("user_id", userId)
       .order("scheduled_at_utc", { ascending: true }),
-    itemIds
-  );
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw error;
-  }
-
-  return data.map(toCompletionLog);
-}
-
-/**
- * 현재 사용자의 completion log를 최신 예정 시각 기준 페이지 단위로 조회한다.
- */
-export async function listCompletionLogsPage({
-  client,
-  itemIds,
-  pageOffset,
-  pageSize,
-  userId,
-}: ListCompletionLogsPageOptions): Promise<CompletionLog[]> {
-  const supabase = getRepositoryClient(client);
-  const query = applyItemIdsFilter(
-    supabase
-      .from("completion_logs")
-      .select("*")
-      .eq("user_id", userId)
-      .order("scheduled_at_utc", { ascending: false })
-      .range(pageOffset, pageOffset + pageSize - 1),
     itemIds
   );
 

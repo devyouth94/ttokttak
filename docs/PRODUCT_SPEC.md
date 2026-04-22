@@ -153,7 +153,7 @@
   - Upcoming
   - Overdue
 - 완료 / 건너뜀
-- 히스토리 조회
+- 항목 상세의 최근 히스토리 조회
 - 달력 화면
   - read-only
   - scheduled / completed / overdue 상태 확인
@@ -342,9 +342,9 @@
 - 사용자는 occurrence를 완료 처리할 수 있어야 한다.
 - 사용자는 occurrence를 건너뛸 수 있어야 한다.
 
-### FR-06 History
+### FR-06 Item detail history
 
-- 사용자는 완료/건너뜀 히스토리를 조회할 수 있어야 한다.
+- 사용자는 항목 상세에서 완료/건너뜀 최근 히스토리를 조회할 수 있어야 한다.
 
 ### FR-07 Notification permission UX
 

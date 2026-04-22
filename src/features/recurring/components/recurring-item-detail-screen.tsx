@@ -31,8 +31,8 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
-import { HistoryEntryCard } from "~/features/history/components/history-entry-card";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { HistoryEntryCard } from "~/features/recurring/components/history-entry-card";
 import {
   buildRecurringItemDetailViewModel,
   getItemDetailBasisOccurrence,

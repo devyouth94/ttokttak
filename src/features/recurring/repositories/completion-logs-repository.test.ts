@@ -2,7 +2,6 @@ import {
   createCompletionLog,
   listCompletionLogs,
   listCompletionLogsInRange,
-  listCompletionLogsPage,
 } from "~/features/recurring/repositories/completion-logs-repository";
 import { createAwaitableQuery } from "~/features/recurring/repositories/repository-test-helpers";
 
@@ -78,43 +77,6 @@ describe("completion logs repository", () => {
       "scheduled_at_utc",
       "2026-04-04T00:00:00.000Z"
     );
-    expect(logs).toHaveLength(1);
-  });
-
-  it("최신 예정 시각 기준으로 completion log 페이지를 조회한다", async () => {
-    const row = {
-      acted_at_utc: "2026-04-03T01:00:00.000Z",
-      action: "completed",
-      created_at: "2026-04-03T01:00:00.000Z",
-      device_id: "device-1",
-      id: "log-1",
-      item_id: "item-1",
-      scheduled_at_utc: "2026-04-03T00:00:00.000Z",
-      user_id: "user-1",
-    };
-    const query = createAwaitableQuery(
-      {
-        data: [row],
-        error: null,
-      },
-      ["eq", "in", "order", "range"]
-    );
-    const from = jest.fn(() => ({
-      select: jest.fn(() => query),
-    }));
-
-    const logs = await listCompletionLogsPage({
-      client: { from } as never,
-      itemIds: ["item-1"],
-      pageOffset: 20,
-      pageSize: 10,
-      userId: "user-1",
-    });
-
-    expect(query.order).toHaveBeenCalledWith("scheduled_at_utc", {
-      ascending: false,
-    });
-    expect(query.range).toHaveBeenCalledWith(20, 29);
     expect(logs).toHaveLength(1);
   });
 
