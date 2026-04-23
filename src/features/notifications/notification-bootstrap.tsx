@@ -7,7 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
+import * as Notifications from "expo-notifications";
 
 import { addCurrentDevicePushTokenListener } from "~/features/notifications/device-push-token";
 import {
@@ -26,6 +27,7 @@ import {
   requestNotificationPermission,
 } from "~/features/notifications/notification-permission";
 import { useSession } from "~/features/session/session-provider";
+import { Sentry } from "~/lib/sentry";
 
 type NotificationBootstrapContextValue = {
   isPermissionLoading: boolean;
@@ -47,8 +49,27 @@ const initialPermissionState: NotificationPermissionState = {
   status: "undetermined",
 };
 
+const ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
+
 const NotificationBootstrapContext =
   createContext<NotificationBootstrapContextValue | null>(null);
+
+async function ensureAndroidReminderNotificationChannel(): Promise<void> {
+  if (Platform.OS !== "android") {
+    return;
+  }
+
+  await Notifications.setNotificationChannelAsync(
+    ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
+    {
+      enableVibrate: true,
+      importance: Notifications.AndroidImportance.HIGH,
+      name: "리마인더",
+      showBadge: true,
+      vibrationPattern: [0, 250, 250, 250],
+    }
+  );
+}
 
 export function NotificationBootstrapProvider({
   children,
@@ -63,6 +84,16 @@ export function NotificationBootstrapProvider({
   const lastSignedInUserIdRef = useRef<string | null>(null);
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  useEffect(() => {
+    void ensureAndroidReminderNotificationChannel().catch((error) => {
+      Sentry.captureException(error, {
+        tags: {
+          feature: "notification-channel-bootstrap",
+        },
+      });
+    });
+  }, []);
 
   const refreshPermission =
     useCallback(async (): Promise<NotificationPermissionState> => {
@@ -99,8 +130,12 @@ export function NotificationBootstrapProvider({
       try {
         await registerCurrentDevicePushToken(userId);
         lastPushTokenSyncKeyRef.current = `${userId}:${sessionRevision}`;
-      } catch {
-        // 실제 기기 전환 전까지는 토큰 등록 실패를 조용히 무시한다.
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: "notification-push-token-registration",
+          },
+        });
       }
     },
     [sessionRevision]

@@ -106,6 +106,7 @@ const DEFAULT_BATCH_LIMIT = 50;
 const APNS_AUDIENCE_HOST = "https://api.push.apple.com";
 const FCM_AUDIENCE = "https://oauth2.googleapis.com/token";
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
+const ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -169,6 +170,37 @@ function isFcmRetryableStatus(status: string | null): boolean {
     status === "RESOURCE_EXHAUSTED" ||
     status === "UNAVAILABLE"
   );
+}
+
+function resolveFcmErrorCode(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const error = (payload as Record<string, unknown>).error;
+
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const errorRecord = error as Record<string, unknown>;
+  const details = errorRecord.details;
+
+  if (Array.isArray(details)) {
+    for (const detail of details) {
+      if (!detail || typeof detail !== "object") {
+        continue;
+      }
+
+      const errorCode = (detail as Record<string, unknown>).errorCode;
+
+      if (typeof errorCode === "string") {
+        return errorCode;
+      }
+    }
+  }
+
+  return typeof errorRecord.status === "string" ? errorRecord.status : null;
 }
 
 function getNextRetryAt(retryCount: number): string | null {
@@ -410,6 +442,11 @@ async function sendFcmNotification(
       {
         body: JSON.stringify({
           message: {
+            android: {
+              notification: {
+                channel_id: ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
+              },
+            },
             data: toFcmData(job.payload),
             notification: {
               body: job.body,
@@ -443,6 +480,8 @@ async function sendFcmNotification(
     }
 
     const status = payload?.error?.status ?? null;
+    const errorCode = resolveFcmErrorCode(payload);
+    const providerErrorCode = errorCode ?? status;
     const message = payload?.error?.message ?? `FCM ${response.status}`;
 
     return buildAttemptResult({
@@ -451,14 +490,16 @@ async function sendFcmNotification(
       job,
       payload: payload ?? {},
       platform: token.platform,
-      providerErrorCode: status,
+      providerErrorCode,
       providerErrorMessage: message,
       pushProvider: token.push_provider,
       pushToken: token.push_token,
       pushTokenId: token.id,
-      status: isFcmInvalidTokenStatus(status)
+      status: isFcmInvalidTokenStatus(providerErrorCode)
         ? "token-invalid"
-        : isRetryableHttpStatus(response.status) || isFcmRetryableStatus(status)
+        : isRetryableHttpStatus(response.status) ||
+            isFcmRetryableStatus(status) ||
+            isFcmRetryableStatus(providerErrorCode)
           ? "retryable-failed"
           : "permanent-failed",
     });

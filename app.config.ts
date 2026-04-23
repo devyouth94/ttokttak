@@ -45,7 +45,12 @@ export default function getAppConfig(): ExpoConfig {
         },
       ],
       "expo-secure-store",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          defaultChannel: "reminders",
+        },
+      ],
       "expo-apple-authentication",
       "@react-native-community/datetimepicker",
       [

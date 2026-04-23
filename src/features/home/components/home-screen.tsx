@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -40,6 +41,8 @@ import {
   type HomeFeedCard,
   type HomeFeedSection,
 } from "./home-screen.helpers";
+
+let hasShownNotificationPermissionPrompt = false;
 
 type HomeSectionCardProps = {
   card: HomeFeedCard;
@@ -227,7 +230,8 @@ function FeedErrorCard({
 
 export function HomeScreen(): React.JSX.Element {
   const { profile } = useSession();
-  const { syncAfterMutation } = useNotificationBootstrap();
+  const { permission, requestPermission, syncAfterMutation } =
+    useNotificationBootstrap();
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const queryClient = useQueryClient();
   const isFocused = useIsFocused();
@@ -321,6 +325,51 @@ export function HomeScreen(): React.JSX.Element {
 
     void Promise.all([refetchItems(), refetchCompletionLogs()]);
   }, [isFocused, isReady, refetchCompletionLogs, refetchItems, userId]);
+
+  useEffect(() => {
+    if (
+      hasShownNotificationPermissionPrompt ||
+      !isFocused ||
+      !isReady ||
+      !userId ||
+      permission.status === "granted" ||
+      permission.status === "unsupported" ||
+      !permission.canRequest
+    ) {
+      return;
+    }
+
+    hasShownNotificationPermissionPrompt = true;
+
+    Alert.alert(
+      "알림을 켤까요?",
+      "리마인더 시간에 맞춰 알려드리려면 알림 권한이 필요합니다.",
+      [
+        {
+          style: "cancel",
+          text: "나중에",
+        },
+        {
+          onPress: () => {
+            void requestPermission().catch((error) => {
+              Alert.alert(
+                "권한 요청 실패",
+                error instanceof Error ? error.message : String(error)
+              );
+            });
+          },
+          text: "허용하기",
+        },
+      ]
+    );
+  }, [
+    isFocused,
+    isReady,
+    permission.canRequest,
+    permission.status,
+    requestPermission,
+    userId,
+  ]);
 
   const reloadFeed = async () => {
     setActionErrorMessage(null);

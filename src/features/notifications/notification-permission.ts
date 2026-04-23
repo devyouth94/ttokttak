@@ -35,7 +35,7 @@ function toNotificationPermissionState(
   if (permission.status === Notifications.PermissionStatus.DENIED) {
     return {
       canOpenSettings: true,
-      canRequest: false,
+      canRequest: permission.canAskAgain,
       label: "꺼짐",
       status: "denied",
     };
@@ -43,7 +43,7 @@ function toNotificationPermissionState(
 
   return {
     canOpenSettings: false,
-    canRequest: permission.canAskAgain,
+    canRequest: permission.canAskAgain !== false,
     label: "미정",
     status: "undetermined",
   };

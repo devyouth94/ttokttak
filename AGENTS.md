@@ -5,6 +5,8 @@
 - user-edited code: 요청 없이 되돌리거나 덮어쓰지 않는다.
 - 날짜 포맷 관련 구현은 `date-fns`를 우선 사용한다.
 - `as unknown as` 캐스트는 사용하지 않는다. 타입은 `z.infer` 등으로 직접 맞춘다.
+- `ios/`, `android/` 네이티브 생성 코드는 직접 수정하지 않는다.
+- 네이티브 설정 변경이 필요하면 `app.config.ts`, config plugin, Expo prebuild 설정 등 재생성 가능한 경로를 사용한다.
 
 ## AGENT_FRIENDLY_DOCS
 
