@@ -105,6 +105,7 @@ function createDesiredNotificationDeliveryJobs(params: {
       notificationKind: "reminder" as const,
       payload: {
         itemId: item.id,
+        notificationKind: "reminder",
         scheduledAtUtc: occurrence.scheduledAtUtc,
         source: "recurring-item",
       },

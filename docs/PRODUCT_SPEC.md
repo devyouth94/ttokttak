@@ -258,6 +258,39 @@
 - 항목 생성/수정/삭제/완료/건너뜀 시 관련 원격 푸시 발송 job을 재계산
 - 앞으로 14일 범위의 occurrence만 발송 job으로 관리
 - 항목 수정 시에는 수정 시점 이후 미래 job만 재조정 대상으로 본다
+- MVP 알림함은 성공 응답을 받은 원격 푸시만 저장하고 목록에 노출한다
+- 원격 푸시 payload는 알림 유형과 대상 반복 항목을 식별할 수 있어야 한다
+- 알림함 저장 target에는 사용자, 반복 항목, occurrence 예정 시각이 모두 있어야 한다
+- target 정보가 누락되었거나 허용되지 않은 알림 유형이면 알림함 item을 만들지 않는다
+- 알림함 row의 사용자-facing identity는 `(user_id, item_id, item_scheduled_at_utc)`이다
+- 알림함 row는 대상 사용자, 반복 항목, 예정 시각, 원격 푸시 payload, 상세 이동 target을 함께 저장한다
+- 알림함 row는 원격 푸시 발송 job과 별도 저장소에 둔다
+- MVP 상세 이동 target은 `notificationKind = "reminder"`와 `source = "recurring-item"` 조합만 허용한다
+- 이 조합의 상세 이동 route는 `/items/[itemId]`이며, `scheduledAtUtc`를 기준 occurrence 시각으로 전달한다
+- 허용되지 않은 알림 유형이나 대상 엔티티 조합은 상세 이동을 수행하지 않는다
+- 허용되지 않은 상세 이동 target도 알림함 row가 이미 만들어졌다면 목록에 남기고 일반 알림과 같은 읽음/삭제 액션을 허용한다
+- 상세 이동 target을 열 수 없으면 알림함 item은 읽음 상태로 유지하고 fallback 안내를 표시한다
+- fallback 안내는 알림함 item을 숨기거나 삭제하지 않는다
+- fallback 안내는 local notification이나 앱 내부 이벤트로 대체 항목을 만들지 않는다
+- 저장 기준은 worker가 APNs / FCM 성공 응답을 받은 시점이며, 기기 수신 확인과 사용자 tap 확인은 요구하지 않는다
+- 발송 예정 job은 원격 푸시 성공 응답을 받기 전까지 알림함 저장 대상이 아니다
+- 같은 사용자, 반복 항목, 예정 시각에 대해 여러 기기 발송이 성공해도 사용자 알림은 1건만 노출한다
+- 알림함 목록 조회는 `notification_inbox_items`의 collapsed row를 기준으로 하며 token별 delivery record를 펼쳐서 목록을 만들지 않는다
+- 알림함 UI는 collapsed 알림의 제목, 본문, 전달 시각, 읽음 여부만 표시한다
+- 기기별 성공/실패 내역과 성공 기기 수 요약은 MVP UI에 표시하지 않는다
+- `source_job_id`, `device_id`, `push_token`, provider, provider 응답은 사용자-facing identity에 포함하지 않는다
+- `device_id`, `push_token`, provider message id, provider 응답 body는 사용자-facing 알림함 UI에 노출하지 않는다
+- worker 재시도나 같은 send job 반복 처리로 같은 사용자, 반복 항목, 예정 시각의 성공 응답이 다시 기록되어도 알림함 item은 새로 만들지 않는다
+- 중복 성공 응답은 `notification_delivery_attempts`에 token 단위 operation log로만 남기고 기존 알림함 item의 읽음/숨김 상태를 되돌리지 않는다
+- 로컬 알림은 MVP 알림함 저장 대상과 목록 조회 대상에서 제외한다
+- 앱 내부 이벤트는 MVP 알림함 저장 대상과 목록 조회 대상에서 제외한다
+- 사용자가 알림을 탭하면 상세 이동 성공 여부와 관계없이 즉시 읽음 처리한다
+- 전체 읽음 처리는 현재 사용자의 보이는 미읽음 row 전체에 적용하며 상세 이동 target 지원 여부로 제외하지 않는다
+- 알림함 삭제는 현재 사용자의 inbox row만 `hidden_at`으로 숨긴다
+- 알림함 삭제는 상세 이동 target 지원 여부와 관계없이 현재 사용자 row에 적용할 수 있다
+- 알림함 삭제는 다른 사용자의 row에 영향을 주지 않는다
+- 알림함 삭제는 발송 job, token별 attempt, provider 응답 로그를 삭제하거나 변경하지 않는다
+- 알림함 삭제 flow는 `notification_delivery_jobs`를 update/delete하지 않고 delivery job/attempt 기록으로 cascade하지 않는다
 - 구성요소 책임과 발송 흐름은 `SYSTEM_DESIGN.md`의 Notification Design을 따른다.
 - 상태 계산과 동기화 절차의 세부 규칙은 `DOMAIN_LOGIC.md`의 Notification Delivery Logic을 따른다.
 
@@ -358,6 +391,19 @@
 ### FR-08 Widget
 
 - 위젯은 읽기 전용으로 오늘 할 일 중심 정보를 보여줘야 한다.
+
+### FR-09 Notification inbox
+
+- 사용자는 성공한 원격 푸시 알림을 알림함에서 확인할 수 있어야 한다.
+- 사용자는 알림함 item을 탭해 연결된 반복 항목 상세 화면으로 이동할 수 있어야 한다.
+- 연결된 반복 항목을 열 수 없으면 사용자는 fallback 안내와 돌아가기 액션을 볼 수 있어야 한다.
+- 사용자는 알림함 item을 읽음 처리할 수 있어야 한다.
+- 사용자는 알림함의 미읽음 item을 한 번에 모두 읽음 처리할 수 있어야 한다.
+- 사용자는 알림함 item을 삭제할 수 있어야 한다.
+- 지원하지 않는 상세 이동 target도 읽음, 전체 읽음, 삭제, 목록 새로고침 대상에서 제외하지 않는다.
+- 알림함 item 삭제는 현재 사용자 row만 숨김 처리한다.
+- 알림함 item 삭제는 발송/operation log를 보존한다.
+- 알림함 item 삭제는 원격 푸시 delivery job record를 update/delete/cascade하지 않는다.
 
 ---
 

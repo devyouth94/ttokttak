@@ -86,11 +86,17 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     minWidth: 40,
+    zIndex: 1,
   },
   spacer: {
     width: 40,
   },
   title: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    textAlign: "center",
+    top: 16,
     color: colors.text,
     fontSize: typography.title,
     lineHeight: 28,

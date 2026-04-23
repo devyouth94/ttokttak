@@ -13,6 +13,7 @@ describe("notification delivery sync helpers", () => {
           notificationKind: "reminder",
           payload: {
             itemId: "item-1",
+            notificationKind: "reminder",
             scheduledAtUtc: "2026-04-16T00:00:00.000Z",
             source: "recurring-item",
           },
@@ -27,6 +28,7 @@ describe("notification delivery sync helpers", () => {
           notificationKind: "reminder",
           payload: {
             itemId: "item-1",
+            notificationKind: "reminder",
             scheduledAtUtc: "2026-04-17T00:00:00.000Z",
             source: "recurring-item",
           },
@@ -43,6 +45,7 @@ describe("notification delivery sync helpers", () => {
           notificationKind: "reminder",
           payload: {
             itemId: "item-1",
+            notificationKind: "reminder",
             scheduledAtUtc: "2026-04-16T00:00:00.000Z",
             source: "recurring-item",
           },
@@ -57,6 +60,7 @@ describe("notification delivery sync helpers", () => {
           notificationKind: "reminder",
           payload: {
             itemId: "item-1",
+            notificationKind: "reminder",
             scheduledAtUtc: "2026-04-18T00:00:00.000Z",
             source: "recurring-item",
           },

@@ -82,6 +82,22 @@ type AttemptResult = NotificationDeliveryAttemptInsert & {
   tokenId: string | null;
 };
 
+type NotificationInboxItemInsert = {
+  body: string;
+  delivered_at_utc: string;
+  item_id: string;
+  item_scheduled_at_utc: string;
+  notification_kind: "reminder";
+  payload: Record<string, unknown>;
+  source_job_id: string;
+  title: string;
+  user_id: string;
+};
+
+function hasSucceededPushAttempt(attempts: AttemptResult[]): boolean {
+  return attempts.some((attempt) => attempt.status === "succeeded");
+}
+
 const JSON_HEADERS = {
   "Content-Type": "application/json",
 } as const;
@@ -571,6 +587,39 @@ async function insertAttempts(attempts: AttemptResult[]): Promise<void> {
   }
 }
 
+async function upsertInboxItemForSucceededPush(params: {
+  attemptedAt: string;
+  attempts: AttemptResult[];
+  job: NotificationDeliveryJob;
+}): Promise<void> {
+  if (!hasSucceededPushAttempt(params.attempts)) {
+    return;
+  }
+
+  const inboxItem: NotificationInboxItemInsert = {
+    body: params.job.body,
+    delivered_at_utc: params.attemptedAt,
+    item_id: params.job.item_id,
+    item_scheduled_at_utc: params.job.item_scheduled_at_utc,
+    notification_kind: params.job.notification_kind,
+    payload: params.job.payload,
+    source_job_id: params.job.id,
+    title: params.job.title,
+    user_id: params.job.user_id,
+  };
+  const { error } = await supabase
+    .from("notification_inbox_items")
+    .upsert(inboxItem, {
+      // 여러 기기 성공과 worker 재처리는 사용자 occurrence 알림 1건으로 접는다.
+      ignoreDuplicates: true,
+      onConflict: "user_id,item_id,item_scheduled_at_utc",
+    });
+
+  if (error) {
+    throw error;
+  }
+}
+
 async function deactivateInvalidTokens(
   attempts: AttemptResult[]
 ): Promise<void> {
@@ -754,6 +803,11 @@ async function processJob(job: NotificationDeliveryJob) {
   );
 
   await insertAttempts(attempts);
+  await upsertInboxItemForSucceededPush({
+    attemptedAt,
+    attempts,
+    job: claimedJob,
+  });
   await deactivateInvalidTokens(attempts);
   const nextStatus = await updateJobSummary({
     attempts,

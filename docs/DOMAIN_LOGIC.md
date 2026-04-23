@@ -485,6 +485,135 @@ attempt 기록 규칙:
 - provider message id와 provider error code를 함께 저장한다.
 - 무효 token 오류면 해당 token을 `delivery-failed`로 비활성화한다.
 
+payload 식별 규칙:
+
+- 원격 푸시 payload는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 필수로 포함한다.
+- `notificationKind = 'reminder'`는 MVP 알림 유형을 식별한다.
+- `source = 'recurring-item'`는 상세 이동 대상 엔티티 계열을 식별한다.
+- `itemId`는 상세 이동 대상 반복 항목을 식별한다.
+- `scheduledAtUtc`는 대상 occurrence를 식별한다.
+- payload 필수 필드가 없거나 허용 값이 아니면 앱은 상세 이동을 수행하지 않는다.
+- token, device, provider 식별자는 사용자-facing payload 필수 필드가 아니다.
+
+상세 이동 mapping:
+
+- `notificationKind = 'reminder'`와 `source = 'recurring-item'`만 route 생성 대상이다.
+- route는 `/items/[itemId]`다.
+- `itemId`는 반복 항목 상세 path parameter로 전달한다.
+- `scheduledAtUtc`는 상세 화면 기준 occurrence query parameter로 전달한다.
+- 알림함 목록에서 진입하면 `returnTo = '/(tabs)/home/notifications'`를 전달한다.
+- OS 원격 푸시 tap에서 진입하면 `returnTo = '/home'`을 전달한다.
+- mapping에 없는 알림 유형이나 대상 엔티티는 읽음 처리 외 상세 이동을 하지 않는다.
+- mapping에 없는 알림 유형이나 대상 엔티티는 목록 액션 실패로 취급하지 않는다.
+- route mapping은 유효하지만 대상 반복 항목이 없거나 접근할 수 없으면 상세 fallback 상태를 보여준다.
+- 상세 fallback 상태는 알림함 목록 진입이면 알림함으로 돌아가고, OS 원격 푸시 tap 진입이면 홈으로 돌아간다.
+
+inbox ingestion trigger:
+
+- ingestion 입력은 push delivery worker의 token별 발송 결과다.
+- APNs / FCM 호출이 성공 응답을 반환하면 해당 attempt를 `succeeded`로 본다.
+- worker가 같은 job의 attempt 결과를 받은 직후 성공 attempt 존재 여부를 판단한다.
+- 성공 attempt가 1건 이상이면 inbox 저장 대상이 된다.
+- 이 판단은 기기 수신 확인, OS 표시 확인, 사용자 tap 확인을 기다리지 않는다.
+
+inbox 생성 규칙:
+
+- inbox row 생성 시점은 worker가 성공 attempt를 확인한 직후다.
+- 발송 예정 job은 성공 attempt가 생기기 전까지 inbox 저장 대상이 아니다.
+- scheduled send 대기, 실패 job, local notification, 앱 내부 이벤트는 inbox 대상이 아니다.
+- local notification과 앱 내부 이벤트는 storage 요구사항과 listing 요구사항 모두에서 제외한다.
+- 모든 token 발송이 실패해 job이 `retrying` 또는 `failed`가 되면 inbox row를 만들지 않는다.
+- device receipt 확인과 사용자 tap 확인은 inbox 생성 조건이 아니다.
+- user-facing notification identity와 collapse key는 `(user_id, item_id, item_scheduled_at_utc)`이다.
+- `user_id`는 알림함 소유자, `item_id`는 반복 항목, `item_scheduled_at_utc`는 occurrence 예정 시각이다.
+- 같은 사용자의 같은 반복 항목, 같은 예정 시각에 대해 여러 기기 token 발송이 성공해도 inbox row는 1개만 만든다.
+- collapse는 `notification_inbox_items` upsert와 unique constraint로 보장한다.
+- `source_job_id`, `push_token`, `device_id`, `push_provider`는 사용자-facing inbox 고유성 기준이 아니다.
+- MVP의 inbox 알림 종류는 `reminder` 하나이며, 고유성 기준에 `notification_kind`를 추가하지 않는다.
+- token별 성공/실패 상세는 `notification_delivery_attempts`에만 남긴다.
+
+inbox 필수 저장 필드:
+
+- 대상 사용자: `user_id`
+- collapse 및 상세 기준: `item_id`, `item_scheduled_at_utc`
+- 발송 출처: `source_job_id`, `notification_kind`
+- 사용자-facing 문구: `title`, `body`
+- push payload: `payload`
+- 성공 응답 시각: `delivered_at_utc`
+- 사용자 액션 상태: `read_at`, `hidden_at`
+
+payload 규칙:
+
+- payload는 알림 탭과 inbox 상세 이동에 필요한 최소 routing 값을 포함한다.
+- `notificationKind`는 `reminder`다.
+- `source`는 `recurring-item`이다.
+- `itemId`는 `notification_inbox_items.item_id`와 같아야 한다.
+- `scheduledAtUtc`는 `notification_inbox_items.item_scheduled_at_utc`와 같아야 한다.
+- provider 응답 payload와 token별 발송 결과는 이 `payload`에 병합하지 않는다.
+
+target validation 규칙:
+
+- inbox 생성 target 필수 값은 `user_id`, `item_id`, `item_scheduled_at_utc`, `notification_kind`, `payload.notificationKind`, `payload.source`, `payload.itemId`, `payload.scheduledAtUtc`다.
+- `notification_kind`와 `payload.notificationKind`는 모두 `reminder`여야 한다.
+- `payload.source`는 `recurring-item`이어야 한다.
+- `payload.itemId`는 job의 `item_id`와 같아야 한다.
+- `payload.scheduledAtUtc`는 job의 `item_scheduled_at_utc`와 같아야 한다.
+- 필수 target 값이 없거나 빈 문자열이면 inbox row를 만들지 않는다.
+- payload와 job target 값이 서로 다르면 inbox row를 만들지 않는다.
+- target validation 실패는 push service 성공 응답을 취소하지 않는다.
+- target validation 실패는 token별 성공 attempt와 job operation log에 남기고 사용자-facing inbox item만 생략한다.
+- target validation 실패는 local notification이나 앱 내부 이벤트로 보정하지 않는다.
+
+inbox idempotency 규칙:
+
+- 첫 성공 응답이 같은 collapse 기준의 inbox row를 만든다.
+- 같은 job이 재시도되거나 worker가 같은 job을 반복 처리해도 같은 collapse 기준의 inbox row는 추가로 만들지 않는다.
+- 중복 성공 응답은 `notification_delivery_attempts`에 새 attempt로 남길 수 있다.
+- 같은 collapse 기준으로 다른 `source_job_id`가 들어와도 새 사용자-facing inbox row를 만들지 않는다.
+- 기존 inbox row가 있으면 `read_at`, `hidden_at`, `delivered_at_utc`를 덮어쓰지 않는다.
+- 사용자가 숨긴 inbox row는 같은 occurrence 재처리로 다시 보이게 만들지 않는다.
+
+inbox 조회 규칙:
+
+- 목록 조회 source는 `notification_inbox_items` 단일 테이블이다.
+- 사용자는 자신의 inbox row 중 `hidden_at is null`인 row만 본다.
+- 조회 정렬은 `delivered_at_utc desc`다.
+- 조회 결과는 성공한 원격 푸시 기반 row만 포함한다.
+- 성공 여부는 inbox row 생성 시점에 확정되므로 조회 시점에 delivery job이나 attempt 상태를 다시 계산하지 않는다.
+- 조회는 `notification_delivery_attempts`를 join하지 않는다.
+- token별 delivery record가 여러 개 있어도 같은 `(user_id, item_id, item_scheduled_at_utc)` logical event는 목록 row 1개로 반환한다.
+- route mapping에 없는 target도 이미 생성된 row라면 목록 조회에서 제외하지 않는다.
+- `pending`, `processing`, `retrying` 상태의 발송 예정 job은 inbox 목록에 노출하지 않는다.
+- local notification과 앱 내부 이벤트는 조회 fallback이나 임시 목록 항목으로 만들지 않는다.
+
+inbox 표시 규칙:
+
+- MVP 목록은 collapsed inbox row의 `title`, `body`, `delivered_at_utc`, 읽음 여부만 표시한다.
+- 목록과 상세 진입 UI는 기기별 성공/실패 내역을 표시하지 않는다.
+- 성공 기기 수, 실패 기기 수, provider별 요약 배지는 MVP UI에 두지 않는다.
+- `device_id`, `push_token`, `push_provider`, provider message id, provider 응답 body는 사용자 UI에 노출하지 않는다.
+- 기기별 delivery detail은 `notification_delivery_attempts`와 Edge Function 로그에서만 확인한다.
+- 사용자 UI는 기기별 detail을 숨긴 상태로 들고 있지 않고, 목록 조회 단계에서 아예 가져오지 않는다.
+
+inbox 액션 규칙:
+
+- 사용자가 inbox 알림을 탭하면 즉시 `read_at`을 기록한다.
+- 읽음 처리는 상세 화면 이동 성공 여부와 분리한다.
+- 지원하지 않는 target이라 상세 이동을 생략해도 해당 row의 읽음 처리는 성공해야 한다.
+- 전체 읽음은 현재 사용자의 `hidden_at is null` 미읽음 row 전체를 갱신하며 target 지원 여부로 필터링하지 않는다.
+- 상세 화면 이동이 실패해도 이미 탭한 inbox row는 읽음 상태를 유지한다.
+- 상세 fallback 상태는 이미 기록한 `read_at`을 되돌리지 않는다.
+- 상세 fallback 상태는 inbox row를 숨김 처리하거나 삭제하지 않는다.
+- 상세 fallback 상태는 local notification이나 앱 내부 이벤트로 대체하지 않는다.
+- 사용자가 inbox 알림을 삭제하면 해당 row의 `hidden_at`을 기록한다.
+- 삭제 mutation은 `id`와 `user_id`를 함께 조건으로 사용한다.
+- 삭제 mutation은 target 지원 여부를 검사하지 않는다.
+- 삭제된 row는 현재 사용자 inbox 목록에서만 숨긴다.
+- 삭제는 현재 사용자 소유 row에만 적용되며 다른 사용자의 row를 변경하지 않는다.
+- 삭제는 `notification_delivery_jobs`와 `notification_delivery_attempts`를 변경하지 않는다.
+- 삭제 flow는 `notification_delivery_jobs`를 update/delete하지 않고 delivery job/attempt 기록으로 cascade하지 않는다.
+- 삭제된 row는 operation/send log 감사 목적을 위해 물리 삭제하지 않는다.
+
 token 선택 규칙:
 
 - `device_push_tokens.is_active = true`
@@ -504,6 +633,7 @@ provider 오류 규칙:
 - 네트워크 오류, provider 5xx, rate limit만 재시도한다.
 - backoff는 1분, 5분, 15분 3회다.
 - `next_retry_at <= nowUtc`가 되면 같은 job을 다시 처리한다.
+- 재시도 성공으로 이미 inbox row가 있는 occurrence가 다시 성공해도 inbox row는 추가 생성하지 않는다.
 - 영구 실패와 무효 token은 재시도하지 않는다.
 
 ## 15. Multi-device Notes

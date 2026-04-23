@@ -295,6 +295,79 @@ export type Database = {
           },
         ];
       };
+      notification_inbox_items: {
+        Row: {
+          body: string;
+          created_at: string;
+          delivered_at_utc: string;
+          hidden_at: string | null;
+          id: string;
+          item_id: string;
+          item_scheduled_at_utc: string;
+          notification_kind: string;
+          payload: Record<string, unknown>;
+          read_at: string | null;
+          source_job_id: string | null;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          delivered_at_utc: string;
+          hidden_at?: string | null;
+          id?: string;
+          item_id: string;
+          item_scheduled_at_utc: string;
+          notification_kind?: string;
+          payload?: Record<string, unknown>;
+          read_at?: string | null;
+          source_job_id?: string | null;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          delivered_at_utc?: string;
+          hidden_at?: string | null;
+          id?: string;
+          item_id?: string;
+          item_scheduled_at_utc?: string;
+          notification_kind?: string;
+          payload?: Record<string, unknown>;
+          read_at?: string | null;
+          source_job_id?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["item_id"];
+            foreignKeyName: "notification_inbox_items_item_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "recurring_items";
+          },
+          {
+            columns: ["source_job_id"];
+            foreignKeyName: "notification_inbox_items_source_job_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "notification_delivery_jobs";
+          },
+          {
+            columns: ["user_id"];
+            foreignKeyName: "notification_inbox_items_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
       devices: {
         Row: {
           created_at: string;
@@ -535,6 +608,10 @@ export type NotificationDeliveryJobRow =
   Database["public"]["Tables"]["notification_delivery_jobs"]["Row"];
 export type NotificationDeliveryJobUpdate =
   Database["public"]["Tables"]["notification_delivery_jobs"]["Update"];
+export type NotificationInboxItemRow =
+  Database["public"]["Tables"]["notification_inbox_items"]["Row"];
+export type NotificationInboxItemUpdate =
+  Database["public"]["Tables"]["notification_inbox_items"]["Update"];
 export type DeviceRow = Database["public"]["Tables"]["devices"]["Row"];
 export type DeviceUpdate = Database["public"]["Tables"]["devices"]["Update"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];

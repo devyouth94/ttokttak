@@ -3,8 +3,16 @@ import { router } from "expo-router";
 
 type ReminderNotificationPayload = {
   itemId: string;
+  notificationKind: "reminder";
   scheduledAtUtc: string;
   source: "recurring-item";
+};
+
+type NotificationInboxNavigationItem = {
+  itemId: string;
+  itemScheduledAtUtc: string;
+  notificationKind: string;
+  payload: Record<string, unknown>;
 };
 
 function isReminderNotificationPayload(
@@ -17,6 +25,7 @@ function isReminderNotificationPayload(
   const candidate = value as Record<string, unknown>;
 
   return (
+    candidate.notificationKind === "reminder" &&
     candidate.source === "recurring-item" &&
     typeof candidate.itemId === "string" &&
     typeof candidate.scheduledAtUtc === "string"
@@ -60,6 +69,31 @@ function resolveReminderNotificationPayload(
   return null;
 }
 
+function navigateToReminderDetail(
+  payload: ReminderNotificationPayload,
+  returnTo: string
+): void {
+  router.push({
+    params: {
+      itemId: payload.itemId,
+      returnTo,
+      scheduledAtUtc: payload.scheduledAtUtc,
+    },
+    pathname: "/items/[itemId]",
+  });
+}
+
+function isSameUtcInstant(left: string, right: string): boolean {
+  const leftTime = new Date(left).getTime();
+  const rightTime = new Date(right).getTime();
+
+  return (
+    Number.isFinite(leftTime) &&
+    Number.isFinite(rightTime) &&
+    leftTime === rightTime
+  );
+}
+
 export function getNotificationNavigationKey(
   response: Notifications.NotificationResponse
 ): string {
@@ -79,14 +113,43 @@ export function navigateFromNotificationResponse(
     return false;
   }
 
-  router.push({
-    params: {
-      itemId: payload.itemId,
-      returnTo: "/home",
-      scheduledAtUtc: payload.scheduledAtUtc,
+  navigateToReminderDetail(payload, "/home");
+
+  return true;
+}
+
+export function navigateFromNotificationInboxItem(
+  item: NotificationInboxNavigationItem
+): boolean {
+  if (item.notificationKind !== "reminder") {
+    return false;
+  }
+
+  const payload = item.payload;
+
+  if (isReminderNotificationPayload(payload)) {
+    if (item.itemId !== payload.itemId) {
+      return false;
+    }
+
+    if (!isSameUtcInstant(item.itemScheduledAtUtc, payload.scheduledAtUtc)) {
+      return false;
+    }
+
+    navigateToReminderDetail(payload, "/(tabs)/home/notifications");
+
+    return true;
+  }
+
+  navigateToReminderDetail(
+    {
+      itemId: item.itemId,
+      notificationKind: "reminder",
+      scheduledAtUtc: item.itemScheduledAtUtc,
+      source: "recurring-item",
     },
-    pathname: "/items/[itemId]",
-  });
+    "/(tabs)/home/notifications"
+  );
 
   return true;
 }
