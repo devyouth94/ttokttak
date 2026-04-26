@@ -128,8 +128,8 @@ export function buildHomeFeedSections({
   const selectedSection: HomeFeedSection = {
     emptyMessage:
       selectedDateTitle === "오늘"
-        ? "오늘 예정된 일정이 없습니다."
-        : `${selectedDateTitle} 예정된 일정이 없습니다.`,
+        ? "오늘 표시할 리마인더가 없어요"
+        : `${selectedDateTitle} 표시할 리마인더가 없어요`,
     id: "selected-date",
     items: selectedItems,
     title: selectedDateTitle,
@@ -206,14 +206,14 @@ export function buildHomeFeedSections({
 
   return [
     {
-      emptyMessage: "놓친 일정이 없습니다.",
+      emptyMessage: "놓친 일정이 없어요",
       id: "overdue",
       items: overdueItems,
       title: "놓친 일정",
     },
     selectedSection,
     {
-      emptyMessage: "다가오는 일정이 없습니다.",
+      emptyMessage: "다가오는 일정이 없어요",
       id: "upcoming",
       items: upcomingItems,
       title: "다가오는 일정",

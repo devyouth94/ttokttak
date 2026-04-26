@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   type ListRenderItem,
@@ -15,6 +14,10 @@ import { formatInTimeZone } from "date-fns-tz";
 import { Bell, Check } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
+import {
+  AppStatePlaceholder,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import {
@@ -65,8 +68,8 @@ function NotificationInboxRow({
     <Pressable
       accessibilityHint={
         isSelectionMode
-          ? "선택 상태를 변경합니다."
-          : "알림과 연결된 리마인더 상세 화면으로 이동합니다."
+          ? "선택 상태를 바꿔요."
+          : "알림과 연결된 리마인더 상세 화면으로 이동해요."
       }
       accessibilityLabel={
         isSelectionMode
@@ -137,41 +140,27 @@ function NotificationInboxRow({
 
 function EmptyState(): React.JSX.Element {
   return (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <Bell color={colors.textMuted} size={20} />
-      </View>
-      <AppText style={styles.emptyTitle} variant="title">
-        받은 알림이 없습니다.
-      </AppText>
-      <AppText style={styles.emptyDescription}>
-        성공적으로 발송된 원격 푸시 알림이 이곳에 표시됩니다.
-      </AppText>
-    </View>
+    <AppStateView
+      description="성공적으로 발송된 원격 푸시 알림이 이곳에 표시돼요."
+      icon={<Bell color={colors.textMuted} size={20} />}
+      style={styles.stateView}
+      title="받은 알림이 없어요"
+    />
   );
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }): React.JSX.Element {
   return (
-    <View style={styles.emptyState}>
-      <AppText style={styles.emptyTitle} variant="title">
-        알림을 불러오지 못했습니다.
-      </AppText>
-      <Pressable
-        accessibilityHint="알림 목록 조회를 다시 시도합니다."
-        accessibilityLabel="알림 다시 불러오기"
-        accessibilityRole="button"
-        onPress={onRetry}
-        style={({ pressed }) => [
-          styles.retryButton,
-          pressed ? styles.pressed : undefined,
-        ]}
-      >
-        <AppText style={styles.retryButtonText} variant="label">
-          다시 시도
-        </AppText>
-      </Pressable>
-    </View>
+    <AppStateView
+      action={{
+        accessibilityHint: "알림 목록 조회를 다시 시도해요.",
+        accessibilityLabel: "알림 다시 불러오기",
+        label: "다시 시도",
+        onPress: onRetry,
+      }}
+      style={styles.stateView}
+      title="알림을 불러오지 못했어요"
+    />
   );
 }
 
@@ -377,7 +366,7 @@ export default function HomeNotificationsPage(): React.JSX.Element {
     }
 
     if (item.isItemArchived) {
-      Alert.alert("삭제된 리마인더에요.");
+      Alert.alert("삭제된 리마인더예요.");
       return;
     }
 
@@ -499,9 +488,7 @@ export default function HomeNotificationsPage(): React.JSX.Element {
       ) : null}
 
       {isInitialLoading ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator color={colors.primary} size="small" />
-        </View>
+        <AppStatePlaceholder rowCount={5} />
       ) : inboxItemsQuery.error ? (
         <ErrorState
           onRetry={() => {
@@ -546,32 +533,8 @@ const styles = StyleSheet.create({
   deleteActionText: {
     color: colors.error,
   },
-  emptyDescription: {
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  emptyIcon: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceHigh,
-    borderRadius: borderRadius.pill,
-    height: 44,
-    justifyContent: "center",
-    marginBottom: spacing.xs,
-    width: 44,
-  },
   emptyListContent: {
     flexGrow: 1,
-  },
-  emptyState: {
-    alignItems: "center",
-    flex: 1,
-    gap: spacing.xs,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  emptyTitle: {
-    color: colors.text,
-    textAlign: "center",
   },
   iconWrap: {
     alignItems: "center",
@@ -600,11 +563,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: spacing.lg,
   },
-  loadingState: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
   headerTextButton: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
@@ -625,19 +583,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.88,
-  },
-  retryButton: {
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  retryButtonText: {
-    color: colors.text,
-    fontSize: typography.label,
-    letterSpacing: 0,
   },
   rowBody: {
     color: colors.textMuted,
@@ -708,6 +653,9 @@ const styles = StyleSheet.create({
   },
   selectionListContent: {
     paddingTop: 0,
+  },
+  stateView: {
+    minHeight: 240,
   },
   selectionToolbar: {
     alignItems: "center",

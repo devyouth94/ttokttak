@@ -1,16 +1,14 @@
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Calendar, type DateData, LocaleConfig } from "react-native-calendars";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
+import {
+  AppStatePlaceholder,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import {
@@ -230,6 +228,13 @@ export function CalendarScreen(): React.JSX.Element {
     setScreenState(todayState);
   };
 
+  const handleRetry = () => {
+    void itemsQuery.refetch();
+    if ((items?.length ?? 0) > 0) {
+      void completionLogsQuery.refetch();
+    }
+  };
+
   const shiftMonth = (amount: number) => {
     setScreenState((prevState) => ({
       ...prevState,
@@ -246,7 +251,7 @@ export function CalendarScreen(): React.JSX.Element {
         rightSlot={
           showsTodayButton ? (
             <Pressable
-              accessibilityHint="현재 월과 선택 날짜를 오늘로 맞춥니다."
+              accessibilityHint="현재 월과 선택 날짜를 오늘로 맞춰요."
               accessibilityLabel="오늘로 이동"
               accessibilityRole="button"
               onPress={moveToToday}
@@ -290,11 +295,6 @@ export function CalendarScreen(): React.JSX.Element {
         </View>
 
         <View style={styles.calendarCard}>
-          {isLoading ? (
-            <View style={styles.calendarLoadingState}>
-              <ActivityIndicator color={colors.primary} size="small" />
-            </View>
-          ) : null}
           <Calendar
             key={screenState.visibleMonth}
             current={`${screenState.visibleMonth}-01`}
@@ -349,17 +349,28 @@ export function CalendarScreen(): React.JSX.Element {
           </AppText>
         </View>
 
-        {errorMessage ? (
+        {isLoading ? (
+          <AppStatePlaceholder rowCount={2} />
+        ) : errorMessage ? (
           <View style={styles.emptyCard}>
-            <AppText style={styles.emptyTitle} variant="title">
-              {errorMessage}
-            </AppText>
+            <AppStateView
+              action={{
+                accessibilityHint: "캘린더 조회를 다시 시도해요.",
+                accessibilityLabel: "캘린더 다시 불러오기",
+                label: "다시 시도",
+                onPress: handleRetry,
+              }}
+              description={errorMessage}
+              style={styles.selectedDateState}
+              title="캘린더를 불러오지 못했어요"
+            />
           </View>
         ) : selectedEntries.length === 0 ? (
           <View style={styles.emptyCard}>
-            <AppText style={styles.emptyTitle} variant="title">
-              이 날짜의 일정이 없습니다.
-            </AppText>
+            <AppStateView
+              style={styles.selectedDateState}
+              title="선택한 날짜에 기록이 없어요"
+            />
           </View>
         ) : (
           <View style={styles.entryList}>
@@ -399,7 +410,7 @@ function MonthArrowButton({
 }): React.JSX.Element {
   return (
     <Pressable
-      accessibilityHint="보이는 월을 이동합니다."
+      accessibilityHint="보이는 월을 이동해요."
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       disabled={disabled}
@@ -428,11 +439,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     paddingTop: spacing.xl,
   },
-  calendarLoadingState: {
-    alignItems: "center",
-    height: 24,
-    justifyContent: "center",
-  },
   content: {
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
@@ -458,14 +464,6 @@ const styles = StyleSheet.create({
   emptyDayCell: {
     height: 42,
     width: 42,
-  },
-  emptyDescription: {
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  emptyTitle: {
-    fontSize: typography.body,
-    textAlign: "center",
   },
   legendDot: {
     borderRadius: borderRadius.pill,
@@ -531,6 +529,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 32,
     paddingRight: spacing.sm,
+  },
+  selectedDateState: {
+    minHeight: 96,
   },
   todayButton: {
     alignItems: "center",

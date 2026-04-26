@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
@@ -23,6 +16,10 @@ import {
 
 import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
+import {
+  AppStatePlaceholder,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import {
@@ -194,27 +191,17 @@ function DetailErrorCard({
 }): React.JSX.Element {
   return (
     <AppCard>
-      <View style={styles.errorCard}>
-        <View style={styles.errorCopy}>
-          <AppText style={styles.errorTitle} variant="title">
-            상세 정보를 불러오지 못했습니다.
-          </AppText>
-          <AppText style={styles.errorDescription}>{message}</AppText>
-        </View>
-
-        <Pressable
-          accessibilityHint="상세 화면 데이터를 다시 불러옵니다."
-          accessibilityLabel="상세 화면 재시도"
-          accessibilityRole="button"
-          onPress={onRetry}
-          style={({ pressed }) => [
-            styles.metaActionButton,
-            pressed && styles.metaActionButtonPressed,
-          ]}
-        >
-          <AppText style={styles.metaActionButtonText}>재시도</AppText>
-        </Pressable>
-      </View>
+      <AppStateView
+        action={{
+          accessibilityHint: "상세 화면 데이터를 다시 불러와요.",
+          accessibilityLabel: "상세 화면 다시 시도",
+          label: "다시 시도",
+          onPress: onRetry,
+        }}
+        description={message}
+        style={styles.errorState}
+        title="리마인더를 불러오지 못했어요"
+      />
     </AppCard>
   );
 }
@@ -226,14 +213,11 @@ function DetailInlineErrorCard({
 }): React.JSX.Element {
   return (
     <AppCard>
-      <View style={styles.errorCard}>
-        <View style={styles.errorCopy}>
-          <AppText style={styles.errorTitle} variant="title">
-            처리를 완료하지 못했습니다.
-          </AppText>
-          <AppText style={styles.errorDescription}>{message}</AppText>
-        </View>
-      </View>
+      <AppStateView
+        description={message}
+        style={styles.inlineErrorState}
+        title="처리를 완료하지 못했어요"
+      />
     </AppCard>
   );
 }
@@ -262,12 +246,11 @@ function DetailEmptyCard({
 }): React.JSX.Element {
   return (
     <AppCard>
-      <View style={styles.emptyCard}>
-        <AppText style={styles.emptyTitle} variant="title">
-          {title}
-        </AppText>
-        <AppText style={styles.emptyDescription}>{description}</AppText>
-      </View>
+      <AppStateView
+        description={description}
+        style={styles.emptyCard}
+        title={title}
+      />
     </AppCard>
   );
 }
@@ -275,28 +258,19 @@ function DetailEmptyCard({
 function DetailNotFoundCard(): React.JSX.Element {
   return (
     <AppCard>
-      <View style={styles.emptyCard}>
-        <AppText style={styles.emptyTitle} variant="title">
-          항목을 찾을 수 없습니다.
-        </AppText>
-        <AppText style={styles.emptyDescription}>
-          이미 삭제되었거나 접근할 수 없는 리마인더입니다.
-        </AppText>
-        <Pressable
-          accessibilityHint="홈 화면으로 이동합니다."
-          accessibilityLabel="홈으로 이동"
-          accessibilityRole="button"
-          onPress={() => {
+      <AppStateView
+        action={{
+          accessibilityHint: "홈 화면으로 이동해요.",
+          accessibilityLabel: "홈으로 이동",
+          label: "홈으로 이동",
+          onPress: () => {
             router.replace("/");
-          }}
-          style={({ pressed }) => [
-            styles.metaActionButton,
-            pressed && styles.metaActionButtonPressed,
-          ]}
-        >
-          <AppText style={styles.metaActionButtonText}>홈으로 이동</AppText>
-        </Pressable>
-      </View>
+          },
+        }}
+        description="이미 삭제되었거나 접근할 수 없는 리마인더예요."
+        style={styles.emptyCard}
+        title="리마인더를 찾을 수 없어요"
+      />
     </AppCard>
   );
 }
@@ -322,7 +296,7 @@ function DetailMetaSection({
               <Popover.Root>
                 <Popover.Trigger asChild>
                   <Pressable
-                    accessibilityHint={`${entry.label} 설명을 확인합니다.`}
+                    accessibilityHint={`${entry.label} 설명을 확인해요.`}
                     accessibilityLabel={`${entry.label} 설명`}
                     accessibilityRole="button"
                     hitSlop={8}
@@ -397,7 +371,7 @@ function DetailActionBar({
       <View style={styles.actionBar}>
         <View style={styles.actionRow}>
           <Pressable
-            accessibilityHint="대표 처리 대상 일정 occurrence를 완료 처리합니다."
+            accessibilityHint="대표 처리 대상 일정을 완료 처리해요."
             accessibilityLabel="리마인더 완료"
             accessibilityRole="button"
             disabled={disabled}
@@ -476,7 +450,7 @@ export function RecurringItemDetailScreen({
     itemQuery.isPending ||
     (Boolean(itemQuery.data) && completionLogsQuery.isPending);
   const queryErrorMessage = !itemId
-    ? "잘못된 항목 경로입니다."
+    ? "리마인더 경로를 확인할 수 없어요."
     : itemQuery.error
       ? getErrorMessage(itemQuery.error)
       : completionLogsQuery.error
@@ -687,7 +661,7 @@ export function RecurringItemDetailScreen({
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <Pressable
-                    accessibilityHint="리마인더 관리 메뉴를 엽니다."
+                    accessibilityHint="리마인더 관리 메뉴를 열어요."
                     accessibilityLabel="리마인더 관리"
                     accessibilityRole="button"
                     disabled={isMutating}
@@ -723,7 +697,7 @@ export function RecurringItemDetailScreen({
                     style={styles.managementMenuContent}
                   >
                     <DropdownMenu.Item
-                      accessibilityHint="현재 리마인더 수정 화면으로 이동합니다."
+                      accessibilityHint="현재 리마인더 수정 화면으로 이동해요."
                       style={styles.managementMenuItem}
                       onPress={handleEdit}
                     >
@@ -731,7 +705,7 @@ export function RecurringItemDetailScreen({
                     </DropdownMenu.Item>
 
                     <DropdownMenu.Item
-                      accessibilityHint="현재 리마인더를 삭제합니다."
+                      accessibilityHint="현재 리마인더를 삭제해요."
                       style={styles.managementMenuItem}
                       onPress={handleDelete}
                     >
@@ -748,12 +722,7 @@ export function RecurringItemDetailScreen({
         />
 
         {isLoading ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator color={colors.primary} size="small" />
-            <AppText style={styles.loadingText}>
-              리마인더 상세 정보를 불러오는 중입니다.
-            </AppText>
-          </View>
+          <AppStatePlaceholder rowCount={4} showHeader />
         ) : (
           <>
             <ScrollView
@@ -814,8 +783,8 @@ export function RecurringItemDetailScreen({
                       ))
                     ) : (
                       <DetailEmptyCard
-                        description="완료하거나 건너뛴 일정이 생기면 최근 기록 3건을 여기에서 확인할 수 있습니다."
-                        title="최근 히스토리가 없습니다."
+                        description="완료하거나 건너뛴 일정이 생기면 최근 기록 3건을 여기에서 확인할 수 있어요."
+                        title="아직 완료 기록이 없어요"
                       />
                     )}
                   </View>
@@ -867,33 +836,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   emptyCard: {
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
+    minHeight: 120,
   },
-  emptyDescription: {
-    color: colors.textMuted,
-    lineHeight: 22,
-    textAlign: "center",
-  },
-  emptyTitle: {
-    fontSize: typography.title,
-    textAlign: "center",
-  },
-  errorCard: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-  },
-  errorCopy: {
-    flex: 1,
-  },
-  errorDescription: {
-    color: colors.textMuted,
-  },
-  errorTitle: {
-    fontSize: typography.title,
+  errorState: {
+    minHeight: 120,
   },
   eyebrowText: {
     color: colors.textMuted,
@@ -966,14 +912,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: "center",
   },
-  loadingState: {
-    alignItems: "center",
-    flex: 1,
-    gap: spacing.sm,
-    justifyContent: "center",
-  },
-  loadingText: {
-    color: colors.textMuted,
+  inlineErrorState: {
+    minHeight: 96,
   },
   mainTextBase: {
     fontSize: 24,

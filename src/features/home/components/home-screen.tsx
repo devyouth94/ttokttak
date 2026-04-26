@@ -1,12 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,12 +8,16 @@ import {
   ArrowLeft,
   Bell,
   Check,
+  Plus,
   RotateCw,
   SkipForward,
 } from "lucide-react-native";
 
-import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
+import {
+  AppStatePlaceholder,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
@@ -62,75 +59,73 @@ function HomeSectionCard({
     .join(" · ");
 
   return (
-    <AppCard>
-      <View style={styles.cardRow}>
-        <Pressable
-          accessibilityHint="반복 항목 상세 화면으로 이동합니다."
-          accessibilityLabel={`${card.item.title} 상세 보기`}
-          accessibilityRole="button"
-          onPress={() => {
-            router.push({
-              params: {
-                itemId: card.item.id,
-                returnTo: "/home",
-                scheduledAtUtc: card.occurrence.scheduledAtUtc,
-              },
-              pathname: "/items/[itemId]",
-            });
-          }}
-          style={({ pressed }) => [
-            styles.cardBodyButton,
-            pressed && styles.cardBodyButtonPressed,
-          ]}
-        >
-          <View style={styles.cardCopy}>
-            <AppText style={styles.cardTitle} variant="title">
-              {card.item.title}
-            </AppText>
-            <AppText style={styles.cardMeta}>{metaLine}</AppText>
-            <AppText style={styles.cardRule}>{card.recurrenceLabel}</AppText>
-          </View>
-        </Pressable>
+    <View style={styles.feedCard}>
+      <Pressable
+        accessibilityHint="반복 항목 상세 화면으로 이동해요."
+        accessibilityLabel={`${card.item.title} 상세 보기`}
+        accessibilityRole="button"
+        onPress={() => {
+          router.push({
+            params: {
+              itemId: card.item.id,
+              returnTo: "/home",
+              scheduledAtUtc: card.occurrence.scheduledAtUtc,
+            },
+            pathname: "/items/[itemId]",
+          });
+        }}
+        style={({ pressed }) => [
+          styles.cardBodyButton,
+          pressed && styles.cardBodyButtonPressed,
+        ]}
+      >
+        <View style={styles.cardCopy}>
+          <AppText style={styles.cardTitle} variant="title">
+            {card.item.title}
+          </AppText>
+          <AppText style={styles.cardMeta}>{metaLine}</AppText>
+          <AppText style={styles.cardRule}>{card.recurrenceLabel}</AppText>
+        </View>
+      </Pressable>
 
-        {showsActions ? (
-          <View style={styles.cardActionRow}>
-            <Pressable
-              accessibilityHint="이 일정 occurrence를 건너뜁니다."
-              accessibilityLabel={`${card.item.title} 건너뛰기`}
-              accessibilityRole="button"
-              disabled={isProcessing}
-              onPress={() => {
-                onAction(card, "skipped");
-              }}
-              style={({ pressed }) => [
-                styles.iconActionButton,
-                styles.skipButton,
-                pressed && styles.secondaryActionPressed,
-              ]}
-            >
-              <SkipForward color={colors.statusSkippedText} size={16} />
-            </Pressable>
+      {showsActions ? (
+        <View style={styles.cardActionRow}>
+          <Pressable
+            accessibilityHint="이 일정을 건너뛰어요."
+            accessibilityLabel={`${card.item.title} 건너뛰기`}
+            accessibilityRole="button"
+            disabled={isProcessing}
+            onPress={() => {
+              onAction(card, "skipped");
+            }}
+            style={({ pressed }) => [
+              styles.iconActionButton,
+              styles.skipButton,
+              pressed && styles.secondaryActionPressed,
+            ]}
+          >
+            <SkipForward color={colors.statusSkippedText} size={16} />
+          </Pressable>
 
-            <Pressable
-              accessibilityHint="이 일정 occurrence를 완료 처리합니다."
-              accessibilityLabel={`${card.item.title} 완료`}
-              accessibilityRole="button"
-              disabled={isProcessing}
-              onPress={() => {
-                onAction(card, "completed");
-              }}
-              style={({ pressed }) => [
-                styles.iconActionButton,
-                styles.completeButton,
-                pressed && styles.primaryActionPressed,
-              ]}
-            >
-              <Check color={colors.statusCompletedText} size={16} />
-            </Pressable>
-          </View>
-        ) : null}
-      </View>
-    </AppCard>
+          <Pressable
+            accessibilityHint="이 일정을 완료 처리해요."
+            accessibilityLabel={`${card.item.title} 완료`}
+            accessibilityRole="button"
+            disabled={isProcessing}
+            onPress={() => {
+              onAction(card, "completed");
+            }}
+            style={({ pressed }) => [
+              styles.iconActionButton,
+              styles.completeButton,
+              pressed && styles.primaryActionPressed,
+            ]}
+          >
+            <Check color={colors.statusCompletedText} size={16} />
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -160,22 +155,32 @@ function HomeFeedSectionBlock({
       </AppText>
 
       {isLoading ? (
-        <AppCard>
-          <View style={styles.sectionState}>
-            <ActivityIndicator color={colors.primary} size="small" />
-            <AppText style={styles.sectionStateText}>
-              일정을 불러오는 중입니다.
-            </AppText>
-          </View>
-        </AppCard>
+        <View style={[styles.feedCard, styles.sectionStateCard]}>
+          <AppStatePlaceholder rowCount={1} />
+        </View>
       ) : section.items.length === 0 ? (
-        <AppCard>
-          <View style={styles.sectionState}>
-            <AppText style={styles.sectionStateText}>
-              {section.emptyMessage}
-            </AppText>
-          </View>
-        </AppCard>
+        <View style={[styles.feedCard, styles.sectionStateCard]}>
+          <AppStateView
+            action={
+              section.id === "selected-date"
+                ? {
+                    accessibilityHint: "리마인더 만들기 화면으로 이동해요.",
+                    accessibilityLabel: "리마인더 만들기",
+                    icon: <Plus color={colors.text} size={16} />,
+                    label: "리마인더 만들기",
+                    onPress: () => {
+                      router.push({
+                        params: { returnTo: "/home" },
+                        pathname: "/items/new",
+                      });
+                    },
+                  }
+                : undefined
+            }
+            style={styles.sectionState}
+            title={section.emptyMessage}
+          />
+        </View>
       ) : (
         section.items.map((card) => (
           <HomeSectionCard
@@ -201,30 +206,20 @@ function FeedErrorCard({
   onRetry,
 }: FeedErrorCardProps): React.JSX.Element {
   return (
-    <AppCard>
-      <View style={styles.errorCard}>
-        <View style={styles.errorCopy}>
-          <AppText style={styles.errorTitle} variant="title">
-            홈 피드를 불러오지 못했습니다.
-          </AppText>
-          <AppText style={styles.errorDescription}>{message}</AppText>
-        </View>
-
-        <Pressable
-          accessibilityHint="홈 피드를 다시 불러옵니다."
-          accessibilityLabel="홈 피드 재시도"
-          accessibilityRole="button"
-          onPress={onRetry}
-          style={({ pressed }) => [
-            styles.retryButton,
-            pressed && styles.secondaryActionPressed,
-          ]}
-        >
-          <RotateCw color={colors.text} size={16} />
-          <AppText style={styles.retryButtonText}>재시도</AppText>
-        </Pressable>
-      </View>
-    </AppCard>
+    <View style={[styles.feedCard, styles.sectionStateCard]}>
+      <AppStateView
+        action={{
+          accessibilityHint: "홈 피드를 다시 불러와요.",
+          accessibilityLabel: "홈 피드 다시 시도",
+          icon: <RotateCw color={colors.text} size={16} />,
+          label: "다시 시도",
+          onPress: onRetry,
+        }}
+        description={message}
+        style={styles.errorState}
+        title="홈 피드를 불러오지 못했어요"
+      />
+    </View>
   );
 }
 
@@ -343,7 +338,7 @@ export function HomeScreen(): React.JSX.Element {
 
     Alert.alert(
       "알림을 켤까요?",
-      "리마인더 시간에 맞춰 알려드리려면 알림 권한이 필요합니다.",
+      "리마인더 시간에 맞춰 알려드리려면 알림 권한이 필요해요.",
       [
         {
           style: "cancel",
@@ -353,7 +348,7 @@ export function HomeScreen(): React.JSX.Element {
           onPress: () => {
             void requestPermission().catch((error) => {
               Alert.alert(
-                "권한 요청 실패",
+                "권한을 요청하지 못했어요",
                 error instanceof Error ? error.message : String(error)
               );
             });
@@ -447,9 +442,7 @@ export function HomeScreen(): React.JSX.Element {
   if (!isReady || !userId) {
     return (
       <AppScreen>
-        <View style={styles.loadingState}>
-          <ActivityIndicator color={colors.primary} size="small" />
-        </View>
+        <AppStatePlaceholder rowCount={3} showHeader />
       </AppScreen>
     );
   }
@@ -473,7 +466,7 @@ export function HomeScreen(): React.JSX.Element {
 
             <View style={styles.headerAction}>
               <Pressable
-                accessibilityHint="알림 화면으로 이동합니다."
+                accessibilityHint="알림 화면으로 이동해요."
                 accessibilityLabel="알림 열기"
                 accessibilityRole="button"
                 onPress={() => {
@@ -618,22 +611,28 @@ const styles = StyleSheet.create({
   },
   cardMeta: {
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 12,
+    lineHeight: 17,
   },
   cardRule: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 17,
   },
-  cardRow: {
+  feedCard: {
     alignItems: "flex-start",
+    backgroundColor: colors.surface,
+    borderColor: colors.outlineSoft,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   cardTitle: {
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 20,
   },
   completeButton: {
     backgroundColor: colors.statusCompletedSoft,
@@ -648,8 +647,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: borderRadius.pill,
     justifyContent: "center",
-    height: 36,
-    width: 36,
+    height: 32,
+    width: 32,
   },
   dateChip: {
     alignItems: "center",
@@ -687,18 +686,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 24,
   },
-  errorCard: {
-    gap: spacing.md,
-  },
-  errorCopy: {
-    gap: spacing.xs,
-  },
-  errorDescription: {
-    color: colors.textMuted,
-  },
-  errorTitle: {
-    fontSize: 18,
-    lineHeight: 24,
+  errorState: {
+    minHeight: 112,
   },
   feedSection: {
     gap: spacing.md,
@@ -734,27 +723,9 @@ const styles = StyleSheet.create({
   iconButtonPressed: {
     opacity: 0.88,
   },
-  loadingState: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
   primaryActionPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
-  },
-  retryButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: colors.surfaceHigh,
-    borderRadius: borderRadius.pill,
-    flexDirection: "row",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  retryButtonText: {
-    color: colors.text,
   },
   screenContent: {
     position: "relative",
@@ -768,13 +739,12 @@ const styles = StyleSheet.create({
   },
   sectionState: {
     alignItems: "center",
-    gap: spacing.sm,
     justifyContent: "center",
     minHeight: 88,
   },
-  sectionStateText: {
-    color: colors.textMuted,
-    textAlign: "center",
+  sectionStateCard: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   skipButton: {
     backgroundColor: colors.statusSkippedSoft,

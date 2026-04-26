@@ -1,14 +1,8 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { Check, X } from "lucide-react-native";
 
-import { AppCard } from "~/design-system/components/app-card";
 import { AppText } from "~/design-system/components/app-text";
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 
 type HistoryEntryCardProps = {
@@ -82,30 +76,28 @@ export function HistoryEntryCard({
   );
 
   return (
-    <AppCard>
-      <View style={styles.cardRow}>
-        <HistoryStatusIcon action={action} />
+    <View style={styles.cardRow}>
+      <HistoryStatusIcon action={action} />
 
-        {onPress ? (
-          <Pressable
-            accessibilityHint={pressableAccessibilityHint}
-            accessibilityLabel={pressableAccessibilityLabel}
-            accessibilityRole="button"
-            onPress={onPress}
-            style={({ pressed }) => [
-              styles.cardBodyButton,
-              pressed && styles.cardBodyButtonPressed,
-            ]}
-          >
-            {body}
-          </Pressable>
-        ) : (
-          <View style={styles.cardBody}>{body}</View>
-        )}
+      {onPress ? (
+        <Pressable
+          accessibilityHint={pressableAccessibilityHint}
+          accessibilityLabel={pressableAccessibilityLabel}
+          accessibilityRole="button"
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.cardBodyButton,
+            pressed && styles.cardBodyButtonPressed,
+          ]}
+        >
+          {body}
+        </Pressable>
+      ) : (
+        <View style={styles.cardBody}>{body}</View>
+      )}
 
-        <HistoryStatusBadge action={action} statusLabel={statusLabel} />
-      </View>
-    </AppCard>
+      <HistoryStatusBadge action={action} statusLabel={statusLabel} />
+    </View>
   );
 }
 
@@ -121,30 +113,36 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   cardCopy: {
-    gap: spacing.xs,
+    gap: 3,
   },
   cardMeta: {
     color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
   cardRow: {
     alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.outlineSoft,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   cardTitle: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 19,
   },
   statusBadge: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: "center",
-    minWidth: 72,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    minWidth: 64,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 3,
   },
   statusBadgeCompleted: {
     backgroundColor: colors.statusCompletedSoft,
@@ -167,9 +165,9 @@ const styles = StyleSheet.create({
   statusIcon: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
-    height: 28,
+    height: 24,
     justifyContent: "center",
-    width: 28,
+    width: 24,
   },
   statusIconCompleted: {
     backgroundColor: colors.statusCompleted,

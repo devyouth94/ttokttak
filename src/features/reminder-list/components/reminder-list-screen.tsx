@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   type ListRenderItem,
   Pressable,
@@ -12,8 +11,11 @@ import { router } from "expo-router";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
 
-import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
+import {
+  AppStatePlaceholder,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import {
@@ -48,56 +50,54 @@ function ReminderCard({
   entry: ReminderListEntry;
 }): React.JSX.Element {
   return (
-    <AppCard contentStyle={styles.cardContent}>
-      <Pressable
-        accessibilityHint="리마인더 상세 화면으로 이동합니다."
-        accessibilityLabel={`${entry.title} 상세 보기`}
-        accessibilityRole="button"
-        onPress={() => {
-          router.push({
-            params: {
-              itemId: entry.id,
-              returnTo: "/schedule",
-              ...(entry.nextScheduledAtUtc
-                ? { scheduledAtUtc: entry.nextScheduledAtUtc }
-                : {}),
-            },
-            pathname: "/items/[itemId]",
-          });
-        }}
-        style={({ pressed }) => [
-          styles.cardPressable,
-          pressed ? styles.pressed : undefined,
-        ]}
-      >
-        <View style={styles.cardCopy}>
-          <View style={styles.cardTitleRow}>
+    <Pressable
+      accessibilityHint="리마인더 상세 화면으로 이동해요."
+      accessibilityLabel={`${entry.title} 상세 보기`}
+      accessibilityRole="button"
+      onPress={() => {
+        router.push({
+          params: {
+            itemId: entry.id,
+            returnTo: "/schedule",
+            ...(entry.nextScheduledAtUtc
+              ? { scheduledAtUtc: entry.nextScheduledAtUtc }
+              : {}),
+          },
+          pathname: "/items/[itemId]",
+        });
+      }}
+      style={({ pressed }) => [
+        styles.cardRow,
+        pressed ? styles.pressed : undefined,
+      ]}
+    >
+      <View style={styles.cardCopy}>
+        <View style={styles.cardTitleRow}>
+          <AppText
+            ellipsizeMode="tail"
+            numberOfLines={1}
+            style={styles.cardTitle}
+            variant="title"
+          >
+            {entry.title}
+          </AppText>
+          <View style={styles.recurrenceBadge}>
             <AppText
               ellipsizeMode="tail"
               numberOfLines={1}
-              style={styles.cardTitle}
-              variant="title"
+              style={styles.recurrenceBadgeText}
+              variant="label"
             >
-              {entry.title}
+              {entry.recurrenceLabel}
             </AppText>
-            <View style={styles.recurrenceBadge}>
-              <AppText
-                ellipsizeMode="tail"
-                numberOfLines={1}
-                style={styles.recurrenceBadgeText}
-                variant="label"
-              >
-                {entry.recurrenceLabel}
-              </AppText>
-            </View>
           </View>
-          <AppText numberOfLines={1} style={styles.nextOccurrence}>
-            {entry.nextOccurrenceLabel}
-          </AppText>
         </View>
-        <ChevronRight color={colors.textMuted} size={18} />
-      </Pressable>
-    </AppCard>
+        <AppText numberOfLines={1} style={styles.nextOccurrence}>
+          {entry.nextOccurrenceLabel}
+        </AppText>
+      </View>
+      <ChevronRight color={colors.textMuted} size={18} />
+    </Pressable>
   );
 }
 
@@ -123,7 +123,7 @@ function SortControl({
     >
       <Select.Trigger asChild>
         <Pressable
-          accessibilityHint="리마인더 목록 정렬 메뉴를 엽니다."
+          accessibilityHint="리마인더 목록 정렬 메뉴를 열어요."
           accessibilityLabel={`정렬: ${selectedOption.label}`}
           accessibilityRole="button"
           style={({ pressed }) => [
@@ -157,7 +157,7 @@ function SortControl({
         >
           {sortOptions.map((option) => (
             <Select.Item
-              accessibilityHint={`${option.label}으로 정렬합니다.`}
+              accessibilityHint={`${option.label}으로 정렬해요.`}
               closeOnPress
               key={option.value}
               label={option.label}
@@ -178,58 +178,38 @@ function SortControl({
 
 function EmptyState(): React.JSX.Element {
   return (
-    <View style={styles.emptyState}>
-      <AppText style={styles.emptyTitle} variant="title">
-        등록된 리마인더가 없습니다.
-      </AppText>
-      <AppText style={styles.emptyDescription}>
-        리마인더를 추가하면 이곳에서 한눈에 볼 수 있습니다.
-      </AppText>
-      <Pressable
-        accessibilityHint="리마인더 추가 화면으로 이동합니다."
-        accessibilityLabel="리마인더 추가"
-        accessibilityRole="button"
-        onPress={() => {
+    <AppStateView
+      action={{
+        accessibilityHint: "리마인더 만들기 화면으로 이동해요.",
+        accessibilityLabel: "리마인더 만들기",
+        icon: <Plus color={colors.text} size={16} />,
+        label: "리마인더 만들기",
+        onPress: () => {
           router.push({
             params: { returnTo: "/schedule" },
             pathname: "/items/new",
           });
-        }}
-        style={({ pressed }) => [
-          styles.emptyAction,
-          pressed ? styles.pressed : undefined,
-        ]}
-      >
-        <Plus color={colors.primaryForeground} size={16} />
-        <AppText style={styles.emptyActionText} variant="label">
-          리마인더 추가
-        </AppText>
-      </Pressable>
-    </View>
+        },
+      }}
+      description="리마인더를 추가하면 이곳에서 한눈에 볼 수 있어요."
+      style={styles.stateView}
+      title="등록된 리마인더가 없어요"
+    />
   );
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }): React.JSX.Element {
   return (
-    <View style={styles.emptyState}>
-      <AppText style={styles.emptyTitle} variant="title">
-        리마인더를 불러오지 못했습니다.
-      </AppText>
-      <Pressable
-        accessibilityHint="리마인더 목록 조회를 다시 시도합니다."
-        accessibilityLabel="리마인더 다시 불러오기"
-        accessibilityRole="button"
-        onPress={onRetry}
-        style={({ pressed }) => [
-          styles.retryButton,
-          pressed ? styles.pressed : undefined,
-        ]}
-      >
-        <AppText style={styles.retryButtonText} variant="label">
-          다시 시도
-        </AppText>
-      </Pressable>
-    </View>
+    <AppStateView
+      action={{
+        accessibilityHint: "리마인더 목록 조회를 다시 시도해요.",
+        accessibilityLabel: "리마인더 다시 불러오기",
+        label: "다시 시도",
+        onPress: onRetry,
+      }}
+      style={styles.stateView}
+      title="리마인더를 불러오지 못했어요"
+    />
   );
 }
 
@@ -293,9 +273,7 @@ export function ReminderListScreen(): React.JSX.Element {
       <ScreenHeader title="리마인더 목록" />
 
       {isInitialLoading ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator color={colors.primary} size="small" />
-        </View>
+        <AppStatePlaceholder rowCount={4} showHeader />
       ) : error ? (
         <ErrorState onRetry={handleRetry} />
       ) : (
@@ -347,13 +325,9 @@ function parseSortMode(value: string | undefined): ReminderListSortMode | null {
 }
 
 const styles = StyleSheet.create({
-  cardContent: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
   cardCopy: {
     flex: 1,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   cardTitleRow: {
     alignItems: "center",
@@ -361,67 +335,37 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minWidth: 0,
   },
-  cardPressable: {
+  cardRow: {
     alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.outlineSoft,
     borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   cardTitle: {
     color: colors.text,
     flex: 1,
-    fontSize: 18,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 20,
     minWidth: 0,
-  },
-  emptyAction: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.pill,
-    flexDirection: "row",
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  emptyActionText: {
-    color: colors.primaryForeground,
-    fontSize: typography.label,
-    letterSpacing: 0,
-  },
-  emptyDescription: {
-    color: colors.textMuted,
-    textAlign: "center",
   },
   emptyListContent: {
     flexGrow: 1,
-  },
-  emptyState: {
-    alignItems: "center",
-    flex: 1,
-    gap: spacing.xs,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  emptyTitle: {
-    color: colors.text,
-    textAlign: "center",
   },
   listContent: {
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
   },
-  loadingState: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
   nextOccurrence: {
     color: colors.textMuted,
     flexShrink: 0,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
   recurrenceBadge: {
     backgroundColor: colors.surfaceHigh,
@@ -430,8 +374,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     flexShrink: 1,
     maxWidth: 96,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
   },
   recurrenceBadgeText: {
     color: colors.textMuted,
@@ -441,19 +385,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.88,
-  },
-  retryButton: {
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  retryButtonText: {
-    color: colors.text,
-    fontSize: typography.label,
-    letterSpacing: 0,
   },
   screenContent: {
     flex: 1,
@@ -518,5 +449,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 16,
     minWidth: 0,
+  },
+  stateView: {
+    minHeight: 240,
   },
 });
