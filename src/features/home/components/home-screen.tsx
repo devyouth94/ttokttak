@@ -21,6 +21,7 @@ import {
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { useNotificationInboxItemsQuery } from "~/features/notifications/use-notification-inbox-items-query";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
@@ -40,6 +41,7 @@ import {
 } from "./home-screen.helpers";
 
 let hasShownNotificationPermissionPrompt = false;
+const HOME_NOTIFICATION_INBOX_LIMIT = 50;
 
 type HomeSectionCardProps = {
   card: HomeFeedCard;
@@ -255,6 +257,13 @@ export function HomeScreen(): React.JSX.Element {
     userId,
   });
   const completionLogs = completionLogsQuery.data ?? [];
+  const inboxItemsQuery = useNotificationInboxItemsQuery({
+    enabled: isReady,
+    limit: HOME_NOTIFICATION_INBOX_LIMIT,
+  });
+  const hasUnreadNotification = Boolean(
+    inboxItemsQuery.data?.some((item) => !item.readAt)
+  );
   const refetchItems = itemsQuery.refetch;
   const refetchCompletionLogs = completionLogsQuery.refetch;
   const refetchFeed = async (): Promise<void> => {
@@ -467,7 +476,11 @@ export function HomeScreen(): React.JSX.Element {
             <View style={styles.headerAction}>
               <Pressable
                 accessibilityHint="알림 화면으로 이동해요."
-                accessibilityLabel="알림 열기"
+                accessibilityLabel={
+                  hasUnreadNotification
+                    ? "새 알림 있음, 알림 열기"
+                    : "알림 열기"
+                }
                 accessibilityRole="button"
                 onPress={() => {
                   router.push("/(tabs)/home/notifications");
@@ -478,6 +491,9 @@ export function HomeScreen(): React.JSX.Element {
                 ]}
               >
                 <Bell color={colors.text} size={20} />
+                {hasUnreadNotification ? (
+                  <View style={styles.notificationUnreadDot} />
+                ) : null}
               </Pressable>
             </View>
           </View>
@@ -722,6 +738,17 @@ const styles = StyleSheet.create({
   },
   iconButtonPressed: {
     opacity: 0.88,
+  },
+  notificationUnreadDot: {
+    backgroundColor: colors.primary,
+    borderColor: colors.background,
+    borderRadius: borderRadius.pill,
+    borderWidth: 2,
+    height: 10,
+    position: "absolute",
+    right: 11,
+    top: 11,
+    width: 10,
   },
   primaryActionPressed: {
     opacity: 0.9,
