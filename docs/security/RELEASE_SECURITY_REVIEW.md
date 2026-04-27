@@ -338,6 +338,26 @@ Supabase advisor 잔여 경고:
 - 내부에서 `auth.uid()`, 반복 항목 소유자, payload target, 14일 동기화 범위, 허용 상태 전이를 검증한다.
 - anon 실행 권한은 회수했다.
 
+### SEC-03 조치 기록
+
+실행일: 2026-04-27
+Supabase 적용일: 2026-04-27
+
+| ID | 정적 확인 결과 | 조치 | 재검증 |
+| --- | --- | --- | --- |
+| SEC-03 | `upsert_notification_delivery_jobs`, `cancel_notification_delivery_jobs`는 `auth.uid()`와 parent `recurring_items` 소유자를 확인했다. 다만 `recurring_item_schedule_versions`, `completion_logs`의 RLS는 `user_id = auth.uid()`만 확인해 REST 직접 호출에서 타 사용자 `item_id`를 참조한 child row 삽입 가능성이 있었다. | `recurring_item_schedule_versions`, `completion_logs`의 select / insert / update / delete policy에 parent `recurring_items.id = item_id`와 `recurring_items.user_id = auth.uid()` 검증을 추가했다. | Supabase MCP 트랜잭션 검증에서 child RLS 5/5, delivery job / attempt / RPC 12/12, payload / cancel reason 2/2, inbox RLS / column grant 4/4 통과. `anon`은 `upsert_notification_delivery_jobs`, `cancel_notification_delivery_jobs` 실행 권한 없음. |
+
+Supabase MCP 적용 결과:
+
+- `harden_recurring_child_rls_parent_owner`: 적용됨
+- `recurring_item_schedule_versions`: 현재 사용자 parent item row만 select / insert / update / delete 가능
+- `completion_logs`: 현재 사용자 parent item row만 select / insert / update / delete 가능
+- `upsert_notification_delivery_jobs`: 타 사용자 item, dedupe user mismatch, payload target mismatch 거부 확인
+- `cancel_notification_delivery_jobs`: 타 사용자 job id를 넣어도 row 변경 없음, 완료 job은 취소하지 않음
+- `notification_delivery_jobs`, `notification_delivery_attempts`: 직접 insert / update 거부 확인
+- `notification_inbox_items`: 타 사용자 row 숨김 실패, `title` 등 본문 컬럼 update 거부 확인
+- `anon`: delivery job RPC 실행 권한 없음
+
 배포 전 운영 설정:
 
 ```sql
