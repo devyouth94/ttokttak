@@ -19,6 +19,11 @@
 - README, 제품/설계/구현/도메인 문서는 요약과 구조가 바로 보여야 함
 - 자주 읽는 문서는 추가보다 가독성과 검색성을 우선
 
+## SECURITY
+
+- 릴리즈 보안 점검은 `docs/security/RELEASE_SECURITY_REVIEW.md`를 확인한다.
+- 의존성 audit 운영 기준은 `docs/security/DEPENDENCY_AUDIT.md`를 확인한다.
+
 ## COMMIT
 
 - prefix: `feat:` | `fix:` | `refactor:` | `chore:` | `docs:` | `test:`

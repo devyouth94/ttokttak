@@ -261,6 +261,7 @@
 
 - `app.config.ts`
 - `.gitignore`
+- `docs/security/DEPENDENCY_AUDIT.md`
 - `package.json`
 - `pnpm-lock.yaml`
 - `supabase/config.toml`
@@ -285,8 +286,8 @@
 
 - secret은 EAS env 또는 Supabase Edge Function env로 이동한다.
 - 노출된 credential은 폐기, 교체, 재배포, 새 빌드 생성을 모두 완료한다.
-- audit 항목은 runtime / build-time / dev-only로 분류한다.
-- dev-only 예외는 근거와 추적 이슈를 남긴다.
+- audit 항목은 `docs/security/DEPENDENCY_AUDIT.md` 기준으로 runtime / build-time / dev-only로 분류한다.
+- 예외는 근거, 검증 결과, 재검토 조건을 남긴다.
 
 재검증 방법:
 
@@ -375,6 +376,36 @@ Supabase MCP 적용 결과:
 - unique constraint는 `(job_id, push_token_ref, attempt_number)` 기준 확인
 - 기존 attempt row의 미마스킹 token 참조값 0건 확인
 - 기존 attempt row의 non-empty `response_payload` 0건 확인
+
+### SEC-05 조치 기록
+
+실행일: 2026-04-27
+
+| ID     | 정적 확인 결과                                                                                                                                                       | 조치                                                                                                                                 | 재검증                                                                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC-05 | `pnpm audit --audit-level moderate`는 9건을 보고했다. `lodash`는 `react-native-calendars` 런타임 경로와 `jest-expo` 경로에 있었고, 나머지는 Expo/Jest 도구 경로였다. | `pnpm.overrides`로 `lodash@4.18.1`, `@xmldom/xmldom@0.8.13`, `postcss@8.5.12`를 고정해 high 5건과 `postcss` moderate 1건을 제거했다. | `pnpm audit --audit-level moderate` 잔여는 `uuid` 1건이다. `pnpm audit --audit-level low` 잔여는 `uuid` 1건, `@tootallnate/once` 1건이다. |
+
+운영 기준:
+
+- 반복 운영 기준은 `docs/security/DEPENDENCY_AUDIT.md`를 따른다.
+
+Audit 분류:
+
+- `lodash`: runtime. `react-native-calendars`가 앱 캘린더 화면에서 사용된다. `4.18.1`로 업데이트 완료.
+- `@xmldom/xmldom`: build-time. Expo config / plist / prebuild 도구 경로다. `0.8.13`으로 업데이트 완료.
+- `postcss`: build-time. Expo Metro config 경로다. `8.5.12`로 업데이트 완료.
+- `uuid`: build-time. Expo config plugin의 `xcode@3.0.1` 경로다. `xcode`는 현재 최신이고 `uuid@14`는 ESM-only라 CommonJS `require('uuid')`와 호환 리스크가 있다. 실제 `xcode` 사용 지점은 `uuid.v4()` 1곳으로, advisory의 v3 / v5 / v6 buffer write 경로와 다르다. Expo / xcode upstream 업데이트 전까지 잔여 예외로 둔다.
+- `@tootallnate/once`: dev-only. `jest-expo` / jsdom / `http-proxy-agent` 테스트 경로다. low severity이며 `pnpm audit --audit-level moderate`에는 포함되지 않는다.
+
+로컬 검증 결과:
+
+- `npx expo config --json`: 통과
+- `npx expo export --platform android --output-dir /tmp/ttokttak-export-android --clear`: 통과
+- `npx expo export --platform ios --output-dir /tmp/ttokttak-export-ios --clear`: 통과
+- `pnpm jest --runInBand`: 17 suites / 99 tests 통과
+- `npx tsc --noEmit`: 통과
+- `pnpm lint`: 통과
+- `git diff --check`: 통과
 
 배포 전 운영 설정:
 
