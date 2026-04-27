@@ -176,7 +176,7 @@ create table if not exists public.notification_delivery_attempts (
   push_token_id uuid references public.device_push_tokens(id) on delete set null,
   platform text not null,
   push_provider text not null,
-  push_token text not null,
+  push_token_ref text not null,
   attempt_number integer not null,
   status text not null,
   provider_message_id text,
@@ -203,9 +203,9 @@ create table if not exists public.notification_delivery_attempts (
       'skipped'
     )
   ),
-  constraint notification_delivery_attempts_job_token_attempt_unique unique (
+  constraint notification_delivery_attempts_job_token_ref_attempt_unique unique (
     job_id,
-    push_token,
+    push_token_ref,
     attempt_number
   )
 );
@@ -214,8 +214,8 @@ create index if not exists idx_notification_delivery_attempts_job
   on public.notification_delivery_attempts(job_id, attempted_at desc);
 create index if not exists idx_notification_delivery_attempts_user_attempted
   on public.notification_delivery_attempts(user_id, attempted_at desc);
-create index if not exists idx_notification_delivery_attempts_token_status
-  on public.notification_delivery_attempts(push_token, status);
+create index if not exists idx_notification_delivery_attempts_token_ref_status
+  on public.notification_delivery_attempts(push_token_ref, status);
 
 -- =========================================================
 -- notification_inbox_items

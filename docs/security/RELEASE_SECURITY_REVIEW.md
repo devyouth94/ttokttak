@@ -12,11 +12,11 @@
 
 출시 판단은 아래 세 단계로 분류한다.
 
-| 판정 | 의미 | 출시 판단 |
-| --- | --- | --- |
-| 출시 차단 | 계정, 권한, 개인 데이터, token, credential이 노출되거나 우회될 수 있다. | 수정과 재검증 전까지 출시하지 않는다. |
+| 판정              | 의미                                                                      | 출시 판단                                                             |
+| ----------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 출시 차단         | 계정, 권한, 개인 데이터, token, credential이 노출되거나 우회될 수 있다.   | 수정과 재검증 전까지 출시하지 않는다.                                 |
 | 출시 전 수정 권장 | 악용 가능성은 낮지만 사용자 데이터, 운영 안정성, 보안 신뢰에 영향을 준다. | 기본은 출시 전 수정이다. 보류하면 잔여 리스크와 재검증 계획을 남긴다. |
-| 출시 후 추적 가능 | 민감정보와 권한 경계에 직접 영향이 없고 완화책이 있다. | 출시 후 이슈로 추적할 수 있다. |
+| 출시 후 추적 가능 | 민감정보와 권한 경계에 직접 영향이 없고 완화책이 있다.                    | 출시 후 이슈로 추적할 수 있다.                                        |
 
 강제 규칙:
 
@@ -31,16 +31,16 @@
 아래 순서대로 점검한다.
 앞 단계에서 출시 차단 항목이 나오면 먼저 수정하고 같은 항목을 재검증한다.
 
-| 순서 | 영역 | 목표 | 주요 증빙 |
-| --- | --- | --- | --- |
-| 1 | 보호 자산 확정 | 어떤 데이터와 credential을 보호할지 확정한다. | 이 문서의 자산 목록, `docs/DATABASE.sql`, 출시 후보 빌드 |
-| 2 | 계정 / 세션 | 로그인, 세션 복원, 로그아웃, 계정 전환 경계를 확인한다. | 계정 A / B 재현 결과, SecureStore / 로그 확인 |
-| 3 | Supabase RLS / RPC | 사용자 간 DB 격리와 RPC 우회 가능성을 확인한다. | RLS 정책, A / B row 접근 테스트 |
-| 4 | Edge Function / cron | service role 경로와 worker 호출 권한을 확인한다. | worker 호출 테스트, cron 설정, Edge Function env |
-| 5 | 개인 일정 데이터 | 반복 항목, occurrence, 완료 / 건너뜀 기록의 사용자 범위를 확인한다. | 홈 / 목록 / 캘린더 / 상세 A / B 테스트 |
-| 6 | 원격 푸시 / 알림함 | token 생명주기, 발송 job, attempt, inbox row를 확인한다. | 실제 iOS / Android 푸시, job / attempt / inbox row |
-| 7 | 로컬 저장소 / 로그 | token, 일정 본문, 푸시 payload가 로컬과 원격 로그에 남지 않는지 확인한다. | Sentry event, 콘솔 로그, SecureStore, React Query cache |
-| 8 | 의존성 / 빌드 / 환경 변수 | secret 노출과 알려진 취약점을 확인한다. | `pnpm audit`, `git ls-files`, 출시 빌드 문자열 검색 |
+| 순서 | 영역                      | 목표                                                                      | 주요 증빙                                                |
+| ---- | ------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------- |
+| 1    | 보호 자산 확정            | 어떤 데이터와 credential을 보호할지 확정한다.                             | 이 문서의 자산 목록, `docs/DATABASE.sql`, 출시 후보 빌드 |
+| 2    | 계정 / 세션               | 로그인, 세션 복원, 로그아웃, 계정 전환 경계를 확인한다.                   | 계정 A / B 재현 결과, SecureStore / 로그 확인            |
+| 3    | Supabase RLS / RPC        | 사용자 간 DB 격리와 RPC 우회 가능성을 확인한다.                           | RLS 정책, A / B row 접근 테스트                          |
+| 4    | Edge Function / cron      | service role 경로와 worker 호출 권한을 확인한다.                          | worker 호출 테스트, cron 설정, Edge Function env         |
+| 5    | 개인 일정 데이터          | 반복 항목, occurrence, 완료 / 건너뜀 기록의 사용자 범위를 확인한다.       | 홈 / 목록 / 캘린더 / 상세 A / B 테스트                   |
+| 6    | 원격 푸시 / 알림함        | token 생명주기, 발송 job, attempt, inbox row를 확인한다.                  | 실제 iOS / Android 푸시, job / attempt / inbox row       |
+| 7    | 로컬 저장소 / 로그        | token, 일정 본문, 푸시 payload가 로컬과 원격 로그에 남지 않는지 확인한다. | Sentry event, 콘솔 로그, SecureStore, React Query cache  |
+| 8    | 의존성 / 빌드 / 환경 변수 | secret 노출과 알려진 취약점을 확인한다.                                   | `pnpm audit`, `git ls-files`, 출시 빌드 문자열 검색      |
 
 ## 3. 보호 자산
 
@@ -301,24 +301,24 @@ pnpm audit --audit-level moderate
 아래 항목은 문서 작성 중 확인된 출시 전 보안 게이트 후보이다.
 아직 최종 취약점 판정은 아니며, 재현과 완화 여부를 확인해야 한다.
 
-| ID | 후보 | 확인할 내용 | 기본 판정 |
-| --- | --- | --- | --- |
-| SEC-01 | `push-delivery-worker` 호출 권한 | `verify_jwt = true`와 cron의 anon JWT 호출 구조에서 일반 사용자 또는 anon JWT가 worker를 호출해 due job을 처리할 수 있는지 확인한다. | 처리 가능하면 출시 차단 |
-| SEC-02 | delivery job / attempt 클라이언트 조작 | `notification_delivery_jobs`, `notification_delivery_attempts`의 insert / update / delete policy가 앱 클라이언트에서 발송 상태 위조로 이어지는지 확인한다. | 위조 가능하면 출시 차단 |
-| SEC-03 | RLS / RPC 사용자 격리 | RPC 입력과 parent row 소유자 검증이 계정 A / B 교차 쓰기를 막는지 확인한다. | 실패하면 출시 차단 |
-| SEC-04 | Sentry 마스킹 범위 | 현재 `beforeSend`는 email 제거만 한다. token, push payload, 일정 제목 / 본문이 남는지 확인한다. | token / credential 노출은 출시 차단 |
-| SEC-05 | 의존성 audit 실패 | `pnpm audit --audit-level moderate`는 현재 9건을 보고한다. `lodash`, `@xmldom/xmldom`, `uuid`, `postcss` 경로를 runtime / build-time / dev-only로 분류한다. | 미분류 상태면 출시 전 수정 권장 이상 |
-| SEC-06 | local secret 파일 | `.env*.local`, `.google/`, native generated folder, private key 파일이 git과 출시 번들에 없는지 확인한다. | 노출되면 출시 차단 |
+| ID     | 후보                                   | 확인할 내용                                                                                                                                                 | 기본 판정                            |
+| ------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| SEC-01 | `push-delivery-worker` 호출 권한       | `verify_jwt = true`와 cron의 anon JWT 호출 구조에서 일반 사용자 또는 anon JWT가 worker를 호출해 due job을 처리할 수 있는지 확인한다.                        | 처리 가능하면 출시 차단              |
+| SEC-02 | delivery job / attempt 클라이언트 조작 | `notification_delivery_jobs`, `notification_delivery_attempts`의 insert / update / delete policy가 앱 클라이언트에서 발송 상태 위조로 이어지는지 확인한다.  | 위조 가능하면 출시 차단              |
+| SEC-03 | RLS / RPC 사용자 격리                  | RPC 입력과 parent row 소유자 검증이 계정 A / B 교차 쓰기를 막는지 확인한다.                                                                                 | 실패하면 출시 차단                   |
+| SEC-04 | Sentry 마스킹 범위                     | 현재 `beforeSend`는 email 제거만 한다. token, push payload, 일정 제목 / 본문이 남는지 확인한다.                                                             | token / credential 노출은 출시 차단  |
+| SEC-05 | 의존성 audit 실패                      | `pnpm audit --audit-level moderate`는 현재 9건을 보고한다. `lodash`, `@xmldom/xmldom`, `uuid`, `postcss` 경로를 runtime / build-time / dev-only로 분류한다. | 미분류 상태면 출시 전 수정 권장 이상 |
+| SEC-06 | local secret 파일                      | `.env*.local`, `.google/`, native generated folder, private key 파일이 git과 출시 번들에 없는지 확인한다.                                                   | 노출되면 출시 차단                   |
 
 ### SEC-01 / SEC-02 조치 기록
 
 실행일: 2026-04-26
 Supabase 적용일: 2026-04-27
 
-| ID | 정적 확인 결과 | 조치 | 재검증 |
-| --- | --- | --- | --- |
-| SEC-01 | `push-delivery-worker`가 `verify_jwt = true`만 요구하고 내부 호출자를 구분하지 않았다. 기존 cron 호출은 anon JWT만 사용했다. | worker에 `x-push-delivery-worker-secret` 검증을 추가했다. cron 호출 함수는 Supabase Vault의 `push_delivery_worker_anon_key`, `push_delivery_worker_secret`으로 JWT와 내부 secret header를 보낸다. | anon / 일반 사용자 JWT는 내부 secret 없이 401이어야 한다. cron은 Edge Function env `PUSH_DELIVERY_WORKER_SECRET`와 Vault `push_delivery_worker_secret`이 일치할 때만 200이어야 한다. |
-| SEC-02 | `notification_delivery_jobs`, `notification_delivery_attempts`의 own row insert / update / delete policy가 앱 클라이언트의 발송 상태 위조로 이어질 수 있었다. | jobs / attempts 직접 쓰기 policy를 제거하고 `anon`, `authenticated`의 insert / update / delete 권한을 회수했다. job 생성 / 취소는 제한 RPC가 `auth.uid()`, 반복 항목 소유자, payload target, 14일 동기화 범위, 허용 상태 전이를 검증한다. attempt와 발송 결과 요약은 worker만 쓴다. | 앱의 job 재계산은 RPC로 성공해야 한다. 직접 REST insert / update / delete는 401 또는 403이어야 한다. attempt 직접 insert / update / delete는 실패해야 한다. |
+| ID     | 정적 확인 결과                                                                                                                                                | 조치                                                                                                                                                                                                                                                                                | 재검증                                                                                                                                                                               |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SEC-01 | `push-delivery-worker`가 `verify_jwt = true`만 요구하고 내부 호출자를 구분하지 않았다. 기존 cron 호출은 anon JWT만 사용했다.                                  | worker에 `x-push-delivery-worker-secret` 검증을 추가했다. cron 호출 함수는 Supabase Vault의 `push_delivery_worker_anon_key`, `push_delivery_worker_secret`으로 JWT와 내부 secret header를 보낸다.                                                                                   | anon / 일반 사용자 JWT는 내부 secret 없이 401이어야 한다. cron은 Edge Function env `PUSH_DELIVERY_WORKER_SECRET`와 Vault `push_delivery_worker_secret`이 일치할 때만 200이어야 한다. |
+| SEC-02 | `notification_delivery_jobs`, `notification_delivery_attempts`의 own row insert / update / delete policy가 앱 클라이언트의 발송 상태 위조로 이어질 수 있었다. | jobs / attempts 직접 쓰기 policy를 제거하고 `anon`, `authenticated`의 insert / update / delete 권한을 회수했다. job 생성 / 취소는 제한 RPC가 `auth.uid()`, 반복 항목 소유자, payload target, 14일 동기화 범위, 허용 상태 전이를 검증한다. attempt와 발송 결과 요약은 worker만 쓴다. | 앱의 job 재계산은 RPC로 성공해야 한다. 직접 REST insert / update / delete는 401 또는 403이어야 한다. attempt 직접 insert / update / delete는 실패해야 한다.                          |
 
 Supabase MCP 적용 결과:
 
@@ -343,8 +343,8 @@ Supabase advisor 잔여 경고:
 실행일: 2026-04-27
 Supabase 적용일: 2026-04-27
 
-| ID | 정적 확인 결과 | 조치 | 재검증 |
-| --- | --- | --- | --- |
+| ID     | 정적 확인 결과                                                                                                                                                                                                                                                                                                           | 조치                                                                                                                                                                                               | 재검증                                                                                                                                                                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | SEC-03 | `upsert_notification_delivery_jobs`, `cancel_notification_delivery_jobs`는 `auth.uid()`와 parent `recurring_items` 소유자를 확인했다. 다만 `recurring_item_schedule_versions`, `completion_logs`의 RLS는 `user_id = auth.uid()`만 확인해 REST 직접 호출에서 타 사용자 `item_id`를 참조한 child row 삽입 가능성이 있었다. | `recurring_item_schedule_versions`, `completion_logs`의 select / insert / update / delete policy에 parent `recurring_items.id = item_id`와 `recurring_items.user_id = auth.uid()` 검증을 추가했다. | Supabase MCP 트랜잭션 검증에서 child RLS 5/5, delivery job / attempt / RPC 12/12, payload / cancel reason 2/2, inbox RLS / column grant 4/4 통과. `anon`은 `upsert_notification_delivery_jobs`, `cancel_notification_delivery_jobs` 실행 권한 없음. |
 
 Supabase MCP 적용 결과:
@@ -357,6 +357,24 @@ Supabase MCP 적용 결과:
 - `notification_delivery_jobs`, `notification_delivery_attempts`: 직접 insert / update 거부 확인
 - `notification_inbox_items`: 타 사용자 row 숨김 실패, `title` 등 본문 컬럼 update 거부 확인
 - `anon`: delivery job RPC 실행 권한 없음
+
+### SEC-04 조치 기록
+
+실행일: 2026-04-27
+Supabase 적용일: 2026-04-27
+
+| ID     | 정적 확인 결과                                                                                                                                                                                                                                                                           | 조치                                                                                                                                                                                                                                                                                                                                                                                                           | 재검증                                                                                                                                                                                                   |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC-04 | Sentry `beforeSend`가 email만 제거했다. worker 응답은 `attempts` 배열을 그대로 반환해 push token, provider response payload가 pg_net 응답 저장소나 Edge Function 응답 로그에 남을 수 있었다. `notification_delivery_attempts`도 원문 `push_token`, provider response payload를 저장했다. | Sentry event sanitizer를 추가해 token, credential, Authorization header, push payload, provider payload, 일정 제목 / 본문 계열 필드를 마스킹한다. `push-delivery-worker`는 job별 status, token count, attempt status count만 반환하고 500 응답은 `internal-error`로 고정한다. attempt log는 원문 token 대신 `push_token_ref`를 저장하고 provider response payload는 status / code / HTTP status 요약만 남긴다. | sanitizer 단위 테스트로 token, Authorization header, email, push payload, 일정 제목 / 본문 마스킹을 확인했다. worker 응답은 `attemptCounts`, `jobId`, `status`, `tokenCount`만 포함하도록 정적 확인했다. |
+
+Supabase MCP 적용 결과:
+
+- `redact_notification_attempt_logs`: 적용됨
+- `push-delivery-worker`: ACTIVE, version 10
+- `notification_delivery_attempts.push_token` 제거, `push_token_ref`로 대체 확인
+- unique constraint는 `(job_id, push_token_ref, attempt_number)` 기준 확인
+- 기존 attempt row의 미마스킹 token 참조값 0건 확인
+- 기존 attempt row의 non-empty `response_payload` 0건 확인
 
 배포 전 운영 설정:
 
@@ -397,9 +415,9 @@ Edge Function env:
 - 계정 B:
 - 실행자:
 
-| ID | 자산 | 결과 | 증빙 | 판정 | 수정 여부 | 재검증 |
-| --- | --- | --- | --- | --- | --- | --- |
-| SEC-01 | push worker | 미실행 |  |  |  |  |
+| ID     | 자산        | 결과   | 증빙 | 판정 | 수정 여부 | 재검증 |
+| ------ | ----------- | ------ | ---- | ---- | --------- | ------ |
+| SEC-01 | push worker | 미실행 |      |      |           |        |
 ```
 
 ## 8. 완료 기준

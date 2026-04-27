@@ -528,7 +528,7 @@ inbox 생성 규칙:
 - `user_id`는 알림함 소유자, `item_id`는 반복 항목, `item_scheduled_at_utc`는 occurrence 예정 시각이다.
 - 같은 사용자의 같은 반복 항목, 같은 예정 시각에 대해 여러 기기 token 발송이 성공해도 inbox row는 1개만 만든다.
 - collapse는 `notification_inbox_items` upsert와 unique constraint로 보장한다.
-- `source_job_id`, `push_token`, `device_id`, `push_provider`는 사용자-facing inbox 고유성 기준이 아니다.
+- `source_job_id`, `push_token_ref`, `device_id`, `push_provider`는 사용자-facing inbox 고유성 기준이 아니다.
 - MVP의 inbox 알림 종류는 `reminder` 하나이며, 고유성 기준에 `notification_kind`를 추가하지 않는다.
 - token별 성공/실패 상세는 `notification_delivery_attempts`에만 남긴다.
 
@@ -591,8 +591,8 @@ inbox 표시 규칙:
 - MVP 목록은 collapsed inbox row의 `title`, `body`, `delivered_at_utc`, 읽음 여부만 표시한다.
 - 목록과 상세 진입 UI는 기기별 성공/실패 내역을 표시하지 않는다.
 - 성공 기기 수, 실패 기기 수, provider별 요약 배지는 MVP UI에 두지 않는다.
-- `device_id`, `push_token`, `push_provider`, provider message id, provider 응답 body는 사용자 UI에 노출하지 않는다.
-- 기기별 delivery detail은 `notification_delivery_attempts`와 Edge Function 로그에서만 확인한다.
+- `device_id`, `push_token_ref`, `push_provider`, provider message id, provider 응답 요약은 사용자 UI에 노출하지 않는다.
+- 기기별 delivery detail은 `notification_delivery_attempts`의 token 참조값과 provider error code로 확인한다.
 - 사용자 UI는 기기별 detail을 숨긴 상태로 들고 있지 않고, 목록 조회 단계에서 아예 가져오지 않는다.
 
 inbox 액션 규칙:

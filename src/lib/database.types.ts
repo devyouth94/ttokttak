@@ -132,7 +132,7 @@ export type Database = {
           provider_error_message: string | null;
           provider_message_id: string | null;
           push_provider: string;
-          push_token: string;
+          push_token_ref: string;
           push_token_id: string | null;
           response_payload: Record<string, unknown>;
           status: string;
@@ -150,7 +150,7 @@ export type Database = {
           provider_error_message?: string | null;
           provider_message_id?: string | null;
           push_provider: string;
-          push_token: string;
+          push_token_ref: string;
           push_token_id?: string | null;
           response_payload?: Record<string, unknown>;
           status: string;
@@ -168,7 +168,7 @@ export type Database = {
           provider_error_message?: string | null;
           provider_message_id?: string | null;
           push_provider?: string;
-          push_token?: string;
+          push_token_ref?: string;
           push_token_id?: string | null;
           response_payload?: Record<string, unknown>;
           status?: string;

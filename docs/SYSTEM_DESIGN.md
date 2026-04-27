@@ -314,9 +314,9 @@ Occurrence는 아래 입력을 기반으로 계산한다.
    필수 target은 `user_id`, `item_id`, `item_scheduled_at_utc`, `notification_kind`, payload routing 값이다.
    target이 누락되었거나 payload routing 값이 job target과 다르면 inbox row를 만들지 않는다.
 10. target이 유효하면 즉시 `notification_inbox_items`를 upsert 한다.
-   upsert 기준은 `(user_id, item_id, item_scheduled_at_utc)`이다.
-   같은 key가 이미 있으면 기존 row를 갱신하지 않고 operation log만 추가한다.
-   발송 예정 job과 성공 attempt가 없는 `retrying` 또는 `failed` job은 inbox row를 만들지 않는다.
+    upsert 기준은 `(user_id, item_id, item_scheduled_at_utc)`이다.
+    같은 key가 이미 있으면 기존 row를 갱신하지 않고 operation log만 추가한다.
+    발송 예정 job과 성공 attempt가 없는 `retrying` 또는 `failed` job은 inbox row를 만들지 않는다.
 11. job 요약 상태와 재시도 시각을 갱신한다.
 12. 무효 token은 `delivery-failed`로 비활성화한다.
 
@@ -353,7 +353,7 @@ payload 필수 값:
 - `scheduledAtUtc = item_scheduled_at_utc`
 
 상세 이동은 payload의 `itemId`, `scheduledAtUtc`를 사용한다.
-`push_token`, `device_id`, `push_provider`, provider 응답 body는 inbox 필드가 아니다.
+`push_token_ref`, `device_id`, `push_provider`, provider 응답 요약은 inbox 필드가 아니다.
 이 값들은 device-level operation log인 `notification_delivery_attempts`에만 남긴다.
 
 ### Notification inbox query
@@ -400,19 +400,19 @@ MVP UI는 collapsed inbox row만 표시한다.
 - 성공한 기기 수
 - 실패한 기기 수
 - 기기 이름 또는 `device_id`
-- `push_token`
+- `push_token_ref`
 - `push_provider`
 - provider message id
-- provider 응답 body 또는 error code
+- provider 응답 요약 또는 error code
 
-운영자가 기기별 결과를 확인해야 하면 `notification_delivery_attempts`와 Edge Function 로그를 조회한다.
+운영자가 기기별 결과를 확인해야 하면 `notification_delivery_attempts`의 token 참조값과 provider error code를 조회한다.
 사용자 inbox 화면은 기기별 delivery details를 숨기거나 요약하지 않고 처음부터 조회하지 않는다.
 
 상세 이동 target:
 
-| `notificationKind` | `source` | 대상 엔티티 | route | route params |
-| --- | --- | --- | --- | --- |
-| `reminder` | `recurring-item` | 반복 항목 occurrence | `/items/[itemId]` | `itemId`, `scheduledAtUtc` |
+| `notificationKind` | `source`         | 대상 엔티티          | route             | route params               |
+| ------------------ | ---------------- | -------------------- | ----------------- | -------------------------- |
+| `reminder`         | `recurring-item` | 반복 항목 occurrence | `/items/[itemId]` | `itemId`, `scheduledAtUtc` |
 
 라우팅 규칙:
 
@@ -542,7 +542,7 @@ Edge Function secret:
 - `devices`는 기기 identity를 유지한다
 - `device_push_tokens`는 현재 발송 가능한 토큰만 유지한다
 - `notification_delivery_jobs`는 occurrence 단위 발송 기준 row다
-- `notification_delivery_attempts`는 token 단위 결과 log다
+- `notification_delivery_attempts`는 원문 token을 제외한 token 단위 결과 log다
 - 서버는 아이템/로그 데이터의 source of truth
 - 로컬 알림 예약 metadata는 사용하지 않는다
 

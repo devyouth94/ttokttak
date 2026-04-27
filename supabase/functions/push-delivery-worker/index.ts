@@ -71,7 +71,7 @@ type NotificationDeliveryAttemptInsert = {
   provider_error_message: string | null;
   provider_message_id: string | null;
   push_provider: "apns" | "fcm";
-  push_token: string;
+  push_token_ref: string;
   push_token_id: string | null;
   response_payload: Record<string, unknown>;
   status: NotificationDeliveryAttemptStatus;
@@ -80,6 +80,13 @@ type NotificationDeliveryAttemptInsert = {
 
 type AttemptResult = NotificationDeliveryAttemptInsert & {
   tokenId: string | null;
+};
+
+type ProcessJobResult = {
+  attemptCounts: Record<NotificationDeliveryAttemptStatus, number>;
+  jobId: string;
+  status: NotificationDeliveryJobStatus | "skipped";
+  tokenCount: number;
 };
 
 type NotificationInboxItemInsert = {
@@ -96,6 +103,51 @@ type NotificationInboxItemInsert = {
 
 function hasSucceededPushAttempt(attempts: AttemptResult[]): boolean {
   return attempts.some((attempt) => attempt.status === "succeeded");
+}
+
+function getEmptyAttemptCounts(): Record<
+  NotificationDeliveryAttemptStatus,
+  number
+> {
+  return {
+    "permanent-failed": 0,
+    "retryable-failed": 0,
+    skipped: 0,
+    succeeded: 0,
+    "token-invalid": 0,
+  };
+}
+
+function summarizeAttempts(
+  attempts: AttemptResult[]
+): Record<NotificationDeliveryAttemptStatus, number> {
+  const counts = getEmptyAttemptCounts();
+
+  for (const attempt of attempts) {
+    counts[attempt.status] += 1;
+  }
+
+  return counts;
+}
+
+function getPushTokenRef(pushTokenId: string | null): string {
+  return pushTokenId ? `token-id:${pushTokenId}` : "token-id:missing";
+}
+
+function getProviderResponseSummary(params: {
+  errorCode?: string | null;
+  httpStatus: number;
+  provider: "apns" | "fcm";
+  status?: string | null;
+}): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries({
+      errorCode: params.errorCode ?? null,
+      httpStatus: params.httpStatus,
+      provider: params.provider,
+      status: params.status ?? null,
+    }).filter(([, value]) => value !== null)
+  );
 }
 
 const JSON_HEADERS = {
@@ -252,7 +304,6 @@ function buildAttemptResult(params: {
   providerErrorMessage?: string | null;
   providerMessageId?: string | null;
   pushProvider: "apns" | "fcm";
-  pushToken: string;
   pushTokenId: string | null;
   status: NotificationDeliveryAttemptStatus;
 }): AttemptResult {
@@ -266,7 +317,6 @@ function buildAttemptResult(params: {
     providerErrorMessage,
     providerMessageId,
     pushProvider,
-    pushToken,
     pushTokenId,
     status,
   } = params;
@@ -281,7 +331,7 @@ function buildAttemptResult(params: {
     provider_error_message: providerErrorMessage ?? null,
     provider_message_id: providerMessageId ?? null,
     push_provider: pushProvider,
-    push_token: pushToken,
+    push_token_ref: getPushTokenRef(pushTokenId),
     push_token_id: pushTokenId,
     response_payload: payload ?? {},
     status,
@@ -408,11 +458,13 @@ async function sendApnsNotification(
         attemptedAt,
         deviceId: token.device_id,
         job,
-        payload: payload ?? {},
+        payload: getProviderResponseSummary({
+          httpStatus: response.status,
+          provider: "apns",
+        }),
         platform: token.platform,
         providerMessageId: response.headers.get("apns-id"),
         pushProvider: token.push_provider,
-        pushToken: token.push_token,
         pushTokenId: token.id,
         status: "succeeded",
       });
@@ -424,12 +476,16 @@ async function sendApnsNotification(
       attemptedAt,
       deviceId: token.device_id,
       job,
-      payload: payload ?? {},
+      payload: getProviderResponseSummary({
+        errorCode: reason,
+        httpStatus: response.status,
+        provider: "apns",
+        status: reason,
+      }),
       platform: token.platform,
       providerErrorCode: reason,
-      providerErrorMessage: reason ?? `APNs ${response.status}`,
+      providerErrorMessage: reason ?? `APNS_${response.status}`,
       pushProvider: token.push_provider,
-      pushToken: token.push_token,
       pushTokenId: token.id,
       status: isApnsInvalidTokenReason(reason)
         ? "token-invalid"
@@ -444,10 +500,10 @@ async function sendApnsNotification(
       job,
       payload: {},
       platform: token.platform,
+      providerErrorCode: "PROVIDER_REQUEST_FAILED",
       providerErrorMessage:
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.name : "UnknownError",
       pushProvider: token.push_provider,
-      pushToken: token.push_token,
       pushTokenId: token.id,
       status: "retryable-failed",
     });
@@ -494,11 +550,13 @@ async function sendFcmNotification(
         attemptedAt,
         deviceId: token.device_id,
         job,
-        payload: payload ?? {},
+        payload: getProviderResponseSummary({
+          httpStatus: response.status,
+          provider: "fcm",
+        }),
         platform: token.platform,
         providerMessageId: payload?.name ?? null,
         pushProvider: token.push_provider,
-        pushToken: token.push_token,
         pushTokenId: token.id,
         status: "succeeded",
       });
@@ -507,18 +565,21 @@ async function sendFcmNotification(
     const status = payload?.error?.status ?? null;
     const errorCode = resolveFcmErrorCode(payload);
     const providerErrorCode = errorCode ?? status;
-    const message = payload?.error?.message ?? `FCM ${response.status}`;
 
     return buildAttemptResult({
       attemptedAt,
       deviceId: token.device_id,
       job,
-      payload: payload ?? {},
+      payload: getProviderResponseSummary({
+        errorCode: providerErrorCode,
+        httpStatus: response.status,
+        provider: "fcm",
+        status,
+      }),
       platform: token.platform,
       providerErrorCode,
-      providerErrorMessage: message,
+      providerErrorMessage: providerErrorCode ?? `FCM_${response.status}`,
       pushProvider: token.push_provider,
-      pushToken: token.push_token,
       pushTokenId: token.id,
       status: isFcmInvalidTokenStatus(providerErrorCode)
         ? "token-invalid"
@@ -535,10 +596,10 @@ async function sendFcmNotification(
       job,
       payload: {},
       platform: token.platform,
+      providerErrorCode: "PROVIDER_REQUEST_FAILED",
       providerErrorMessage:
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.name : "UnknownError",
       pushProvider: token.push_provider,
-      pushToken: token.push_token,
       pushTokenId: token.id,
       status: "retryable-failed",
     });
@@ -567,7 +628,6 @@ async function sendNotificationForToken(
     providerErrorCode: "UNSUPPORTED_PROVIDER",
     providerErrorMessage: "지원하지 않는 platform/provider 조합입니다.",
     pushProvider: token.push_provider,
-    pushToken: token.push_token,
     pushTokenId: token.id,
     status: "skipped",
   });
@@ -833,14 +893,18 @@ async function updateJobSummary(params: {
   return "failed";
 }
 
-async function processJob(job: NotificationDeliveryJob) {
+async function processJob(
+  job: NotificationDeliveryJob
+): Promise<ProcessJobResult> {
   const attemptedAt = new Date().toISOString();
   const claimedJob = await claimJob(job, attemptedAt);
 
   if (!claimedJob) {
     return {
+      attemptCounts: getEmptyAttemptCounts(),
       jobId: job.id,
       status: "skipped" as const,
+      tokenCount: 0,
     };
   }
 
@@ -855,7 +919,7 @@ async function processJob(job: NotificationDeliveryJob) {
     });
 
     return {
-      attempts: [] as AttemptResult[],
+      attemptCounts: getEmptyAttemptCounts(),
       jobId: claimedJob.id,
       status: nextStatus,
       tokenCount: 0,
@@ -883,10 +947,27 @@ async function processJob(job: NotificationDeliveryJob) {
   });
 
   return {
-    attempts,
+    attemptCounts: summarizeAttempts(attempts),
     jobId: claimedJob.id,
     status: nextStatus,
     tokenCount: tokens.length,
+  };
+}
+
+function getErrorLogPayload(error: unknown): {
+  message: string;
+  name: string;
+} {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      name: error.name,
+    };
+  }
+
+  return {
+    message: String(error),
+    name: "UnknownError",
   };
 }
 
@@ -940,11 +1021,12 @@ Deno.serve(async (req) => {
       results,
     });
   } catch (error) {
-    console.error("push delivery worker failed", error);
+    console.error("push delivery worker failed", getErrorLogPayload(error));
 
     return jsonResponse(
       {
-        error: error instanceof Error ? error.message : String(error),
+        error: "internal-error",
+        executionId: Deno.env.get("SB_EXECUTION_ID") ?? null,
       },
       500
     );

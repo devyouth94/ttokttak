@@ -278,8 +278,8 @@
 - 알림함 목록 조회는 `notification_inbox_items`의 collapsed row를 기준으로 하며 token별 delivery record를 펼쳐서 목록을 만들지 않는다
 - 알림함 UI는 collapsed 알림의 제목, 본문, 전달 시각, 읽음 여부만 표시한다
 - 기기별 성공/실패 내역과 성공 기기 수 요약은 MVP UI에 표시하지 않는다
-- `source_job_id`, `device_id`, `push_token`, provider, provider 응답은 사용자-facing identity에 포함하지 않는다
-- `device_id`, `push_token`, provider message id, provider 응답 body는 사용자-facing 알림함 UI에 노출하지 않는다
+- `source_job_id`, `device_id`, `push_token_ref`, provider, provider 응답 요약은 사용자-facing identity에 포함하지 않는다
+- `device_id`, `push_token_ref`, provider message id, provider 응답 요약은 사용자-facing 알림함 UI에 노출하지 않는다
 - worker 재시도나 같은 send job 반복 처리로 같은 사용자, 반복 항목, 예정 시각의 성공 응답이 다시 기록되어도 알림함 item은 새로 만들지 않는다
 - 중복 성공 응답은 `notification_delivery_attempts`에 token 단위 operation log로만 남기고 기존 알림함 item의 읽음/숨김 상태를 되돌리지 않는다
 - 로컬 알림은 MVP 알림함 저장 대상과 목록 조회 대상에서 제외한다

@@ -1,6 +1,8 @@
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
 
+import { sanitizeSentryEvent } from "~/lib/sentry-sanitizer";
+
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
 Sentry.init({
@@ -11,13 +13,7 @@ Sentry.init({
   release: `${Constants.expoConfig?.slug ?? "ttokttak"}@${
     Constants.expoConfig?.version ?? "1.0.0"
   }`,
-  beforeSend(event) {
-    if (event.user) {
-      delete event.user.email;
-    }
-
-    return event;
-  },
+  beforeSend: sanitizeSentryEvent,
 });
 
 export { Sentry };
