@@ -33,7 +33,39 @@ export default function getAppConfig(): ExpoConfig {
       [
         "expo-font",
         {
-          fonts: ["./assets/fonts/goorm-sans-code.ttf"],
+          android: {
+            fonts: [
+              {
+                fontFamily: "Pretendard",
+                fontDefinitions: [
+                  {
+                    path: "./assets/fonts/pretendard/Pretendard-Regular.otf",
+                    weight: 400,
+                  },
+                  {
+                    path: "./assets/fonts/pretendard/Pretendard-Medium.otf",
+                    weight: 500,
+                  },
+                  {
+                    path: "./assets/fonts/pretendard/Pretendard-SemiBold.otf",
+                    weight: 600,
+                  },
+                  {
+                    path: "./assets/fonts/pretendard/Pretendard-Bold.otf",
+                    weight: 700,
+                  },
+                ],
+              },
+            ],
+          },
+          ios: {
+            fonts: [
+              "./assets/fonts/pretendard/Pretendard-Regular.otf",
+              "./assets/fonts/pretendard/Pretendard-Medium.otf",
+              "./assets/fonts/pretendard/Pretendard-SemiBold.otf",
+              "./assets/fonts/pretendard/Pretendard-Bold.otf",
+            ],
+          },
         },
       ],
       [
