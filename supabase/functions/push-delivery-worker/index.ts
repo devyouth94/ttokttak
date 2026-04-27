@@ -107,6 +107,7 @@ const APNS_AUDIENCE_HOST = "https://api.push.apple.com";
 const FCM_AUDIENCE = "https://oauth2.googleapis.com/token";
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
+const WORKER_SECRET_HEADER = "x-push-delivery-worker-secret";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -127,6 +128,30 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: JSON_HEADERS,
     status,
   });
+}
+
+function verifyInternalWorkerRequest(req: Request): Response | null {
+  const expectedSecret = Deno.env.get("PUSH_DELIVERY_WORKER_SECRET");
+
+  if (!expectedSecret) {
+    return jsonResponse(
+      {
+        error: "worker-secret-not-configured",
+      },
+      500
+    );
+  }
+
+  if (req.headers.get(WORKER_SECRET_HEADER) !== expectedSecret) {
+    return jsonResponse(
+      {
+        error: "unauthorized",
+      },
+      401
+    );
+  }
+
+  return null;
 }
 
 function getRequiredEnv(name: string): string {
@@ -879,6 +904,12 @@ Deno.serve(async (req) => {
       },
       405
     );
+  }
+
+  const authorizationError = verifyInternalWorkerRequest(req);
+
+  if (authorizationError) {
+    return authorizationError;
   }
 
   try {

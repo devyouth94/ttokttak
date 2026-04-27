@@ -540,6 +540,13 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      cancel_notification_delivery_jobs: {
+        Args: {
+          p_cancel_reason: string;
+          p_job_ids: string[];
+        };
+        Returns: undefined;
+      };
       create_recurring_item_with_initial_version: {
         Args: {
           p_anchor_type: string;
@@ -578,6 +585,12 @@ export type Database = {
           p_weekday_mask?: number[] | null;
         };
         Returns: string;
+      };
+      upsert_notification_delivery_jobs: {
+        Args: {
+          p_jobs: Database["public"]["Tables"]["notification_delivery_jobs"]["Insert"][];
+        };
+        Returns: Database["public"]["Tables"]["notification_delivery_jobs"]["Row"][];
       };
     };
     Enums: Record<string, never>;

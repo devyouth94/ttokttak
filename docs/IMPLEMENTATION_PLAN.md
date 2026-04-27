@@ -131,6 +131,7 @@ UI 시안 검토가 필요할 때는 `PRODUCT_SPEC.md`의 화면 요구사항과
 
 ### 23단계: QA 안정화
 
+- [ ] [출시 전 보안 게이트](security/RELEASE_SECURITY_REVIEW.md)
 - [ ] 버그 수정
 - [ ] 포그라운드 푸시 수신
 - [ ] 백그라운드 푸시 수신

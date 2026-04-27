@@ -70,8 +70,8 @@ describe("notification delivery jobs repository", () => {
     );
   });
 
-  it("dedupe key 기준으로 bulk upsert 한다", async () => {
-    const select = jest.fn().mockResolvedValue({
+  it("제한 RPC로 bulk upsert 한다", async () => {
+    const rpc = jest.fn().mockResolvedValue({
       data: [
         {
           body: "복약 시간입니다.",
@@ -100,8 +100,6 @@ describe("notification delivery jobs repository", () => {
       ],
       error: null,
     });
-    const upsert = jest.fn(() => ({ select }));
-    const from = jest.fn(() => ({ upsert }));
 
     const jobs = await upsertNotificationDeliveryJobs(
       [
@@ -117,11 +115,11 @@ describe("notification delivery jobs repository", () => {
           userId: "user-1",
         },
       ],
-      { from } as never
+      { rpc } as never
     );
 
-    expect(upsert).toHaveBeenCalledWith(
-      [
+    expect(rpc).toHaveBeenCalledWith("upsert_notification_delivery_jobs", {
+      p_jobs: [
         expect.objectContaining({
           dedupe_key: "reminder:user-1:item-1:2026-04-17T00:00:00.000Z",
           item_id: "item-1",
@@ -130,8 +128,7 @@ describe("notification delivery jobs repository", () => {
           user_id: "user-1",
         }),
       ],
-      { onConflict: "dedupe_key" }
-    );
+    });
     expect(jobs).toHaveLength(1);
   });
 
@@ -146,5 +143,24 @@ describe("notification delivery jobs repository", () => {
     });
 
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("제한 RPC로 발송 job을 취소한다", async () => {
+    const rpc = jest.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
+    await cancelNotificationDeliveryJobs({
+      cancelReason: "schedule-updated",
+      client: { rpc } as never,
+      jobIds: ["job-1"],
+      userId: "user-1",
+    });
+
+    expect(rpc).toHaveBeenCalledWith("cancel_notification_delivery_jobs", {
+      p_cancel_reason: "schedule-updated",
+      p_job_ids: ["job-1"],
+    });
   });
 });

@@ -12,7 +12,6 @@ import {
 import type {
   NotificationDeliveryJobInsert,
   NotificationDeliveryJobRow,
-  NotificationDeliveryJobUpdate,
 } from "~/lib/database.types";
 
 export type UpsertNotificationDeliveryJobInput = {
@@ -147,12 +146,12 @@ export async function upsertNotificationDeliveryJobs(
   }
 
   const supabase = getRepositoryClient(client);
-  const { data, error } = await supabase
-    .from("notification_delivery_jobs")
-    .upsert(inputs.map(toNotificationDeliveryJobInsert), {
-      onConflict: "dedupe_key",
-    })
-    .select("*");
+  const { data, error } = await supabase.rpc(
+    "upsert_notification_delivery_jobs",
+    {
+      p_jobs: inputs.map(toNotificationDeliveryJobInsert),
+    }
+  );
 
   if (error) {
     throw error;
@@ -165,24 +164,16 @@ export async function cancelNotificationDeliveryJobs({
   cancelReason,
   client,
   jobIds,
-  userId,
 }: CancelNotificationDeliveryJobsOptions): Promise<void> {
   if (jobIds.length === 0) {
     return;
   }
 
   const supabase = getRepositoryClient(client);
-  const update: NotificationDeliveryJobUpdate = {
-    cancel_reason: cancelReason,
-    cancelled_at: new Date().toISOString(),
-    next_retry_at: null,
-    status: "cancelled",
-  };
-  const { error } = await supabase
-    .from("notification_delivery_jobs")
-    .update(update)
-    .eq("user_id", userId)
-    .in("id", jobIds);
+  const { error } = await supabase.rpc("cancel_notification_delivery_jobs", {
+    p_cancel_reason: cancelReason,
+    p_job_ids: jobIds,
+  });
 
   if (error) {
     throw error;
