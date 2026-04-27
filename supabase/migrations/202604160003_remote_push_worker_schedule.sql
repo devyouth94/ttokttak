@@ -8,15 +8,22 @@ security definer
 set search_path = public
 as $$
 declare
+  v_anon_key text;
   v_request_id bigint;
 begin
+  v_anon_key := current_setting('app.settings.push_delivery_worker_anon_key', true);
+
+  if coalesce(v_anon_key, '') = '' then
+    raise exception 'app.settings.push_delivery_worker_anon_key 설정이 필요합니다.';
+  end if;
+
   select net.http_post(
     url := 'https://afsulksejxywonxulary.supabase.co/functions/v1/push-delivery-worker',
     headers := jsonb_build_object(
       'Content-Type',
       'application/json',
       'Authorization',
-      'Bearer ' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmc3Vsa3Nlanh5d29ueHVsYXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDE4MDgsImV4cCI6MjA5MDYxNzgwOH0.qKbeNQtf7OSvepFleed0wluqkev0nkibRtCtQGFtY1c'
+      'Bearer ' || v_anon_key
     ),
     body := jsonb_build_object(
       'trigger',

@@ -262,6 +262,7 @@
 - `app.config.ts`
 - `.gitignore`
 - `docs/security/DEPENDENCY_AUDIT.md`
+- `docs/security/SECRET_EXPOSURE_CHECK.md`
 - `package.json`
 - `pnpm-lock.yaml`
 - `supabase/config.toml`
@@ -287,6 +288,7 @@
 - secret은 EAS env 또는 Supabase Edge Function env로 이동한다.
 - 노출된 credential은 폐기, 교체, 재배포, 새 빌드 생성을 모두 완료한다.
 - audit 항목은 `docs/security/DEPENDENCY_AUDIT.md` 기준으로 runtime / build-time / dev-only로 분류한다.
+- secret 노출 점검은 `docs/security/SECRET_EXPOSURE_CHECK.md` 기준으로 실행한다.
 - 예외는 근거, 검증 결과, 재검토 조건을 남긴다.
 
 재검증 방법:
@@ -417,6 +419,49 @@ select vault.create_secret('<PUSH_DELIVERY_WORKER_SECRET와 같은 값>', 'push_
 Edge Function env:
 
 - `PUSH_DELIVERY_WORKER_SECRET`: 위 Postgres 설정과 같은 값
+
+### SEC-06 조치 기록
+
+실행일: 2026-04-27
+Supabase 확인일: 2026-04-27
+
+| ID     | 정적 확인 결과                                                                                                                                                   | 조치                                                                                                                                        | 재검증                                                                                                                                                  |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC-06 | `.env.local`, `.google/google-services.json`, generated `ios` / `android` secret 산출물이 로컬에 있었지만 git에는 추적되지 않았다. `.env.local`에는 `SENTRY_AUTH_TOKEN`이 있었다. 과거 cron migration에는 anon JWT 리터럴이 있었다. | `.gitignore`에 `.env`, `.env.*`, root Google services 파일, root `sentry.properties` ignore 규칙을 추가했다. 과거 cron migration의 anon JWT 리터럴은 app setting 참조로 제거했다. | Expo config와 Android / iOS export 산출물에서 `SENTRY_AUTH_TOKEN` 값, service role, private key, APNs / FCM secret 이름, secret 파일 포함 여부를 확인했다. |
+
+로컬 git 확인:
+
+- `git ls-files -- .env .env.local .env.development.local .env.production.local .google/google-services.json ios/sentry.properties android/app/google-services.json android/sentry.properties GoogleService-Info.plist google-services.json '*.p8' '*.pem' '*.key' '*.mobileprovision'`: 출력 없음
+- `git check-ignore -v .env.local .google/google-services.json ios/sentry.properties android/app/google-services.json android/sentry.properties`: 모두 `.gitignore` 규칙 적용 확인
+- `git ls-files | rg '(^|/)(\.env|.*\.p8$|.*\.pem$|.*\.key$|google-services\.json$|GoogleService-Info\.plist$|sentry\.properties$|.*service-account.*\.json$|.*private.*\.json$)'`: 출력 없음
+- tracked source에 있던 anon JWT 리터럴은 제거했다. 운영 cron 함수는 이미 SEC-01 / SEC-02 migration에서 Supabase Vault 기반 구현으로 대체되어 있다.
+
+로컬 환경 변수 분류:
+
+- 앱 번들에 들어가는 public env: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID`, `EXPO_PUBLIC_SENTRY_DSN`
+- config plugin 입력값: `GOOGLE_AUTH_IOS_URL_SCHEME`
+- secret env: `SENTRY_AUTH_TOKEN`
+
+번들 확인:
+
+- `npx expo config --json`: 통과
+- `npx expo export --platform android --output-dir /tmp/ttokttak-sec06-export-android --clear`: 통과
+- `npx expo export --platform ios --output-dir /tmp/ttokttak-sec06-export-ios --clear`: 통과
+- `/tmp/ttokttak-sec06-expo-config.json`, `/tmp/ttokttak-sec06-export-android`, `/tmp/ttokttak-sec06-export-ios`에서 `SERVICE_ROLE`, `PRIVATE_KEY`, `SENTRY_AUTH_TOKEN`, `SENTRY_AUTH`, `APNS_`, `FCM_`, `EAS_`, `GOOGLE_AUTH`, `APPLE_` 검색 결과 없음
+- 같은 산출물에서 `.env*`, `*.p8`, `*.pem`, `*.key`, `google-services.json`, `GoogleService-Info.plist`, `sentry.properties`, service account / private json 파일 포함 없음
+- `.env.local`의 secret 후보값 중 `SENTRY_AUTH_TOKEN`은 Expo config, Android / iOS export, tracked source 검색에서 hit 없음
+- tracked source에서 JWT 접두어, Sentry auth token 접두어, Supabase secret 접두어, PEM header 실값 패턴 검색 결과 없음
+
+Supabase 확인:
+
+- Edge Function secrets: `APNS_BUNDLE_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`, `APNS_TEAM_ID`, `APNS_USE_SANDBOX`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`, `FCM_PRIVATE_KEY_ID`, `FCM_PROJECT_ID`, `PUSH_DELIVERY_WORKER_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` 등록 확인
+- Supabase MCP: `push-delivery-worker` ACTIVE version 10, `verify_jwt = true`
+- Supabase MCP: Vault secret `push_delivery_worker_anon_key`, `push_delivery_worker_secret` 등록 확인
+- Supabase MCP: `public.invoke_push_delivery_worker()`는 Vault를 사용하고, JWT 리터럴이 없으며, `x-push-delivery-worker-secret` header를 보낸다.
+
+운영 기준:
+
+- 반복 운영 기준은 `docs/security/SECRET_EXPOSURE_CHECK.md`를 따른다.
 
 ## 6. 강화 작업 순서
 
