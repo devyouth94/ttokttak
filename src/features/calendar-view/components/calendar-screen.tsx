@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Calendar, type DateData, LocaleConfig } from "react-native-calendars";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
@@ -30,6 +31,7 @@ import {
 } from "~/features/calendar-view/calendar-screen.helpers";
 import { CalendarDayCell } from "~/features/calendar-view/components/calendar-day-cell";
 import { CalendarEntryCard } from "~/features/calendar-view/components/calendar-entry-card";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
@@ -137,6 +139,7 @@ const calendarTheme = {
 };
 
 export function CalendarScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const [screenState, setScreenState] = useState(() =>
     createCalendarScreenState(new Date())
@@ -268,7 +271,12 @@ export function CalendarScreen(): React.JSX.Element {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.monthHeader}>
@@ -441,8 +449,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.lg,
-    paddingBottom: spacing.xxl,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
   },
   entryList: {

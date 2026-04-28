@@ -7,6 +7,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
@@ -24,6 +25,7 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
@@ -214,6 +216,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }): React.JSX.Element {
 }
 
 export function ReminderListScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const [sortMode, setSortMode] = useState<ReminderListSortMode>(
     DEFAULT_REMINDER_LIST_SORT_MODE
   );
@@ -280,6 +283,9 @@ export function ReminderListScreen(): React.JSX.Element {
         <FlatList
           contentContainerStyle={[
             styles.listContent,
+            {
+              paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+            },
             entries.length === 0 ? styles.emptyListContent : undefined,
           ]}
           data={entries}
@@ -358,8 +364,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
   },
   nextOccurrence: {
     color: colors.textMuted,

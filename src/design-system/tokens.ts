@@ -1,6 +1,7 @@
 export const color = {
   white: "#FFFFFF",
   smokyWhite: "#EFF0F6",
+  gray: "#8F9295",
   purple: "#D9B8F3",
   oldFlax: "#DFF37D",
   jetBlack: "#292B2D",
@@ -130,6 +131,7 @@ export const typography = {
     label: 0.4,
   },
   lineHeight: {
+    caption: 15,
     label: 16,
     body: 23,
     title: 30,
@@ -137,6 +139,7 @@ export const typography = {
     headline: 44,
   },
   size: {
+    caption: 11,
     label: 12,
     body: 16,
     title: 24,

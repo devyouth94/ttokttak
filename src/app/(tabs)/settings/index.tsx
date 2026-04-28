@@ -9,6 +9,7 @@ import {
   type TextStyle,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { ExternalLink, LogOut } from "lucide-react-native";
 
@@ -21,6 +22,7 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { useSession } from "~/features/session/session-provider";
 
@@ -129,6 +131,7 @@ function getNotificationStatusText(
 }
 
 export default function SettingsTabPage(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const { profile, signOut, user } = useSession();
   const {
     isPermissionLoading,
@@ -198,7 +201,12 @@ export default function SettingsTabPage(): React.JSX.Element {
 
       <ScrollView
         bounces={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.section}>
@@ -347,8 +355,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     gap: spacing.xl,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
   },
   section: {

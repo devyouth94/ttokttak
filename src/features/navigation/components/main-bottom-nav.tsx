@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type Href, router, usePathname } from "expo-router";
 import {
@@ -9,8 +9,9 @@ import {
   Settings2,
 } from "lucide-react-native";
 
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
-import { MainTabIcon } from "~/features/navigation/components/main-tab-icon";
+import { AppText } from "~/design-system/components/app-text";
+import { color, spacing } from "~/design-system/tokens";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 
 type MainTabKey = "home" | "calendar" | "schedule" | "settings";
 
@@ -18,103 +19,25 @@ type MainTabItem = {
   href: Href;
   icon: typeof House;
   key: MainTabKey;
+  label: string;
 };
 
-const TAB_BAR_HEIGHT = 60;
-const TAB_PANEL_TOP_OFFSET = 0;
-const CREATE_BUTTON_BOTTOM_OFFSET = TAB_BAR_HEIGHT + spacing.lg;
+type MainBottomNavItemProps = {
+  isActive: boolean;
+  item: MainTabItem;
+};
 
 const TAB_ITEMS: MainTabItem[] = [
-  { href: "/(tabs)/home", icon: House, key: "home" },
-  { href: "/(tabs)/schedule", icon: ListTodo, key: "schedule" },
-  { href: "/(tabs)/calendar", icon: CalendarDays, key: "calendar" },
-  { href: "/(tabs)/settings", icon: Settings2, key: "settings" },
+  { href: "/(tabs)/home", icon: House, key: "home", label: "홈" },
+  { href: "/(tabs)/schedule", icon: ListTodo, key: "schedule", label: "목록" },
+  {
+    href: "/(tabs)/calendar",
+    icon: CalendarDays,
+    key: "calendar",
+    label: "캘린더",
+  },
+  { href: "/(tabs)/settings", icon: Settings2, key: "settings", label: "설정" },
 ];
-
-export function MainBottomNav(): React.JSX.Element {
-  const insets = useSafeAreaInsets();
-  const pathname = usePathname();
-  const showCreateButton = pathname === "/home" || pathname === "/schedule";
-
-  return (
-    <View
-      style={[
-        styles.wrapper,
-        {
-          height: TAB_BAR_HEIGHT + insets.bottom,
-        },
-      ]}
-    >
-      {Platform.OS === "android" ? (
-        <View
-          style={[
-            styles.panelAmbient,
-            {
-              bottom: 0,
-              top: TAB_PANEL_TOP_OFFSET + 6,
-            },
-          ]}
-        />
-      ) : null}
-      <View
-        style={[
-          styles.panel,
-          {
-            bottom: 0,
-            top: TAB_PANEL_TOP_OFFSET,
-          },
-        ]}
-      />
-      <View style={styles.content}>
-        {TAB_ITEMS.map((item) => {
-          const isActive = resolveIsActive(pathname, item.key);
-
-          return (
-            <Pressable
-              accessibilityLabel={resolveLabel(item.key)}
-              accessibilityRole="button"
-              key={item.key}
-              onPress={() => {
-                if (isActive) {
-                  router.dismissTo(item.href);
-                  return;
-                }
-
-                router.navigate(item.href);
-              }}
-              style={styles.item}
-            >
-              <View style={styles.iconSlot}>
-                <MainTabIcon focused={isActive} icon={item.icon} />
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-      {showCreateButton ? (
-        <Pressable
-          accessibilityLabel="항목 생성"
-          accessibilityRole="button"
-          hitSlop={12}
-          onPress={() => {
-            router.push({
-              params: { returnTo: pathname },
-              pathname: "/items/new",
-            });
-          }}
-          style={[
-            styles.createButton,
-            {
-              bottom: insets.bottom + CREATE_BUTTON_BOTTOM_OFFSET,
-            },
-          ]}
-        >
-          <Plus color={colors.primaryForeground} size={28} />
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
 
 function resolveIsActive(pathname: string, key: MainTabKey): boolean {
   if (pathname === "/") {
@@ -124,99 +47,156 @@ function resolveIsActive(pathname: string, key: MainTabKey): boolean {
   return pathname === `/${key}` || pathname.startsWith(`/${key}/`);
 }
 
-function resolveLabel(key: MainTabKey): string {
-  switch (key) {
-    case "home":
-      return "홈";
-    case "calendar":
-      return "캘린더";
-    case "schedule":
-      return "목록";
-    case "settings":
-      return "설정";
-  }
+export function MainBottomNav(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[
+        styles.wrapper,
+        {
+          height: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+        },
+      ]}
+    >
+      <View style={styles.panel}>
+        {TAB_ITEMS.slice(0, 2).map((item) => (
+          <MainBottomNavItem
+            isActive={resolveIsActive(pathname, item.key)}
+            item={item}
+            key={item.key}
+          />
+        ))}
+        <View pointerEvents="none" style={styles.createSlot} />
+        {TAB_ITEMS.slice(2).map((item) => (
+          <MainBottomNavItem
+            isActive={resolveIsActive(pathname, item.key)}
+            item={item}
+            key={item.key}
+          />
+        ))}
+      </View>
+      <Pressable
+        accessibilityHint="리마인더 만들기 화면으로 이동해요."
+        accessibilityLabel="리마인더 추가"
+        accessibilityRole="button"
+        onPress={() => {
+          router.push({
+            params: { returnTo: pathname },
+            pathname: "/items/new",
+          });
+        }}
+        style={({ pressed }) => [
+          styles.createButton,
+          pressed && styles.createButtonPressed,
+        ]}
+      >
+        <Plus color={color.jetBlack} size={28} />
+      </Pressable>
+    </View>
+  );
+}
+
+function MainBottomNavItem({
+  isActive,
+  item,
+}: MainBottomNavItemProps): React.JSX.Element {
+  const Icon = item.icon;
+
+  return (
+    <Pressable
+      accessibilityLabel={item.label}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isActive }}
+      hitSlop={8}
+      onPress={() => {
+        if (isActive) {
+          router.dismissTo(item.href);
+          return;
+        }
+
+        router.navigate(item.href);
+      }}
+      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+    >
+      <View style={styles.icon}>
+        <Icon color={isActive ? color.white : color.gray} size={22} />
+      </View>
+      <AppText
+        numberOfLines={1}
+        style={[styles.label, isActive && styles.labelActive]}
+        variant="caption"
+      >
+        {item.label}
+      </AppText>
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+    bottom: 0,
+    left: 0,
     overflow: "visible",
-    position: "relative",
+    position: "absolute",
+    right: 0,
   },
   panel: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
-    elevation: 10,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: -8,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 18,
-  },
-  panelAmbient: {
-    backgroundColor: "#FAFAFA",
-    borderTopLeftRadius: 38,
-    borderTopRightRadius: 38,
-    elevation: 18,
-    left: -8,
-    opacity: 0.9,
-    position: "absolute",
-    right: -8,
-  },
-  content: {
     alignItems: "center",
+    backgroundColor: color.jetBlack,
+    borderRadius: 30,
     flexDirection: "row",
-    height: TAB_BAR_HEIGHT,
-    left: 0,
-    paddingHorizontal: 20,
+    height: 60,
+    left: 16,
+    paddingHorizontal: 8,
     position: "absolute",
-    right: 0,
-    top: 0,
+    right: 16,
+    top: 24,
+    zIndex: 2,
+  },
+  createButton: {
+    alignItems: "center",
+    backgroundColor: color.white,
+    borderRadius: 24,
+    height: 48,
+    justifyContent: "center",
+    left: "50%",
+    position: "absolute",
+    top: 30,
+    transform: [{ translateX: -24 }],
+    width: 48,
+    zIndex: 3,
+  },
+  createButtonPressed: {
+    opacity: 0.9,
+  },
+  createSlot: {
+    flex: 0.9,
   },
   item: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
+    minWidth: 0,
   },
-  iconSlot: {
-    alignItems: "center",
-    height: TAB_BAR_HEIGHT,
-    justifyContent: "center",
-    width: "100%",
+  itemPressed: {
+    opacity: 0.72,
   },
-  createButton: {
+  icon: {
     alignItems: "center",
-    backgroundColor: colors.primary,
-    borderColor: colors.outlineSoft,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: borderRadius.pill,
-    height: 64,
+    height: 26,
     justifyContent: "center",
-    position: "absolute",
-    right: spacing.lg,
-    width: 64,
-    zIndex: 2,
-    ...Platform.select({
-      android: {
-        elevation: 2,
-        shadowColor: "#000000",
-      },
-      ios: {
-        shadowColor: "#000000",
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-      },
-      default: {},
-    }),
+    width: 36,
+  },
+  label: {
+    color: color.gray,
+    marginTop: spacing.xxs,
+    textAlign: "center",
+  },
+  labelActive: {
+    color: color.white,
   },
 });

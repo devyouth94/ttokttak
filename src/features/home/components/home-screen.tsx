@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import {
 } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { useNotificationInboxItemsQuery } from "~/features/notifications/use-notification-inbox-items-query";
 import type { CompletionAction } from "~/features/recurring/domain/types";
@@ -226,6 +228,7 @@ function FeedErrorCard({
 }
 
 export function HomeScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const { profile } = useSession();
   const { permission, requestPermission, syncAfterMutation } =
     useNotificationBootstrap();
@@ -461,7 +464,12 @@ export function HomeScreen(): React.JSX.Element {
       <View style={styles.screenRoot}>
         <ScrollView
           bounces={false}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[
+            styles.contentContainer,
+            {
+              paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <HomeHeader
@@ -576,7 +584,7 @@ export function HomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   carouselContent: {
     gap: spacing.sm,
-    paddingRight: spacing.lg,
+    paddingRight: spacing.md,
   },
   carouselSection: {
     gap: spacing.md,
@@ -626,8 +634,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     gap: spacing.xl,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
   iconActionButton: {
