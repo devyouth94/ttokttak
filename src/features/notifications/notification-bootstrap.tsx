@@ -10,8 +10,15 @@ import {
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
-import { addCurrentDevicePushTokenListener } from "~/features/notifications/device-push-token";
+import { getOrCreateNotificationDeviceId } from "~/features/notifications/device-identity";
 import {
+  addCurrentDevicePushTokenListener,
+  type CurrentDevicePushToken,
+  getCurrentDevicePushToken,
+} from "~/features/notifications/device-push-token";
+import {
+  createCurrentDevicePushTokenRegistration,
+  type CurrentDevicePushTokenRegistration,
   deactivateCurrentDevicePushTokens,
   registerCurrentDevicePushToken,
 } from "~/features/notifications/device-push-token-registration";
@@ -26,6 +33,10 @@ import {
   openNotificationSettings,
   requestNotificationPermission,
 } from "~/features/notifications/notification-permission";
+import {
+  isSamePushTokenRegistration,
+  shouldSkipListenerPushTokenRegistration,
+} from "~/features/notifications/notification-push-token-sync-guard";
 import { useSession } from "~/features/session/session-provider";
 import { Sentry } from "~/lib/sentry";
 
@@ -41,6 +52,8 @@ type NotificationBootstrapContextValue = {
     scope: NotificationDeliverySyncScope;
   }) => Promise<void>;
 };
+
+type PushTokenSyncTrigger = "session" | "token-listener";
 
 const initialPermissionState: NotificationPermissionState = {
   canOpenSettings: false,
@@ -80,7 +93,12 @@ export function NotificationBootstrapProvider({
   );
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
-  const lastPushTokenSyncKeyRef = useRef<string | null>(null);
+  const inFlightPushTokenRegistrationRef =
+    useRef<CurrentDevicePushTokenRegistration | null>(null);
+  const inFlightSessionPushTokenSyncKeyRef = useRef<string | null>(null);
+  const lastSessionPushTokenSyncKeyRef = useRef<string | null>(null);
+  const lastSuccessfulPushTokenRegistrationRef =
+    useRef<CurrentDevicePushTokenRegistration | null>(null);
   const lastSignedInUserIdRef = useRef<string | null>(null);
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -126,19 +144,111 @@ export function NotificationBootstrapProvider({
     }, []);
 
   const syncPushToken = useCallback(
-    async (userId: string): Promise<void> => {
+    async ({
+      currentDevicePushToken,
+      trigger,
+      userId,
+    }: {
+      currentDevicePushToken?: CurrentDevicePushToken;
+      trigger: PushTokenSyncTrigger;
+      userId: string;
+    }): Promise<void> => {
+      const sessionSyncKey = userId;
+      let didMarkSessionInFlight = false;
+      let markedPushTokenRegistration: CurrentDevicePushTokenRegistration | null =
+        null;
+
+      if (
+        trigger === "session" &&
+        (lastSessionPushTokenSyncKeyRef.current === sessionSyncKey ||
+          inFlightSessionPushTokenSyncKeyRef.current === sessionSyncKey)
+      ) {
+        return;
+      }
+
+      if (trigger === "session") {
+        inFlightSessionPushTokenSyncKeyRef.current = sessionSyncKey;
+        didMarkSessionInFlight = true;
+      }
+
       try {
-        await registerCurrentDevicePushToken(userId);
-        lastPushTokenSyncKeyRef.current = `${userId}:${sessionRevision}`;
+        const deviceId = await getOrCreateNotificationDeviceId();
+        const resolvedDevicePushToken =
+          currentDevicePushToken ?? (await getCurrentDevicePushToken());
+
+        if (!resolvedDevicePushToken) {
+          return;
+        }
+
+        const candidateRegistration = createCurrentDevicePushTokenRegistration({
+          currentDevicePushToken: resolvedDevicePushToken,
+          deviceId,
+          userId,
+        });
+
+        if (
+          trigger === "token-listener" &&
+          shouldSkipListenerPushTokenRegistration({
+            candidate: candidateRegistration,
+            inFlightRegistration: inFlightPushTokenRegistrationRef.current,
+            lastSuccessfulRegistration:
+              lastSuccessfulPushTokenRegistrationRef.current,
+          })
+        ) {
+          return;
+        }
+
+        if (
+          isSamePushTokenRegistration(
+            candidateRegistration,
+            inFlightPushTokenRegistrationRef.current
+          )
+        ) {
+          return;
+        }
+
+        inFlightPushTokenRegistrationRef.current = candidateRegistration;
+        markedPushTokenRegistration = candidateRegistration;
+
+        const completedRegistration = await registerCurrentDevicePushToken({
+          currentDevicePushToken: resolvedDevicePushToken,
+          deviceId,
+          userId,
+        });
+
+        if (completedRegistration) {
+          lastSuccessfulPushTokenRegistrationRef.current =
+            completedRegistration;
+
+          if (trigger === "session") {
+            lastSessionPushTokenSyncKeyRef.current = sessionSyncKey;
+          }
+        }
       } catch (error) {
         Sentry.captureException(error, {
           tags: {
             feature: "notification-push-token-registration",
           },
         });
+      } finally {
+        if (
+          didMarkSessionInFlight &&
+          inFlightSessionPushTokenSyncKeyRef.current === sessionSyncKey
+        ) {
+          inFlightSessionPushTokenSyncKeyRef.current = null;
+        }
+
+        if (
+          isSamePushTokenRegistration(
+            markedPushTokenRegistration,
+            inFlightPushTokenRegistrationRef.current
+          )
+        ) {
+          inFlightPushTokenRegistrationRef.current = null;
+        }
       }
     },
-    [sessionRevision]
+    []
   );
 
   const deactivatePushToken = useCallback(
@@ -181,7 +291,10 @@ export function NotificationBootstrapProvider({
 
     const signedOutUserId = lastSignedInUserIdRef.current;
     lastSignedInUserIdRef.current = null;
-    lastPushTokenSyncKeyRef.current = null;
+    inFlightPushTokenRegistrationRef.current = null;
+    inFlightSessionPushTokenSyncKeyRef.current = null;
+    lastSessionPushTokenSyncKeyRef.current = null;
+    lastSuccessfulPushTokenRegistrationRef.current = null;
 
     void deactivatePushToken(signedOutUserId, "logout");
   }, [authEvent, deactivatePushToken, user?.id]);
@@ -191,13 +304,10 @@ export function NotificationBootstrapProvider({
       return;
     }
 
-    const nextSyncKey = `${user.id}:${sessionRevision}`;
-
-    if (lastPushTokenSyncKeyRef.current === nextSyncKey) {
-      return;
-    }
-
-    void syncPushToken(user.id);
+    void syncPushToken({
+      trigger: "session",
+      userId: user.id,
+    });
   }, [isLoading, permission.status, sessionRevision, syncPushToken, user?.id]);
 
   useEffect(() => {
@@ -205,9 +315,14 @@ export function NotificationBootstrapProvider({
       return;
     }
 
-    const subscription = addCurrentDevicePushTokenListener(() => {
-      return syncPushToken(user.id);
-    });
+    const subscription = addCurrentDevicePushTokenListener(
+      (currentDevicePushToken) =>
+        syncPushToken({
+          currentDevicePushToken,
+          trigger: "token-listener",
+          userId: user.id,
+        })
+    );
 
     return () => {
       subscription?.remove();
@@ -219,7 +334,10 @@ export function NotificationBootstrapProvider({
       return;
     }
 
-    lastPushTokenSyncKeyRef.current = null;
+    inFlightPushTokenRegistrationRef.current = null;
+    inFlightSessionPushTokenSyncKeyRef.current = null;
+    lastSessionPushTokenSyncKeyRef.current = null;
+    lastSuccessfulPushTokenRegistrationRef.current = null;
     void deactivatePushToken(user.id, "permission-denied");
   }, [deactivatePushToken, permission.status, user?.id]);
 

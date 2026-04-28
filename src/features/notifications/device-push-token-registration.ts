@@ -3,7 +3,10 @@ import {
   getCurrentDevicePlatform,
   getOrCreateNotificationDeviceId,
 } from "~/features/notifications/device-identity";
-import { getCurrentDevicePushToken } from "~/features/notifications/device-push-token";
+import {
+  type CurrentDevicePushToken,
+  getCurrentDevicePushToken,
+} from "~/features/notifications/device-push-token";
 import {
   deactivateDevicePushTokens,
   upsertDevicePushToken,
@@ -12,6 +15,20 @@ import {
   deactivateDevice,
   upsertDevice,
 } from "~/features/recurring/repositories/devices-repository";
+
+export type CurrentDevicePushTokenRegistration = {
+  deviceId: string;
+  permissionStatus: "granted";
+  pushProvider: CurrentDevicePushToken["pushProvider"];
+  pushToken: string;
+  userId: string;
+};
+
+type RegisterCurrentDevicePushTokenInput = {
+  currentDevicePushToken?: CurrentDevicePushToken | null;
+  deviceId?: string;
+  userId: string;
+};
 
 function isPushCapablePlatform(
   platform: ReturnType<typeof getCurrentDevicePlatform>
@@ -22,11 +39,18 @@ function isPushCapablePlatform(
 /**
  * 현재 기기 row를 최신 상태로 유지한다.
  */
-async function ensureCurrentDevice(userId: string): Promise<{
+async function ensureCurrentDevice({
+  deviceId,
+  userId,
+}: {
+  deviceId?: string;
+  userId: string;
+}): Promise<{
   deviceId: string;
   platform: "android" | "ios";
 }> {
-  const deviceId = await getOrCreateNotificationDeviceId();
+  const resolvedDeviceId =
+    deviceId ?? (await getOrCreateNotificationDeviceId());
   const platform = getCurrentDevicePlatform();
 
   if (!isPushCapablePlatform(platform)) {
@@ -35,7 +59,7 @@ async function ensureCurrentDevice(userId: string): Promise<{
 
   await upsertDevice({
     deviceName: getCurrentDeviceName(),
-    id: deviceId,
+    id: resolvedDeviceId,
     isActive: true,
     lastSeenAt: new Date().toISOString(),
     platform,
@@ -43,30 +67,62 @@ async function ensureCurrentDevice(userId: string): Promise<{
   });
 
   return {
-    deviceId,
+    deviceId: resolvedDeviceId,
     platform,
+  };
+}
+
+export function createCurrentDevicePushTokenRegistration({
+  currentDevicePushToken,
+  deviceId,
+  userId,
+}: {
+  currentDevicePushToken: CurrentDevicePushToken;
+  deviceId: string;
+  userId: string;
+}): CurrentDevicePushTokenRegistration {
+  return {
+    deviceId,
+    permissionStatus: "granted",
+    pushProvider: currentDevicePushToken.pushProvider,
+    pushToken: currentDevicePushToken.pushToken,
+    userId,
   };
 }
 
 /**
  * 현재 기기의 원격 푸시 토큰을 서버에 등록한다.
  */
-export async function registerCurrentDevicePushToken(
-  userId: string
-): Promise<void> {
-  const { deviceId, platform } = await ensureCurrentDevice(userId);
-  const currentDevicePushToken = await getCurrentDevicePushToken();
+export async function registerCurrentDevicePushToken({
+  currentDevicePushToken,
+  deviceId,
+  userId,
+}: RegisterCurrentDevicePushTokenInput): Promise<CurrentDevicePushTokenRegistration | null> {
+  const { deviceId: resolvedDeviceId, platform } = await ensureCurrentDevice({
+    deviceId,
+    userId,
+  });
+  const resolvedDevicePushToken =
+    currentDevicePushToken === undefined
+      ? await getCurrentDevicePushToken()
+      : currentDevicePushToken;
 
-  if (!currentDevicePushToken) {
-    return;
+  if (!resolvedDevicePushToken) {
+    return null;
   }
 
   await upsertDevicePushToken({
-    deviceId,
+    deviceId: resolvedDeviceId,
     lastRegisteredAt: new Date().toISOString(),
     platform,
-    pushProvider: currentDevicePushToken.pushProvider,
-    pushToken: currentDevicePushToken.pushToken,
+    pushProvider: resolvedDevicePushToken.pushProvider,
+    pushToken: resolvedDevicePushToken.pushToken,
+    userId,
+  });
+
+  return createCurrentDevicePushTokenRegistration({
+    currentDevicePushToken: resolvedDevicePushToken,
+    deviceId: resolvedDeviceId,
     userId,
   });
 }
