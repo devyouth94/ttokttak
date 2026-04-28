@@ -92,13 +92,14 @@ const styles = StyleSheet.create({
     width: 40,
   },
   title: {
+    color: colors.text,
+    fontSize: typography.size.title,
+    letterSpacing: typography.letterSpacing.tight,
+    lineHeight: typography.lineHeight.title,
     left: 0,
     position: "absolute",
     right: 0,
     textAlign: "center",
-    top: 16,
-    color: colors.text,
-    fontSize: typography.title,
-    lineHeight: 28,
+    top: 15,
   },
 });

@@ -7,7 +7,7 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { colors, typography } from "~/design-system/tokens";
+import { color, colors, typography } from "~/design-system/tokens";
 
 type AppTextVariant = "body" | "display" | "label" | "title";
 
@@ -42,22 +42,30 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
   },
   body: {
-    fontSize: typography.body,
-    lineHeight: 22,
+    fontSize: typography.size.body,
+    fontWeight: typography.fontWeight.regular,
+    letterSpacing: typography.letterSpacing.normal,
+    lineHeight: typography.lineHeight.body,
   },
   display: {
-    fontSize: typography.display,
-    letterSpacing: -0.6,
-    lineHeight: 36,
+    color: color.jetBlack,
+    fontSize: typography.size.display,
+    fontWeight: typography.fontWeight.semibold,
+    letterSpacing: typography.letterSpacing.display,
+    lineHeight: typography.lineHeight.display,
   },
   label: {
     color: colors.textMuted,
-    fontSize: typography.label,
-    letterSpacing: 0.4,
+    fontSize: typography.size.label,
+    fontWeight: typography.fontWeight.medium,
+    letterSpacing: typography.letterSpacing.label,
+    lineHeight: typography.lineHeight.label,
     textTransform: "uppercase",
   },
   title: {
-    fontSize: typography.title,
-    lineHeight: 28,
+    fontSize: typography.size.title,
+    fontWeight: typography.fontWeight.regular,
+    letterSpacing: typography.letterSpacing.tight,
+    lineHeight: typography.lineHeight.title,
   },
 });

@@ -2,7 +2,12 @@ import type { PropsWithChildren } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { Platform, StyleSheet, View } from "react-native";
 
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import {
+  borderRadius,
+  colors,
+  elevation,
+  spacing,
+} from "~/design-system/tokens";
 
 type AppCardProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
@@ -29,16 +34,13 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...Platform.select({
       android: {
-        elevation: 4,
+        elevation: elevation.floating.android,
       },
       ios: {
-        shadowColor: colors.shadow,
-        shadowOffset: {
-          width: 0,
-          height: 8,
-        },
-        shadowOpacity: 1,
-        shadowRadius: 20,
+        shadowColor: elevation.floating.shadowColor,
+        shadowOffset: elevation.floating.shadowOffset,
+        shadowOpacity: elevation.floating.shadowOpacity,
+        shadowRadius: elevation.floating.shadowRadius,
       },
       default: {},
     }),

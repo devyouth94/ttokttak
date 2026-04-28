@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format, startOfDay } from "date-fns";
 import {
   ArrowLeft,
-  Bell,
   Check,
   Plus,
   RotateCw,
@@ -31,6 +30,7 @@ import { createCompletionLog } from "~/features/recurring/repositories/completio
 import { useSession } from "~/features/session/session-provider";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
+import { HomeHeader } from "./home-header";
 import {
   buildHomeFeedSections,
   createHomeDateOptions,
@@ -464,39 +464,10 @@ export function HomeScreen(): React.JSX.Element {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View style={styles.headerCopy}>
-              <AppText style={styles.title} variant="title">
-                {"안녕하세요, "}
-                {profileName}
-                {"님"}
-              </AppText>
-            </View>
-
-            <View style={styles.headerAction}>
-              <Pressable
-                accessibilityHint="알림 화면으로 이동해요."
-                accessibilityLabel={
-                  hasUnreadNotification
-                    ? "새 알림 있음, 알림 열기"
-                    : "알림 열기"
-                }
-                accessibilityRole="button"
-                onPress={() => {
-                  router.push("/(tabs)/home/notifications");
-                }}
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  pressed && styles.iconButtonPressed,
-                ]}
-              >
-                <Bell color={colors.text} size={20} />
-                {hasUnreadNotification ? (
-                  <View style={styles.notificationUnreadDot} />
-                ) : null}
-              </Pressable>
-            </View>
-          </View>
+          <HomeHeader
+            hasUnreadNotification={hasUnreadNotification}
+            profileName={profileName}
+          />
 
           <View style={styles.carouselSection}>
             <ScrollView
@@ -715,41 +686,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
   },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    height: 60,
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  headerAction: {
-    alignItems: "flex-end",
-    position: "relative",
-    zIndex: 20,
-  },
-  headerCopy: {
-    flex: 1,
-  },
-  iconButton: {
-    alignItems: "center",
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  iconButtonPressed: {
-    opacity: 0.88,
-  },
-  notificationUnreadDot: {
-    backgroundColor: colors.primary,
-    borderColor: colors.background,
-    borderRadius: borderRadius.pill,
-    borderWidth: 2,
-    height: 10,
-    position: "absolute",
-    right: 11,
-    top: 11,
-    width: 10,
-  },
   primaryActionPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
@@ -775,12 +711,6 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     backgroundColor: colors.statusSkippedSoft,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 18,
-    lineHeight: 24,
-    textAlign: "left",
   },
   todayDot: {
     backgroundColor: colors.primary,
