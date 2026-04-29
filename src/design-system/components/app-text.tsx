@@ -9,7 +9,13 @@ import {
 
 import { color, colors, typography } from "~/design-system/tokens";
 
-type AppTextVariant = "body" | "caption" | "display" | "label" | "title";
+type AppTextVariant =
+  | "body"
+  | "body2"
+  | "caption"
+  | "display"
+  | "label"
+  | "title";
 
 type AppTextProps = PropsWithChildren<
   Pick<TextProps, "ellipsizeMode" | "numberOfLines"> & {
@@ -44,6 +50,12 @@ const styles = StyleSheet.create({
   body: {
     fontSize: typography.size.body,
     fontWeight: typography.fontWeight.regular,
+    letterSpacing: typography.letterSpacing.normal,
+    lineHeight: typography.lineHeight.body,
+  },
+  body2: {
+    fontSize: typography.size.body,
+    fontWeight: typography.fontWeight.semibold,
     letterSpacing: typography.letterSpacing.normal,
     lineHeight: typography.lineHeight.body,
   },
