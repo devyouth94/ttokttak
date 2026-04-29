@@ -4,7 +4,7 @@ import { Bell } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
 import { IconButton } from "~/design-system/components/icon-button";
-import { borderRadius, colors } from "~/design-system/tokens";
+import { borderRadius, color } from "~/design-system/tokens";
 
 type HomeHeaderProps = {
   hasUnreadNotification: boolean;
@@ -18,7 +18,12 @@ export function HomeHeader({
   return (
     <View style={styles.header}>
       <View style={styles.headerCopy}>
-        <AppText ellipsizeMode="tail" numberOfLines={2} variant="display">
+        <AppText
+          ellipsizeMode="tail"
+          numberOfLines={2}
+          style={styles.headerTitle}
+          variant="display"
+        >
           {"안녕하세요,\n"}
           {profileName}
           {"님!"}
@@ -31,7 +36,7 @@ export function HomeHeader({
           accessibilityLabel={
             hasUnreadNotification ? "새 알림 있음, 알림 열기" : "알림 열기"
           }
-          icon={<Bell color={colors.text} size={20} />}
+          icon={<Bell color={color.jetBlack} size={20} />}
           onPress={() => {
             router.push("/(tabs)/home/notifications");
           }}
@@ -61,9 +66,12 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
   },
+  headerTitle: {
+    color: color.jetBlack,
+  },
   notificationUnreadDot: {
-    backgroundColor: colors.primary,
-    borderColor: colors.background,
+    backgroundColor: color.oldFlax,
+    borderColor: color.white,
     borderRadius: borderRadius.pill,
     borderWidth: 2,
     height: 10,

@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.size.title,
-    fontWeight: typography.fontWeight.regular,
+    fontWeight: typography.fontWeight.medium,
     letterSpacing: typography.letterSpacing.tight,
     lineHeight: typography.lineHeight.title,
   },
