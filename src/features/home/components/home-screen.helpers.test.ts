@@ -165,8 +165,8 @@ describe("buildHomeFeedSections", () => {
     expect(sections[0]?.items[0]?.item.title).toBe("복용 체크");
   });
 
-  it("다가오는 일정은 최대 10개까지만 노출한다", () => {
-    const items = Array.from({ length: 12 }, (_, index) =>
+  it("다가오는 일정은 14일 안의 일정을 10개 제한 없이 노출한다", () => {
+    const items = Array.from({ length: 15 }, (_, index) =>
       createItem({
         id: `upcoming-item-${index + 1}`,
         startDateLocal: `2026-04-${String(index + 11).padStart(2, "0")}`,
@@ -186,9 +186,13 @@ describe("buildHomeFeedSections", () => {
       (section) => section.id === "upcoming"
     );
 
-    expect(upcomingSection?.items).toHaveLength(10);
+    expect(upcomingSection?.caption).toBe(
+      "홈에서는 앞으로 14일간의 일정만 보여요"
+    );
+    expect(upcomingSection?.items).toHaveLength(14);
     expect(upcomingSection?.items[0]?.item.title).toBe("다가오는 일정 1");
-    expect(upcomingSection?.items[9]?.item.title).toBe("다가오는 일정 10");
+    expect(upcomingSection?.items[0]?.metaLabel).toBe("내일");
+    expect(upcomingSection?.items[13]?.item.title).toBe("다가오는 일정 14");
   });
 
   it("놓친 일정 액션 대상에는 해당 카드 이전 overdue도 함께 포함한다", () => {

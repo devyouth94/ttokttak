@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     color: color.jetBlack,
   },
   notificationUnreadDot: {
-    backgroundColor: color.oldFlax,
+    backgroundColor: color.salmonOrange,
     borderColor: color.white,
     borderRadius: borderRadius.pill,
     borderWidth: 2,

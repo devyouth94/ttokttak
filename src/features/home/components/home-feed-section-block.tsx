@@ -1,7 +1,7 @@
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { color, spacing } from "~/design-system/tokens";
+import { borderRadius, color, spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 
 import { HomeFeedItemRow } from "./home-feed-item-row";
@@ -51,6 +51,13 @@ export function HomeFeedSectionBlock({
           {isLoading ? "-" : `${section.items.length}개`}
         </AppText>
       </View>
+      {section.caption ? (
+        <View style={styles.feedSectionCaption}>
+          <AppText style={textStyle} variant="caption">
+            {section.caption}
+          </AppText>
+        </View>
+      ) : null}
       {section.items.length > 0 && !isLoading ? (
         <View style={styles.feedItemList}>
           {section.items.map((card, index) => (
@@ -111,11 +118,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
   },
   feedSectionCard: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: borderRadius.lg,
+    borderTopRightRadius: borderRadius.lg,
     paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
+  feedSectionCaption: {
+    marginTop: spacing.xxs,
+    opacity: 0.72,
   },
   feedSectionHeader: {
     alignItems: "flex-start",
@@ -134,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     marginTop: spacing.sm,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   feedSectionSummaryCopy: {
     opacity: 0.72,

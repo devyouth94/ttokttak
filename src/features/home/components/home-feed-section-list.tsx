@@ -6,6 +6,8 @@ import type { CompletionAction } from "~/features/recurring/domain/types";
 import { HomeFeedSectionBlock } from "./home-feed-section-block";
 import type { HomeFeedCard, HomeFeedSection } from "./home-screen.helpers";
 
+const FEED_SECTION_STACK_OVERLAP = spacing.lg;
+
 type HomeFeedSectionListProps = {
   bottomNavReservedHeight: number;
   feedSections: HomeFeedSection[];
@@ -39,8 +41,9 @@ export function HomeFeedSectionList({
 
     return {
       minHeight:
-        segmentHeight + (isLastSection ? bottomNavReservedHeight : spacing.xl),
-      marginTop: isStackedSection ? -spacing.xl : 0,
+        segmentHeight +
+        (isLastSection ? bottomNavReservedHeight : FEED_SECTION_STACK_OVERLAP),
+      marginTop: isStackedSection ? -FEED_SECTION_STACK_OVERLAP : 0,
       paddingBottom: isLastSection ? bottomNavReservedHeight : undefined,
       zIndex: index + 1,
     };

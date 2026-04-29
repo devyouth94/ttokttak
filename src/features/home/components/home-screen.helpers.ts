@@ -24,13 +24,13 @@ import {
   formatLocalDateTitle,
   formatLocalTimeLabel,
 } from "~/features/recurring/utils/recurring-display";
+import { formatRelativeDateLabel } from "~/features/recurring/utils/relative-date-label";
 import type { ProfileRow } from "~/lib/database.types";
 
 export const HOME_DATE_RANGE_DAYS = 15;
 
 const OVERDUE_LOOKBACK_DAYS = 730;
 const UPCOMING_RANGE_DAYS = 14;
-const UPCOMING_LIMIT = 10;
 
 const weekdayLabelByValue = new Map<number, string>([
   [0, "일"],
@@ -61,6 +61,7 @@ export type HomeFeedCard = {
 };
 
 export type HomeFeedSection = {
+  caption?: string;
   emptyMessage: string;
   id: "overdue" | "selected-date" | "upcoming";
   items: HomeFeedCard[];
@@ -168,6 +169,7 @@ export function buildHomeFeedSections({
     },
     selectedSection,
     {
+      caption: "홈에서는 앞으로 14일간의 일정만 보여요",
       emptyMessage: "다가오는 일정은 없어요",
       id: "upcoming",
       items: buildUpcomingCards({
@@ -300,7 +302,7 @@ function buildUpcomingCards({
     sectionId: "upcoming",
     timezone,
     todayLocalDate,
-  }).slice(0, UPCOMING_LIMIT);
+  });
 }
 
 function buildScheduledCards({
@@ -383,12 +385,10 @@ function getMetaLabel(
   }
 
   if (sectionId === "upcoming") {
-    const daysUntil = differenceInCalendarDays(
-      parse(occurrence.localDate, "yyyy-MM-dd", new Date()),
-      parse(todayLocalDate, "yyyy-MM-dd", new Date())
-    );
-
-    return `${daysUntil}일 후`;
+    return formatRelativeDateLabel({
+      baseLocalDate: todayLocalDate,
+      targetLocalDate: occurrence.localDate,
+    });
   }
 
   const overdueDays = differenceInCalendarDays(
