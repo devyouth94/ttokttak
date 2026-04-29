@@ -305,25 +305,28 @@ Occurrence는 아래 입력을 기반으로 계산한다.
    호출은 Supabase JWT와 내부 secret header를 모두 통과해야 한다.
    내부 secret은 앱 클라이언트에 포함하지 않는다.
 4. worker가 `status in ('pending', 'retrying')` 이고 `deliver_at_utc <= now()` 인 job을 조회한다.
-5. 조회 시점의 활성 `device_push_tokens`를 읽는다.
-6. iOS + `apns` token은 APNs 직접 발송으로 보낸다.
-7. Android + `fcm` token은 FCM 직접 발송으로 보낸다.
+5. worker가 발송 직전 target item이 archived/missing인지 다시 확인한다.
+   target이 비활성 상태면 job을 `cancelled`로 바꾸고 provider 요청을 만들지 않는다.
+6. 조회 시점의 활성 `device_push_tokens`를 읽는다.
+7. iOS + `apns` token은 APNs 직접 발송으로 보낸다.
+8. Android + `fcm` token은 FCM 직접 발송으로 보낸다.
    payload에는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 포함한다.
-8. token별 결과를 `notification_delivery_attempts`에 남긴다.
-9. APNs / FCM 성공 응답 attempt가 1건 이상이면 inbox target을 검증한다.
+9. token별 결과를 `notification_delivery_attempts`에 남긴다.
+10. APNs / FCM 성공 응답 attempt가 1건 이상이면 inbox target을 검증한다.
    필수 target은 `user_id`, `item_id`, `item_scheduled_at_utc`, `notification_kind`, payload routing 값이다.
    target이 누락되었거나 payload routing 값이 job target과 다르면 inbox row를 만들지 않는다.
-10. target이 유효하면 즉시 `notification_inbox_items`를 upsert 한다.
+11. target이 유효하면 즉시 `notification_inbox_items`를 upsert 한다.
     upsert 기준은 `(user_id, item_id, item_scheduled_at_utc)`이다.
     같은 key가 이미 있으면 기존 row를 갱신하지 않고 operation log만 추가한다.
     발송 예정 job과 성공 attempt가 없는 `retrying` 또는 `failed` job은 inbox row를 만들지 않는다.
-11. job 요약 상태와 재시도 시각을 갱신한다.
-12. 무효 token은 `delivery-failed`로 비활성화한다.
+12. job 요약 상태와 재시도 시각을 갱신한다.
+13. 무효 token은 `delivery-failed`로 비활성화한다.
 
 ### Remote push security boundary
 
 - 앱 클라이언트는 `notification_delivery_jobs`와 `notification_delivery_attempts`를 직접 쓰지 않는다.
 - job 생성과 취소는 제한된 RPC가 `auth.uid()`, 반복 항목 소유자, 14일 동기화 범위, 허용 상태를 확인한 뒤 처리한다.
+- item 삭제는 제한된 RPC가 archive와 pending/retrying job 취소를 같은 DB 함수 안에서 처리한다.
 - worker만 발송 상태, 성공/실패 count, attempt log, inbox 생성, invalid token 비활성화를 처리한다.
 - worker 호출에는 `PUSH_DELIVERY_WORKER_SECRET`과 동일한 내부 secret header가 필요하다.
 - cron 호출용 anon key와 worker secret은 Supabase Vault에 두고 앱 번들에 넣지 않는다.

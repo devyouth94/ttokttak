@@ -89,6 +89,8 @@ type ProcessJobResult = {
   tokenCount: number;
 };
 
+type ReminderTargetState = "active" | "archived" | "missing";
+
 type NotificationInboxItemInsert = {
   body: string;
   delivered_at_utc: string;
@@ -698,6 +700,62 @@ async function listActivePushTokens(
   return data as DevicePushToken[];
 }
 
+async function getReminderTargetState(
+  job: NotificationDeliveryJob
+): Promise<ReminderTargetState> {
+  const { data, error } = await supabase
+    .from("recurring_items")
+    .select("is_archived")
+    .eq("id", job.item_id)
+    .eq("user_id", job.user_id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return "missing";
+  }
+
+  return data.is_archived ? "archived" : "active";
+}
+
+async function cancelInactiveReminderJob(
+  job: NotificationDeliveryJob,
+  attemptedAt: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("notification_delivery_jobs")
+    .update({
+      cancel_reason: "item-archived",
+      cancelled_at: attemptedAt,
+      completed_at: null,
+      next_retry_at: null,
+      status: "cancelled",
+    })
+    .eq("id", job.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function cancelJobIfInactiveReminderTarget(
+  job: NotificationDeliveryJob,
+  attemptedAt: string
+): Promise<boolean> {
+  const targetState = await getReminderTargetState(job);
+
+  if (targetState === "active") {
+    return false;
+  }
+
+  await cancelInactiveReminderJob(job, attemptedAt);
+
+  return true;
+}
+
 async function insertAttempts(attempts: AttemptResult[]): Promise<void> {
   if (attempts.length === 0) {
     return;
@@ -908,7 +966,25 @@ async function processJob(
     };
   }
 
+  if (await cancelJobIfInactiveReminderTarget(claimedJob, attemptedAt)) {
+    return {
+      attemptCounts: getEmptyAttemptCounts(),
+      jobId: claimedJob.id,
+      status: "cancelled",
+      tokenCount: 0,
+    };
+  }
+
   const tokens = await listActivePushTokens(claimedJob.user_id);
+
+  if (await cancelJobIfInactiveReminderTarget(claimedJob, attemptedAt)) {
+    return {
+      attemptCounts: getEmptyAttemptCounts(),
+      jobId: claimedJob.id,
+      status: "cancelled",
+      tokenCount: 0,
+    };
+  }
 
   if (tokens.length === 0) {
     const nextStatus = await updateJobSummary({

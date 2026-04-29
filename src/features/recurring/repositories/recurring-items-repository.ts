@@ -391,14 +391,11 @@ export async function updateRecurringItem(
 export async function archiveRecurringItem({
   client,
   id,
-  userId,
 }: ArchiveRecurringItemOptions): Promise<void> {
   const supabase = getRepositoryClient(client);
-  const { error } = await supabase
-    .from("recurring_items")
-    .update({ is_archived: true })
-    .eq("id", id)
-    .eq("user_id", userId);
+  const { error } = await supabase.rpc("archive_recurring_item", {
+    p_item_id: id,
+  });
 
   if (error) {
     throw error;

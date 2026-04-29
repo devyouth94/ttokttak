@@ -540,6 +540,12 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      archive_recurring_item: {
+        Args: {
+          p_item_id: string;
+        };
+        Returns: undefined;
+      };
       cancel_notification_delivery_jobs: {
         Args: {
           p_cancel_reason: string;

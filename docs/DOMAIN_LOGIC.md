@@ -424,7 +424,7 @@ MVP 확정 정책:
 ### deleteItem(itemId)
 
 1. 사용자 액션은 delete로 보이되, 현재 스키마 기준 내부 상태는 `is_archived = true`로 반영
-2. future notification 취소
+2. archive와 pending/retrying notification job 취소는 서버 RPC에서 함께 처리
 3. 홈, 목록, 캘린더에서 제외
 
 전제조건:
@@ -439,6 +439,7 @@ MVP 확정 정책:
 후속 액션:
 
 - 미래 occurrence와 관련된 서버 발송 job을 취소한다.
+- worker는 발송 직전 archived/missing item을 다시 확인하고 provider 요청 없이 job을 취소한다.
 - 홈, 목록, 캘린더에서 archive 반영 후 서버 기준 최신 상태를 다시 반영한다.
 
 ## 14. Notification Delivery Logic
