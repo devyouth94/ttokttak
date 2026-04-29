@@ -1,15 +1,13 @@
-import { differenceInCalendarDays, parse } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { getNextOccurrence } from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
-  RecurrenceType,
   RecurringItem,
 } from "~/features/recurring/domain/types";
-import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
 import { getRecurrenceLabel } from "~/features/recurring/utils/recurring-display";
+import { formatRelativeDateLabelFromUtc } from "~/features/recurring/utils/relative-date-label";
 
 export type ReminderListEntry = {
   id: string;
@@ -47,7 +45,6 @@ export function buildReminderListEntries({
         timezone,
         completionLogs
       );
-      const currentSchedule = getCurrentScheduleVersion(item);
 
       return {
         id: item.id,
@@ -56,8 +53,7 @@ export function buildReminderListEntries({
           ? formatReminderListNextOccurrenceLabel(
               nextOccurrence.scheduledAtUtc,
               now,
-              timezone,
-              currentSchedule?.recurrenceType ?? item.recurrenceType
+              timezone
             )
           : "예정 없음",
         nextScheduledAtUtc: nextOccurrence?.scheduledAtUtc ?? null,
@@ -71,35 +67,18 @@ export function buildReminderListEntries({
 export function formatReminderListNextOccurrenceLabel(
   scheduledAtUtc: string,
   now: Date,
-  timezone: string,
-  recurrenceType: RecurrenceType
+  timezone: string
 ): string {
-  const scheduledLocalDate = formatInTimeZone(
+  const dateLabel = formatRelativeDateLabelFromUtc({
+    now,
     scheduledAtUtc,
     timezone,
-    "yyyy-MM-dd"
-  );
-  const nowLocalDate = formatInTimeZone(now, timezone, "yyyy-MM-dd");
-  const dayDiff = differenceInCalendarDays(
-    parse(scheduledLocalDate, "yyyy-MM-dd", new Date()),
-    parse(nowLocalDate, "yyyy-MM-dd", new Date())
-  );
+  });
   const timeLabel = formatInTimeZone(scheduledAtUtc, timezone, "a h:mm", {
     locale: ko,
   });
 
-  const dateTimeLabel =
-    dayDiff === 0
-      ? `오늘 ${timeLabel}`
-      : `${formatInTimeZone(scheduledAtUtc, timezone, "M월 d일", {
-          locale: ko,
-        })} ${timeLabel}`;
-
-  if (recurrenceType !== "once") {
-    return `다음 일정 ${dateTimeLabel}`;
-  }
-
-  return dateTimeLabel;
+  return `${dateLabel} ${timeLabel}`;
 }
 
 function compareReminderListEntries(

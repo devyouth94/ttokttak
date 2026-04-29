@@ -74,6 +74,10 @@ export function AppStateView({
   );
 }
 
+/**
+ * @deprecated 기존 화면의 로딩 상태를 유지하기 위한 레거시 placeholder다.
+ * 리디자인 화면에서는 사용하지 말고 화면 구조에 맞는 전용 placeholder를 만든다.
+ */
 export function AppStatePlaceholder({
   rowCount = 3,
   showHeader = false,
