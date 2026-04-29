@@ -425,7 +425,7 @@ export function useRecurringItemFormScreenController({
       return;
     }
 
-    Alert.alert("리마인더 삭제", "이 리마인더를 삭제할까요?", [
+    Alert.alert("일정 삭제", "이 일정을 삭제할까요?", [
       {
         style: "cancel",
         text: "취소",

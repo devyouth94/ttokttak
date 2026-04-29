@@ -69,7 +69,7 @@ function NotificationInboxRow({
       accessibilityHint={
         isSelectionMode
           ? "선택 상태를 바꿔요."
-          : "알림과 연결된 리마인더 상세 화면으로 이동해요."
+          : "알림과 연결된 일정 상세 화면으로 이동해요."
       }
       accessibilityLabel={
         isSelectionMode
@@ -366,7 +366,7 @@ export default function HomeNotificationsPage(): React.JSX.Element {
     }
 
     if (item.isItemArchived) {
-      Alert.alert("삭제된 리마인더예요.");
+      Alert.alert("삭제된 일정이에요.");
       return;
     }
 

@@ -77,7 +77,7 @@ async function ensureAndroidReminderNotificationChannel(): Promise<void> {
     {
       enableVibrate: true,
       importance: Notifications.AndroidImportance.HIGH,
-      name: "리마인더",
+      name: "일정 알림",
       showBadge: true,
       vibrationPattern: [0, 250, 250, 250],
     }

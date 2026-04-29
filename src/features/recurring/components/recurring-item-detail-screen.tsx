@@ -200,7 +200,7 @@ function DetailErrorCard({
         }}
         description={message}
         style={styles.errorState}
-        title="리마인더를 불러오지 못했어요"
+        title="일정을 불러오지 못했어요"
       />
     </AppCard>
   );
@@ -267,9 +267,9 @@ function DetailNotFoundCard(): React.JSX.Element {
             router.replace("/");
           },
         }}
-        description="이미 삭제되었거나 접근할 수 없는 리마인더예요."
+        description="이미 삭제되었거나 접근할 수 없는 일정이에요."
         style={styles.emptyCard}
-        title="리마인더를 찾을 수 없어요"
+        title="일정을 찾을 수 없어요"
       />
     </AppCard>
   );
@@ -372,7 +372,7 @@ function DetailActionBar({
         <View style={styles.actionRow}>
           <Pressable
             accessibilityHint="대표 처리 대상 일정을 완료 처리해요."
-            accessibilityLabel="리마인더 완료"
+            accessibilityLabel="일정 완료"
             accessibilityRole="button"
             disabled={disabled}
             onPress={() => {
@@ -450,7 +450,7 @@ export function RecurringItemDetailScreen({
     itemQuery.isPending ||
     (Boolean(itemQuery.data) && completionLogsQuery.isPending);
   const queryErrorMessage = !itemId
-    ? "리마인더 경로를 확인할 수 없어요."
+    ? "일정 경로를 확인할 수 없어요."
     : itemQuery.error
       ? getErrorMessage(itemQuery.error)
       : completionLogsQuery.error
@@ -634,7 +634,7 @@ export function RecurringItemDetailScreen({
       return;
     }
 
-    Alert.alert("리마인더 삭제", "이 리마인더를 삭제할까요?", [
+    Alert.alert("일정 삭제", "이 일정을 삭제할까요?", [
       {
         style: "cancel",
         text: "취소",
@@ -661,8 +661,8 @@ export function RecurringItemDetailScreen({
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <Pressable
-                    accessibilityHint="리마인더 관리 메뉴를 열어요."
-                    accessibilityLabel="리마인더 관리"
+                    accessibilityHint="일정 관리 메뉴를 열어요."
+                    accessibilityLabel="일정 관리"
                     accessibilityRole="button"
                     disabled={isMutating}
                     hitSlop={8}
@@ -697,7 +697,7 @@ export function RecurringItemDetailScreen({
                     style={styles.managementMenuContent}
                   >
                     <DropdownMenu.Item
-                      accessibilityHint="현재 리마인더 수정 화면으로 이동해요."
+                      accessibilityHint="현재 일정 수정 화면으로 이동해요."
                       style={styles.managementMenuItem}
                       onPress={handleEdit}
                     >
@@ -705,7 +705,7 @@ export function RecurringItemDetailScreen({
                     </DropdownMenu.Item>
 
                     <DropdownMenu.Item
-                      accessibilityHint="현재 리마인더를 삭제해요."
+                      accessibilityHint="현재 일정을 삭제해요."
                       style={styles.managementMenuItem}
                       onPress={handleDelete}
                     >
@@ -718,7 +718,7 @@ export function RecurringItemDetailScreen({
               </DropdownMenu.Root>
             ) : undefined
           }
-          title="리마인더 상세"
+          title="일정 상세"
         />
 
         {isLoading ? (

@@ -67,7 +67,7 @@ function showNotificationPermissionPrompt(
 ): void {
   Alert.alert(
     "알림을 켤까요?",
-    "리마인더 시간에 맞춰 알려드리려면 알림 권한이 필요해요.",
+    "정해둔 시간에 알려드리려면 알림 권한이 필요해요.",
     [
       {
         style: "cancel",

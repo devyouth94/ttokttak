@@ -295,8 +295,8 @@ export function RecurringItemFormScreenContent({
 
             {view.isEditMode ? (
               <Pressable
-                accessibilityHint="이 리마인더를 삭제합니다."
-                accessibilityLabel="리마인더 삭제"
+                accessibilityHint="이 일정을 삭제합니다."
+                accessibilityLabel="일정 삭제"
                 accessibilityRole="button"
                 disabled={view.isDeleting || view.isSaving}
                 onPress={actions.screen.onDelete}
@@ -328,7 +328,7 @@ function SaveButtonContent({
   isEditMode,
   isSaving,
 }: SaveButtonContentProps): React.JSX.Element {
-  const buttonLabel = isEditMode ? "변경 저장" : "리마인더 저장";
+  const buttonLabel = isEditMode ? "변경 저장" : "일정 저장";
 
   if (isSaving) {
     return <ActivityIndicator color={colors.primaryForeground} />;

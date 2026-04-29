@@ -121,7 +121,7 @@ export function formatLocalTimeForDisplay(localTime: string): string {
 }
 
 export function getRecurringItemFormScreenTitle(isEditMode: boolean): string {
-  return isEditMode ? "리마인더 수정" : "리마인더 추가";
+  return isEditMode ? "일정 수정" : "일정 추가";
 }
 
 export function getRecurringItemFormDisplayValues(formState: {

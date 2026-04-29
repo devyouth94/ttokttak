@@ -224,7 +224,7 @@ describe("recurring item detail helpers", () => {
     ).toBe(true);
   });
 
-  it("한 번 리마인더는 상세 상태 카드를 숨긴다", () => {
+  it("한 번 일정은 상세 상태 카드를 숨긴다", () => {
     expect(
       shouldShowDetailStatusCard(
         createItem({
@@ -234,7 +234,7 @@ describe("recurring item detail helpers", () => {
     ).toBe(false);
   });
 
-  it("반복 리마인더는 상세 상태 카드를 노출한다", () => {
+  it("반복 일정은 상세 상태 카드를 노출한다", () => {
     expect(shouldShowDetailStatusCard(createItem())).toBe(true);
   });
 

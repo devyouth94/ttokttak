@@ -1,7 +1,7 @@
 import { archiveRecurringItem } from "~/features/recurring/repositories/recurring-items-repository";
 
 describe("recurring items repository", () => {
-  it("리마인더 삭제는 archive와 pending job 취소를 묶은 RPC로 처리한다", async () => {
+  it("일정 삭제는 archive와 pending job 취소를 묶은 RPC로 처리한다", async () => {
     const rpc = jest.fn().mockResolvedValue({
       data: null,
       error: null,

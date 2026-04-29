@@ -79,8 +79,8 @@ export function MainBottomNav(): React.JSX.Element {
         ))}
       </View>
       <Pressable
-        accessibilityHint="리마인더 만들기 화면으로 이동해요."
-        accessibilityLabel="리마인더 추가"
+        accessibilityHint="일정 만들기 화면으로 이동해요."
+        accessibilityLabel="일정 추가"
         accessibilityRole="button"
         onPress={() => {
           router.push({
