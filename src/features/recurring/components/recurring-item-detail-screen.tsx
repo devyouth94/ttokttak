@@ -21,7 +21,7 @@ import {
   AppStateView,
 } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
+import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
 import {
   borderRadius,
   colors,
@@ -652,7 +652,7 @@ export function RecurringItemDetailScreen({
   return (
     <AppScreen contentStyle={styles.screenContent}>
       <View style={styles.screenRoot}>
-        <ScreenHeader
+        <LegacyScreenHeader
           onBack={() => {
             router.back();
           }}

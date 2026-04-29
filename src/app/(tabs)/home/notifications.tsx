@@ -19,7 +19,7 @@ import {
   AppStateView,
 } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
+import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
 import {
   borderRadius,
   colors,
@@ -467,7 +467,7 @@ export default function HomeNotificationsPage(): React.JSX.Element {
 
   return (
     <AppScreen contentStyle={styles.screenContent}>
-      <ScreenHeader
+      <LegacyScreenHeader
         onBack={() => {
           router.back();
         }}

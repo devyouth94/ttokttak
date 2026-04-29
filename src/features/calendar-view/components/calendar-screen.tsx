@@ -11,7 +11,7 @@ import {
   AppStateView,
 } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
+import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
 import {
   borderRadius,
   colors,
@@ -250,7 +250,7 @@ export function CalendarScreen(): React.JSX.Element {
 
   return (
     <AppScreen>
-      <ScreenHeader
+      <LegacyScreenHeader
         rightSlot={
           showsTodayButton ? (
             <Pressable

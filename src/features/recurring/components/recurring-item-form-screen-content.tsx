@@ -18,7 +18,7 @@ import {
 } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
+import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
 import { colors } from "~/design-system/tokens";
 
 import { type RecurringItemFormScreenContentProps } from "./recurring-item-form-screen.contracts";
@@ -105,7 +105,10 @@ export function RecurringItemFormScreenContent({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardAvoidingView}
       >
-        <ScreenHeader onBack={actions.screen.onBack} title={screenTitle} />
+        <LegacyScreenHeader
+          onBack={actions.screen.onBack}
+          title={screenTitle}
+        />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}

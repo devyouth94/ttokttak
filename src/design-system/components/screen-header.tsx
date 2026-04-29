@@ -1,105 +1,70 @@
 import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
-import { Pressable, StyleSheet, View } from "react-native";
-import { ChevronLeft } from "lucide-react-native";
+import { StyleSheet, View } from "react-native";
 
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
+import { color, spacing } from "~/design-system/tokens";
 
 import { AppText } from "./app-text";
 
 type ScreenHeaderProps = {
-  leftSlot?: ReactNode;
-  onBack?: () => void;
+  onHeightChange?: (height: number) => void;
   rightSlot?: ReactNode;
   style?: StyleProp<ViewStyle>;
   title: string;
+  titleColor?: string;
 };
 
 export function ScreenHeader({
-  leftSlot,
-  onBack,
+  onHeightChange,
   rightSlot,
   style,
   title,
+  titleColor = color.jetBlack,
 }: ScreenHeaderProps): React.JSX.Element {
   return (
-    <View style={[styles.header, style]}>
-      <View style={styles.slot}>
-        {leftSlot ??
-          (onBack ? (
-            <Pressable
-              accessibilityHint="이전 화면으로 돌아갑니다."
-              accessibilityLabel="뒤로 가기"
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={onBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <ChevronLeft color={colors.text} size={22} />
-            </Pressable>
-          ) : (
-            <View style={styles.spacer} />
-          ))}
+    <View
+      onLayout={({ nativeEvent }) => {
+        onHeightChange?.(nativeEvent.layout.height);
+      }}
+      style={[styles.header, style]}
+    >
+      <View style={styles.copy}>
+        <AppText
+          ellipsizeMode="tail"
+          numberOfLines={2}
+          style={[styles.title, { color: titleColor }]}
+          variant="display"
+        >
+          {title}
+        </AppText>
       </View>
 
-      <AppText style={styles.title} variant="title">
-        {title}
-      </AppText>
-
-      <View style={styles.slot}>
-        {rightSlot ?? <View style={styles.spacer} />}
-      </View>
+      {rightSlot ? <View style={styles.rightSlot}>{rightSlot}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  backButtonPressed: {
-    opacity: 0.88,
+  copy: {
+    flex: 1,
+    minWidth: 0,
   },
   header: {
-    alignItems: "center",
-    borderBottomColor: colors.outlineSoft,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    alignItems: "flex-start",
+    backgroundColor: color.white,
     flexDirection: "row",
-    height: 60,
     justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    width: "100%",
   },
-  slot: {
-    alignItems: "center",
-    height: 40,
-    justifyContent: "center",
-    minWidth: 40,
-    zIndex: 1,
-  },
-  spacer: {
-    width: 40,
+  rightSlot: {
+    alignItems: "flex-end",
+    position: "relative",
+    zIndex: 20,
   },
   title: {
-    color: colors.text,
-    fontSize: typography.size.title,
-    letterSpacing: typography.letterSpacing.tight,
-    lineHeight: typography.lineHeight.title,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    textAlign: "center",
-    top: 15,
+    color: color.jetBlack,
   },
 });

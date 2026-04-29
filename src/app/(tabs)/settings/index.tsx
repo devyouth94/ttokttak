@@ -15,7 +15,7 @@ import { ExternalLink, LogOut } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
+import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
 import {
   borderRadius,
   colors,
@@ -197,7 +197,7 @@ export default function SettingsTabPage(): React.JSX.Element {
 
   return (
     <AppScreen>
-      <ScreenHeader title="설정" />
+      <LegacyScreenHeader title="설정" />
 
       <ScrollView
         bounces={false}
