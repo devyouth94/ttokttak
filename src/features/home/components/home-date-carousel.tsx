@@ -31,6 +31,11 @@ export function HomeDateCarousel({
     });
   }, []);
 
+  const selectToday = (): void => {
+    onSelectDate(todayOption.id);
+    scrollDateOptionsToStart();
+  };
+
   useEffect(() => {
     if (selectedDateId === selectedDateOption.id) {
       return;
@@ -50,11 +55,6 @@ export function HomeDateCarousel({
     selectedDateOption.id,
     selectedDateOption.isToday,
   ]);
-
-  const selectToday = (): void => {
-    onSelectDate(todayOption.id);
-    scrollDateOptionsToStart();
-  };
 
   return (
     <View style={styles.carouselSection}>

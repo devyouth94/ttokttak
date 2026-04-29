@@ -75,6 +75,36 @@ type BuildHomeFeedSectionsOptions = {
   timezone: string;
 };
 
+type UtcDayRange = {
+  endUtc: string;
+  startUtc: string;
+};
+
+type BuildSectionCardsOptions = {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  nowUtc: string;
+  range: UtcDayRange;
+  sectionId: HomeFeedSection["id"];
+  timezone: string;
+  todayLocalDate: string;
+};
+
+type BuildSelectedDateSectionOptions = Omit<
+  BuildSectionCardsOptions,
+  "range" | "sectionId"
+> & {
+  selectedDateTitle: string;
+  selectedRange: UtcDayRange;
+};
+
+type BuildRelativeCardsOptions = Omit<
+  BuildSectionCardsOptions,
+  "range" | "sectionId"
+> & {
+  today: Date;
+};
+
 export function getProfileName(profile: ProfileRow | null): string {
   return profile?.display_name?.trim() || "사용자";
 }
@@ -108,114 +138,46 @@ export function buildHomeFeedSections({
   const selectedDateTitle = getSelectedDateTitle(selectedDateId, today);
   const nowUtc = now.toISOString();
   const selectedRange = getUtcDayRange(selectedDateId, timezone);
-  const selectedItems = items
-    .flatMap((item) =>
-      getOccurrencesInRange(
-        item,
-        selectedRange.startUtc,
-        selectedRange.endUtc,
-        timezone,
-        completionLogs,
-        nowUtc
-      )
-        .filter((occurrence) => occurrence.status === "scheduled")
-        .map((occurrence) =>
-          toHomeFeedCard(item, occurrence, "selected-date", todayLocalDate)
-        )
-    )
-    .sort(compareByScheduledAtUtcAsc);
-
-  const selectedSection: HomeFeedSection = {
-    emptyMessage:
-      selectedDateTitle === "오늘"
-        ? "오늘은 비어 있어요"
-        : `${selectedDateTitle}은 비어 있어요`,
-    id: "selected-date",
-    items: selectedItems,
-    title: selectedDateTitle,
-  };
+  const selectedSection = buildSelectedDateSection({
+    completionLogs,
+    items,
+    nowUtc,
+    selectedDateTitle,
+    selectedRange,
+    timezone,
+    todayLocalDate,
+  });
 
   if (selectedDateId !== todayLocalDate) {
     return [selectedSection];
   }
 
-  const overdueStartLocalDate = format(
-    addDays(today, -OVERDUE_LOOKBACK_DAYS),
-    "yyyy-MM-dd"
-  );
-  const overdueStartUtc = getUtcDayRange(
-    overdueStartLocalDate,
-    timezone
-  ).startUtc;
-  const overdueItems = items
-    .flatMap((item) => {
-      const latestOverdueOccurrence = getOccurrencesInRange(
-        item,
-        overdueStartUtc,
-        nowUtc,
-        timezone,
-        completionLogs,
-        nowUtc
-      )
-        .filter((occurrence) => occurrence.status === "overdue")
-        .sort(compareOccurrenceByScheduledAtUtcDesc)[0];
-
-      return latestOverdueOccurrence
-        ? [
-            toHomeFeedCard(
-              item,
-              latestOverdueOccurrence,
-              "overdue",
-              todayLocalDate
-            ),
-          ]
-        : [];
-    })
-    .sort(compareByScheduledAtUtcDesc);
-
-  const upcomingStartLocalDate = format(addDays(today, 1), "yyyy-MM-dd");
-  const upcomingEndLocalDate = format(
-    addDays(today, UPCOMING_RANGE_DAYS),
-    "yyyy-MM-dd"
-  );
-  const upcomingRangeStartUtc = getUtcDayRange(
-    upcomingStartLocalDate,
-    timezone
-  ).startUtc;
-  const upcomingRangeEndUtc = getUtcDayRange(
-    upcomingEndLocalDate,
-    timezone
-  ).endUtc;
-  const upcomingItems = items
-    .flatMap((item) =>
-      getOccurrencesInRange(
-        item,
-        upcomingRangeStartUtc,
-        upcomingRangeEndUtc,
-        timezone,
-        completionLogs,
-        nowUtc
-      )
-        .filter((occurrence) => occurrence.status === "scheduled")
-        .map((occurrence) =>
-          toHomeFeedCard(item, occurrence, "upcoming", todayLocalDate)
-        )
-    )
-    .sort(compareByScheduledAtUtcAsc)
-    .slice(0, UPCOMING_LIMIT);
-
   return [
     {
       emptyMessage: "놓친 일정은 없어요",
       id: "overdue",
-      items: overdueItems,
+      items: buildOverdueCards({
+        completionLogs,
+        items,
+        nowUtc,
+        today,
+        timezone,
+        todayLocalDate,
+      }),
       title: "놓친 일정",
     },
     selectedSection,
     {
       emptyMessage: "다가오는 일정은 없어요",
       id: "upcoming",
-      items: upcomingItems,
+      items: buildUpcomingCards({
+        completionLogs,
+        items,
+        nowUtc,
+        today,
+        timezone,
+        todayLocalDate,
+      }),
       title: "다가오는 일정",
     },
   ];
@@ -241,6 +203,133 @@ export function getOverdueOccurrencesToResolve({
   });
 }
 
+function buildSelectedDateSection({
+  completionLogs,
+  items,
+  nowUtc,
+  selectedDateTitle,
+  selectedRange,
+  timezone,
+  todayLocalDate,
+}: BuildSelectedDateSectionOptions): HomeFeedSection {
+  return {
+    emptyMessage:
+      selectedDateTitle === "오늘"
+        ? "오늘은 비어 있어요"
+        : `${selectedDateTitle}은 비어 있어요`,
+    id: "selected-date",
+    items: buildScheduledCards({
+      completionLogs,
+      items,
+      nowUtc,
+      range: selectedRange,
+      sectionId: "selected-date",
+      timezone,
+      todayLocalDate,
+    }),
+    title: selectedDateTitle,
+  };
+}
+
+function buildOverdueCards({
+  completionLogs,
+  items,
+  nowUtc,
+  today,
+  timezone,
+  todayLocalDate,
+}: BuildRelativeCardsOptions): HomeFeedCard[] {
+  const overdueStartLocalDate = format(
+    addDays(today, -OVERDUE_LOOKBACK_DAYS),
+    "yyyy-MM-dd"
+  );
+  const overdueStartUtc = getUtcDayRange(
+    overdueStartLocalDate,
+    timezone
+  ).startUtc;
+
+  return items
+    .flatMap((item) => {
+      const latestOverdueOccurrence = getOccurrencesInRange(
+        item,
+        overdueStartUtc,
+        nowUtc,
+        timezone,
+        completionLogs,
+        nowUtc
+      )
+        .filter((occurrence) => occurrence.status === "overdue")
+        .sort(compareOccurrenceByScheduledAtUtcDesc)[0];
+
+      return latestOverdueOccurrence
+        ? [
+            toHomeFeedCard(
+              item,
+              latestOverdueOccurrence,
+              "overdue",
+              todayLocalDate
+            ),
+          ]
+        : [];
+    })
+    .sort(compareByScheduledAtUtcDesc);
+}
+
+function buildUpcomingCards({
+  completionLogs,
+  items,
+  nowUtc,
+  today,
+  timezone,
+  todayLocalDate,
+}: BuildRelativeCardsOptions): HomeFeedCard[] {
+  const upcomingStartLocalDate = format(addDays(today, 1), "yyyy-MM-dd");
+  const upcomingEndLocalDate = format(
+    addDays(today, UPCOMING_RANGE_DAYS),
+    "yyyy-MM-dd"
+  );
+
+  return buildScheduledCards({
+    completionLogs,
+    items,
+    nowUtc,
+    range: {
+      endUtc: getUtcDayRange(upcomingEndLocalDate, timezone).endUtc,
+      startUtc: getUtcDayRange(upcomingStartLocalDate, timezone).startUtc,
+    },
+    sectionId: "upcoming",
+    timezone,
+    todayLocalDate,
+  }).slice(0, UPCOMING_LIMIT);
+}
+
+function buildScheduledCards({
+  completionLogs,
+  items,
+  nowUtc,
+  range,
+  sectionId,
+  timezone,
+  todayLocalDate,
+}: BuildSectionCardsOptions): HomeFeedCard[] {
+  return items
+    .flatMap((item) =>
+      getOccurrencesInRange(
+        item,
+        range.startUtc,
+        range.endUtc,
+        timezone,
+        completionLogs,
+        nowUtc
+      )
+        .filter((occurrence) => occurrence.status === "scheduled")
+        .map((occurrence) =>
+          toHomeFeedCard(item, occurrence, sectionId, todayLocalDate)
+        )
+    )
+    .sort(compareByScheduledAtUtcAsc);
+}
+
 function getSelectedDateTitle(selectedDateId: string, today: Date): string {
   const selectedDate = parse(selectedDateId, "yyyy-MM-dd", new Date());
 
@@ -251,10 +340,7 @@ function getSelectedDateTitle(selectedDateId: string, today: Date): string {
   return formatLocalDateTitle(selectedDateId);
 }
 
-function getUtcDayRange(
-  localDate: string,
-  timezone: string
-): { endUtc: string; startUtc: string } {
+function getUtcDayRange(localDate: string, timezone: string): UtcDayRange {
   return {
     endUtc: fromZonedTime(`${localDate}T23:59:59.999`, timezone).toISOString(),
     startUtc: fromZonedTime(
@@ -270,9 +356,7 @@ function toHomeFeedCard(
   sectionId: HomeFeedSection["id"],
   todayLocalDate: string
 ): HomeFeedCard {
-  const currentSchedule = getCurrentScheduleVersion(item);
-  const reminderTimeLocal =
-    currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
+  const reminderTimeLocal = getReminderTimeLocal(item);
 
   return {
     id: getOccurrenceIdentity(item.id, occurrence.scheduledAtUtc),
@@ -282,7 +366,9 @@ function toHomeFeedCard(
     recurrenceLabel: getRecurrenceLabel(item),
     sectionId,
     timeLabel:
-      sectionId === "selected-date" ? null : getTimeLabel(reminderTimeLocal),
+      sectionId === "selected-date"
+        ? null
+        : formatLocalTimeLabel(reminderTimeLocal),
   };
 }
 
@@ -292,12 +378,8 @@ function getMetaLabel(
   occurrence: DerivedOccurrence,
   todayLocalDate: string
 ): string {
-  const currentSchedule = getCurrentScheduleVersion(item);
-  const reminderTimeLocal =
-    currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
-
   if (sectionId === "selected-date") {
-    return getTimeLabel(reminderTimeLocal);
+    return formatLocalTimeLabel(getReminderTimeLocal(item));
   }
 
   if (sectionId === "upcoming") {
@@ -317,8 +399,10 @@ function getMetaLabel(
   return overdueDays === 0 ? "오늘 지남" : `${overdueDays}일 지남`;
 }
 
-function getTimeLabel(localTime: string): string {
-  return formatLocalTimeLabel(localTime);
+function getReminderTimeLocal(item: RecurringItem): string {
+  const currentSchedule = getCurrentScheduleVersion(item);
+
+  return currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
 }
 
 function getRecurrenceLabel(item: RecurringItem): string {
