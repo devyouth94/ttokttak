@@ -131,7 +131,11 @@ function openHomeFeedCard(card: HomeFeedCard): void {
 }
 
 function getFeedItemMetaLine(card: HomeFeedCard): string {
-  return [card.metaLabel, card.timeLabel, card.recurrenceLabel]
+  const scheduledDateTimeLabel = [card.metaLabel, card.timeLabel]
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
+
+  return [scheduledDateTimeLabel, card.recurrenceLabel]
     .filter((value): value is string => Boolean(value))
     .join(" · ");
 }

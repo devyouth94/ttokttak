@@ -16,10 +16,10 @@ const sortOptions: {
   label: string;
   value: ReminderListSortMode;
 }[] = [
-  { label: "최근 생성순", value: "createdDesc" },
   { label: "제목순", value: "titleAsc" },
-  { label: "다음 예정일 빠른순", value: "nextAsc" },
+  { label: "생성순", value: "createdDesc" },
 ];
+const SORT_MENU_CONTAINER_PADDING = 4;
 
 export function ReminderListSortControl({
   onChange,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.smokyWhite,
     borderRadius: borderRadius.lg,
     minWidth: 180,
-    padding: spacing.xs,
+    padding: SORT_MENU_CONTAINER_PADDING,
   },
   sortMenuIndicator: {
     alignItems: "center",

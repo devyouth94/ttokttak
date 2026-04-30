@@ -7,20 +7,19 @@ import type {
   RecurringItem,
 } from "~/features/recurring/domain/types";
 import { getRecurrenceLabel } from "~/features/recurring/utils/recurring-display";
-import { formatRelativeDateLabelFromUtc } from "~/features/recurring/utils/relative-date-label";
 
 export type ReminderListEntry = {
   id: string;
   item: RecurringItem;
-  nextOccurrenceLabel: string;
+  nextOccurrenceTimeLabel: string;
   nextScheduledAtUtc: string | null;
   recurrenceLabel: string;
   title: string;
 };
 
-export type ReminderListSortMode = "createdDesc" | "titleAsc" | "nextAsc";
+export type ReminderListSortMode = "createdDesc" | "titleAsc";
 
-export const DEFAULT_REMINDER_LIST_SORT_MODE: ReminderListSortMode = "nextAsc";
+export const DEFAULT_REMINDER_LIST_SORT_MODE: ReminderListSortMode = "titleAsc";
 
 export function buildReminderListEntries({
   completionLogs,
@@ -49,10 +48,9 @@ export function buildReminderListEntries({
       return {
         id: item.id,
         item,
-        nextOccurrenceLabel: nextOccurrence
-          ? formatReminderListNextOccurrenceLabel(
+        nextOccurrenceTimeLabel: nextOccurrence
+          ? formatReminderListNextOccurrenceTimeLabel(
               nextOccurrence.scheduledAtUtc,
-              now,
               timezone
             )
           : "예정 없음",
@@ -64,21 +62,13 @@ export function buildReminderListEntries({
     .sort((left, right) => compareReminderListEntries(left, right, sortMode));
 }
 
-export function formatReminderListNextOccurrenceLabel(
+export function formatReminderListNextOccurrenceTimeLabel(
   scheduledAtUtc: string,
-  now: Date,
   timezone: string
 ): string {
-  const dateLabel = formatRelativeDateLabelFromUtc({
-    now,
-    scheduledAtUtc,
-    timezone,
-  });
-  const timeLabel = formatInTimeZone(scheduledAtUtc, timezone, "a h:mm", {
+  return formatInTimeZone(scheduledAtUtc, timezone, "a h:mm", {
     locale: ko,
   });
-
-  return `${dateLabel} ${timeLabel}`;
 }
 
 function compareReminderListEntries(
@@ -86,15 +76,9 @@ function compareReminderListEntries(
   right: ReminderListEntry,
   sortMode: ReminderListSortMode
 ): number {
-  if (sortMode === "titleAsc") {
-    return compareByTitleAsc(left, right);
-  }
-
-  if (sortMode === "nextAsc") {
-    return compareByNextScheduledAtAsc(left, right);
-  }
-
-  return compareByCreatedAtDesc(left, right);
+  return sortMode === "createdDesc"
+    ? compareByCreatedAtDesc(left, right)
+    : compareByTitleAsc(left, right);
 }
 
 function compareByCreatedAtDesc(
@@ -114,28 +98,6 @@ function compareByTitleAsc(
   return (
     left.title.localeCompare(right.title, "ko") ||
     compareByCreatedAtDescOnly(left, right)
-  );
-}
-
-function compareByNextScheduledAtAsc(
-  left: ReminderListEntry,
-  right: ReminderListEntry
-): number {
-  if (!left.nextScheduledAtUtc && right.nextScheduledAtUtc) {
-    return 1;
-  }
-
-  if (left.nextScheduledAtUtc && !right.nextScheduledAtUtc) {
-    return -1;
-  }
-
-  if (!left.nextScheduledAtUtc || !right.nextScheduledAtUtc) {
-    return compareByCreatedAtDesc(left, right);
-  }
-
-  return (
-    left.nextScheduledAtUtc.localeCompare(right.nextScheduledAtUtc) ||
-    compareByCreatedAtDesc(left, right)
   );
 }
 

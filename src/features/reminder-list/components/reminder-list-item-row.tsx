@@ -68,7 +68,7 @@ export function ReminderListItemRow({
 }
 
 function getReminderListItemMetaLine(entry: ReminderListEntry): string {
-  return [entry.nextOccurrenceLabel, entry.recurrenceLabel].join(" · ");
+  return [entry.nextOccurrenceTimeLabel, entry.recurrenceLabel].join(" · ");
 }
 
 const styles = StyleSheet.create({

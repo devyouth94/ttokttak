@@ -24,7 +24,6 @@ import {
   formatLocalDateTitle,
   formatLocalTimeLabel,
 } from "~/features/recurring/utils/recurring-display";
-import { formatRelativeDateLabel } from "~/features/recurring/utils/relative-date-label";
 import type { ProfileRow } from "~/lib/database.types";
 
 export const HOME_DATE_RANGE_DAYS = 15;
@@ -51,6 +50,7 @@ export type HomeDateOption = {
 };
 
 export type HomeFeedCard = {
+  dateSeparatorLabel: string | null;
   id: string;
   item: RecurringItem;
   metaLabel: string;
@@ -359,36 +359,36 @@ function toHomeFeedCard(
   todayLocalDate: string
 ): HomeFeedCard {
   const reminderTimeLocal = getReminderTimeLocal(item);
+  const timeLabel = formatLocalTimeLabel(reminderTimeLocal);
 
   return {
+    dateSeparatorLabel: getDateSeparatorLabel(
+      sectionId,
+      occurrence,
+      todayLocalDate
+    ),
     id: getOccurrenceIdentity(item.id, occurrence.scheduledAtUtc),
     item,
-    metaLabel: getMetaLabel(sectionId, item, occurrence, todayLocalDate),
+    metaLabel: getMetaLabel(sectionId, occurrence, todayLocalDate, timeLabel),
     occurrence,
     recurrenceLabel: getRecurrenceLabel(item),
     sectionId,
-    timeLabel:
-      sectionId === "selected-date"
-        ? null
-        : formatLocalTimeLabel(reminderTimeLocal),
+    timeLabel: sectionId === "overdue" ? timeLabel : null,
   };
 }
 
 function getMetaLabel(
   sectionId: HomeFeedSection["id"],
-  item: RecurringItem,
   occurrence: DerivedOccurrence,
-  todayLocalDate: string
+  todayLocalDate: string,
+  timeLabel: string
 ): string {
   if (sectionId === "selected-date") {
-    return formatLocalTimeLabel(getReminderTimeLocal(item));
+    return timeLabel;
   }
 
   if (sectionId === "upcoming") {
-    return formatRelativeDateLabel({
-      baseLocalDate: todayLocalDate,
-      targetLocalDate: occurrence.localDate,
-    });
+    return timeLabel;
   }
 
   const overdueDays = differenceInCalendarDays(
@@ -397,6 +397,23 @@ function getMetaLabel(
   );
 
   return overdueDays === 0 ? "오늘 지남" : `${overdueDays}일 지남`;
+}
+
+function getDateSeparatorLabel(
+  sectionId: HomeFeedSection["id"],
+  occurrence: DerivedOccurrence,
+  todayLocalDate: string
+): string | null {
+  if (sectionId !== "upcoming") {
+    return null;
+  }
+
+  const dayDiff = differenceInCalendarDays(
+    parse(occurrence.localDate, "yyyy-MM-dd", new Date()),
+    parse(todayLocalDate, "yyyy-MM-dd", new Date())
+  );
+
+  return dayDiff === 1 ? "내일" : formatLocalDateTitle(occurrence.localDate);
 }
 
 function getReminderTimeLocal(item: RecurringItem): string {

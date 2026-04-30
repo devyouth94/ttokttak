@@ -38,7 +38,11 @@ export function HomeFeedSectionList({
   ): ViewStyle => {
     const isStackedSection = index > 0;
     const isLastSection = index === feedSections.length - 1;
-    const usesSegmentHeight = isLoading || section.items.length === 0;
+    const usesSegmentHeight = shouldFillFeedSegment(
+      section,
+      isLoading,
+      selectedDateIsToday
+    );
     const segmentHeight = isLastSection
       ? feedViewportHeight - baseCardSegmentHeight * (feedSectionCount - 1)
       : baseCardSegmentHeight;
@@ -74,4 +78,16 @@ export function HomeFeedSectionList({
       })}
     </View>
   );
+}
+
+function shouldFillFeedSegment(
+  section: HomeFeedSection,
+  isLoading: boolean,
+  selectedDateIsToday: boolean
+): boolean {
+  if (isLoading || section.items.length === 0) {
+    return true;
+  }
+
+  return section.id === "selected-date" && !selectedDateIsToday;
 }

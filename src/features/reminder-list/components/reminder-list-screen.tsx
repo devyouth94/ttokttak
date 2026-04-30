@@ -41,7 +41,7 @@ export function ReminderListScreen(): React.JSX.Element {
     onHeaderHeightChange,
     onScroll,
     scrollEventThrottle,
-  } = useCollapsibleHeader();
+  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const [sortMode, setSortMode] = useState<ReminderListSortMode>(
     DEFAULT_REMINDER_LIST_SORT_MODE
   );

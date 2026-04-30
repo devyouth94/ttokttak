@@ -111,7 +111,8 @@ describe("buildHomeFeedSections", () => {
     expect(sections[1]?.items[0]?.item.title).toBe("오늘 운동");
     expect(sections[1]?.items[0]?.metaLabel).toBe("오후 6:00");
     expect(sections[2]?.items[0]?.item.title).toBe("다가오는 필터 교체");
-    expect(sections[2]?.items[0]?.metaLabel).toBe("3일 후");
+    expect(sections[2]?.items[0]?.dateSeparatorLabel).toBe("4월 13일");
+    expect(sections[2]?.items[0]?.metaLabel).toBe("오전 9:00");
   });
 
   it("놓친 일정은 오늘 이전 날짜 중 같은 항목당 최신 overdue 1개만 노출한다", () => {
@@ -191,8 +192,10 @@ describe("buildHomeFeedSections", () => {
     );
     expect(upcomingSection?.items).toHaveLength(14);
     expect(upcomingSection?.items[0]?.item.title).toBe("다가오는 일정 1");
-    expect(upcomingSection?.items[0]?.metaLabel).toBe("내일");
+    expect(upcomingSection?.items[0]?.dateSeparatorLabel).toBe("내일");
+    expect(upcomingSection?.items[0]?.metaLabel).toBe("오전 9:00");
     expect(upcomingSection?.items[13]?.item.title).toBe("다가오는 일정 14");
+    expect(upcomingSection?.items[13]?.dateSeparatorLabel).toBe("4월 24일");
   });
 
   it("놓친 일정 액션 대상에는 해당 카드 이전 overdue도 함께 포함한다", () => {

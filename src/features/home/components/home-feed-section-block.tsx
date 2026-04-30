@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import { AppText } from "~/design-system/components/app-text";
@@ -67,17 +68,42 @@ export function HomeFeedSectionBlock({
             bottomOverlapInset > 0 && { paddingBottom: bottomOverlapInset },
           ]}
         >
-          {section.items.map((card, index) => (
-            <HomeFeedItemRow
-              card={card}
-              isLast={index === section.items.length - 1}
-              isProcessing={processingOccurrenceIds.includes(card.id)}
-              key={card.id}
-              onAction={onAction}
-              showsActions={showsActions}
-              usesLightContent={usesLightContent}
-            />
-          ))}
+          {section.items.map((card, index) => {
+            const previousCard = section.items[index - 1];
+            const nextCard = section.items[index + 1];
+            const showsDateSeparator = shouldShowDateSeparator(
+              card,
+              previousCard
+            );
+
+            return (
+              <Fragment key={card.id}>
+                {showsDateSeparator ? (
+                  <View
+                    style={[
+                      styles.feedDateSeparator,
+                      index > 0 && styles.feedDateSeparatorStacked,
+                    ]}
+                  >
+                    <AppText
+                      style={[textStyle, styles.feedDateSeparatorText]}
+                      variant="body3"
+                    >
+                      {card.dateSeparatorLabel}
+                    </AppText>
+                  </View>
+                ) : null}
+                <HomeFeedItemRow
+                  card={card}
+                  isLast={shouldHideItemDivider(card, nextCard)}
+                  isProcessing={processingOccurrenceIds.includes(card.id)}
+                  onAction={onAction}
+                  showsActions={showsActions}
+                  usesLightContent={usesLightContent}
+                />
+              </Fragment>
+            );
+          })}
         </View>
       ) : (
         <View style={styles.feedSectionSummarySlot}>
@@ -120,7 +146,42 @@ function getFeedSectionCardStyle(
   }
 }
 
+function shouldShowDateSeparator(
+  card: HomeFeedCard,
+  previousCard: HomeFeedCard | undefined
+): boolean {
+  if (!card.dateSeparatorLabel) {
+    return false;
+  }
+
+  return card.occurrence.localDate !== previousCard?.occurrence.localDate;
+}
+
+function shouldHideItemDivider(
+  card: HomeFeedCard,
+  nextCard: HomeFeedCard | undefined
+): boolean {
+  if (!nextCard) {
+    return true;
+  }
+
+  if (!card.dateSeparatorLabel) {
+    return false;
+  }
+
+  return card.occurrence.localDate !== nextCard.occurrence.localDate;
+}
+
 const styles = StyleSheet.create({
+  feedDateSeparator: {
+    paddingTop: spacing.xs,
+  },
+  feedDateSeparatorStacked: {
+    paddingTop: spacing.sm,
+  },
+  feedDateSeparatorText: {
+    opacity: 0.72,
+  },
   feedItemList: {
     marginTop: spacing.xxs,
   },
