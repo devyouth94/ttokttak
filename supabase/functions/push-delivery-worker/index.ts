@@ -526,6 +526,7 @@ async function sendFcmNotification(
         body: JSON.stringify({
           message: {
             android: {
+              priority: "high",
               notification: {
                 channel_id: ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
               },
