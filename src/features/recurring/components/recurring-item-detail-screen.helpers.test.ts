@@ -1,9 +1,8 @@
 import {
   buildHistoryPreview,
-  buildMetaEntries,
   buildRecurringItemDetailViewModel,
+  buildSummarySettingBadges,
   getItemDetailBasisOccurrence,
-  shouldShowDetailStatusCard,
   shouldShowOccurrenceActions,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import type {
@@ -173,38 +172,35 @@ describe("recurring item detail helpers", () => {
     expect(entries[0]?.statusLabel).toBe("건너뜀");
   });
 
-  it("메타 표시 항목을 상세 화면 기준으로 만든다", () => {
-    const entries = buildMetaEntries(
+  it("요약 설정 뱃지를 상세 화면 기준으로 만든다", () => {
+    const entries = buildSummarySettingBadges(
       createItem({
         anchorType: "completion_based",
         createdAt: "2026-04-01T00:00:00.000Z",
         notificationsEnabled: false,
         recurrenceType: "weekly",
         weekdayMask: [1, 4],
-      }),
-      timezone
+      })
     );
 
     expect(entries).toEqual([
-      { id: "recurrence", label: "반복 규칙", value: "매주 월·목" },
-      { id: "start-date", label: "시작일", value: "2026년 4월 8일" },
+      { id: "start-date", label: "시작", value: "2026년 4월 8일" },
       {
         id: "anchor-type",
-        infoDescription: [
-          "시작일 기준: 처음 정한 시작일을 유지하면서 다음 일정을 계산합니다.",
-          "",
-          "완료일 기준: 완료한 날짜를 반영해서 다음 일정을 다시 계산합니다.",
-        ].join("\n"),
-        label: "다음 일정 계산",
+        label: "계산",
         value: "완료일 기준",
       },
-      { id: "notifications", label: "알림", value: "중지" },
-      {
-        id: "created-at",
-        label: "생성일",
-        value: "2026년 4월 1일\n오전 9:00",
-      },
     ]);
+  });
+
+  it("시작일 기준 일정은 계산 뱃지를 숨긴다", () => {
+    const entries = buildSummarySettingBadges(
+      createItem({
+        anchorType: "fixed",
+      })
+    );
+
+    expect(entries.map((entry) => entry.id)).toEqual(["start-date"]);
   });
 
   it("대표 상태가 overdue면 액션 버튼을 노출한다", () => {
@@ -222,20 +218,6 @@ describe("recurring item detail helpers", () => {
         timezone,
       })
     ).toBe(true);
-  });
-
-  it("한 번 일정은 상세 상태 카드를 숨긴다", () => {
-    expect(
-      shouldShowDetailStatusCard(
-        createItem({
-          recurrenceType: "once",
-        })
-      )
-    ).toBe(false);
-  });
-
-  it("반복 일정은 상세 상태 카드를 노출한다", () => {
-    expect(shouldShowDetailStatusCard(createItem())).toBe(true);
   });
 
   it("대표 상태가 오늘 scheduled면 액션 버튼을 노출한다", () => {
@@ -393,6 +375,8 @@ describe("recurring item detail helpers", () => {
 
     expect(viewModel.nextOccurrence?.localDate).toBe("2026-04-16");
     expect(viewModel.nextOccurrence?.localTime).toBe("21:30");
-    expect(viewModel.metaEntries[0]?.value).toBe("4일마다");
+    expect(viewModel.summary.notificationLabel).toBe("오후 9:30");
+    expect(viewModel.summary.recurrenceLabel).toBe("4일마다");
+    expect(viewModel.summary.notificationsEnabled).toBe(true);
   });
 });

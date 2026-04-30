@@ -2,7 +2,6 @@ import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
-import { getAnchorTypeDescription } from "~/features/recurring/components/recurring-item-form-screen.helpers";
 import {
   getNextOccurrence,
   getOccurrencesInRange,
@@ -31,16 +30,14 @@ export type ItemDetailHistoryEntry = {
   timeLabel: string;
 };
 
-export type ItemDetailMetaEntry = {
+export type ItemDetailSummaryBadge = {
   id: string;
-  infoDescription?: string;
   label: string;
   value: string;
 };
 
 export type ItemDetailStatusCard = {
   dateLabel: string;
-  kind: "empty" | "overdue" | "scheduled";
   metaLabel: string;
   timeLabel: string | null;
   title: string;
@@ -48,14 +45,15 @@ export type ItemDetailStatusCard = {
 
 export type ItemDetailViewModel = {
   historyPreview: ItemDetailHistoryEntry[];
-  metaEntries: ItemDetailMetaEntry[];
   nextOccurrence: DerivedOccurrence | null;
   overdueOccurrences: DerivedOccurrence[];
   primaryOccurrence: DerivedOccurrence | null;
   statusCard: ItemDetailStatusCard;
   summary: {
-    category: string | null;
-    description: string | null;
+    notificationLabel: string;
+    notificationsEnabled: boolean;
+    recurrenceLabel: string;
+    settingBadges: ItemDetailSummaryBadge[];
     title: string;
   };
 };
@@ -81,12 +79,6 @@ export function shouldShowOccurrenceActions({
     occurrence.status === "scheduled" &&
     occurrence.localDate === formatInTimeZone(now, timezone, "yyyy-MM-dd")
   );
-}
-
-export function shouldShowDetailStatusCard(item: RecurringItem): boolean {
-  const currentSchedule = getCurrentScheduleVersion(item);
-
-  return (currentSchedule?.recurrenceType ?? item.recurrenceType) !== "once";
 }
 
 export function getItemDetailBasisOccurrence({
@@ -172,7 +164,6 @@ export function buildRecurringItemDetailViewModel({
 
   return {
     historyPreview: buildHistoryPreview(completionLogs, timezone),
-    metaEntries: buildMetaEntries(item, timezone),
     nextOccurrence,
     overdueOccurrences,
     primaryOccurrence,
@@ -183,8 +174,10 @@ export function buildRecurringItemDetailViewModel({
       timezone,
     }),
     summary: {
-      category: item.category?.trim() || null,
-      description: item.description?.trim() || null,
+      notificationLabel: getSummaryNotificationLabel(item),
+      notificationsEnabled: getSummaryNotificationsEnabled(item),
+      recurrenceLabel: getRecurrenceLabel(item),
+      settingBadges: buildSummarySettingBadges(item),
       title: item.title,
     },
   };
@@ -207,24 +200,15 @@ export function buildHistoryPreview(
     }));
 }
 
-export function buildMetaEntries(
-  item: RecurringItem,
-  timezone: string
-): ItemDetailMetaEntry[] {
+export function buildSummarySettingBadges(
+  item: RecurringItem
+): ItemDetailSummaryBadge[] {
   const currentSchedule = getCurrentScheduleVersion(item);
   const anchorType = currentSchedule?.anchorType ?? item.anchorType;
-  const notificationsEnabled =
-    currentSchedule?.notificationsEnabled ?? item.notificationsEnabled;
-
-  return [
-    {
-      id: "recurrence",
-      label: "반복 규칙",
-      value: getRecurrenceLabel(item),
-    },
+  const badges: ItemDetailSummaryBadge[] = [
     {
       id: "start-date",
-      label: "시작일",
+      label: "시작",
       value: format(
         parse(item.startDateLocal, "yyyy-MM-dd", new Date()),
         "yyyy년 M월 d일",
@@ -233,44 +217,17 @@ export function buildMetaEntries(
         }
       ),
     },
-    {
-      id: "anchor-type",
-      infoDescription: getAnchorTypeInfoDescription(anchorType),
-      label: "다음 일정 계산",
-      value: anchorType === "fixed" ? "시작일 기준" : "완료일 기준",
-    },
-    {
-      id: "notifications",
-      label: "알림",
-      value: notificationsEnabled ? "사용" : "중지",
-    },
-    {
-      id: "created-at",
-      label: "생성일",
-      value: formatCreatedAtMetaValue(item.createdAt, timezone),
-    },
   ];
-}
 
-function formatCreatedAtMetaValue(createdAt: string, timezone: string): string {
-  return [
-    formatInTimeZone(createdAt, timezone, "yyyy년 M월 d일", {
-      locale: ko,
-    }),
-    formatInTimeZone(createdAt, timezone, "a h:mm", {
-      locale: ko,
-    }),
-  ].join("\n");
-}
+  if (anchorType === "completion_based") {
+    badges.push({
+      id: "anchor-type",
+      label: "계산",
+      value: "완료일 기준",
+    });
+  }
 
-function getAnchorTypeInfoDescription(
-  _anchorType: RecurringItem["anchorType"]
-): string {
-  return [
-    `시작일 기준: ${getAnchorTypeDescription("fixed")}`,
-    "",
-    `완료일 기준: ${getAnchorTypeDescription("completion_based")}`,
-  ].join("\n");
+  return badges;
 }
 
 export function buildStatusCard({
@@ -302,7 +259,6 @@ export function buildStatusCard({
         "M월 d일",
         { locale: ko }
       ),
-      kind: "overdue",
       metaLabel:
         overdueOccurrences.length === 1
           ? overdueDays === 0
@@ -320,7 +276,6 @@ export function buildStatusCard({
   if (!nextOccurrence) {
     return {
       dateLabel: "없음",
-      kind: "empty",
       metaLabel: "후속 일정 없음",
       timeLabel: null,
       title: "다음 일정 없음",
@@ -334,7 +289,6 @@ export function buildStatusCard({
       "M월 d일",
       { locale: ko }
     ),
-    kind: "scheduled",
     metaLabel: getRelativeDayLabel(
       nextOccurrence.scheduledAtUtc,
       now,
@@ -399,12 +353,18 @@ function compareOccurrencesByScheduledAtUtcDesc(
   return right.scheduledAtUtc.localeCompare(left.scheduledAtUtc);
 }
 
-export function getSummaryNotificationLabel(item: RecurringItem): string {
+function getSummaryNotificationLabel(item: RecurringItem): string {
   const currentSchedule = getCurrentScheduleVersion(item);
 
   return formatLocalTimeLabel(
     currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal
   );
+}
+
+function getSummaryNotificationsEnabled(item: RecurringItem): boolean {
+  const currentSchedule = getCurrentScheduleVersion(item);
+
+  return currentSchedule?.notificationsEnabled ?? item.notificationsEnabled;
 }
 
 function getRelativeDayLabel(

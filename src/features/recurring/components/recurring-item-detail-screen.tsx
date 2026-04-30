@@ -1,42 +1,42 @@
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { type ReactNode, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
-import * as Popover from "@rn-primitives/popover";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Bell,
   BellOff,
-  Check,
-  CircleAlert,
   EllipsisVertical,
-  SkipForward,
 } from "lucide-react-native";
 
-import { AppCard } from "~/design-system/components/app-card";
 import { AppScreen } from "~/design-system/components/app-screen";
-import {
-  AppStatePlaceholder,
-  AppStateView,
-} from "~/design-system/components/app-state";
+import { AppStateView } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
-import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
+import { IconButton } from "~/design-system/components/icon-button";
+import { ScreenHeader } from "~/design-system/components/screen-header";
+import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import {
   borderRadius,
+  color,
   colors,
   spacing,
   typography,
 } from "~/design-system/tokens";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import { HistoryEntryCard } from "~/features/recurring/components/history-entry-card";
 import {
   buildRecurringItemDetailViewModel,
   getItemDetailBasisOccurrence,
-  getSummaryNotificationLabel,
   type ItemDetailHistoryEntry,
-  type ItemDetailMetaEntry,
-  shouldShowDetailStatusCard,
+  type ItemDetailSummaryBadge,
   shouldShowOccurrenceActions,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
@@ -50,135 +50,175 @@ import { archiveRecurringItem } from "~/features/recurring/repositories/recurrin
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
 const ACTION_BAR_HEIGHT = 60;
+const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
-const INFO_DESCRIPTION_PARAGRAPH_BREAK = /\n{2,}/g;
+const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
 
-function DetailSectionTitle({ title }: { title: string }): React.JSX.Element {
-  return (
-    <AppText style={styles.sectionTitle} variant="title">
-      {title}
-    </AppText>
-  );
-}
-
-function formatInfoDescription(description: string): string {
-  return description.replace(INFO_DESCRIPTION_PARAGRAPH_BREAK, "\n");
-}
-
-function DetailInfoRow({
-  icon,
-  value,
-}: {
-  icon: React.JSX.Element;
-  value: string;
-}): React.JSX.Element {
-  return (
-    <View style={styles.infoRow}>
-      <AppText style={styles.infoValue}>{value}</AppText>
-      {icon}
-    </View>
-  );
-}
-
-function DetailStateCard({
+function DetailScheduleSection({
   dateLabel,
-  kind,
   metaLabel,
   timeLabel,
   title,
 }: {
   dateLabel: string;
-  kind: "empty" | "overdue" | "scheduled";
   metaLabel: string;
   timeLabel: string | null;
   title: string;
 }): React.JSX.Element {
   return (
-    <AppCard
-      contentStyle={[
-        styles.stateCard,
-        kind === "overdue"
-          ? styles.stateCardOverdue
-          : kind === "scheduled"
-            ? styles.stateCardScheduled
-            : styles.stateCardEmpty,
-      ]}
-      shadowStyle={styles.stateShadow}
-    >
-      <AppText
-        style={[styles.eyebrowText, styles.stateEyebrowText]}
-        variant="label"
-      >
+    <View style={styles.scheduleSection}>
+      <AppText style={styles.scheduleTitle} variant="caption">
         {title}
       </AppText>
-      <AppText
-        style={[
-          styles.mainTextBase,
-          styles.stateMainText,
-          kind === "empty" && styles.stateDateEmpty,
-        ]}
-        variant="display"
-      >
+      <AppText style={styles.scheduleDate} variant="title">
         {dateLabel}
       </AppText>
-      <AppText style={[styles.secondaryTextBase, styles.stateSecondaryText]}>
-        {metaLabel}
+      <AppText style={styles.scheduleMetaText} variant="body3">
+        {[metaLabel, timeLabel].filter(Boolean).join(" ")}
       </AppText>
-      {timeLabel ? (
-        <View style={styles.timePill}>
-          <AppText style={styles.timePillText}>{timeLabel}</AppText>
-        </View>
-      ) : null}
-    </AppCard>
+    </View>
   );
 }
 
-function DetailSummaryCard({
-  category,
-  description,
-  icon,
+function DetailSummarySection({
+  notificationLabel,
+  notificationsEnabled,
+  recurrenceLabel,
+  settingBadges,
   title,
-  value,
 }: {
-  category: string | null;
-  description: string | null;
-  icon: React.JSX.Element;
+  notificationLabel: string;
+  notificationsEnabled: boolean;
+  recurrenceLabel: string;
+  settingBadges: ItemDetailSummaryBadge[];
   title: string;
-  value: string;
 }): React.JSX.Element {
+  const NotificationIcon = notificationsEnabled ? Bell : BellOff;
+  const notificationStatusLabel = notificationsEnabled ? "사용" : "중지";
+
   return (
-    <AppCard
-      contentStyle={styles.summaryCard}
-      shadowStyle={styles.summaryShadow}
-    >
-      <AppText style={styles.eyebrowText} variant="label">
-        항목 정보
-      </AppText>
-      <AppText
-        style={[styles.mainTextBase, styles.summaryMainText]}
-        variant="title"
-      >
+    <View style={styles.summarySection}>
+      <AppText style={styles.summaryTitle} variant="title">
         {title}
       </AppText>
 
-      {category ? (
-        <AppText style={[styles.secondaryTextBase, styles.summaryCategoryText]}>
-          {category}
-        </AppText>
-      ) : null}
+      <View style={styles.summaryBadgeStack}>
+        <View style={styles.summaryOutlineGroup}>
+          <DetailSummaryOutlineRow label="반복" value={recurrenceLabel} />
 
-      {description ? (
-        <AppText
-          style={[styles.secondaryTextBase, styles.summarySecondaryText]}
-        >
-          {description}
-        </AppText>
-      ) : null}
+          <DetailSummaryOutlineRow
+            accessibilityLabel={`알림 ${notificationLabel} ${notificationStatusLabel}`}
+            label="알림"
+            trailingIcon={
+              <View style={styles.summaryNotificationIconSlot}>
+                <NotificationIcon
+                  absoluteStrokeWidth
+                  color={color.jetBlack}
+                  size={14}
+                  strokeWidth={1.2}
+                />
+              </View>
+            }
+            value={notificationLabel}
+          />
+        </View>
 
-      <View style={styles.infoGroup}>
-        <DetailInfoRow icon={icon} value={value} />
+        <View style={styles.summaryOutlineGroup}>
+          {settingBadges.map((badge) => (
+            <DetailSummaryOutlineRow
+              key={badge.id}
+              label={badge.label}
+              value={badge.value}
+            />
+          ))}
+        </View>
       </View>
-    </AppCard>
+    </View>
+  );
+}
+
+function DetailSummaryOutlineRow({
+  accessibilityLabel,
+  label,
+  trailingIcon,
+  value,
+}: {
+  accessibilityLabel?: string;
+  label: string;
+  trailingIcon?: ReactNode;
+  value: string;
+}): React.JSX.Element {
+  return (
+    <View
+      accessible={Boolean(accessibilityLabel)}
+      accessibilityLabel={accessibilityLabel}
+      style={styles.summaryOutlineRow}
+    >
+      <AppText style={styles.summaryOutlineLabel} variant="caption">
+        {label}
+      </AppText>
+      <View style={styles.summaryOutlineContent}>
+        <AppText
+          ellipsizeMode="tail"
+          numberOfLines={1}
+          style={styles.summaryOutlineValue}
+          variant="body3"
+        >
+          {value}
+        </AppText>
+        {trailingIcon}
+      </View>
+    </View>
+  );
+}
+
+function DetailLoadingPlaceholder(): React.JSX.Element {
+  return (
+    <View
+      accessibilityLabel="일정 상세를 불러오는 중"
+      accessibilityRole="progressbar"
+      style={styles.detailPlaceholder}
+    >
+      <View style={styles.loadingSummarySection}>
+        <View style={styles.loadingSummaryTitle} />
+
+        <View style={styles.loadingBadgeStack}>
+          <View style={styles.loadingBadgeGroup}>
+            <View style={[styles.loadingBadge, styles.loadingBadgeMedium]} />
+            <View style={[styles.loadingBadge, styles.loadingBadgeLong]} />
+          </View>
+
+          <View style={styles.loadingBadgeGroup}>
+            <View style={[styles.loadingBadge, styles.loadingBadgeLong]} />
+            <View style={[styles.loadingBadge, styles.loadingBadgeShort]} />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.loadingScheduleSection}>
+        <View style={styles.loadingScheduleLabel} />
+        <View style={styles.loadingScheduleDate} />
+        <View style={styles.loadingScheduleMeta} />
+      </View>
+
+      <View style={styles.loadingHistorySection}>
+        <View style={styles.loadingHistoryLabel} />
+        {Array.from({ length: DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT }).map(
+          (_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.loadingHistoryRow,
+                index > 0 ? styles.loadingHistoryDivider : undefined,
+              ]}
+            >
+              <View style={styles.loadingHistoryDate} />
+              <View style={styles.loadingHistoryStatus} />
+            </View>
+          )
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -190,7 +230,7 @@ function DetailErrorCard({
   onRetry: () => void;
 }): React.JSX.Element {
   return (
-    <AppCard>
+    <View style={styles.statePanel}>
       <AppStateView
         action={{
           accessibilityHint: "상세 화면 데이터를 다시 불러와요.",
@@ -202,7 +242,7 @@ function DetailErrorCard({
         style={styles.errorState}
         title="일정을 불러오지 못했어요"
       />
-    </AppCard>
+    </View>
   );
 }
 
@@ -212,52 +252,68 @@ function DetailInlineErrorCard({
   message: string;
 }): React.JSX.Element {
   return (
-    <AppCard>
+    <View style={styles.statePanel}>
       <AppStateView
         description={message}
         style={styles.inlineErrorState}
         title="처리를 완료하지 못했어요"
       />
-    </AppCard>
+    </View>
+  );
+}
+
+function DetailHistorySection({
+  entries,
+}: {
+  entries: ItemDetailHistoryEntry[];
+}): React.JSX.Element {
+  return (
+    <View style={styles.historySection}>
+      <AppText style={styles.historySectionLabel} variant="caption">
+        최근 히스토리
+      </AppText>
+
+      <View>
+        {entries.length > 0 ? (
+          entries.map((entry, index) => (
+            <DetailHistoryCard
+              entry={entry}
+              isFirst={index === 0}
+              key={entry.id}
+            />
+          ))
+        ) : (
+          <AppText style={styles.historyEmptyText} variant="body3">
+            아직 완료 기록이 없어요
+          </AppText>
+        )}
+      </View>
+    </View>
   );
 }
 
 function DetailHistoryCard({
   entry,
+  isFirst,
 }: {
   entry: ItemDetailHistoryEntry;
+  isFirst: boolean;
 }): React.JSX.Element {
   return (
-    <HistoryEntryCard
-      action={entry.action}
-      statusLabel={entry.statusLabel}
-      timeLabel={entry.timeLabel}
-      title={entry.statusLabel}
-    />
-  );
-}
-
-function DetailEmptyCard({
-  description,
-  title,
-}: {
-  description: string;
-  title: string;
-}): React.JSX.Element {
-  return (
-    <AppCard>
-      <AppStateView
-        description={description}
-        style={styles.emptyCard}
-        title={title}
-      />
-    </AppCard>
+    <View style={[styles.historyRow, !isFirst && styles.historyRowDivider]}>
+      <AppText style={styles.historyDate} variant="body3">
+        {entry.timeLabel}
+      </AppText>
+      <AppText style={styles.historyStatus} variant="body3">
+        {entry.statusLabel}
+      </AppText>
+    </View>
   );
 }
 
 function DetailNotFoundCard(): React.JSX.Element {
   return (
-    <AppCard>
+    <View style={styles.statePanel}>
       <AppStateView
         action={{
           accessibilityHint: "홈 화면으로 이동해요.",
@@ -271,80 +327,7 @@ function DetailNotFoundCard(): React.JSX.Element {
         style={styles.emptyCard}
         title="일정을 찾을 수 없어요"
       />
-    </AppCard>
-  );
-}
-
-function DetailMetaSection({
-  entries,
-}: {
-  entries: ItemDetailMetaEntry[];
-}): React.JSX.Element {
-  return (
-    <AppCard contentStyle={styles.metaCard}>
-      {entries.map((entry, index) => (
-        <View
-          key={entry.id}
-          style={[
-            styles.metaRow,
-            index < entries.length - 1 && styles.metaRowDivider,
-          ]}
-        >
-          <View style={styles.metaLabelRow}>
-            <AppText style={styles.metaLabel}>{entry.label}</AppText>
-            {entry.infoDescription ? (
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <Pressable
-                    accessibilityHint={`${entry.label} 설명을 확인해요.`}
-                    accessibilityLabel={`${entry.label} 설명`}
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    style={({ pressed }) => [
-                      styles.metaInfoButton,
-                      pressed && styles.metaInfoButtonPressed,
-                    ]}
-                  >
-                    <CircleAlert color={colors.textMuted} size={15} />
-                  </Pressable>
-                </Popover.Trigger>
-
-                <Popover.Portal>
-                  <Popover.Overlay
-                    closeOnPress
-                    style={styles.metaInfoPopoverOverlay}
-                  />
-                  <Popover.Content
-                    align="center"
-                    avoidCollisions
-                    insets={{
-                      bottom: spacing.lg,
-                      left: spacing.lg,
-                      right: spacing.lg,
-                      top: spacing.lg,
-                    }}
-                    side="top"
-                    sideOffset={6}
-                    style={styles.metaInfoPopoverContent}
-                  >
-                    <AppText
-                      style={styles.metaInfoPopoverTitle}
-                      variant="title"
-                    >
-                      {entry.label}
-                    </AppText>
-                    <AppText style={styles.metaInfoPopoverText}>
-                      {formatInfoDescription(entry.infoDescription)}
-                    </AppText>
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            ) : null}
-          </View>
-          <AppText style={styles.metaValue}>{entry.value}</AppText>
-        </View>
-      ))}
-    </AppCard>
+    </View>
   );
 }
 
@@ -384,7 +367,6 @@ function DetailActionBar({
               pressed && !disabled && styles.primaryActionButtonPressed,
             ]}
           >
-            <Check color={colors.statusCompletedText} size={18} />
             <AppText style={styles.primaryActionButtonText}>완료</AppText>
           </Pressable>
 
@@ -402,7 +384,6 @@ function DetailActionBar({
               pressed && !disabled && styles.secondaryActionButtonPressed,
             ]}
           >
-            <SkipForward color={colors.statusSkippedText} size={18} />
             <AppText style={styles.secondaryActionButtonText}>
               {isProcessing ? "처리 중..." : "건너뛰기"}
             </AppText>
@@ -426,6 +407,13 @@ export function RecurringItemDetailScreen({
   const { syncAfterMutation } = useNotificationBootstrap();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const {
+    headerAnimatedStyle,
+    headerHeight,
+    onHeaderHeightChange,
+    onScroll,
+    scrollEventThrottle,
+  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
     null
   );
@@ -497,6 +485,7 @@ export function RecurringItemDetailScreen({
   const scrollBottomPadding = showsActionBar
     ? ACTION_BAR_HEIGHT + insets.bottom + spacing.xxl
     : spacing.lg;
+  const scrollTopPadding = headerHeight;
 
   const refetchDetail = async (): Promise<void> => {
     await Promise.all([itemQuery.refetch(), completionLogsQuery.refetch()]);
@@ -652,85 +641,123 @@ export function RecurringItemDetailScreen({
   return (
     <AppScreen contentStyle={styles.screenContent}>
       <View style={styles.screenRoot}>
-        <LegacyScreenHeader
-          onBack={() => {
-            router.back();
-          }}
-          rightSlot={
-            item && !queryErrorMessage ? (
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  <Pressable
-                    accessibilityHint="일정 관리 메뉴를 열어요."
-                    accessibilityLabel="일정 관리"
-                    accessibilityRole="button"
-                    disabled={isMutating}
-                    hitSlop={8}
-                    style={({ pressed }) => [
-                      styles.headerActionButton,
-                      isMutating && styles.actionButtonDisabled,
-                      pressed &&
-                        !isMutating &&
-                        styles.headerActionButtonPressed,
-                    ]}
-                  >
-                    <EllipsisVertical color={colors.text} size={20} />
-                  </Pressable>
-                </DropdownMenu.Trigger>
+        <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
+          <ScreenHeader
+            leftSlot={
+              <Pressable
+                accessibilityHint="이전 화면으로 돌아가요."
+                accessibilityLabel="뒤로 가기"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => {
+                  router.back();
+                }}
+                style={({ pressed }) => [
+                  styles.headerBackButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <ArrowLeft color={color.white} size={18} />
+              </Pressable>
+            }
+            onHeightChange={onHeaderHeightChange}
+            rightSlot={
+              item && !queryErrorMessage ? (
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <IconButton
+                      accessibilityHint="일정 관리 메뉴를 열어요."
+                      accessibilityLabel="일정 관리"
+                      disabled={isMutating}
+                      icon={
+                        <EllipsisVertical color={color.jetBlack} size={20} />
+                      }
+                      size="lg"
+                    />
+                  </DropdownMenu.Trigger>
 
-                <DropdownMenu.Portal>
-                  <DropdownMenu.Overlay
-                    closeOnPress
-                    style={styles.managementMenuOverlay}
-                  />
-                  <DropdownMenu.Content
-                    align="end"
-                    avoidCollisions
-                    insets={{
-                      bottom: spacing.lg,
-                      left: spacing.lg,
-                      right: spacing.lg,
-                      top: spacing.lg,
-                    }}
-                    side="bottom"
-                    sideOffset={4}
-                    style={styles.managementMenuContent}
-                  >
-                    <DropdownMenu.Item
-                      accessibilityHint="현재 일정 수정 화면으로 이동해요."
-                      style={styles.managementMenuItem}
-                      onPress={handleEdit}
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Overlay
+                      closeOnPress
+                      style={styles.managementMenuOverlay}
+                    />
+                    <DropdownMenu.Content
+                      align="end"
+                      avoidCollisions
+                      insets={{
+                        bottom: spacing.lg,
+                        left: spacing.md,
+                        right: spacing.md,
+                        top: spacing.lg,
+                      }}
+                      side="bottom"
+                      sideOffset={2}
+                      style={styles.managementMenuContent}
                     >
-                      <AppText style={styles.managementMenuText}>수정</AppText>
-                    </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        accessibilityHint="현재 일정 수정 화면으로 이동해요."
+                        closeOnPress
+                        style={styles.managementMenuItem}
+                        onPress={handleEdit}
+                      >
+                        <AppText
+                          numberOfLines={1}
+                          style={styles.managementMenuText}
+                          variant="label"
+                        >
+                          수정
+                        </AppText>
+                      </DropdownMenu.Item>
 
-                    <DropdownMenu.Item
-                      accessibilityHint="현재 일정을 삭제해요."
-                      style={styles.managementMenuItem}
-                      onPress={handleDelete}
-                    >
-                      <AppText style={styles.managementDeleteText}>
-                        삭제
-                      </AppText>
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Root>
-            ) : undefined
-          }
-          title="일정 상세"
-        />
+                      <DropdownMenu.Item
+                        accessibilityHint="현재 일정을 삭제해요."
+                        closeOnPress
+                        style={styles.managementMenuItem}
+                        onPress={handleDelete}
+                      >
+                        <AppText
+                          numberOfLines={1}
+                          style={[
+                            styles.managementMenuText,
+                            styles.managementDeleteText,
+                          ]}
+                          variant="label"
+                        >
+                          삭제
+                        </AppText>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              ) : (
+                <View style={styles.headerActionSpacer} />
+              )
+            }
+            title="일정 상세"
+          />
+        </Animated.View>
 
         {isLoading ? (
-          <AppStatePlaceholder rowCount={4} showHeader />
+          <View
+            style={[
+              styles.loadingContent,
+              styles.scrollContent,
+              { paddingTop: headerHeight },
+            ]}
+          >
+            <DetailLoadingPlaceholder />
+          </View>
         ) : (
           <>
             <ScrollView
               bounces={false}
               contentContainerStyle={[
                 styles.scrollContent,
+                { paddingTop: scrollTopPadding },
                 { paddingBottom: scrollBottomPadding },
               ]}
+              onScroll={onScroll}
+              scrollEventThrottle={scrollEventThrottle}
               showsVerticalScrollIndicator={false}
             >
               {queryErrorMessage && !isNotFound ? (
@@ -746,48 +773,24 @@ export function RecurringItemDetailScreen({
                     <DetailInlineErrorCard message={actionErrorMessage} />
                   ) : null}
 
-                  <DetailSummaryCard
-                    category={viewModel.summary.category}
-                    description={viewModel.summary.description}
-                    icon={
-                      item.notificationsEnabled ? (
-                        <Bell color={colors.textMuted} size={14} />
-                      ) : (
-                        <BellOff color={colors.textMuted} size={14} />
-                      )
+                  <DetailSummarySection
+                    notificationLabel={viewModel.summary.notificationLabel}
+                    notificationsEnabled={
+                      viewModel.summary.notificationsEnabled
                     }
+                    recurrenceLabel={viewModel.summary.recurrenceLabel}
+                    settingBadges={viewModel.summary.settingBadges}
                     title={viewModel.summary.title}
-                    value={getSummaryNotificationLabel(item)}
                   />
 
-                  {shouldShowDetailStatusCard(item) ? (
-                    <DetailStateCard
-                      dateLabel={viewModel.statusCard.dateLabel}
-                      kind={viewModel.statusCard.kind}
-                      metaLabel={viewModel.statusCard.metaLabel}
-                      timeLabel={null}
-                      title={viewModel.statusCard.title}
-                    />
-                  ) : null}
+                  <DetailScheduleSection
+                    dateLabel={viewModel.statusCard.dateLabel}
+                    metaLabel={viewModel.statusCard.metaLabel}
+                    timeLabel={viewModel.statusCard.timeLabel}
+                    title={viewModel.statusCard.title}
+                  />
 
-                  <View style={styles.sectionBlock}>
-                    <DetailSectionTitle title="상세 정보" />
-                    <DetailMetaSection entries={viewModel.metaEntries} />
-                  </View>
-
-                  <View style={styles.sectionBlock}>
-                    <DetailSectionTitle title="최근 히스토리" />
-                    {viewModel.historyPreview.length > 0 ? (
-                      viewModel.historyPreview.map((entry) => (
-                        <DetailHistoryCard entry={entry} key={entry.id} />
-                      ))
-                    ) : (
-                      <DetailEmptyCard
-                        description="완료하거나 건너뛴 일정이 생기면 최근 기록 3건을 여기에서 확인할 수 있어요."
-                        title="아직 완료 기록이 없어요"
-                      />
-                    )}
-                  </View>
+                  <DetailHistorySection entries={viewModel.historyPreview} />
                 </>
               )}
             </ScrollView>
@@ -841,184 +844,196 @@ const styles = StyleSheet.create({
   errorState: {
     minHeight: 120,
   },
-  eyebrowText: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    letterSpacing: 1.2,
-    lineHeight: 18,
-    textAlign: "center",
+  headerActionSpacer: {
+    height: 48,
+    width: 48,
   },
-  headerActionButton: {
+  headerBackButton: {
     alignItems: "center",
+    backgroundColor: color.jetBlack,
     borderRadius: borderRadius.pill,
-    height: 40,
+    height: 32,
     justifyContent: "center",
-    width: 40,
+    width: 32,
   },
-  headerActionButtonPressed: {
-    opacity: 0.72,
+  headerButtonPressed: {
+    opacity: 0.88,
+  },
+  headerLayer: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 10,
+  },
+  historyDate: {
+    color: colors.text,
+    flex: 1,
+  },
+  historyEmptyText: {
+    color: colors.textMuted,
+    paddingVertical: spacing.xxs,
+  },
+  historyRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  historyRowDivider: {
+    borderTopColor: color.jetBlack,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  historySection: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.xl,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
+  historySectionLabel: {
+    color: color.jetBlack,
+  },
+  historyStatus: {
+    color: colors.textMuted,
   },
   managementDeleteText: {
     color: colors.error,
-    fontSize: typography.label,
-    lineHeight: 18,
   },
   managementMenuContent: {
-    backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    minWidth: 148,
-    padding: spacing.xs,
-    shadowColor: "#000",
-    shadowOffset: {
-      height: 6,
-      width: 0,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.lg,
+    padding: MANAGEMENT_MENU_CONTAINER_PADDING,
+    width: 80,
   },
   managementMenuOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
   managementMenuItem: {
-    borderRadius: borderRadius.xl,
+    alignItems: "center",
+    borderRadius: borderRadius.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
     minHeight: 40,
-    justifyContent: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  managementMenuItemPressed: {
-    backgroundColor: colors.surfaceHigh,
-  },
   managementMenuText: {
-    color: colors.text,
-    fontSize: typography.label,
-    lineHeight: 18,
-  },
-  infoGroup: {
-    alignItems: "center",
-    marginTop: spacing.xs,
-  },
-  infoRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  infoValue: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
+    color: color.jetBlack,
+    flex: 1,
     textAlign: "center",
   },
   inlineErrorState: {
     minHeight: 96,
   },
-  mainTextBase: {
-    fontSize: 24,
-    letterSpacing: -0.2,
-    lineHeight: 30,
-    textAlign: "center",
-  },
-  metaCard: {
-    gap: 0,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  metaActionButton: {
-    alignItems: "center",
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    flexDirection: "row",
+  detailPlaceholder: {
     gap: spacing.xs,
-    height: 40,
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
   },
-  metaActionButtonPressed: {
-    backgroundColor: colors.surfaceHigh,
+  loadingBadge: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.pill,
+    height: 36,
   },
-  metaActionButtonText: {
-    color: colors.secondary,
-    fontSize: typography.body,
-    fontWeight: "600",
-    lineHeight: 22,
-  },
-  metaLabel: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  metaInfoButton: {
-    alignItems: "center",
-    height: 24,
-    justifyContent: "center",
-    width: 24,
-  },
-  metaInfoButtonPressed: {
-    opacity: 0.6,
-  },
-  metaInfoPopoverContent: {
-    backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    maxWidth: 296,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: "#000",
-    shadowOffset: {
-      height: 6,
-      width: 0,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  metaInfoPopoverOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  metaInfoPopoverText: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 20,
-    paddingTop: spacing.sm,
-  },
-  metaInfoPopoverTitle: {
-    color: colors.text,
-    fontSize: typography.body,
-    lineHeight: 22,
-  },
-  metaLabelRow: {
-    alignItems: "center",
-    flex: 1,
+  loadingBadgeGroup: {
     flexDirection: "row",
-    gap: 4,
+    flexWrap: "wrap",
+    gap: spacing.xxs,
+    justifyContent: "center",
+    maxWidth: "100%",
   },
-  metaRow: {
+  loadingBadgeLong: {
+    width: 140,
+  },
+  loadingBadgeMedium: {
+    width: 112,
+  },
+  loadingBadgeShort: {
+    width: 88,
+  },
+  loadingBadgeStack: {
+    alignItems: "center",
+    gap: spacing.xxs,
+    maxWidth: "100%",
+  },
+  loadingContent: {
+    flex: 1,
+  },
+  loadingHistoryDate: {
+    backgroundColor: color.white,
+    borderRadius: borderRadius.pill,
+    flex: 1,
+    height: 20,
+  },
+  loadingHistoryDivider: {
+    borderTopColor: color.jetBlack,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  loadingHistoryLabel: {
+    backgroundColor: color.white,
+    borderRadius: borderRadius.pill,
+    height: typography.lineHeight.caption,
+    width: 80,
+  },
+  loadingHistoryRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.md,
-    justifyContent: "space-between",
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  metaRowDivider: {
-    borderBottomColor: colors.outlineSoft,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  loadingHistorySection: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.xl,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
   },
-  metaValue: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "right",
+  loadingHistoryStatus: {
+    backgroundColor: color.white,
+    borderRadius: borderRadius.pill,
+    height: 20,
+    width: 52,
+  },
+  loadingScheduleDate: {
+    backgroundColor: color.white,
+    borderRadius: borderRadius.pill,
+    height: typography.lineHeight.title,
+    width: 96,
+  },
+  loadingScheduleLabel: {
+    backgroundColor: color.white,
+    borderRadius: borderRadius.pill,
+    height: typography.lineHeight.caption,
+    width: 64,
+  },
+  loadingScheduleMeta: {
+    backgroundColor: color.white,
+    borderRadius: borderRadius.pill,
+    height: 20,
+    width: 144,
+  },
+  loadingScheduleSection: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.xl,
+    gap: spacing.xxs,
+    padding: spacing.md,
+  },
+  loadingSummarySection: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+  },
+  loadingSummaryTitle: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.pill,
+    height: typography.lineHeight.title,
+    width: "48%",
   },
   primaryActionButton: {
     alignItems: "center",
-    backgroundColor: colors.statusCompletedSoft,
+    borderColor: colors.outlineSoft,
     borderRadius: borderRadius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     flex: 1,
     flexDirection: "row",
     gap: spacing.xs,
@@ -1027,10 +1042,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   primaryActionButtonPressed: {
-    opacity: 0.8,
+    opacity: 0.72,
   },
   primaryActionButtonText: {
-    color: colors.statusCompletedText,
+    color: colors.text,
     fontSize: typography.body,
     fontWeight: "600",
     lineHeight: 22,
@@ -1043,14 +1058,14 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   scrollContent: {
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
   secondaryActionButton: {
     alignItems: "center",
-    backgroundColor: colors.statusSkippedSoft,
+    borderColor: colors.outlineSoft,
     borderRadius: borderRadius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     flex: 1,
     flexDirection: "row",
     gap: spacing.xs,
@@ -1062,89 +1077,86 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   secondaryActionButtonText: {
-    color: colors.statusSkippedText,
+    color: colors.text,
     fontSize: typography.body,
     fontWeight: "600",
     lineHeight: 22,
   },
-  secondaryTextBase: {
-    fontSize: 16,
-    lineHeight: 22,
+  scheduleDate: {
+    color: color.white,
+    textAlign: "left",
+  },
+  scheduleMetaText: {
+    color: color.white,
+    flexShrink: 1,
+  },
+  scheduleSection: {
+    alignItems: "flex-start",
+    backgroundColor: color.royalBlue,
+    borderRadius: borderRadius.xl,
+    gap: spacing.xxs,
+    padding: spacing.md,
+  },
+  scheduleTitle: {
+    color: color.white,
+  },
+  summaryBadgeStack: {
+    alignItems: "center",
+    gap: spacing.xxs,
+    maxWidth: "100%",
+  },
+  summaryOutlineContent: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+  summaryOutlineLabel: {
+    color: color.jetBlack,
+  },
+  summaryOutlineGroup: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xxs,
+    justifyContent: "center",
+    maxWidth: "100%",
+  },
+  summaryOutlineRow: {
+    alignItems: "center",
+    borderColor: color.jetBlack,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xxs,
+    maxWidth: "100%",
+    minHeight: 36,
+    paddingHorizontal: spacing.sm,
+  },
+  summaryOutlineValue: {
+    color: color.jetBlack,
+    flexShrink: 1,
+  },
+  summaryNotificationIconSlot: {
+    alignItems: "center",
+    height: typography.lineHeight.body,
+    justifyContent: "center",
+    width: 14,
+  },
+  summarySection: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+  },
+  summaryTitle: {
+    color: color.jetBlack,
     textAlign: "center",
   },
-  sectionBlock: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.title,
-  },
-  stateCard: {
-    alignItems: "center",
-    borderRadius: borderRadius.lg,
-    gap: spacing.xs,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  stateCardEmpty: {
-    backgroundColor: colors.surfaceHigh,
-  },
-  stateCardOverdue: {
-    backgroundColor: colors.statusOverdue,
-  },
-  stateCardScheduled: {
-    backgroundColor: colors.statusScheduled,
-  },
-  stateDateEmpty: {
-    fontSize: typography.title,
-    letterSpacing: 0,
-    lineHeight: 28,
-  },
-  stateMainText: {
-    color: colors.primaryForeground,
-  },
-  stateEyebrowText: {
-    color: "rgba(255, 255, 255, 0.8)",
-  },
-  stateSecondaryText: {
-    color: "rgba(255, 255, 255, 0.8)",
-  },
-  stateShadow: {
-    elevation: 5,
-    shadowRadius: 22,
-  },
-  summaryCard: {
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  summaryCategoryText: {
-    color: colors.secondary,
-  },
-  summaryMainText: {
-    color: colors.text,
-  },
-  summarySecondaryText: {
-    color: colors.textMuted,
-    maxWidth: 260,
-  },
-  summaryShadow: {
-    elevation: 4,
-    shadowRadius: 18,
-  },
-  timePill: {
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: borderRadius.pill,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
-  },
-  timePillText: {
-    color: colors.primaryForeground,
-    fontSize: typography.label,
-    fontWeight: "500",
-    lineHeight: 18,
+  statePanel: {
+    borderColor: colors.outlineSoft,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });
