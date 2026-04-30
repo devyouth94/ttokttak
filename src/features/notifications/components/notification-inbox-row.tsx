@@ -23,12 +23,9 @@ export function NotificationInboxRow({
   timezone,
 }: NotificationInboxRowProps): React.JSX.Element {
   const isUnread = !item.readAt;
-  const metaLine = [
-    item.body,
-    formatInboxDateLabel(item.deliveredAtUtc, timezone),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const bodyLine = item.body.trim();
+  const timestampLine = formatInboxTimestampLine(item.deliveredAtUtc, timezone);
+  const titleVariant = isUnread ? "body2" : "body";
 
   return (
     <Pressable
@@ -70,22 +67,48 @@ export function NotificationInboxRow({
       ) : null}
 
       <View style={styles.copy}>
-        <AppText
-          ellipsizeMode="tail"
-          numberOfLines={1}
-          style={isUnread ? styles.titleUnread : styles.titleRead}
-          variant={isUnread ? "body2" : "body"}
-        >
-          {item.title}
-        </AppText>
+        <View style={styles.titleLine}>
+          <AppText
+            ellipsizeMode="tail"
+            numberOfLines={1}
+            style={[
+              styles.titleText,
+              isUnread ? styles.titleUnread : styles.titleRead,
+            ]}
+            variant={titleVariant}
+          >
+            {item.title}
+          </AppText>
+          {bodyLine ? (
+            <>
+              <AppText
+                style={[
+                  styles.separatorText,
+                  isUnread ? styles.titleUnread : styles.titleRead,
+                ]}
+                variant={titleVariant}
+              >
+                {" | "}
+              </AppText>
+              <AppText
+                ellipsizeMode="tail"
+                numberOfLines={1}
+                style={[styles.bodyText, styles.secondaryText]}
+                variant="caption"
+              >
+                {bodyLine}
+              </AppText>
+            </>
+          ) : null}
+        </View>
 
         <AppText
           ellipsizeMode="tail"
           numberOfLines={1}
-          style={styles.body}
+          style={styles.secondaryText}
           variant="caption"
         >
-          {metaLine}
+          {timestampLine}
         </AppText>
       </View>
 
@@ -96,19 +119,28 @@ export function NotificationInboxRow({
   );
 }
 
-function formatInboxDateLabel(utcDateTime: string, timezone: string): string {
-  return formatInTimeZone(utcDateTime, timezone, "M월 d일 EEE a h:mm", {
+function formatInboxTimestampLine(
+  utcDateTime: string,
+  timezone: string
+): string {
+  const dateLabel = formatInTimeZone(utcDateTime, timezone, "M월 d일 EEE", {
     locale: ko,
   });
+  const timeLabel = formatInTimeZone(utcDateTime, timezone, "a h:mm", {
+    locale: ko,
+  });
+
+  return `${dateLabel} · ${timeLabel}`;
 }
 
 const styles = StyleSheet.create({
-  body: {
-    color: color.gray,
-  },
   copy: {
     flex: 1,
     gap: spacing.xxs,
+    minWidth: 0,
+  },
+  bodyText: {
+    flexShrink: 1,
     minWidth: 0,
   },
   pressed: {
@@ -138,8 +170,23 @@ const styles = StyleSheet.create({
   titleRead: {
     color: color.gray,
   },
+  titleLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    minWidth: 0,
+  },
+  titleText: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   titleUnread: {
     color: color.jetBlack,
+  },
+  secondaryText: {
+    color: color.gray,
+  },
+  separatorText: {
+    flexShrink: 0,
   },
   unreadDot: {
     backgroundColor: color.salmonOrange,

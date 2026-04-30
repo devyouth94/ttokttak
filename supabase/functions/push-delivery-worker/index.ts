@@ -107,6 +107,15 @@ function hasSucceededPushAttempt(attempts: AttemptResult[]): boolean {
   return attempts.some((attempt) => attempt.status === "succeeded");
 }
 
+function createProviderNotification(job: NotificationDeliveryJob): {
+  body?: string;
+  title: string;
+} {
+  const body = job.body.trim();
+
+  return body ? { body, title: job.title } : { title: job.title };
+}
+
 function getEmptyAttemptCounts(): Record<
   NotificationDeliveryAttemptStatus,
   number
@@ -439,10 +448,7 @@ async function sendApnsNotification(
       body: JSON.stringify({
         ...job.payload,
         aps: {
-          alert: {
-            body: job.body,
-            title: job.title,
-          },
+          alert: createProviderNotification(job),
           sound: "default",
         },
       }),
@@ -532,10 +538,7 @@ async function sendFcmNotification(
               },
             },
             data: toFcmData(job.payload),
-            notification: {
-              body: job.body,
-              title: job.title,
-            },
+            notification: createProviderNotification(job),
             token: token.push_token,
           },
         }),

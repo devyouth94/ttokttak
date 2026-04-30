@@ -538,7 +538,7 @@ inbox 필수 저장 필드:
 - 대상 사용자: `user_id`
 - collapse 및 상세 기준: `item_id`, `item_scheduled_at_utc`
 - 발송 출처: `source_job_id`, `notification_kind`
-- 사용자-facing 문구: `title`, `body`
+- 사용자-facing 문구: `title`, 선택적 `body`
 - push payload: `payload`
 - 성공 응답 시각: `delivered_at_utc`
 - 사용자 액션 상태: `read_at`, `hidden_at`

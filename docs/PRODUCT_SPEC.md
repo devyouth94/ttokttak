@@ -267,6 +267,9 @@
 - 알림함 row의 사용자-facing identity는 `(user_id, item_id, item_scheduled_at_utc)`이다
 - 알림함 row는 대상 사용자, 반복 항목, 예정 시각, 원격 푸시 payload, 상세 이동 target을 함께 저장한다
 - 알림함 row는 원격 푸시 발송 job과 별도 저장소에 둔다
+- 원격 푸시 제목은 반복 항목 제목을 사용한다
+- 원격 푸시 본문은 반복 항목 설명이 있을 때만 사용한다
+- 반복 항목 설명이 없으면 원격 푸시 provider payload에서 본문을 생략하고 알림함 본문도 빈 값으로 저장한다
 - MVP 상세 이동 target은 `notificationKind = "reminder"`와 `source = "recurring-item"` 조합만 허용한다
 - 이 조합의 상세 이동 route는 `/items/[itemId]`이며, `scheduledAtUtc`를 기준 occurrence 시각으로 전달한다
 - 허용되지 않은 알림 유형이나 대상 엔티티 조합은 상세 이동을 수행하지 않는다
@@ -278,7 +281,8 @@
 - 발송 예정 job은 원격 푸시 성공 응답을 받기 전까지 알림함 저장 대상이 아니다
 - 같은 사용자, 반복 항목, 예정 시각에 대해 여러 기기 발송이 성공해도 사용자 알림은 1건만 노출한다
 - 알림함 목록 조회는 `notification_inbox_items`의 collapsed row를 기준으로 하며 token별 delivery record를 펼쳐서 목록을 만들지 않는다
-- 알림함 UI는 collapsed 알림의 제목, 본문, 전달 시각, 읽음 여부만 표시한다
+- 알림함 UI는 collapsed 알림의 제목, 선택적 본문, 전달 시각, 읽음 여부만 표시한다
+- 본문이 없으면 알림함 row는 제목만 표시한다
 - 기기별 성공/실패 내역과 성공 기기 수 요약은 MVP UI에 표시하지 않는다
 - `source_job_id`, `device_id`, `push_token_ref`, provider, provider 응답 요약은 사용자-facing identity에 포함하지 않는다
 - `device_id`, `push_token_ref`, provider message id, provider 응답 요약은 사용자-facing 알림함 UI에 노출하지 않는다

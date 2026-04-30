@@ -311,6 +311,7 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 7. iOS + `apns` token은 APNs 직접 발송으로 보낸다.
 8. Android + `fcm` token은 FCM 직접 발송으로 보낸다.
    payload에는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 포함한다.
+   반복 항목 설명이 없으면 provider notification payload에는 `body`를 넣지 않는다.
 9. token별 결과를 `notification_delivery_attempts`에 남긴다.
 10. APNs / FCM 성공 응답 attempt가 1건 이상이면 inbox target을 검증한다.
    필수 target은 `user_id`, `item_id`, `item_scheduled_at_utc`, `notification_kind`, payload routing 값이다.
@@ -342,7 +343,8 @@ delivery job row는 발송 상태와 재시도를 관리하고, inbox row는 성
 - `item_scheduled_at_utc`: 상세 이동 시 기준 occurrence 시각이자 collapse key 일부
 - `source_job_id`: 성공 응답을 만든 delivery job 추적용 링크
 - `notification_kind`: MVP에서는 `reminder`만 허용
-- `title`, `body`: APNs / FCM에 보낸 사용자-facing 문구의 사본
+- `title`: APNs / FCM에 보낸 반복 항목 제목의 사본
+- `body`: 반복 항목 설명이 있을 때만 APNs / FCM에 보낸 사용자-facing 본문의 사본
 - `payload`: 원격 푸시 payload 사본
 - `delivered_at_utc`: worker가 성공 응답을 확인한 시각
 - `read_at`: 사용자가 알림을 탭하거나 읽음 처리한 시각
@@ -387,8 +389,8 @@ MVP UI는 collapsed inbox row만 표시한다.
 목록 row 표시 값:
 
 - `title`
-- `body`
-- `delivered_at_utc`
+- `body`: 값이 있을 때만 제목 옆에 표시
+- `delivered_at_utc`: 날짜와 시간으로 분리해 표시
 - 읽음 여부: `read_at is not null`
 
 상세 이동에 사용하는 값:

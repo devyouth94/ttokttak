@@ -32,9 +32,7 @@ type NotificationDeliverySyncResult = {
 };
 
 function createRemotePushBody(item: RecurringItem): string {
-  return (
-    item.description?.trim() || `${item.reminderTimeLocal}에 확인할 일정입니다.`
-  );
+  return item.description?.trim() ?? "";
 }
 
 function createRemotePushTitle(item: RecurringItem): string {
