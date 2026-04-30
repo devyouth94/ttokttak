@@ -1,49 +1,56 @@
-import type { StyleProp, ViewStyle } from "react-native";
+import { forwardRef } from "react";
+import type { PressableProps } from "react-native";
 import { Pressable, StyleSheet } from "react-native";
 
 import { borderRadius } from "~/design-system/tokens";
 
 type IconButtonSize = "sm" | "md" | "lg";
 
-type IconButtonProps = {
-  accessibilityHint?: string;
+type IconButtonProps = Omit<PressableProps, "children" | "style"> & {
   accessibilityLabel: string;
-  disabled?: boolean;
   icon: React.JSX.Element;
-  onPress: () => void;
   size?: IconButtonSize;
-  style?: StyleProp<ViewStyle>;
+  style?: PressableProps["style"];
 };
 
-export function IconButton({
-  accessibilityHint,
-  accessibilityLabel,
-  disabled = false,
-  icon,
-  onPress,
-  size = "md",
-  style,
-}: IconButtonProps): React.JSX.Element {
+export const IconButton = forwardRef<
+  React.ElementRef<typeof Pressable>,
+  IconButtonProps
+>(function IconButton(
+  {
+    accessibilityLabel,
+    accessibilityRole = "button",
+    accessibilityState,
+    disabled = false,
+    icon,
+    size = "md",
+    style,
+    ...pressableProps
+  },
+  ref
+): React.JSX.Element {
+  const isDisabled = disabled === true;
+
   return (
     <Pressable
-      accessibilityHint={accessibilityHint}
+      {...pressableProps}
+      ref={ref}
       accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
+      accessibilityRole={accessibilityRole}
+      accessibilityState={{ ...accessibilityState, disabled: isDisabled }}
+      disabled={isDisabled}
+      style={(state) => [
         styles.button,
         styles[size],
-        disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
-        style,
+        isDisabled && styles.buttonDisabled,
+        state.pressed && !isDisabled && styles.buttonPressed,
+        typeof style === "function" ? style(state) : style,
       ]}
     >
       {icon}
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   button: {

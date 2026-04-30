@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import { ArrowLeft, ListChecks, X } from "lucide-react-native";
 
-import { AppText } from "~/design-system/components/app-text";
 import { IconButton } from "~/design-system/components/icon-button";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { ScreenHeader } from "~/design-system/components/screen-header";
+import { borderRadius, color } from "~/design-system/tokens";
 
 type NotificationInboxHeaderProps = {
   disabled: boolean;
@@ -22,8 +22,8 @@ export function NotificationInboxHeader({
   const ActionIcon = isSelectionMode ? X : ListChecks;
 
   return (
-    <View style={styles.header}>
-      <View style={styles.titleGroup}>
+    <ScreenHeader
+      leftSlot={
         <Pressable
           accessibilityHint="이전 화면으로 돌아가요."
           accessibilityLabel="뒤로 가기"
@@ -37,24 +37,18 @@ export function NotificationInboxHeader({
         >
           <ArrowLeft color={color.white} size={18} />
         </Pressable>
-        <AppText
-          ellipsizeMode="tail"
-          numberOfLines={1}
-          style={styles.title}
-          variant="display"
-        >
-          알림
-        </AppText>
-      </View>
-
-      <IconButton
-        accessibilityLabel={actionLabel}
-        disabled={disabled}
-        icon={<ActionIcon color={color.jetBlack} size={20} />}
-        onPress={onToggleSelectionMode}
-        size="lg"
-      />
-    </View>
+      }
+      rightSlot={
+        <IconButton
+          accessibilityLabel={actionLabel}
+          disabled={disabled}
+          icon={<ActionIcon color={color.jetBlack} size={20} />}
+          onPress={onToggleSelectionMode}
+          size="lg"
+        />
+      }
+      title="알림"
+    />
   );
 }
 
@@ -67,25 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 32,
   },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-  },
   pressed: {
     opacity: 0.88,
-  },
-  title: {
-    color: color.jetBlack,
-  },
-  titleGroup: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    minWidth: 0,
   },
 });

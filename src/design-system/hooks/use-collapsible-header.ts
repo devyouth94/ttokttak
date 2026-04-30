@@ -7,6 +7,7 @@ import {
 
 type UseCollapsibleHeaderOptions = {
   animationDuration?: number;
+  hiddenOffset?: number;
   scrollThreshold?: number;
 };
 
@@ -26,6 +27,7 @@ const SCROLLABLE_CONTENT_EPSILON = 1;
 
 export function useCollapsibleHeader({
   animationDuration = 180,
+  hiddenOffset = 0,
   scrollThreshold = 6,
 }: UseCollapsibleHeaderOptions = {}): UseCollapsibleHeaderResult {
   const headerTranslateY = useRef(new Animated.Value(0)).current;
@@ -47,10 +49,10 @@ export function useCollapsibleHeader({
       );
 
       if (!headerVisibleRef.current) {
-        headerTranslateY.setValue(-nextHeight);
+        headerTranslateY.setValue(-(nextHeight + hiddenOffset));
       }
     },
-    [headerTranslateY]
+    [headerTranslateY, hiddenOffset]
   );
 
   const showHeader = useCallback(() => {
@@ -74,10 +76,10 @@ export function useCollapsibleHeader({
     headerVisibleRef.current = false;
     Animated.timing(headerTranslateY, {
       duration: animationDuration,
-      toValue: -headerHeight,
+      toValue: -(headerHeight + hiddenOffset),
       useNativeDriver: true,
     }).start();
-  }, [animationDuration, headerHeight, headerTranslateY]);
+  }, [animationDuration, headerHeight, headerTranslateY, hiddenOffset]);
 
   const onScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {

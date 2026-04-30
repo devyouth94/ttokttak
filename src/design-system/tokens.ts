@@ -133,6 +133,7 @@ export const typography = {
   lineHeight: {
     caption: 15,
     label: 16,
+    body3: 20,
     body: 23,
     title: 30,
     display: 36,
@@ -141,6 +142,7 @@ export const typography = {
   size: {
     caption: 11,
     label: 12,
+    body3: 14,
     body: 16,
     title: 24,
     display: 32,

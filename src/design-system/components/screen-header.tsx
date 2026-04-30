@@ -7,6 +7,7 @@ import { color, spacing } from "~/design-system/tokens";
 import { AppText } from "./app-text";
 
 type ScreenHeaderProps = {
+  leftSlot?: ReactNode;
   onHeightChange?: (height: number) => void;
   rightSlot?: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -15,6 +16,7 @@ type ScreenHeaderProps = {
 };
 
 export function ScreenHeader({
+  leftSlot,
   onHeightChange,
   rightSlot,
   style,
@@ -28,10 +30,12 @@ export function ScreenHeader({
       }}
       style={[styles.header, style]}
     >
+      {leftSlot ? <View style={styles.leftSlot}>{leftSlot}</View> : null}
+
       <View style={styles.copy}>
         <AppText
           ellipsizeMode="tail"
-          numberOfLines={2}
+          numberOfLines={leftSlot ? 1 : 2}
           style={[styles.title, { color: titleColor }]}
           variant="display"
         >
@@ -50,7 +54,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   header: {
-    alignItems: "flex-start",
+    alignItems: "center",
     backgroundColor: color.white,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -58,6 +62,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     width: "100%",
+  },
+  leftSlot: {
+    alignItems: "flex-start",
+    marginRight: spacing.md,
+    position: "relative",
+    zIndex: 20,
   },
   rightSlot: {
     alignItems: "flex-end",

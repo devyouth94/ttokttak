@@ -12,6 +12,7 @@ import { color, colors, typography } from "~/design-system/tokens";
 type AppTextVariant =
   | "body"
   | "body2"
+  | "body3"
   | "caption"
   | "display"
   | "label"
@@ -59,6 +60,12 @@ const styles = StyleSheet.create({
     letterSpacing: typography.letterSpacing.normal,
     lineHeight: typography.lineHeight.body,
   },
+  body3: {
+    fontSize: typography.size.body3,
+    fontWeight: typography.fontWeight.regular,
+    letterSpacing: typography.letterSpacing.normal,
+    lineHeight: typography.lineHeight.body3,
+  },
   caption: {
     fontSize: typography.size.caption,
     fontWeight: typography.fontWeight.medium,
@@ -82,7 +89,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.size.title,
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: typography.fontWeight.semibold,
     letterSpacing: typography.letterSpacing.tight,
     lineHeight: typography.lineHeight.title,
   },
