@@ -8,6 +8,7 @@ import { HomeFeedItemRow } from "./home-feed-item-row";
 import type { HomeFeedCard, HomeFeedSection } from "./home-screen.helpers";
 
 type HomeFeedSectionBlockProps = {
+  bottomOverlapInset: number;
   isLoading: boolean;
   onAction: (card: HomeFeedCard, action: CompletionAction) => void;
   processingOccurrenceIds: string[];
@@ -17,6 +18,7 @@ type HomeFeedSectionBlockProps = {
 };
 
 export function HomeFeedSectionBlock({
+  bottomOverlapInset,
   isLoading,
   onAction,
   processingOccurrenceIds,
@@ -59,7 +61,12 @@ export function HomeFeedSectionBlock({
         </View>
       ) : null}
       {section.items.length > 0 && !isLoading ? (
-        <View style={styles.feedItemList}>
+        <View
+          style={[
+            styles.feedItemList,
+            bottomOverlapInset > 0 && { paddingBottom: bottomOverlapInset },
+          ]}
+        >
           {section.items.map((card, index) => (
             <HomeFeedItemRow
               card={card}

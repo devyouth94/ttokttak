@@ -32,17 +32,22 @@ export function HomeFeedSectionList({
     feedViewportHeight / feedSectionCount
   );
 
-  const getFeedSectionLayoutStyle = (index: number): ViewStyle => {
+  const getFeedSectionLayoutStyle = (
+    section: HomeFeedSection,
+    index: number
+  ): ViewStyle => {
     const isStackedSection = index > 0;
     const isLastSection = index === feedSections.length - 1;
+    const usesSegmentHeight = isLoading || section.items.length === 0;
     const segmentHeight = isLastSection
       ? feedViewportHeight - baseCardSegmentHeight * (feedSectionCount - 1)
       : baseCardSegmentHeight;
 
     return {
-      minHeight:
-        segmentHeight +
-        (isLastSection ? bottomNavReservedHeight : FEED_SECTION_STACK_OVERLAP),
+      minHeight: usesSegmentHeight
+        ? segmentHeight +
+          (isLastSection ? bottomNavReservedHeight : FEED_SECTION_STACK_OVERLAP)
+        : undefined,
       marginTop: isStackedSection ? -FEED_SECTION_STACK_OVERLAP : 0,
       paddingBottom: isLastSection ? bottomNavReservedHeight : undefined,
       zIndex: index + 1,
@@ -51,17 +56,22 @@ export function HomeFeedSectionList({
 
   return (
     <View>
-      {feedSections.map((section, index) => (
-        <HomeFeedSectionBlock
-          isLoading={isLoading}
-          key={section.id}
-          onAction={onAction}
-          processingOccurrenceIds={processingOccurrenceIds}
-          selectedDateIsToday={selectedDateIsToday}
-          section={section}
-          style={getFeedSectionLayoutStyle(index)}
-        />
-      ))}
+      {feedSections.map((section, index) => {
+        const isLastSection = index === feedSections.length - 1;
+
+        return (
+          <HomeFeedSectionBlock
+            bottomOverlapInset={isLastSection ? 0 : FEED_SECTION_STACK_OVERLAP}
+            isLoading={isLoading}
+            key={section.id}
+            onAction={onAction}
+            processingOccurrenceIds={processingOccurrenceIds}
+            selectedDateIsToday={selectedDateIsToday}
+            section={section}
+            style={getFeedSectionLayoutStyle(section, index)}
+          />
+        );
+      })}
     </View>
   );
 }
