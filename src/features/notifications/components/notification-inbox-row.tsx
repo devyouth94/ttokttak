@@ -25,7 +25,6 @@ export function NotificationInboxRow({
   const isUnread = !item.readAt;
   const bodyLine = item.body.trim();
   const timestampLine = formatInboxTimestampLine(item.deliveredAtUtc, timezone);
-  const titleVariant = isUnread ? "body2" : "body";
 
   return (
     <Pressable
@@ -75,30 +74,19 @@ export function NotificationInboxRow({
               styles.titleText,
               isUnread ? styles.titleUnread : styles.titleRead,
             ]}
-            variant={titleVariant}
+            variant={isUnread ? "body2" : "body"}
           >
             {item.title}
           </AppText>
           {bodyLine ? (
-            <>
-              <AppText
-                style={[
-                  styles.separatorText,
-                  isUnread ? styles.titleUnread : styles.titleRead,
-                ]}
-                variant={titleVariant}
-              >
-                {" | "}
-              </AppText>
-              <AppText
-                ellipsizeMode="tail"
-                numberOfLines={1}
-                style={[styles.bodyText, styles.secondaryText]}
-                variant="caption"
-              >
-                {bodyLine}
-              </AppText>
-            </>
+            <AppText
+              ellipsizeMode="tail"
+              numberOfLines={1}
+              style={[styles.bodyText, styles.secondaryText]}
+              variant="caption"
+            >
+              {bodyLine}
+            </AppText>
           ) : null}
         </View>
 
@@ -173,6 +161,7 @@ const styles = StyleSheet.create({
   titleLine: {
     alignItems: "center",
     flexDirection: "row",
+    gap: spacing.xxs,
     minWidth: 0,
   },
   titleText: {
@@ -184,9 +173,6 @@ const styles = StyleSheet.create({
   },
   secondaryText: {
     color: color.gray,
-  },
-  separatorText: {
-    flexShrink: 0,
   },
   unreadDot: {
     backgroundColor: color.salmonOrange,
