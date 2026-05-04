@@ -2,26 +2,20 @@ import { type ReactNode, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Pressable,
-  ScrollView,
-  type StyleProp,
   StyleSheet,
-  type TextStyle,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
-import { ExternalLink, LogOut } from "lucide-react-native";
+import { ExternalLink } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
-import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
+import { ScreenHeader } from "~/design-system/components/screen-header";
+import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
+import { borderRadius, color, spacing } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { useSession } from "~/features/session/session-provider";
@@ -30,8 +24,9 @@ type SectionTitleProps = {
   title: string;
 };
 
-type SettingsCardProps = {
+type SettingsSectionCardProps = {
   children: ReactNode;
+  title: string;
 };
 
 type SettingsRowProps = {
@@ -39,10 +34,8 @@ type SettingsRowProps = {
   description?: string;
   isFirst?: boolean;
   isPressable?: boolean;
-  isSeparated?: boolean;
   onPress?: () => void;
   title: string;
-  titleStyle?: StyleProp<TextStyle>;
 };
 
 type SettingsValueRowProps = {
@@ -53,14 +46,23 @@ type SettingsValueRowProps = {
 
 function SectionTitle({ title }: SectionTitleProps): React.JSX.Element {
   return (
-    <AppText style={styles.sectionTitle} variant="label">
+    <AppText style={styles.sectionTitle} variant="caption">
       {title}
     </AppText>
   );
 }
 
-function SettingsCard({ children }: SettingsCardProps): React.JSX.Element {
-  return <View style={styles.card}>{children}</View>;
+function SettingsSectionCard({
+  children,
+  title,
+}: SettingsSectionCardProps): React.JSX.Element {
+  return (
+    <View style={styles.sectionCard}>
+      <SectionTitle title={title} />
+
+      <View>{children}</View>
+    </View>
+  );
 }
 
 function SettingsRow({
@@ -68,10 +70,8 @@ function SettingsRow({
   description,
   isFirst = false,
   isPressable = false,
-  isSeparated = true,
   onPress,
   title,
-  titleStyle,
 }: SettingsRowProps): React.JSX.Element {
   return (
     <Pressable
@@ -80,15 +80,18 @@ function SettingsRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        isFirst ? styles.firstRow : undefined,
-        isSeparated ? styles.rowBorder : undefined,
+        !isFirst ? styles.rowDivider : undefined,
         isPressable && pressed ? styles.rowPressed : undefined,
       ]}
     >
       <View style={styles.rowContent}>
-        <AppText style={[styles.rowTitle, titleStyle]}>{title}</AppText>
+        <AppText style={styles.rowTitle} variant="body3">
+          {title}
+        </AppText>
         {description ? (
-          <AppText style={styles.rowDescription}>{description}</AppText>
+          <AppText style={styles.rowDescription} variant="body3">
+            {description}
+          </AppText>
         ) : null}
       </View>
 
@@ -103,15 +106,13 @@ function SettingsValueRow({
   value,
 }: SettingsValueRowProps): React.JSX.Element {
   return (
-    <View
-      style={[
-        styles.row,
-        isFirst ? styles.firstRow : undefined,
-        styles.rowBorder,
-      ]}
-    >
-      <AppText style={styles.rowTitle}>{title}</AppText>
-      <AppText style={styles.rowValue}>{value}</AppText>
+    <View style={[styles.row, !isFirst ? styles.rowDivider : undefined]}>
+      <AppText style={styles.rowTitle} variant="body3">
+        {title}
+      </AppText>
+      <AppText style={styles.rowValue} variant="body3">
+        {value}
+      </AppText>
     </View>
   );
 }
@@ -132,6 +133,13 @@ function getNotificationStatusText(
 
 export default function SettingsTabPage(): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const {
+    headerAnimatedStyle,
+    headerHeight,
+    onHeaderHeightChange,
+    onScroll,
+    scrollEventThrottle,
+  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const { profile, signOut, user } = useSession();
   const {
     isPermissionLoading,
@@ -196,46 +204,31 @@ export default function SettingsTabPage(): React.JSX.Element {
   }
 
   return (
-    <AppScreen>
-      <LegacyScreenHeader title="설정" />
+    <AppScreen contentStyle={styles.screenContent}>
+      <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
+        <ScreenHeader onHeightChange={onHeaderHeightChange} title="설정" />
+      </Animated.View>
 
-      <ScrollView
+      <Animated.ScrollView
         bounces={false}
         contentContainerStyle={[
           styles.scrollContent,
+          { paddingTop: headerHeight },
           {
             paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
           },
         ]}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.section}>
-          <SectionTitle title="계정" />
-          <SettingsCard>
+        <View style={styles.sections}>
+          <SettingsSectionCard title="계정">
             <SettingsValueRow isFirst title="이름" value={displayName} />
             <SettingsValueRow title="이메일" value={email} />
-            <SettingsRow
-              accessory={
-                isSigningOut ? (
-                  <ActivityIndicator color={colors.error} size="small" />
-                ) : (
-                  <LogOut color={colors.error} size={18} />
-                )
-              }
-              isPressable
-              isSeparated={false}
-              onPress={() => {
-                void handleSignOut();
-              }}
-              title="로그아웃"
-              titleStyle={styles.logoutText}
-            />
-          </SettingsCard>
-        </View>
+          </SettingsSectionCard>
 
-        <View style={styles.section}>
-          <SectionTitle title="알림" />
-          <SettingsCard>
+          <SettingsSectionCard title="알림">
             <SettingsValueRow
               isFirst
               title="앱 알림"
@@ -249,14 +242,13 @@ export default function SettingsTabPage(): React.JSX.Element {
               <SettingsRow
                 accessory={
                   isRequestingPermission ? (
-                    <ActivityIndicator color={colors.text} size="small" />
+                    <ActivityIndicator color={color.gray} size="small" />
                   ) : (
-                    <ExternalLink color={colors.outlineSoft} size={16} />
+                    <ExternalLink color={color.gray} size={16} />
                   )
                 }
                 description="원격 푸시 토큰 등록을 위해 알림 권한이 필요합니다."
                 isPressable
-                isSeparated={!permission.canOpenSettings}
                 onPress={() => {
                   void handleRequestNotificationPermission();
                 }}
@@ -265,116 +257,123 @@ export default function SettingsTabPage(): React.JSX.Element {
             ) : null}
             {permission.canOpenSettings ? (
               <SettingsRow
-                accessory={
-                  <ExternalLink color={colors.outlineSoft} size={16} />
-                }
+                accessory={<ExternalLink color={color.gray} size={16} />}
                 description="권한이 꺼져 있으면 시스템 설정에서 다시 허용해야 합니다."
                 isPressable
-                isSeparated={false}
                 onPress={() => {
                   void handleOpenSystemSettings();
                 }}
                 title="시스템 설정 열기"
               />
             ) : null}
-          </SettingsCard>
+          </SettingsSectionCard>
+
+          <SettingsSectionCard title="앱 정보">
+            <SettingsValueRow isFirst title="시간대" value={timezone} />
+            <SettingsValueRow title="앱 버전" value={`v${appVersion}`} />
+          </SettingsSectionCard>
         </View>
 
-        <View style={styles.section}>
-          <SectionTitle title="앱 정보" />
-          <SettingsCard>
-            <SettingsValueRow isFirst title="시간대" value={timezone} />
-            <View style={styles.row}>
-              <AppText style={styles.rowTitle}>앱 버전</AppText>
-              <View style={styles.versionBadge}>
-                <AppText style={styles.versionText}>{`v${appVersion}`}</AppText>
-              </View>
-            </View>
-          </SettingsCard>
+        <View style={styles.logoutSlot}>
+          {isSigningOut ? (
+            <ActivityIndicator color={color.gray} size="small" />
+          ) : (
+            <Pressable
+              accessibilityLabel="로그아웃"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => {
+                void handleSignOut();
+              }}
+              style={({ pressed }) => [
+                styles.logoutButton,
+                pressed ? styles.rowPressed : undefined,
+              ]}
+            >
+              <AppText style={styles.logoutText} variant="body3">
+                로그아웃
+              </AppText>
+            </Pressable>
+          )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    overflow: "hidden",
+  headerLayer: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 10,
   },
-  firstRow: {
-    paddingTop: spacing.md,
+  logoutButton: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   logoutText: {
-    color: colors.error,
+    color: color.gray,
+    textDecorationLine: "underline",
+  },
+  logoutSlot: {
+    alignItems: "center",
+    marginTop: "auto",
+    paddingTop: spacing.xl,
   },
   row: {
     alignItems: "center",
-    backgroundColor: colors.surface,
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
-    minHeight: 64,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   rowAccessory: {
     alignItems: "center",
     justifyContent: "center",
   },
-  rowBorder: {
-    borderBottomColor: colors.outlineSoft,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  rowDivider: {
+    borderTopColor: color.jetBlack,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   rowContent: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xxs,
+    minWidth: 0,
   },
   rowDescription: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    color: color.gray,
   },
   rowPressed: {
-    backgroundColor: colors.surfaceLow,
+    opacity: 0.72,
   },
   rowTitle: {
-    color: colors.text,
-    fontSize: typography.body,
-    lineHeight: 20,
+    color: color.jetBlack,
   },
   rowValue: {
-    color: colors.textMuted,
+    color: color.gray,
     flexShrink: 1,
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: "right",
   },
   scrollContent: {
-    gap: spacing.xl,
+    flexGrow: 1,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
   },
-  section: {
-    gap: spacing.xs,
+  sectionCard: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.xl,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
+  sections: {
+    gap: spacing.lg,
   },
   sectionTitle: {
-    paddingHorizontal: spacing.xs,
+    color: color.jetBlack,
   },
-  versionBadge: {
-    backgroundColor: colors.surfaceHigh,
-    borderRadius: borderRadius.pill,
-    minWidth: 76,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  versionText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 16,
-    textAlign: "center",
+  screenContent: {
+    flex: 1,
   },
 });
