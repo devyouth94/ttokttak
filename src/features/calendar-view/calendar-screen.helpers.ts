@@ -1,9 +1,7 @@
-import type { MarkedDates } from "react-native-calendars/src/types";
 import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
 import { fromZonedTime } from "date-fns-tz";
 
-import { colors } from "~/design-system/tokens";
 import { getOccurrencesInRange } from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
@@ -13,16 +11,17 @@ import type {
 } from "~/features/recurring/domain/types";
 import { formatUtcTimeInTimezone } from "~/features/recurring/utils/recurring-display";
 
-const MAX_VISIBLE_MARKERS = 3;
-
-const markerColorByStatus: Record<CalendarMarkerStatus, string> = {
-  completed: colors.statusCompleted,
-  overdue: colors.statusOverdue,
-  scheduled: colors.statusScheduled,
-  skipped: colors.statusSkipped,
-};
+export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
 export type CalendarMarkerStatus = OccurrenceStatus;
+
+export const calendarStatusLabelByStatus: Record<CalendarMarkerStatus, string> =
+  {
+    completed: "완료",
+    overdue: "지남",
+    scheduled: "예정",
+    skipped: "건너뜀",
+  };
 
 export type CalendarDaySummary = {
   hasEntries: boolean;
@@ -156,48 +155,11 @@ export function buildCalendarDaySummaries({
         occurrenceCount: summary.occurrenceCount,
         overflowCount: Math.max(
           0,
-          summary.occurrenceCount - MAX_VISIBLE_MARKERS
+          summary.occurrenceCount - CALENDAR_MAX_VISIBLE_MARKERS
         ),
       },
     ])
   );
-}
-
-export function createCalendarMarkedDates({
-  daySummaries,
-  selectedDate,
-  todayDate,
-}: {
-  daySummaries: Record<string, CalendarDaySummary>;
-  selectedDate: string;
-  todayDate: string;
-}): MarkedDates {
-  const markedDates: MarkedDates = Object.fromEntries(
-    Object.values(daySummaries).map((summary) => [
-      summary.localDate,
-      {
-        dots: summary.markerStatuses.map((status, index) => ({
-          color: markerColorByStatus[status],
-          key: `${status}-${index}`,
-          selectedDotColor: markerColorByStatus[status],
-        })),
-        marked: summary.hasEntries,
-      },
-    ])
-  );
-  const selectedMarkedDate = markedDates[selectedDate] ?? {};
-  markedDates[selectedDate] = {
-    ...selectedMarkedDate,
-    selected: true,
-  };
-
-  const todayMarkedDate = markedDates[todayDate] ?? {};
-  markedDates[todayDate] = {
-    ...todayMarkedDate,
-    today: true,
-  };
-
-  return markedDates;
 }
 
 export function buildCalendarDayEntries({
@@ -230,7 +192,7 @@ export function buildCalendarDayEntries({
           itemId: item.id,
           scheduledAtUtc: occurrence.scheduledAtUtc,
           status: occurrence.status,
-          statusLabel: getCalendarStatusLabel(occurrence.status),
+          statusLabel: calendarStatusLabelByStatus[occurrence.status],
           timeLabel: formatUtcTimeInTimezone(
             occurrence.scheduledAtUtc,
             timezone
@@ -283,7 +245,7 @@ function getCalendarMarkerStatusesByTime(
   return occurrences
     .slice()
     .sort(compareOccurrencesByScheduledAtUtc)
-    .slice(0, MAX_VISIBLE_MARKERS)
+    .slice(0, CALENDAR_MAX_VISIBLE_MARKERS)
     .map((occurrence) => occurrence.status);
 }
 
@@ -307,17 +269,4 @@ function compareCalendarEntries(
   }
 
   return left.title.localeCompare(right.title, "ko");
-}
-
-function getCalendarStatusLabel(status: OccurrenceStatus): string {
-  switch (status) {
-    case "scheduled":
-      return "예정";
-    case "completed":
-      return "완료";
-    case "skipped":
-      return "건너뜀";
-    case "overdue":
-      return "놓침";
-  }
 }

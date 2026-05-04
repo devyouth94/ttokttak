@@ -1,19 +1,24 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Calendar, type DateData, LocaleConfig } from "react-native-calendars";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
-import {
-  AppStatePlaceholder,
-  AppStateView,
-} from "~/design-system/components/app-state";
+import { AppStateView } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
-import { LegacyScreenHeader } from "~/design-system/components/legacy-screen-header";
+import { ScreenHeader } from "~/design-system/components/screen-header";
+import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import {
   borderRadius,
+  color,
   colors,
   spacing,
   typography,
@@ -21,16 +26,21 @@ import {
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
+  type CalendarMarkerStatus,
+  calendarStatusLabelByStatus,
   clampVisibleMonth,
-  createCalendarMarkedDates,
   createCalendarScreenState,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
   getMinimumVisibleMonth,
   shiftVisibleMonth,
 } from "~/features/calendar-view/calendar-screen.helpers";
-import { CalendarDayCell } from "~/features/calendar-view/components/calendar-day-cell";
-import { CalendarEntryCard } from "~/features/calendar-view/components/calendar-entry-card";
+import {
+  CALENDAR_DAY_CELL_HEIGHT,
+  CalendarDayCell,
+  CalendarStatusMarker,
+} from "~/features/calendar-view/components/calendar-day-cell";
+import { CalendarEntryRow } from "~/features/calendar-view/components/calendar-entry-row";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
@@ -80,16 +90,18 @@ LocaleConfig.locales.ko = {
 };
 LocaleConfig.defaultLocale = "ko";
 
-const legendItems = [
-  { color: colors.statusScheduled, label: "예정" },
-  { color: colors.statusCompleted, label: "완료" },
-  { color: colors.statusSkipped, label: "건너뜀" },
-  { color: colors.statusOverdue, label: "놓침" },
-] as const;
+const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
+
+const legendStatuses: CalendarMarkerStatus[] = [
+  "scheduled",
+  "completed",
+  "skipped",
+  "overdue",
+];
 
 const calendarTheme = {
   arrowColor: colors.text,
-  calendarBackground: colors.surface,
+  calendarBackground: color.smokyWhite,
   dayTextColor: colors.text,
   monthTextColor: colors.text,
   selectedDayBackgroundColor: colors.primary,
@@ -140,6 +152,13 @@ const calendarTheme = {
 
 export function CalendarScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const {
+    headerAnimatedStyle,
+    headerHeight,
+    onHeaderHeightChange,
+    onScroll,
+    scrollEventThrottle,
+  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const [screenState, setScreenState] = useState(() =>
     createCalendarScreenState(new Date())
@@ -161,7 +180,6 @@ export function CalendarScreen(): React.JSX.Element {
     () => getMinimumVisibleMonth(items ?? []),
     [items]
   );
-  const showsTodayButton = screenState.selectedDate !== todayState.selectedDate;
   const selectedDateTitle = formatSelectedDateSectionTitle(
     screenState.selectedDate
   );
@@ -200,16 +218,6 @@ export function CalendarScreen(): React.JSX.Element {
     minimumVisibleMonth !== null &&
     screenState.visibleMonth.localeCompare(minimumVisibleMonth) <= 0;
 
-  const markedDates = useMemo(
-    () =>
-      createCalendarMarkedDates({
-        daySummaries,
-        selectedDate: screenState.selectedDate,
-        todayDate: todayState.selectedDate,
-      }),
-    [daySummaries, screenState.selectedDate, todayState.selectedDate]
-  );
-
   const handleDayPress = (date: DateData) => {
     setScreenState((prevState) => ({
       ...prevState,
@@ -225,10 +233,6 @@ export function CalendarScreen(): React.JSX.Element {
         minimumVisibleMonth
       ),
     }));
-  };
-
-  const moveToToday = () => {
-    setScreenState(todayState);
   };
 
   const handleRetry = () => {
@@ -249,57 +253,42 @@ export function CalendarScreen(): React.JSX.Element {
   };
 
   return (
-    <AppScreen>
-      <LegacyScreenHeader
-        rightSlot={
-          showsTodayButton ? (
-            <Pressable
-              accessibilityHint="현재 월과 선택 날짜를 오늘로 맞춰요."
-              accessibilityLabel="오늘로 이동"
-              accessibilityRole="button"
-              onPress={moveToToday}
-              style={({ pressed }) => [
-                styles.todayButton,
-                pressed && styles.todayButtonPressed,
-              ]}
-            >
-              <AppText style={styles.todayButtonText}>오늘</AppText>
-            </Pressable>
-          ) : undefined
-        }
-        title="캘린더"
-      />
+    <AppScreen contentStyle={styles.screenContent}>
+      <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
+        <ScreenHeader onHeightChange={onHeaderHeightChange} title="캘린더" />
+      </Animated.View>
 
       <ScrollView
         contentContainerStyle={[
           styles.content,
+          { paddingTop: headerHeight + spacing.md },
           {
             paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
           },
         ]}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.monthHeader}>
+          <MonthArrowButton
+            accessibilityLabel="이전 달 보기"
+            disabled={isPreviousMonthDisabled}
+            icon={<ChevronLeft color={color.white} size={18} />}
+            onPress={() => {
+              shiftMonth(-1);
+            }}
+          />
           <AppText style={styles.monthTitle} variant="title">
             {visibleMonthTitle}
           </AppText>
-          <View style={styles.monthHeaderActions}>
-            <MonthArrowButton
-              accessibilityLabel="이전 달 보기"
-              disabled={isPreviousMonthDisabled}
-              icon={<ChevronLeft color={colors.text} size={18} />}
-              onPress={() => {
-                shiftMonth(-1);
-              }}
-            />
-            <MonthArrowButton
-              accessibilityLabel="다음 달 보기"
-              icon={<ChevronRight color={colors.text} size={18} />}
-              onPress={() => {
-                shiftMonth(1);
-              }}
-            />
-          </View>
+          <MonthArrowButton
+            accessibilityLabel="다음 달 보기"
+            icon={<ChevronRight color={color.white} size={18} />}
+            onPress={() => {
+              shiftMonth(1);
+            }}
+          />
         </View>
 
         <View style={styles.calendarCard}>
@@ -328,8 +317,6 @@ export function CalendarScreen(): React.JSX.Element {
             firstDay={0}
             hideArrows
             hideExtraDays
-            markingType="multi-dot"
-            markedDates={markedDates}
             onDayPress={handleDayPress}
             onMonthChange={handleMonthChange}
             style={styles.calendar}
@@ -338,68 +325,71 @@ export function CalendarScreen(): React.JSX.Element {
         </View>
 
         <View style={styles.legendRow}>
-          {legendItems.map((item) => (
-            <View key={item.label} style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: item.color }]}
-              />
-              <AppText style={styles.legendLabel}>{item.label}</AppText>
+          {legendStatuses.map((status) => (
+            <View key={status} style={styles.legendItem}>
+              <CalendarStatusMarker status={status} variant="legend" />
+              <AppText style={styles.legendLabel}>
+                {calendarStatusLabelByStatus[status]}
+              </AppText>
             </View>
           ))}
         </View>
 
-        <View style={styles.selectedDateHeader}>
-          <AppText style={styles.selectedDateTitle} variant="title">
-            {selectedDateTitle}
-          </AppText>
-          <AppText style={styles.selectedDateCount}>
-            {selectedEntries.length}개
-          </AppText>
-        </View>
+        <View style={styles.selectedDateSection}>
+          <View style={styles.selectedDateHeader}>
+            <AppText style={styles.selectedDateTitle} variant="body2">
+              {selectedDateTitle}
+            </AppText>
+            <AppText style={styles.selectedDateCount} variant="body3">
+              {selectedEntries.length}개
+            </AppText>
+          </View>
 
-        {isLoading ? (
-          <AppStatePlaceholder rowCount={2} />
-        ) : errorMessage ? (
-          <View style={styles.emptyCard}>
-            <AppStateView
-              action={{
-                accessibilityHint: "캘린더 조회를 다시 시도해요.",
-                accessibilityLabel: "캘린더 다시 불러오기",
-                label: "다시 시도",
-                onPress: handleRetry,
-              }}
-              description={errorMessage}
-              style={styles.selectedDateState}
-              title="캘린더를 불러오지 못했어요"
-            />
-          </View>
-        ) : selectedEntries.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <AppStateView
-              style={styles.selectedDateState}
-              title="선택한 날짜에 기록이 없어요"
-            />
-          </View>
-        ) : (
-          <View style={styles.entryList}>
-            {selectedEntries.map((entry) => (
-              <CalendarEntryCard
-                entry={entry}
-                key={`${entry.itemId}:${entry.scheduledAtUtc}`}
-                onPress={() => {
-                  router.push({
-                    params: {
-                      itemId: entry.itemId,
-                      returnTo: "/calendar",
-                      scheduledAtUtc: entry.scheduledAtUtc,
-                    },
-                    pathname: "/items/[itemId]",
-                  });
+          {isLoading ? (
+            <CalendarEntryListPlaceholder />
+          ) : errorMessage ? (
+            <View style={styles.emptyCard}>
+              <AppStateView
+                action={{
+                  accessibilityHint: "캘린더 조회를 다시 시도해요.",
+                  accessibilityLabel: "캘린더 다시 불러오기",
+                  label: "다시 시도",
+                  onPress: handleRetry,
                 }}
+                description={errorMessage}
+                style={styles.selectedDateState}
+                title="캘린더를 불러오지 못했어요"
               />
-            ))}
-          </View>
-        )}
+            </View>
+          ) : selectedEntries.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <AppStateView
+                style={styles.selectedDateState}
+                title="선택한 날짜에 기록이 없어요"
+              />
+            </View>
+          ) : (
+            <View>
+              {selectedEntries.map((entry, index) => (
+                <CalendarEntryRow
+                  entry={entry}
+                  isLast={index === selectedEntries.length - 1}
+                  key={`${entry.itemId}:${entry.scheduledAtUtc}`}
+                  onPress={() => {
+                    router.push({
+                      params: {
+                        itemId: entry.itemId,
+                        returnTo: "/calendar",
+                        scheduledAtUtc: entry.scheduledAtUtc,
+                      },
+                      pathname: "/items/[itemId]",
+                    });
+                  }}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </AppScreen>
   );
@@ -422,6 +412,7 @@ function MonthArrowButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       disabled={disabled}
+      hitSlop={8}
       onPress={onPress}
       style={({ pressed }) => [
         styles.monthArrowButton,
@@ -434,26 +425,49 @@ function MonthArrowButton({
   );
 }
 
+function CalendarEntryListPlaceholder(): React.JSX.Element {
+  return (
+    <View
+      accessibilityLabel="일정을 불러오는 중"
+      accessibilityRole="progressbar"
+    >
+      {Array.from({ length: CALENDAR_ENTRY_PLACEHOLDER_COUNT }).map(
+        (_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.placeholderRow,
+              index < CALENDAR_ENTRY_PLACEHOLDER_COUNT - 1
+                ? styles.placeholderDivider
+                : undefined,
+            ]}
+          >
+            <View style={styles.placeholderCopy}>
+              <View style={styles.placeholderTitle} />
+              <View style={styles.placeholderMeta} />
+            </View>
+            <View style={styles.placeholderAction} />
+          </View>
+        )
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   calendar: {
     borderRadius: borderRadius.lg,
   },
   calendarCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
+    backgroundColor: color.smokyWhite,
     borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.sm,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
+    paddingTop: spacing.md,
   },
   content: {
-    gap: spacing.lg,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-  },
-  entryList: {
     gap: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   emptyCard: {
     alignItems: "center",
@@ -469,13 +483,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
   },
   emptyDayCell: {
-    height: 42,
+    height: CALENDAR_DAY_CELL_HEIGHT,
     width: 42,
   },
-  legendDot: {
-    borderRadius: borderRadius.pill,
-    height: 8,
-    width: 8,
+  headerLayer: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 10,
   },
   legendItem: {
     alignItems: "center",
@@ -495,11 +511,11 @@ const styles = StyleSheet.create({
   },
   monthArrowButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: color.jetBlack,
     borderRadius: borderRadius.pill,
-    height: 44,
+    height: 32,
     justifyContent: "center",
-    width: 44,
+    width: 32,
   },
   monthArrowButtonPressed: {
     opacity: 0.88,
@@ -512,48 +528,64 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  monthHeaderActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
   monthTitle: {
+    color: color.jetBlack,
     flex: 1,
-    fontSize: typography.title,
-    lineHeight: 28,
-    paddingRight: spacing.md,
+    textAlign: "center",
+  },
+  placeholderAction: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.pill,
+    height: 34,
+    width: 34,
+  },
+  placeholderCopy: {
+    flex: 1,
+    gap: spacing.xxs,
+    minWidth: 0,
+  },
+  placeholderDivider: {
+    borderBottomColor: color.jetBlack,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  placeholderMeta: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.pill,
+    height: typography.lineHeight.caption,
+    opacity: 0.72,
+    width: "36%",
+  },
+  placeholderRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  placeholderTitle: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.pill,
+    height: typography.lineHeight.body,
+    width: "44%",
   },
   selectedDateCount: {
-    color: colors.textMuted,
-    fontSize: typography.body,
+    color: color.gray,
   },
   selectedDateHeader: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  selectedDateSection: {
+    gap: spacing.xxs,
+  },
   selectedDateTitle: {
+    color: color.jetBlack,
     flex: 1,
-    fontSize: 24,
-    lineHeight: 32,
-    paddingRight: spacing.sm,
   },
   selectedDateState: {
     minHeight: 96,
   },
-  todayButton: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceHigh,
-    borderRadius: borderRadius.pill,
-    justifyContent: "center",
-    minHeight: 40,
-    minWidth: 56,
-    paddingHorizontal: spacing.md,
-  },
-  todayButtonPressed: {
-    opacity: 0.88,
-  },
-  todayButtonText: {
-    fontSize: typography.body,
-    fontWeight: "600",
+  screenContent: {
+    flex: 1,
   },
 });

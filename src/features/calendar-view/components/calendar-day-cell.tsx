@@ -3,8 +3,17 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { DateData } from "react-native-calendars";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, colors, typography } from "~/design-system/tokens";
-import type { CalendarMarkerStatus } from "~/features/calendar-view/calendar-screen.helpers";
+import {
+  borderRadius,
+  color,
+  colors,
+  typography,
+} from "~/design-system/tokens";
+import {
+  CALENDAR_MAX_VISIBLE_MARKERS,
+  type CalendarMarkerStatus,
+  calendarStatusLabelByStatus,
+} from "~/features/calendar-view/calendar-screen.helpers";
 
 type CalendarDayCellProps = {
   date: DateData;
@@ -15,19 +24,26 @@ type CalendarDayCellProps = {
   onPress: (date: DateData) => void;
 };
 
-const markerColorByStatus: Record<CalendarMarkerStatus, string> = {
-  completed: colors.statusCompleted,
-  overdue: colors.statusOverdue,
-  scheduled: colors.statusScheduled,
-  skipped: colors.statusSkipped,
+const calendarMarkerColorByStatus: Record<CalendarMarkerStatus, string> = {
+  completed: color.purple,
+  overdue: color.oldFlax,
+  scheduled: color.royalBlue,
+  skipped: color.salmonOrange,
 };
 
-const markerLabelByStatus: Record<CalendarMarkerStatus, string> = {
-  completed: "완료",
-  overdue: "놓침",
-  scheduled: "예정",
-  skipped: "건너뜀",
-};
+const cellMarkerLineGap = 1;
+const cellMarkerLineHeight = 3;
+const cellOverflowGap = 2;
+const cellOverflowLabelHeight = 9;
+const cellDaySurfaceSize = 28;
+const cellMarkerTopGap = 4;
+const cellMarkerStackHeight =
+  CALENDAR_MAX_VISIBLE_MARKERS * cellMarkerLineHeight +
+  (CALENDAR_MAX_VISIBLE_MARKERS - 1) * cellMarkerLineGap;
+const cellMarkerAreaHeight =
+  cellMarkerStackHeight + cellOverflowGap + cellOverflowLabelHeight;
+export const CALENDAR_DAY_CELL_HEIGHT =
+  cellDaySurfaceSize + cellMarkerTopGap + cellMarkerAreaHeight + 1;
 
 function CalendarDayCellComponent({
   date,
@@ -41,13 +57,32 @@ function CalendarDayCellComponent({
   const isSunday = dayOfWeek === 0;
   const isSaturday = dayOfWeek === 6;
   const statusLabel = markerStatuses
-    .map((status) => markerLabelByStatus[status])
+    .map((status) => calendarStatusLabelByStatus[status])
     .join(", ");
+  const accessibilityLabels = [`${date.month}월 ${date.day}일`];
+
+  if (isToday) {
+    accessibilityLabels.push("오늘");
+  }
+
+  if (isSelected) {
+    accessibilityLabels.push("선택됨");
+  }
+
+  if (statusLabel) {
+    accessibilityLabels.push(statusLabel);
+  }
+
+  if (overflowCount > 0) {
+    accessibilityLabels.push(`외 ${overflowCount}개`);
+  }
+
+  const accessibilityLabel = accessibilityLabels.join(", ");
 
   return (
     <Pressable
       accessibilityHint="선택 날짜를 바꿉니다."
-      accessibilityLabel={`${date.month}월 ${date.day}일${isToday ? ", 오늘" : ""}${isSelected ? ", 선택됨" : ""}${statusLabel ? `, ${statusLabel}` : ""}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       hitSlop={4}
       onPress={() => {
@@ -78,22 +113,46 @@ function CalendarDayCellComponent({
         </AppText>
       </View>
 
-      <View style={styles.dotRow}>
-        {markerStatuses.map((status, index) => (
-          <View
-            key={`${status}-${index}`}
-            style={[
-              styles.dot,
-              { backgroundColor: markerColorByStatus[status] },
-              isSelected && styles.selectedDot,
-            ]}
-          />
-        ))}
-        {overflowCount > 0 ? (
-          <AppText style={styles.overflowLabel}>+{overflowCount}</AppText>
-        ) : null}
+      <View style={styles.markerArea}>
+        <View style={styles.markerStack}>
+          {markerStatuses.map((status, index) => (
+            <CalendarStatusMarker
+              key={`${status}-${index}`}
+              isSelected={isSelected}
+              status={status}
+            />
+          ))}
+        </View>
+        <View style={styles.overflowSlot}>
+          {overflowCount > 0 ? (
+            <AppText style={styles.overflowLabel}>+{overflowCount}</AppText>
+          ) : null}
+        </View>
       </View>
     </Pressable>
+  );
+}
+
+export function CalendarStatusMarker({
+  isSelected = false,
+  status,
+  variant = "cell",
+}: {
+  isSelected?: boolean;
+  status: CalendarMarkerStatus;
+  variant?: "cell" | "legend";
+}): React.JSX.Element {
+  const markerColor = calendarMarkerColorByStatus[status];
+
+  return (
+    <View
+      style={[
+        styles.markerLine,
+        variant === "cell" ? styles.markerLineCell : styles.markerLineLegend,
+        { backgroundColor: markerColor },
+        isSelected && styles.selectedMarker,
+      ]}
+    />
   );
 }
 
@@ -102,7 +161,7 @@ export const CalendarDayCell = memo(CalendarDayCellComponent);
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    height: 42,
+    height: CALENDAR_DAY_CELL_HEIGHT,
     justifyContent: "center",
     width: 42,
   },
@@ -123,35 +182,51 @@ const styles = StyleSheet.create({
   daySurface: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
-    height: 34,
+    height: cellDaySurfaceSize,
     justifyContent: "center",
-    width: 34,
+    width: cellDaySurfaceSize,
   },
-  dot: {
+  markerArea: {
+    alignItems: "center",
+    gap: cellOverflowGap,
+    height: cellMarkerAreaHeight,
+    justifyContent: "flex-start",
+    marginTop: cellMarkerTopGap,
+    width: "100%",
+  },
+  markerLine: {
     borderRadius: borderRadius.pill,
-    height: 4,
-    width: 4,
+    height: cellMarkerLineHeight,
   },
-  dotRow: {
-    alignItems: "flex-end",
-    flexDirection: "row",
-    gap: 3,
-    height: 10,
-    justifyContent: "center",
-    marginTop: 1,
+  markerLineCell: {
+    width: "85%",
+  },
+  markerLineLegend: {
+    width: 14,
+  },
+  markerStack: {
+    alignItems: "center",
+    gap: cellMarkerLineGap,
+    height: cellMarkerStackHeight,
+    justifyContent: "flex-end",
+    width: "100%",
   },
   overflowLabel: {
     color: colors.textMuted,
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 9,
+    lineHeight: 9,
     marginBottom: 0,
-    transform: [{ translateY: 2 }],
+  },
+  overflowSlot: {
+    alignItems: "center",
+    height: cellOverflowLabelHeight,
+    justifyContent: "center",
   },
   selectedLabel: {
     color: colors.primaryForeground,
     fontWeight: "700",
   },
-  selectedDot: {
+  selectedMarker: {
     opacity: 0.96,
   },
   selectedSurface: {

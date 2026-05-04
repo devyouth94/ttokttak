@@ -2,7 +2,6 @@ import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
   clampVisibleMonth,
-  createCalendarMarkedDates,
   createCalendarScreenState,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
@@ -115,7 +114,7 @@ describe("calendar-screen.helpers", () => {
     expect(clampVisibleMonth("2026-03", null)).toBe("2026-03");
   });
 
-  it("월 상태 도트는 시간순으로 최대 3개까지 보여주고 초과 개수를 따로 계산한다", () => {
+  it("월 상태 라인은 시간순으로 최대 5개까지 보여주고 초과 개수를 따로 계산한다", () => {
     const daySummaries = buildCalendarDaySummaries({
       completionLogs: [
         createLog({
@@ -171,9 +170,9 @@ describe("calendar-screen.helpers", () => {
     expect(daySummaries["2026-04-12"]).toEqual({
       hasEntries: true,
       localDate: "2026-04-12",
-      markerStatuses: ["overdue", "overdue", "completed"],
+      markerStatuses: ["overdue", "overdue", "completed", "skipped", "overdue"],
       occurrenceCount: 6,
-      overflowCount: 3,
+      overflowCount: 1,
     });
   });
 
@@ -198,31 +197,6 @@ describe("calendar-screen.helpers", () => {
       markerStatuses: ["scheduled"],
       occurrenceCount: 1,
       overflowCount: 0,
-    });
-  });
-
-  it("markedDates는 선택 상태와 오늘 상태를 도트와 함께 유지한다", () => {
-    const markedDates = createCalendarMarkedDates({
-      daySummaries: {
-        "2026-04-12": {
-          hasEntries: true,
-          localDate: "2026-04-12",
-          markerStatuses: ["scheduled", "scheduled", "skipped"],
-          occurrenceCount: 7,
-          overflowCount: 4,
-        },
-      },
-      selectedDate: "2026-04-12",
-      todayDate: "2026-04-14",
-    });
-
-    expect(markedDates["2026-04-12"]).toMatchObject({
-      marked: true,
-      selected: true,
-    });
-    expect(markedDates["2026-04-12"]?.dots).toHaveLength(3);
-    expect(markedDates["2026-04-14"]).toMatchObject({
-      today: true,
     });
   });
 
@@ -291,6 +265,26 @@ describe("calendar-screen.helpers", () => {
       "건너뜀 일정",
       "예정 일정 B",
     ]);
+  });
+
+  it("캘린더의 지난 일정 상태 라벨은 지남으로 표시한다", () => {
+    const entries = buildCalendarDayEntries({
+      completionLogs: [],
+      items: [
+        createItem({
+          id: "item-overdue",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-11",
+          title: "지난 일정",
+        }),
+      ],
+      now: new Date("2026-04-12T00:30:00.000Z"),
+      selectedDate: "2026-04-11",
+      timezone,
+    });
+
+    expect(entries[0]?.status).toBe("overdue");
+    expect(entries[0]?.statusLabel).toBe("지남");
   });
 
   it("수정된 version이 있으면 달력도 새 future occurrence만 표시한다", () => {
