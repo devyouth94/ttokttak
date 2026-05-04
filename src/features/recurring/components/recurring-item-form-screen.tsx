@@ -5,10 +5,7 @@ import { AppText } from "~/design-system/components/app-text";
 import { colors } from "~/design-system/tokens";
 
 import { useRecurringItemFormScreenController } from "./recurring-item-form-screen.controller";
-import {
-  getCompletionBasedEnabled,
-  getIosPickerChangeHandler,
-} from "./recurring-item-form-screen.helpers";
+import { getIosPickerChangeHandler } from "./recurring-item-form-screen.helpers";
 import { styles } from "./recurring-item-form-screen.styles";
 import { RecurringItemFormScreenContent } from "./recurring-item-form-screen-content";
 
@@ -25,9 +22,6 @@ export function RecurringItemFormScreen({
     itemId,
     returnTo,
   });
-  const completionBasedEnabled = getCompletionBasedEnabled(
-    screenModel.values.recurrenceType
-  );
   const iosPickerChangeHandler = getIosPickerChangeHandler(
     screenModel.picker.iosMode,
     {
@@ -43,7 +37,6 @@ export function RecurringItemFormScreen({
   return (
     <RecurringItemFormScreenContent
       {...screenModel}
-      completionBasedEnabled={completionBasedEnabled}
       iosPickerChangeHandler={iosPickerChangeHandler}
     />
   );

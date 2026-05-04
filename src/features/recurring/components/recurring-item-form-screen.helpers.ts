@@ -21,16 +21,11 @@ import {
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
 export type PickerMode = "date" | "time";
-export type AnchorOption = {
-  label: string;
-  value: AnchorType;
-};
 export type PickerChangeHandler = (
   event: DateTimePickerEvent,
   selectedDate?: Date
 ) => void;
 export type RecurrenceSectionState = {
-  customRecurrenceDescription: string;
   customUnit: CustomRecurrenceUnit | null;
   isCustomSelected: boolean;
   isOnceSelected: boolean;
@@ -43,6 +38,17 @@ export type RecurrenceSectionState = {
 const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const MAX_FIRST_REMINDER_LOOKAHEAD_DAYS = 3710;
+const FORM_ERROR_MESSAGES = {
+  completionBasedNotAllowed: "완료일 기준은 이 반복 설정에서 사용할 수 없어요.",
+  intervalInvalid: "반복 간격은 1 이상이어야 해요.",
+  intervalMissing: "반복 간격을 입력해 주세요.",
+  recurrenceInvalid: "반복 설정을 다시 선택해 주세요.",
+  reminderTimeInvalid: "알림 시간을 선택해 주세요.",
+  startDateInvalid: "시작일을 다시 선택해 주세요.",
+  titleMissing: "제목을 입력해 주세요.",
+  weekdayInvalid: "반복할 요일을 다시 선택해 주세요.",
+  weekdayMissing: "반복할 요일을 선택해 주세요.",
+} as const;
 
 export const weekdayOptions = [
   { label: "월", value: 1 },
@@ -61,7 +67,6 @@ export const quickRecurrenceOptions: {
   { label: "매일", value: "daily" },
   { label: "매주", value: "weekly" },
   { label: "매달", value: "monthly" },
-  { label: "매년", value: "yearly" },
 ];
 
 export const customRecurrenceUnitOptions: {
@@ -71,17 +76,6 @@ export const customRecurrenceUnitOptions: {
   { label: "일", value: "days" },
   { label: "주", value: "weeks" },
   { label: "달", value: "months" },
-];
-
-export const anchorOptions: AnchorOption[] = [
-  {
-    label: "시작일 기준",
-    value: "fixed",
-  },
-  {
-    label: "완료일 기준",
-    value: "completion_based",
-  },
 ];
 
 export function getTodayLocalDate(): string {
@@ -151,7 +145,7 @@ export function createDefaultFormState(): RecurringItemFormValues {
     description: "",
     intervalValue: "",
     notificationsEnabled: true,
-    recurrenceType: "once",
+    recurrenceType: "daily",
     reminderTimeLocal: getCurrentLocalTime(),
     startDateLocal: getTodayLocalDate(),
     title: "",
@@ -202,13 +196,12 @@ export const recurringItemFormSchema = z
     reminderTimeLocal: z
       .string()
       .trim()
-      .min(1, "알림 시간은 필수입니다.")
-      .regex(localTimePattern, "알림 시간은 HH:mm 형식이어야 합니다."),
+      .regex(localTimePattern, FORM_ERROR_MESSAGES.reminderTimeInvalid),
     startDateLocal: z
       .string()
-      .regex(localDatePattern, "시작일은 YYYY-MM-DD 형식이어야 합니다."),
-    title: z.string().trim().min(1, "제목은 필수입니다."),
-    weekdayMask: z.array(z.number().int().min(0).max(6)),
+      .regex(localDatePattern, FORM_ERROR_MESSAGES.startDateInvalid),
+    title: z.string().trim().min(1, FORM_ERROR_MESSAGES.titleMissing),
+    weekdayMask: z.array(z.number()),
   })
   .superRefine((formState, context) => {
     if (requiresIntervalValue(formState.recurrenceType)) {
@@ -217,7 +210,7 @@ export const recurringItemFormSchema = z
       if (formState.intervalValue.trim().length === 0) {
         context.addIssue({
           code: "custom",
-          message: "이 반복 규칙에는 intervalValue가 필요합니다.",
+          message: FORM_ERROR_MESSAGES.intervalMissing,
           path: ["intervalValue"],
         });
       } else if (
@@ -226,14 +219,14 @@ export const recurringItemFormSchema = z
       ) {
         context.addIssue({
           code: "custom",
-          message: "intervalValue는 1 이상의 정수여야 합니다.",
+          message: FORM_ERROR_MESSAGES.intervalInvalid,
           path: ["intervalValue"],
         });
       }
     } else if (formState.intervalValue.trim().length > 0) {
       context.addIssue({
         code: "custom",
-        message: "이 반복 규칙에는 intervalValue를 넣지 않습니다.",
+        message: FORM_ERROR_MESSAGES.recurrenceInvalid,
         path: ["intervalValue"],
       });
     }
@@ -242,20 +235,20 @@ export const recurringItemFormSchema = z
       if (formState.weekdayMask.length === 0) {
         context.addIssue({
           code: "custom",
-          message: "이 반복 규칙에는 weekdayMask가 필요합니다.",
+          message: FORM_ERROR_MESSAGES.weekdayMissing,
           path: ["weekdayMask"],
         });
       } else if (!hasValidWeekdayMask(formState.weekdayMask)) {
         context.addIssue({
           code: "custom",
-          message: "weekdayMask는 0~6 범위의 중복 없는 요일 목록이어야 합니다.",
+          message: FORM_ERROR_MESSAGES.weekdayInvalid,
           path: ["weekdayMask"],
         });
       }
     } else if (formState.weekdayMask.length > 0) {
       context.addIssue({
         code: "custom",
-        message: "이 반복 규칙에는 weekdayMask를 넣지 않습니다.",
+        message: FORM_ERROR_MESSAGES.recurrenceInvalid,
         path: ["weekdayMask"],
       });
     }
@@ -266,8 +259,7 @@ export const recurringItemFormSchema = z
     ) {
       context.addIssue({
         code: "custom",
-        message:
-          "completion_based는 once, daily, interval_days, monthly, interval_months, yearly에서만 사용할 수 있습니다.",
+        message: FORM_ERROR_MESSAGES.completionBasedNotAllowed,
         path: ["anchorType"],
       });
     }
@@ -315,12 +307,6 @@ export function getFirstReminderHelperText(formState: {
     "M월 d일 EEEE",
     { locale: ko }
   )}입니다.`;
-}
-
-export function getCompletionBasedEnabled(
-  recurrenceType: RecurrenceType
-): boolean {
-  return supportsCompletionBased(recurrenceType);
 }
 
 function getFirstWeeklyOccurrenceLocalDate(formState: {
@@ -514,20 +500,6 @@ export function getCustomRecurrenceType(
   }
 }
 
-export function getCustomRecurrenceDescription(
-  unit: CustomRecurrenceUnit | null
-): string {
-  switch (unit) {
-    case "weeks":
-      return "선택한 요일을 주 단위 간격으로 반복합니다.";
-    case "months":
-      return "지정한 달 간격으로 반복됩니다.";
-    case "days":
-    default:
-      return "지정한 일 간격으로 반복됩니다.";
-  }
-}
-
 export function getRecurrenceSectionState(
   recurrenceType: RecurrenceType
 ): RecurrenceSectionState {
@@ -537,7 +509,6 @@ export function getRecurrenceSectionState(
     recurrenceType === "weekly" || showsWeekdaysInsideCustomPanel;
 
   return {
-    customRecurrenceDescription: getCustomRecurrenceDescription(customUnit),
     customUnit,
     isCustomSelected: customUnit !== null,
     isOnceSelected: recurrenceType === "once",
@@ -549,40 +520,20 @@ export function getRecurrenceSectionState(
   };
 }
 
-export function getAnchorTypeDescription(
-  anchorType: "fixed" | "completion_based"
-): string {
-  if (anchorType === "fixed") {
-    return "처음 정한 시작일을 유지하면서 다음 일정을 계산합니다.";
-  }
-
-  return "완료한 날짜를 반영해서 다음 일정을 다시 계산합니다.";
-}
-
-export function getNotificationStatusText(enabled: boolean): string {
-  return enabled ? "사용" : "중지";
-}
-
 export function getAdvancedOptionsState(params: {
-  anchorType: AnchorType;
-  completionBasedEnabled: boolean;
   recurrenceType: RecurrenceType;
 }): {
-  anchorDescription: string;
-  showsAnchorOptions: boolean;
-  showsCompletionBasedOption: boolean;
-  showsCompletionBasedHelper: boolean;
+  isCompletionBasedSwitchEnabled: boolean;
 } {
-  const showsAnchorOptions = params.recurrenceType !== "once";
-  const showsCompletionBasedOption =
-    showsAnchorOptions && supportsCompletionBased(params.recurrenceType);
-
   return {
-    anchorDescription: getAnchorTypeDescription(params.anchorType),
-    showsAnchorOptions,
-    showsCompletionBasedHelper: false,
-    showsCompletionBasedOption,
+    isCompletionBasedSwitchEnabled:
+      params.recurrenceType !== "once" &&
+      supportsCompletionBased(params.recurrenceType),
   };
+}
+
+export function getCompletionBasedInfoText(): string {
+  return "완료한 날짜를 기준으로 다음 일정을 다시 계산합니다. 한 번 설정과 주 단위 설정에서는 비활성화됩니다.";
 }
 
 function getNormalizedAnchorType(

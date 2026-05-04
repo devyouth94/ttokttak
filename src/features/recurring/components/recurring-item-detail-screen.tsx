@@ -49,7 +49,7 @@ import { createCompletionLog } from "~/features/recurring/repositories/completio
 import { archiveRecurringItem } from "~/features/recurring/repositories/recurring-items-repository";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
-const ACTION_BAR_HEIGHT = 60;
+const ACTION_BAR_HEIGHT = 64;
 const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
 const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
@@ -367,7 +367,9 @@ function DetailActionBar({
               pressed && !disabled && styles.primaryActionButtonPressed,
             ]}
           >
-            <AppText style={styles.primaryActionButtonText}>완료</AppText>
+            <AppText style={styles.primaryActionButtonText} variant="body">
+              완료
+            </AppText>
           </Pressable>
 
           <Pressable
@@ -384,7 +386,7 @@ function DetailActionBar({
               pressed && !disabled && styles.secondaryActionButtonPressed,
             ]}
           >
-            <AppText style={styles.secondaryActionButtonText}>
+            <AppText style={styles.secondaryActionButtonText} variant="body">
               {isProcessing ? "처리 중..." : "건너뛰기"}
             </AppText>
           </Pressable>
@@ -816,11 +818,10 @@ const styles = StyleSheet.create({
   actionBar: {
     alignItems: "center",
     backgroundColor: colors.background,
-    gap: spacing.sm,
     justifyContent: "center",
     minHeight: ACTION_BAR_HEIGHT,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   actionBarWrapper: {
     backgroundColor: colors.background,
@@ -835,7 +836,7 @@ const styles = StyleSheet.create({
   actionRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.xs,
     width: "100%",
   },
   emptyCard: {
@@ -1031,24 +1032,22 @@ const styles = StyleSheet.create({
   },
   primaryActionButton: {
     alignItems: "center",
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: color.jetBlack,
+    borderColor: color.jetBlack,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
     flex: 1,
     flexDirection: "row",
     gap: spacing.xs,
     justifyContent: "center",
-    height: 44,
+    height: 48,
     paddingHorizontal: spacing.lg,
   },
   primaryActionButtonPressed: {
-    opacity: 0.72,
+    opacity: 0.9,
   },
   primaryActionButtonText: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "600",
-    lineHeight: 22,
+    color: color.white,
   },
   screenContent: {
     flex: 1,
@@ -1063,24 +1062,22 @@ const styles = StyleSheet.create({
   },
   secondaryActionButton: {
     alignItems: "center",
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: "transparent",
+    borderColor: color.jetBlack,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
     flex: 1,
     flexDirection: "row",
     gap: spacing.xs,
     justifyContent: "center",
-    height: 44,
+    height: 48,
     paddingHorizontal: spacing.lg,
   },
   secondaryActionButtonPressed: {
-    opacity: 0.72,
+    opacity: 0.9,
   },
   secondaryActionButtonText: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "600",
-    lineHeight: 22,
+    color: color.jetBlack,
   },
   scheduleDate: {
     color: color.white,

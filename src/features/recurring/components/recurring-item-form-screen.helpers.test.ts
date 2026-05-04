@@ -1,8 +1,26 @@
 import {
+  createDefaultFormState,
   getFirstReminderHelperText,
   getMinimumStartDateLocal,
   normalizeStartDateSelection,
+  recurringItemFormSchema,
+  type RecurringItemFormValues,
 } from "~/features/recurring/components/recurring-item-form-screen.helpers";
+
+function getValidationMessages(
+  overrides: Partial<RecurringItemFormValues>
+): string[] {
+  const result = recurringItemFormSchema.safeParse({
+    ...createDefaultFormState(),
+    ...overrides,
+  });
+
+  if (result.success) {
+    return [];
+  }
+
+  return result.error.issues.map((issue) => issue.message);
+}
 
 describe("recurring item form start date rules", () => {
   it("생성 화면의 시작일 하한선은 오늘이다", () => {
@@ -78,5 +96,76 @@ describe("recurring item form start date rules", () => {
         weekdayMask: [1],
       })
     ).toBe("첫 알림일은 5월 4일 월요일입니다.");
+  });
+});
+
+describe("recurring item form validation messages", () => {
+  it("제목이 없으면 입력 안내 문구를 보여준다", () => {
+    expect(getValidationMessages({ title: "   " })).toContain(
+      "제목을 입력해 주세요."
+    );
+  });
+
+  it("직접 설정 간격이 비어 있으면 입력 안내 문구를 보여준다", () => {
+    expect(
+      getValidationMessages({
+        intervalValue: "",
+        recurrenceType: "interval_days",
+      })
+    ).toContain("반복 간격을 입력해 주세요.");
+  });
+
+  it("직접 설정 간격이 1보다 작으면 범위 안내 문구를 보여준다", () => {
+    expect(
+      getValidationMessages({
+        intervalValue: "0",
+        recurrenceType: "interval_days",
+      })
+    ).toContain("반복 간격은 1 이상이어야 해요.");
+  });
+
+  it("매주 설정에서 요일이 없으면 선택 안내 문구를 보여준다", () => {
+    expect(
+      getValidationMessages({
+        recurrenceType: "weekly",
+        weekdayMask: [],
+      })
+    ).toContain("반복할 요일을 선택해 주세요.");
+  });
+
+  it("지원하지 않는 반복 설정의 완료일 기준은 옵션 안내 문구를 보여준다", () => {
+    expect(
+      getValidationMessages({
+        anchorType: "completion_based",
+        recurrenceType: "weekly",
+        weekdayMask: [1],
+      })
+    ).toContain("완료일 기준은 이 반복 설정에서 사용할 수 없어요.");
+  });
+
+  it("사용자 문구에 내부 필드명과 저장 형식을 노출하지 않는다", () => {
+    const messages = [
+      ...getValidationMessages({
+        intervalValue: "1",
+        recurrenceType: "daily",
+      }),
+      ...getValidationMessages({
+        reminderTimeLocal: "bad-time",
+        startDateLocal: "bad-date",
+      }),
+      ...getValidationMessages({
+        recurrenceType: "weekly",
+        weekdayMask: [7],
+      }),
+      ...getValidationMessages({
+        anchorType: "completion_based",
+        recurrenceType: "weekly",
+        weekdayMask: [1],
+      }),
+    ].join(" ");
+
+    expect(messages).not.toMatch(
+      /intervalValue|weekdayMask|completion_based|HH:mm|YYYY-MM-DD/
+    );
   });
 });

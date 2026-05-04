@@ -1,4 +1,6 @@
+import { useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -9,21 +11,20 @@ import {
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Bell, ChevronDown, ChevronUp } from "lucide-react-native";
+import { Info } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { colors } from "~/design-system/tokens";
+import { color, colors } from "~/design-system/tokens";
 import {
   type AnchorType,
   type RecurrenceType,
 } from "~/features/recurring/domain/types";
 
 import {
-  anchorOptions,
   type CustomRecurrenceUnit,
   customRecurrenceUnitOptions,
   getAdvancedOptionsState,
-  getNotificationStatusText,
+  getCompletionBasedInfoText,
   getRecurrenceSectionState,
   quickRecurrenceOptions,
   weekdayOptions,
@@ -32,7 +33,6 @@ import { styles } from "./recurring-item-form-screen.styles";
 
 type WeekdaySelectorProps = {
   errorMessage?: string;
-  insidePanel?: boolean;
   selectedDays: number[];
   onToggle: (weekdayValue: number) => void;
 };
@@ -58,6 +58,12 @@ type RecurrenceOptionButtonProps = {
   variant?: "default" | "primary" | "unit";
 };
 
+type RecurrenceModeTabButtonProps = {
+  label: string;
+  onPress: () => void;
+  selected: boolean;
+};
+
 export function RecurrenceSection({
   intervalError,
   intervalValue,
@@ -71,8 +77,9 @@ export function RecurrenceSection({
   onSelectRecurrence,
   onToggleWeekday,
 }: RecurrenceSectionProps): React.JSX.Element {
+  const [isCustomIntervalFocused, setIsCustomIntervalFocused] = useState(false);
+
   const {
-    customRecurrenceDescription,
     customUnit,
     isCustomSelected,
     isOnceSelected,
@@ -111,105 +118,93 @@ export function RecurrenceSection({
   const weekdaySelector = showsWeekdaySelector ? (
     <WeekdaySelector
       errorMessage={weekdayError}
-      insidePanel={showsWeekdaysInsideCustomPanel}
       selectedDays={selectedWeekdays}
       onToggle={onToggleWeekday}
     />
   ) : null;
 
   const customRecurrencePanel = showsCustomRecurrencePanel ? (
-    <View style={styles.customRecurrencePanel}>
-      <AppText style={styles.customRecurrenceSectionLabel}>간격 설정</AppText>
-
-      <View style={styles.customRecurrenceComposer}>
-        <View style={styles.customRecurrenceCountField}>
-          <AppText style={styles.customRecurrenceFieldLabel}>간격값</AppText>
+    <View style={styles.quickRecurrenceContent}>
+      <View style={styles.customRecurrenceControlGroup}>
+        <AppText style={styles.subFieldLabel} variant="body2">
+          반복 간격
+        </AppText>
+        <View style={styles.customRecurrenceControls}>
           <TextInput
             accessibilityLabel="간격값"
             keyboardType="number-pad"
+            onBlur={() => setIsCustomIntervalFocused(false)}
             onChangeText={onChangeIntervalValue}
+            onFocus={() => setIsCustomIntervalFocused(true)}
             placeholder="1"
             placeholderTextColor={colors.textMuted}
             style={[
-              styles.intervalInput,
+              styles.textInput,
               styles.customRecurrenceInput,
+              isCustomIntervalFocused ? styles.inputFocused : undefined,
               intervalError ? styles.inputError : undefined,
             ]}
             value={intervalValue}
           />
+
+          {customRecurrenceUnitButtons}
         </View>
 
-        <View style={styles.customRecurrenceUnitField}>
-          <AppText style={styles.customRecurrenceFieldLabel}>반복 단위</AppText>
-          <View style={styles.customRecurrenceUnits}>
-            {customRecurrenceUnitButtons}
-          </View>
-        </View>
-      </View>
-
-      {intervalError ? (
-        <AppText style={styles.fieldError}>{intervalError}</AppText>
-      ) : null}
-
-      {showsWeekdaysInsideCustomPanel ? (
-        <View style={styles.customRecurrenceWeekdaySection}>
-          <AppText style={styles.customRecurrenceWeekdayLabel}>
-            요일 선택
+        {intervalError ? (
+          <AppText style={styles.fieldError} variant="caption">
+            {intervalError}
           </AppText>
-          {weekdaySelector}
-        </View>
-      ) : null}
-
-      <View style={styles.customRecurrenceSentence}>
-        <AppText style={styles.customRecurrenceSentenceText}>
-          {customRecurrenceDescription}
-        </AppText>
+        ) : null}
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={onCloseCustom}
-        style={({ pressed }) => [
-          styles.inlineAction,
-          pressed ? styles.inlineActionPressed : undefined,
-        ]}
-      >
-        <AppText style={styles.inlineActionText}>
-          빠른 선택으로 돌아가기
-        </AppText>
-      </Pressable>
+      {showsWeekdaysInsideCustomPanel ? weekdaySelector : null}
     </View>
   ) : null;
 
   return (
     <View style={styles.field}>
-      <AppText style={styles.fieldLabel}>반복</AppText>
+      <AppText style={styles.fieldLabel} variant="body2">
+        반복
+      </AppText>
 
-      <View style={styles.quickRecurrenceGrid}>{quickRecurrenceButtons}</View>
+      <View style={styles.recurrenceSettingsStack}>
+        <View style={styles.recurrenceModeTabs}>
+          <RecurrenceModeTabButton
+            label="기본 설정"
+            onPress={onCloseCustom}
+            selected={!isCustomSelected}
+          />
 
-      <View style={styles.secondaryRecurrenceRow}>
-        <RecurrenceOptionButton
-          label="한 번"
-          onPress={() => onSelectRecurrence("once")}
-          selected={isOnceSelected}
-        />
+          <RecurrenceModeTabButton
+            label="직접 설정"
+            onPress={onOpenCustom}
+            selected={isCustomSelected}
+          />
+        </View>
 
-        <RecurrenceOptionButton
-          label="직접 설정"
-          onPress={onOpenCustom}
-          selected={isCustomSelected}
-        />
+        {isCustomSelected ? (
+          customRecurrencePanel
+        ) : (
+          <View style={styles.quickRecurrenceContent}>
+            <View style={styles.quickRecurrenceGrid}>
+              {quickRecurrenceButtons}
+              <RecurrenceOptionButton
+                label="한 번"
+                onPress={() => onSelectRecurrence("once")}
+                selected={isOnceSelected}
+                variant="primary"
+              />
+            </View>
+
+            {showsStandaloneWeekdaySelector ? weekdaySelector : null}
+          </View>
+        )}
       </View>
-
-      {customRecurrencePanel}
-
-      {showsStandaloneWeekdaySelector ? weekdaySelector : null}
     </View>
   );
 }
 
 type WeekdayChipButtonProps = {
-  insidePanel: boolean;
   isSelected: boolean;
   label: string;
   onPress: () => void;
@@ -221,21 +216,71 @@ function RecurrenceOptionButton({
   selected,
   variant = "default",
 }: RecurrenceOptionButtonProps): React.JSX.Element {
+  const isPrimary = variant === "primary";
+  const usesCompactChip = isPrimary || variant === "unit";
+  const textStyle = usesCompactChip
+    ? styles.quickRecurrenceChipText
+    : styles.chipText;
+
+  const selectedTextStyle = usesCompactChip
+    ? styles.quickRecurrenceChipTextSelected
+    : styles.chipTextSelected;
+
+  const selectedStyle = usesCompactChip
+    ? styles.quickRecurrenceChipSelected
+    : styles.chipSelected;
+
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        variant === "primary" ? styles.primaryRecurrenceChip : undefined,
-        variant === "unit" ? styles.unitChip : undefined,
-        variant === "unit" ? styles.customRecurrenceUnitChip : undefined,
+        isPrimary ? styles.primaryRecurrenceChip : undefined,
+        usesCompactChip ? styles.quickRecurrenceChip : undefined,
         variant === "unit" ? styles.customRecurrenceUnitOption : undefined,
-        selected ? styles.chipSelected : undefined,
+        selected ? selectedStyle : undefined,
         pressed ? styles.chipPressed : undefined,
       ]}
     >
-      <AppText style={selected ? styles.chipTextSelected : styles.chipText}>
+      <AppText
+        style={[textStyle, selected ? selectedTextStyle : undefined]}
+        variant={usesCompactChip ? "body3" : "body2"}
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function RecurrenceModeTabButton({
+  label,
+  onPress,
+  selected,
+}: RecurrenceModeTabButtonProps): React.JSX.Element {
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={() => {
+        if (!selected) {
+          onPress();
+        }
+      }}
+      style={({ pressed }) => [
+        styles.recurrenceModeTab,
+        selected ? styles.recurrenceModeTabSelected : undefined,
+        pressed && !selected ? styles.recurrenceModeTabPressed : undefined,
+      ]}
+    >
+      <AppText
+        style={
+          selected
+            ? styles.recurrenceModeTabTextSelected
+            : styles.recurrenceModeTabText
+        }
+        variant="body3"
+      >
         {label}
       </AppText>
     </Pressable>
@@ -244,7 +289,6 @@ function RecurrenceOptionButton({
 
 function WeekdaySelector({
   errorMessage,
-  insidePanel = false,
   selectedDays,
   onToggle,
 }: WeekdaySelectorProps): React.JSX.Element {
@@ -252,7 +296,6 @@ function WeekdaySelector({
   const weekdayButtons = weekdayOptions.map((weekday) => {
     return (
       <WeekdayChipButton
-        insidePanel={insidePanel}
         isSelected={selectedWeekdaySet.has(weekday.value)}
         key={weekday.value}
         label={weekday.label}
@@ -263,17 +306,20 @@ function WeekdaySelector({
 
   return (
     <View style={styles.field}>
-      <AppText style={styles.subFieldLabel}>반복할 요일</AppText>
+      <AppText style={styles.subFieldLabel} variant="body2">
+        반복할 요일
+      </AppText>
       <View style={styles.weekdayGroup}>{weekdayButtons}</View>
       {errorMessage ? (
-        <AppText style={styles.fieldError}>{errorMessage}</AppText>
+        <AppText style={styles.fieldError} variant="caption">
+          {errorMessage}
+        </AppText>
       ) : null}
     </View>
   );
 }
 
 function WeekdayChipButton({
-  insidePanel,
   isSelected,
   label,
   onPress,
@@ -284,7 +330,6 @@ function WeekdayChipButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.weekdayChip,
-        insidePanel ? styles.weekdayChipInsideCustomPanel : undefined,
         isSelected ? styles.weekdayChipSelected : undefined,
         pressed ? styles.weekdayChipPressed : undefined,
       ]}
@@ -293,6 +338,7 @@ function WeekdayChipButton({
         style={
           isSelected ? styles.weekdayChipTextSelected : styles.weekdayChipText
         }
+        variant="body3"
       >
         {label}
       </AppText>
@@ -309,27 +355,17 @@ export function NotificationSection({
   enabled,
   onToggle,
 }: NotificationSectionProps): React.JSX.Element {
-  const notificationStatusText = getNotificationStatusText(enabled);
-
   return (
-    <View style={styles.notificationCard}>
-      <View style={styles.notificationIconWrap}>
-        <Bell color={colors.text} size={18} />
-      </View>
-      <View style={styles.notificationCopy}>
-        <AppText style={styles.notificationTitle}>알림</AppText>
-        <AppText style={styles.notificationSubtitle}>
-          소리 및 배너 {notificationStatusText}
-        </AppText>
-      </View>
-      <View style={styles.notificationSwitchWrap}>
-        <Switch
-          onValueChange={onToggle}
-          thumbColor={colors.primaryForeground}
-          trackColor={{ false: colors.outlineSoft, true: colors.primary }}
-          value={enabled}
-        />
-      </View>
+    <View style={styles.optionToggleRow}>
+      <AppText style={styles.optionToggleLabel} variant="body2">
+        알림 사용
+      </AppText>
+      <Switch
+        onValueChange={onToggle}
+        thumbColor={colors.primaryForeground}
+        trackColor={{ false: colors.outlineSoft, true: colors.primary }}
+        value={enabled}
+      />
     </View>
   );
 }
@@ -337,146 +373,75 @@ export function NotificationSection({
 type AdvancedOptionsSectionProps = {
   anchorError?: string;
   anchorType: AnchorType;
-  category: string;
-  completionBasedEnabled: boolean;
-  isOpen: boolean;
   recurrenceType: RecurrenceType;
-  onCategoryChange: (value: string) => void;
   onSelectAnchorType: (anchorType: AnchorType) => void;
-  onToggleOpen: () => void;
 };
-
-type AnchorOptionButtonProps = {
-  disabled: boolean;
-  label: string;
-  onPress: () => void;
-  selected: boolean;
-};
-
-function AnchorOptionButton({
-  disabled,
-  label,
-  onPress,
-  selected,
-}: AnchorOptionButtonProps): React.JSX.Element {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.anchorOption,
-        selected ? styles.anchorOptionSelected : undefined,
-        disabled ? styles.anchorOptionDisabled : undefined,
-        pressed && !disabled ? styles.anchorOptionPressed : undefined,
-      ]}
-    >
-      <AppText
-        style={
-          selected ? styles.anchorOptionTitleSelected : styles.anchorOptionTitle
-        }
-      >
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}
 
 export function AdvancedOptionsSection({
   anchorError,
   anchorType,
-  category,
-  completionBasedEnabled,
-  isOpen,
   recurrenceType,
-  onCategoryChange,
   onSelectAnchorType,
-  onToggleOpen,
 }: AdvancedOptionsSectionProps): React.JSX.Element {
-  const {
-    anchorDescription,
-    showsAnchorOptions,
-    showsCompletionBasedHelper,
-    showsCompletionBasedOption,
-  } = getAdvancedOptionsState({
-    anchorType,
-    completionBasedEnabled,
+  const { isCompletionBasedSwitchEnabled } = getAdvancedOptionsState({
     recurrenceType,
   });
-  const anchorOptionButtons = anchorOptions
-    .filter(
-      (option) =>
-        option.value === "fixed" ||
-        (option.value === "completion_based" && showsCompletionBasedOption)
-    )
-    .map((option) => {
-      const disabled =
-        option.value === "completion_based" && !completionBasedEnabled;
 
-      return (
-        <AnchorOptionButton
-          disabled={disabled}
-          key={option.value}
-          label={option.label}
-          onPress={() => onSelectAnchorType(option.value)}
-          selected={anchorType === option.value}
-        />
-      );
-    });
+  const isCompletionBasedSelected =
+    isCompletionBasedSwitchEnabled && anchorType === "completion_based";
 
-  const advancedContent = isOpen ? (
-    <View style={styles.advancedContent}>
-      <View style={styles.field}>
-        <AppText style={styles.subFieldLabel}>카테고리</AppText>
-        <TextInput
-          accessibilityLabel="카테고리"
-          onChangeText={onCategoryChange}
-          placeholder="예: 건강, 집안일"
-          placeholderTextColor={colors.textMuted}
-          style={styles.textInput}
-          value={category}
+  const handleToggleCompletionBased = (nextValue: boolean): void => {
+    if (!isCompletionBasedSwitchEnabled) {
+      return;
+    }
+
+    onSelectAnchorType(nextValue ? "completion_based" : "fixed");
+  };
+
+  const handlePressInfo = (): void => {
+    Alert.alert("완료일 기준", getCompletionBasedInfoText());
+  };
+
+  return (
+    <View style={styles.optionToggleGroup}>
+      <View style={styles.optionToggleRow}>
+        <View style={styles.optionToggleLabelGroup}>
+          <AppText style={styles.optionToggleLabel} variant="body2">
+            완료일 기준
+          </AppText>
+          <Pressable
+            accessibilityHint="완료일 기준 설명을 확인해요."
+            accessibilityLabel="완료일 기준 설명"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={handlePressInfo}
+            style={({ pressed }) => [
+              styles.optionInfoButton,
+              pressed ? styles.inlineActionPressed : undefined,
+            ]}
+          >
+            <Info
+              absoluteStrokeWidth
+              color={color.gray}
+              size={16}
+              strokeWidth={1.2}
+            />
+          </Pressable>
+        </View>
+        <Switch
+          disabled={!isCompletionBasedSwitchEnabled}
+          onValueChange={handleToggleCompletionBased}
+          thumbColor={colors.primaryForeground}
+          trackColor={{ false: colors.outlineSoft, true: colors.primary }}
+          value={isCompletionBasedSelected}
         />
       </View>
 
-      {showsAnchorOptions ? (
-        <View style={styles.field}>
-          <AppText style={styles.subFieldLabel}>다음 일정 계산 방식</AppText>
-          <View style={styles.anchorCard}>{anchorOptionButtons}</View>
-          <AppText style={styles.anchorDescription}>
-            {anchorDescription}
-          </AppText>
-          {showsCompletionBasedHelper ? (
-            <AppText style={styles.advancedHelperText}>
-              현재 반복 규칙에서는 완료 기준 계산을 지원하지 않습니다.
-            </AppText>
-          ) : null}
-          {anchorError ? (
-            <AppText style={styles.fieldError}>{anchorError}</AppText>
-          ) : null}
-        </View>
+      {anchorError ? (
+        <AppText style={styles.fieldError} variant="caption">
+          {anchorError}
+        </AppText>
       ) : null}
-    </View>
-  ) : null;
-
-  return (
-    <View style={styles.field}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onToggleOpen}
-        style={({ pressed }) => [
-          styles.advancedToggle,
-          pressed ? styles.inlineActionPressed : undefined,
-        ]}
-      >
-        <AppText style={styles.fieldLabel}>고급 옵션</AppText>
-        {isOpen ? (
-          <ChevronUp color={colors.textMuted} size={18} />
-        ) : (
-          <ChevronDown color={colors.textMuted} size={18} />
-        )}
-      </Pressable>
-
-      {advancedContent}
     </View>
   );
 }
@@ -518,9 +483,13 @@ export function IosPickerModal({
                 pressed ? styles.inlineActionPressed : undefined,
               ]}
             >
-              <AppText style={styles.pickerModalCancelText}>취소</AppText>
+              <AppText style={styles.pickerModalCancelText} variant="body2">
+                취소
+              </AppText>
             </Pressable>
-            <AppText style={styles.pickerModalTitle}>{pickerTitle}</AppText>
+            <AppText style={styles.pickerModalTitle} variant="body2">
+              {pickerTitle}
+            </AppText>
             <Pressable
               accessibilityRole="button"
               onPress={onConfirm}
@@ -529,7 +498,9 @@ export function IosPickerModal({
                 pressed ? styles.inlineActionPressed : undefined,
               ]}
             >
-              <AppText style={styles.pickerModalConfirmText}>확인</AppText>
+              <AppText style={styles.pickerModalConfirmText} variant="body2">
+                확인
+              </AppText>
             </Pressable>
           </View>
 

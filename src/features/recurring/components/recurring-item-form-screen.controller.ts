@@ -25,7 +25,6 @@ import {
   createDefaultFormState,
   formatDateToLocalDate,
   formatDateToLocalTime,
-  getCompletionBasedEnabled,
   getCustomRecurrenceType,
   getMinimumStartDateLocal,
   getNextRecurrenceFormState,
@@ -37,6 +36,7 @@ import {
   type PickerMode,
   recurringItemFormSchema,
   type RecurringItemFormValues,
+  supportsCompletionBased,
   toDraft,
   toFormState,
   toggleWeekdayMask,
@@ -68,7 +68,6 @@ export function useRecurringItemFormScreenController({
       todayLocalDate,
     })
   );
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [pickerState, setPickerState] = useState({
     iosPickerMode: null as PickerMode | null,
     iosPickerValue: new Date(),
@@ -89,13 +88,15 @@ export function useRecurringItemFormScreenController({
 
   const {
     control,
-    formState: { errors },
+    formState: { errors, isSubmitted, submitCount },
     getValues,
     handleSubmit,
     reset,
     setValue,
   } = useForm<RecurringItemFormValues>({
     defaultValues,
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     resolver: standardSchemaResolver(recurringItemFormSchema),
   });
 
@@ -105,7 +106,6 @@ export function useRecurringItemFormScreenController({
   });
   const {
     anchorType = defaultValues.anchorType,
-    category = defaultValues.category,
     intervalValue = defaultValues.intervalValue,
     notificationsEnabled = defaultValues.notificationsEnabled,
     recurrenceType = defaultValues.recurrenceType,
@@ -113,76 +113,7 @@ export function useRecurringItemFormScreenController({
     startDateLocal = defaultValues.startDateLocal,
     weekdayMask = defaultValues.weekdayMask,
   } = formValues;
-  const completionBasedEnabled = getCompletionBasedEnabled(recurrenceType);
-
-  useEffect(() => {
-    if (!isEditMode) {
-      return;
-    }
-
-    if (isLoading) {
-      return;
-    }
-
-    if (!isAuthenticated || !profile || !user || !itemId) {
-      setRequestState((current) => ({
-        ...current,
-        isBootstrapping: false,
-        screenError: "수정할 항목을 불러올 수 없습니다.",
-      }));
-      return;
-    }
-
-    const currentItemId = itemId;
-    const profileTimezone = profile.timezone;
-    const userId = user.id;
-
-    async function loadItem(): Promise<void> {
-      setRequestState((current) => ({
-        ...current,
-        isBootstrapping: true,
-        screenError: null,
-      }));
-
-      try {
-        const item = await getRecurringItemById({
-          id: currentItemId,
-          timezone: profileTimezone,
-          userId,
-        });
-
-        setMinimumStartDateLocal(
-          getMinimumStartDateLocal({
-            initialStartDateLocal: item.startDateLocal,
-            isEditMode: true,
-            todayLocalDate,
-          })
-        );
-        reset(toFormState(item));
-      } catch (error) {
-        setRequestState((current) => ({
-          ...current,
-          screenError: error instanceof Error ? error.message : String(error),
-        }));
-      } finally {
-        setRequestState((current) => ({
-          ...current,
-          isBootstrapping: false,
-        }));
-      }
-    }
-
-    void loadItem();
-  }, [
-    isAuthenticated,
-    isEditMode,
-    isLoading,
-    itemId,
-    profile,
-    reset,
-    todayLocalDate,
-    user,
-  ]);
+  const completionBasedEnabled = supportsCompletionBased(recurrenceType);
 
   function getErrorMessage(
     name: keyof RecurringItemFormValues
@@ -207,7 +138,7 @@ export function useRecurringItemFormScreenController({
     setValue(name, value as never, {
       shouldDirty: true,
       shouldTouch: true,
-      shouldValidate: true,
+      shouldValidate: isSubmitted,
     });
   }
 
@@ -249,7 +180,7 @@ export function useRecurringItemFormScreenController({
   }
 
   function handleCloseCustom(): void {
-    setFields(getNextRecurrenceFormState(getValues(), "once"));
+    setFields(getNextRecurrenceFormState(getValues(), "daily"));
   }
 
   function handleToggleWeekday(weekdayValue: number): void {
@@ -395,10 +326,6 @@ export function useRecurringItemFormScreenController({
     setField("anchorType", nextAnchorType);
   }
 
-  function handleCategoryChange(value: string): void {
-    setField("category", value);
-  }
-
   function handleChangeDescription(value: string): void {
     setField("description", value);
   }
@@ -415,7 +342,7 @@ export function useRecurringItemFormScreenController({
     void handleSubmit(handleValidSubmit, () => {
       setRequestState((current) => ({
         ...current,
-        screenError: "입력값을 확인해주세요.",
+        screenError: "입력한 내용을 확인해 주세요.",
       }));
     })();
   }
@@ -438,10 +365,6 @@ export function useRecurringItemFormScreenController({
         },
       },
     ]);
-  }
-
-  function handleToggleAdvanced(): void {
-    setIsAdvancedOpen((current) => !current);
   }
 
   function handleToggleNotifications(value: boolean): void {
@@ -569,6 +492,75 @@ export function useRecurringItemFormScreenController({
     }
   }
 
+  useEffect(() => {
+    if (!isEditMode) {
+      return;
+    }
+
+    if (isLoading) {
+      return;
+    }
+
+    if (!isAuthenticated || !profile || !user || !itemId) {
+      setRequestState((current) => ({
+        ...current,
+        isBootstrapping: false,
+        screenError: "수정할 항목을 불러올 수 없습니다.",
+      }));
+      return;
+    }
+
+    const currentItemId = itemId;
+    const profileTimezone = profile.timezone;
+    const userId = user.id;
+
+    async function loadItem(): Promise<void> {
+      setRequestState((current) => ({
+        ...current,
+        isBootstrapping: true,
+        screenError: null,
+      }));
+
+      try {
+        const item = await getRecurringItemById({
+          id: currentItemId,
+          timezone: profileTimezone,
+          userId,
+        });
+
+        setMinimumStartDateLocal(
+          getMinimumStartDateLocal({
+            initialStartDateLocal: item.startDateLocal,
+            isEditMode: true,
+            todayLocalDate,
+          })
+        );
+        reset(toFormState(item));
+      } catch (error) {
+        setRequestState((current) => ({
+          ...current,
+          screenError: error instanceof Error ? error.message : String(error),
+        }));
+      } finally {
+        setRequestState((current) => ({
+          ...current,
+          isBootstrapping: false,
+        }));
+      }
+    }
+
+    void loadItem();
+  }, [
+    isAuthenticated,
+    isEditMode,
+    isLoading,
+    itemId,
+    profile,
+    reset,
+    todayLocalDate,
+    user,
+  ]);
+
   const fieldErrors = {
     anchor: getErrorMessage("anchorType"),
     interval: getErrorMessage("intervalValue"),
@@ -580,7 +572,6 @@ export function useRecurringItemFormScreenController({
 
   const displayValues = {
     anchorType,
-    category,
     intervalValue,
     notificationsEnabled,
     recurrenceType,
@@ -597,7 +588,6 @@ export function useRecurringItemFormScreenController({
   };
 
   const viewState = {
-    isAdvancedOpen,
     isBootstrapping,
     isDeleting,
     isEditMode,
@@ -605,12 +595,11 @@ export function useRecurringItemFormScreenController({
     isStartDateEditable: !isEditMode,
     minimumStartDateLocal,
     screenError,
-    showsEditEffectNotice: isEditMode,
+    submitCount,
   };
 
   const contentActions = {
     field: {
-      onCategoryChange: handleCategoryChange,
       onChangeDescription: handleChangeDescription,
       onChangeTitle: handleChangeTitle,
       onToggleNotifications: handleToggleNotifications,
@@ -629,7 +618,6 @@ export function useRecurringItemFormScreenController({
       onOpenCustom: handleOpenCustom,
       onSelectAnchorType: handleSelectAnchorType,
       onSelectRecurrence: handleSelectRecurrence,
-      onToggleAdvanced: handleToggleAdvanced,
       onToggleWeekday: handleToggleWeekday,
       onUnitChange: handleChangeCustomUnit,
     },

@@ -24,7 +24,6 @@ type RecurringItemFormErrors = {
 
 type RecurringItemFormDisplayValues = {
   anchorType: AnchorType;
-  category: string;
   intervalValue: string;
   notificationsEnabled: boolean;
   recurrenceType: RecurrenceType;
@@ -41,7 +40,6 @@ type RecurringItemFormPickerState = {
 };
 
 type RecurringItemFormViewState = {
-  isAdvancedOpen: boolean;
   isBootstrapping: boolean;
   isDeleting: boolean;
   isEditMode: boolean;
@@ -49,7 +47,7 @@ type RecurringItemFormViewState = {
   isStartDateEditable: boolean;
   minimumStartDateLocal: string;
   screenError: string | null;
-  showsEditEffectNotice: boolean;
+  submitCount: number;
 };
 
 type RecurringItemFormScreenActions = {
@@ -59,7 +57,6 @@ type RecurringItemFormScreenActions = {
 };
 
 type RecurringItemFormFieldActions = {
-  onCategoryChange: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeTitle: (value: string) => void;
   onToggleNotifications: (value: boolean) => void;
@@ -71,7 +68,6 @@ type RecurringItemFormRecurrenceActions = {
   onOpenCustom: () => void;
   onSelectAnchorType: (anchorType: AnchorType) => void;
   onSelectRecurrence: (recurrenceType: RecurrenceType) => void;
-  onToggleAdvanced: () => void;
   onToggleWeekday: (weekdayValue: number) => void;
   onUnitChange: (unit: CustomRecurrenceUnit) => void;
 };
@@ -106,6 +102,5 @@ export type RecurringItemFormScreenModel = {
 
 export type RecurringItemFormScreenContentProps =
   RecurringItemFormScreenModel & {
-    completionBasedEnabled: boolean;
     iosPickerChangeHandler: PickerChangeHandler;
   };

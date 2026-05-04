@@ -2,67 +2,36 @@ import { StyleSheet } from "react-native";
 
 import {
   borderRadius,
+  color,
   colors,
   spacing,
   typography,
 } from "~/design-system/tokens";
 
 export const styles = StyleSheet.create({
-  advancedContent: {
-    gap: spacing.md,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surfaceLow,
-    padding: spacing.md,
-  },
-  advancedHelperText: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-    textAlign: "left",
-  },
-  advancedToggle: {
+  optionInfoButton: {
     alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  anchorCard: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  anchorDescription: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-    textAlign: "left",
-  },
-  anchorOption: {
-    flex: 1,
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.surfaceLow,
-    gap: 2,
-    minHeight: 44,
     justifyContent: "center",
-    paddingHorizontal: spacing.md,
   },
-  anchorOptionDisabled: {
-    opacity: 0.45,
+  optionRows: {
+    gap: spacing.none,
   },
-  anchorOptionPressed: {
-    opacity: 0.88,
+  optionToggleGroup: {
+    gap: spacing.xs,
   },
-  anchorOptionSelected: {
-    backgroundColor: colors.primary,
+  optionToggleLabel: {
+    color: color.gray,
   },
-  anchorOptionTitle: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "600",
+  optionToggleLabelGroup: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xxs,
   },
-  anchorOptionTitleSelected: {
-    color: colors.primaryForeground,
-    fontSize: typography.body,
-    fontWeight: "600",
+  optionToggleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    height: 40,
+    justifyContent: "space-between",
   },
   chip: {
     alignItems: "center",
@@ -81,99 +50,47 @@ export const styles = StyleSheet.create({
   },
   chipText: {
     color: "#666666",
-    fontSize: typography.body,
-    fontWeight: "600",
   },
   chipTextSelected: {
     color: colors.primaryForeground,
-    fontSize: typography.body,
-    fontWeight: "600",
   },
   compactInput: {
-    minHeight: 52,
+    minHeight: 48,
   },
   createSaveButton: {
     width: "100%",
   },
-  customRecurrenceComposer: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  customRecurrenceCountField: {
-    flex: 0.88,
+  customRecurrenceControlGroup: {
     gap: spacing.xs,
   },
-  customRecurrenceFieldLabel: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    fontWeight: "700",
-    textAlign: "left",
+  customRecurrenceControls: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
   },
   customRecurrenceInput: {
-    minHeight: 44,
-  },
-  customRecurrencePanel: {
-    gap: spacing.md,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surfaceLow,
-    padding: spacing.md,
-  },
-  customRecurrenceSectionLabel: {
-    color: colors.text,
-    fontSize: typography.label,
-    fontWeight: "700",
-    textAlign: "left",
-  },
-  customRecurrenceSentence: {
-    borderRadius: borderRadius.md,
-    backgroundColor: "rgba(255,255,255,0.56)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  customRecurrenceSentenceText: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-  },
-  customRecurrenceUnitChip: {
-    minHeight: 44,
-    minWidth: 48,
-  },
-  customRecurrenceUnitField: {
-    flex: 1.12,
-    gap: spacing.xs,
+    flex: 1,
+    height: 36,
+    minHeight: 36,
+    minWidth: 0,
+    paddingVertical: spacing.xxs,
+    textAlign: "center",
   },
   customRecurrenceUnitOption: {
     flex: 1,
     minWidth: 0,
     paddingHorizontal: spacing.sm,
   },
-  customRecurrenceUnits: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  customRecurrenceWeekdayLabel: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    fontWeight: "700",
-  },
-  customRecurrenceWeekdaySection: {
-    gap: spacing.sm,
-    borderTopColor: "rgba(0, 0, 0, 0.08)",
-    borderTopWidth: 1,
-    marginTop: spacing.xs,
-    paddingTop: spacing.md,
-  },
   dateField: {
     flex: 1.1,
   },
   deleteButton: {
     alignItems: "center",
-    backgroundColor: colors.background,
-    borderColor: colors.outlineSoft,
-    borderRadius: borderRadius.lg,
+    backgroundColor: "transparent",
+    borderColor: color.salmonOrange,
+    borderRadius: borderRadius.pill,
     borderWidth: 1,
-    height: 44,
+    height: 48,
     justifyContent: "center",
     width: 56,
   },
@@ -191,7 +108,6 @@ export const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.error,
-    lineHeight: 20,
   },
   errorTitle: {
     color: colors.error,
@@ -201,39 +117,55 @@ export const styles = StyleSheet.create({
   },
   fieldError: {
     color: colors.error,
-    fontSize: typography.label,
-    lineHeight: 18,
   },
   fieldHelper: {
     color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
   },
   fieldLabel: {
-    color: colors.textMuted,
-    fontSize: typography.body,
-    fontWeight: "700",
+    color: color.jetBlack,
+  },
+  headerActionSpacer: {
+    height: 48,
+    width: 48,
+  },
+  headerBackButton: {
+    alignItems: "center",
+    backgroundColor: color.jetBlack,
+    borderRadius: borderRadius.pill,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  headerButtonPressed: {
+    opacity: 0.88,
+  },
+  headerLayer: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 10,
   },
   footer: {
     backgroundColor: colors.background,
     minHeight: 60,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: 8,
     paddingBottom: 8,
   },
   footerActions: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   iconInputShell: {
     alignItems: "center",
-    backgroundColor: colors.surfaceLow,
-    borderColor: "#ececec",
-    borderRadius: borderRadius.lg,
+    backgroundColor: "transparent",
+    borderColor: color.gray,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.xxs,
     paddingHorizontal: spacing.md,
   },
   iconInputShellDisabled: {
@@ -243,61 +175,15 @@ export const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     flexShrink: 1,
-    fontSize: typography.label,
-    lineHeight: 18,
-  },
-  inlineAction: {
-    alignSelf: "flex-start",
-    paddingVertical: 2,
   },
   inlineActionPressed: {
     opacity: 0.72,
   },
-  inlineActionText: {
-    color: colors.primary,
-    fontSize: typography.label,
-    fontWeight: "600",
-  },
   inputError: {
     borderColor: colors.error,
   },
-  infoCard: {
-    backgroundColor: colors.surfaceLow,
-    borderColor: "#ececec",
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
-  },
-  infoSubtext: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-  },
-  infoText: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "600",
-    lineHeight: 20,
-  },
-  infoTitle: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    fontWeight: "700",
-  },
-  intervalInput: {
-    minWidth: 0,
-    textAlign: "center",
-    backgroundColor: colors.background,
-    borderColor: "#ececec",
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.body,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  inputFocused: {
+    borderColor: color.jetBlack,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -316,46 +202,6 @@ export const styles = StyleSheet.create({
     minHeight: 108,
     paddingTop: spacing.md,
   },
-  notificationCard: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceLow,
-    borderRadius: borderRadius.lg,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: 72,
-    paddingHorizontal: spacing.md,
-  },
-  notificationCopy: {
-    flex: 1,
-    gap: 2,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.md,
-  },
-  notificationIconWrap: {
-    alignItems: "center",
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.pill,
-    height: 34,
-    justifyContent: "center",
-    width: 34,
-  },
-  notificationSubtitle: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  notificationSwitchWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 40,
-  },
-  notificationTitle: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "700",
-  },
   pickerModalBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
@@ -363,8 +209,6 @@ export const styles = StyleSheet.create({
   },
   pickerModalCancelText: {
     color: colors.textMuted,
-    fontSize: typography.body,
-    fontWeight: "600",
   },
   pickerModalCard: {
     borderTopLeftRadius: borderRadius.lg,
@@ -375,8 +219,6 @@ export const styles = StyleSheet.create({
   },
   pickerModalConfirmText: {
     color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: "700",
     textAlign: "right",
   },
   pickerModalHeader: {
@@ -392,25 +234,78 @@ export const styles = StyleSheet.create({
   },
   pickerModalTitle: {
     color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "700",
   },
   primaryRecurrenceChip: {
     flex: 1,
   },
   primaryTextInput: {
-    minHeight: 56,
+    minHeight: 48,
   },
   pickerFieldPressed: {
     opacity: 0.8,
   },
+  quickRecurrenceChip: {
+    backgroundColor: "transparent",
+    borderColor: color.jetBlack,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    height: 36,
+    minHeight: 36,
+    minWidth: 52,
+    paddingHorizontal: spacing.sm,
+  },
+  quickRecurrenceChipSelected: {
+    backgroundColor: color.jetBlack,
+  },
+  quickRecurrenceChipText: {
+    color: color.jetBlack,
+  },
+  quickRecurrenceChipTextSelected: {
+    color: color.white,
+  },
+  quickRecurrenceContent: {
+    gap: spacing.xs,
+  },
   quickRecurrenceGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 4,
+  },
+  recurrenceSettingsStack: {
+    gap: spacing.xs,
+  },
+  recurrenceModeTab: {
+    alignItems: "center",
+    borderRadius: borderRadius.pill,
+    flex: 1,
+    height: "100%",
+    justifyContent: "center",
+  },
+  recurrenceModeTabPressed: {
+    opacity: 0.88,
+  },
+  recurrenceModeTabs: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.pill,
+    flexDirection: "row",
+    height: 36,
+    overflow: "hidden",
+  },
+  recurrenceModeTabSelected: {
+    backgroundColor: color.jetBlack,
+  },
+  recurrenceModeTabText: {
+    color: color.gray,
+  },
+  recurrenceModeTabTextSelected: {
+    color: color.white,
   },
   row: {
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.xs,
+  },
+  scheduleSettingsGroup: {
+    gap: spacing.xs,
   },
   safeArea: {
     flex: 1,
@@ -419,15 +314,10 @@ export const styles = StyleSheet.create({
   saveButton: {
     alignItems: "center",
     backgroundColor: "#333333",
-    borderRadius: borderRadius.lg,
-    height: 44,
+    borderRadius: borderRadius.pill,
+    height: 48,
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
-  },
-  saveButtonContent: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -437,74 +327,60 @@ export const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.primaryForeground,
-    fontSize: typography.body,
-    fontWeight: "700",
   },
   scrollContent: {
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
   },
-  secondaryRecurrenceRow: {
-    flexDirection: "row",
-    gap: 4,
+  scrollView: {
+    flex: 1,
+  },
+  screenRoot: {
+    flex: 1,
+    position: "relative",
   },
   subFieldLabel: {
-    color: colors.text,
-    fontSize: typography.label,
-    fontWeight: "700",
+    color: color.jetBlack,
   },
   textInput: {
-    backgroundColor: colors.surfaceLow,
-    borderColor: "#ececec",
-    borderRadius: borderRadius.lg,
+    backgroundColor: "transparent",
+    borderColor: color.gray,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     color: colors.text,
     fontFamily: typography.fontFamily.body,
-    fontSize: typography.body,
-    minHeight: 56,
+    fontSize: typography.size.body3,
+    lineHeight: typography.lineHeight.body3,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   timeField: {
     flex: 0.9,
   },
-  unitChip: {
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.background,
-    justifyContent: "center",
-    minHeight: 40,
-    minWidth: 56,
-    paddingHorizontal: spacing.md,
-  },
   weekdayChip: {
     aspectRatio: 1,
     alignItems: "center",
-    backgroundColor: colors.surfaceLow,
+    backgroundColor: "transparent",
+    borderColor: color.jetBlack,
+    borderWidth: 1,
     borderRadius: borderRadius.pill,
     flex: 1,
     justifyContent: "center",
-  },
-  weekdayChipInsideCustomPanel: {
-    backgroundColor: colors.background,
   },
   weekdayChipPressed: {
     opacity: 0.88,
   },
   weekdayChipSelected: {
-    backgroundColor: "#333333",
+    backgroundColor: color.jetBlack,
   },
   weekdayChipText: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "600",
+    color: color.jetBlack,
   },
   weekdayChipTextSelected: {
-    color: colors.primaryForeground,
-    fontSize: typography.body,
-    fontWeight: "600",
+    color: color.white,
   },
   weekdayGroup: {
     flexDirection: "row",
