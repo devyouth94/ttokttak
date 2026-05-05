@@ -124,7 +124,7 @@ export function buildOccurrenceStatusCard({
 }): ItemDetailStatusCard {
   const titleByStatus: Record<DerivedOccurrence["status"], string> = {
     completed: "완료한 일정",
-    overdue: "놓친 일정",
+    overdue: "지난 일정",
     scheduled: "예정 일정",
     skipped: "건너뛴 일정",
   };
@@ -272,12 +272,12 @@ export function buildStatusCard({
           ? overdueDays === 0
             ? "오늘"
             : `${overdueDays}일 지남`
-          : `${overdueOccurrences.length}건 밀림`,
+          : `지난 일정 ${overdueOccurrences.length}건`,
       timeLabel: formatUtcTimeInTimezone(
         latestOverdueOccurrence.scheduledAtUtc,
         timezone
       ),
-      title: "놓친 일정",
+      title: "지난 일정",
     };
   }
 

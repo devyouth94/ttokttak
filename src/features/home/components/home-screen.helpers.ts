@@ -155,7 +155,7 @@ export function buildHomeFeedSections({
 
   return [
     {
-      emptyMessage: "놓친 일정은 없어요",
+      emptyMessage: "지난 일정은 없어요",
       id: "overdue",
       items: buildOverdueCards({
         completionLogs,
@@ -165,7 +165,7 @@ export function buildHomeFeedSections({
         timezone,
         todayLocalDate,
       }),
-      title: "놓친 일정",
+      title: "지난 일정",
     },
     selectedSection,
     {

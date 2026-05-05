@@ -84,8 +84,8 @@ describe("recurring item detail helpers", () => {
     expect(
       viewModel.overdueOccurrences.map((occurrence) => occurrence.localDate)
     ).toEqual(["2026-04-09", "2026-04-08"]);
-    expect(viewModel.statusCard.title).toBe("놓친 일정");
-    expect(viewModel.statusCard.metaLabel).toBe("2건 밀림");
+    expect(viewModel.statusCard.title).toBe("지난 일정");
+    expect(viewModel.statusCard.metaLabel).toBe("지난 일정 2건");
     expect(viewModel.statusCard.timeLabel).toBe("오전 9:00");
   });
 

@@ -158,10 +158,10 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 ### Derived concepts
 
 - occurrence
-- today list
-- upcoming list
-- overdue list
-- calendar day summaries
+- 오늘 목록
+- 다가오는 일정 목록
+- 지난 일정 목록
+- 캘린더 날짜 요약
 
 occurrence는 테이블로 저장하지 않고 런타임에서 계산한다.
 
@@ -716,7 +716,7 @@ src/
 
 ### Hardening and finish
 
-- widget read-only
+- 위젯 읽기 전용
 - device-scoped metadata hardening
 - monitoring
 - polish
@@ -727,7 +727,7 @@ src/
 
 1. 반복 일정 앱의 도메인 모델을 어떻게 설계했는가
 2. 고정형과 완료 기준형을 한 UX 안에서 어떻게 공존시켰는가
-3. overdue 상태를 자동 미루기 없이 어떻게 처리했는가
+3. 지난 일정 상태를 자동 미루기 없이 어떻게 처리했는가
 4. occurrence를 저장하지 않고 계산하는 이유
 5. 서버 중심 구조에서 원격 푸시 발송 대상을 어떻게 동기화했는가
 6. 멀티 디바이스 확장을 고려했지만 MVP 복잡도를 어떻게 통제했는가

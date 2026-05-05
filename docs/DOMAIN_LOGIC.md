@@ -273,24 +273,24 @@ getLastCompletedLog(itemId, logs);
 
 ## 9. Home Feed Construction
 
-### Today
+### 오늘
 
 - `localDate == today(local timezone)`
 - `status == scheduled`
 
-### Upcoming
+### 다가오는 일정
 
 - `scheduledAtUtc > nowUtc`
-- today 이후 범위
+- 오늘 이후 범위
 - `status == scheduled`
 
-### Overdue
+### 지난 일정
 
 - `status == overdue`
 
 UI 정책:
 
-- 홈에서는 오래된 overdue 전체를 다 보여주지 않고 최근 항목 위주로 제한 노출
+- 홈에서는 오래된 지난 일정 전체를 다 보여주지 않고 최근 항목 위주로 제한 노출
 
 ## 10. Occurrence Action Scope
 
@@ -314,7 +314,7 @@ UI 정책:
 - 이미 처리한 occurrence에는 중복 액션을 보이지 않는다.
 - future occurrence에는 성급한 처리 액션을 보이지 않는다.
 - 상세 화면은 일정 상태, 설정, 최근 히스토리, 수정/삭제 관리에 집중한다.
-- 오늘 일정과 놓친 일정만 바로 처리할 수 있게 한다.
+- 오늘 일정과 지난 일정만 바로 처리할 수 있게 한다.
 - 홈 화면은 처리 기준을 담당하고 상세 화면은 표시 기준을 담당한다.
 
 ## 11. Completion Flow
