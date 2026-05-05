@@ -152,7 +152,7 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.statusCard.dateLabel).toBe("없음");
   });
 
-  it("최근 히스토리 3건만 최신 예정 시각 순으로 만든다", () => {
+  it("최근 히스토리 5건만 최신 예정 시각 순으로 만든다", () => {
     const entries = buildHistoryPreview(
       [
         createLog({
@@ -172,6 +172,14 @@ describe("recurring item detail helpers", () => {
           id: "log-4",
           scheduledAtUtc: "2026-04-07T00:00:00.000Z",
         }),
+        createLog({
+          id: "log-5",
+          scheduledAtUtc: "2026-04-06T00:00:00.000Z",
+        }),
+        createLog({
+          id: "log-6",
+          scheduledAtUtc: "2026-04-05T00:00:00.000Z",
+        }),
       ],
       timezone
     );
@@ -180,6 +188,8 @@ describe("recurring item detail helpers", () => {
       "log-2",
       "log-3",
       "log-1",
+      "log-4",
+      "log-5",
     ]);
     expect(entries[0]?.statusLabel).toBe("건너뜀");
   });

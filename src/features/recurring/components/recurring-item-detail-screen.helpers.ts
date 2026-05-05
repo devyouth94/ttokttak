@@ -214,7 +214,7 @@ export function buildHistoryPreview(
   return completionLogs
     .slice()
     .sort(compareLogsByScheduledAtUtcDesc)
-    .slice(0, 3)
+    .slice(0, 5)
     .map((log) => ({
       action: log.action,
       id: log.id,
