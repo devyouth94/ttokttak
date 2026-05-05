@@ -22,6 +22,8 @@ import {
 
 const OVERDUE_LOOKBACK_DAYS = 730;
 
+type RecurringItemDetailReturnPath = "/" | "/calendar" | "/home" | "/schedule";
+
 export type ItemDetailHistoryEntry = {
   action: CompletionLog["action"];
   id: string;
@@ -57,6 +59,20 @@ export type ItemDetailViewModel = {
     title: string;
   };
 };
+
+export function getRecurringItemDetailDeleteReturnPath(
+  returnTo?: string
+): RecurringItemDetailReturnPath {
+  if (
+    returnTo === "/calendar" ||
+    returnTo === "/home" ||
+    returnTo === "/schedule"
+  ) {
+    return returnTo;
+  }
+
+  return "/";
+}
 
 export function getItemDetailBasisOccurrence({
   completionLogs,

@@ -36,6 +36,7 @@ import {
   buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
   getItemDetailBasisOccurrence,
+  getRecurringItemDetailDeleteReturnPath,
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
@@ -464,7 +465,7 @@ export function RecurringItemDetailScreen({
       await queryClient.invalidateQueries({
         queryKey: recurringQueryKeys.user(userId),
       });
-      router.replace("/");
+      router.replace(getRecurringItemDetailDeleteReturnPath(returnTo));
     } catch (error) {
       setActionErrorMessage(getErrorMessage(error));
     } finally {
