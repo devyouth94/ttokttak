@@ -453,6 +453,8 @@ async function sendApnsNotification(
         },
       }),
       headers: {
+        "apns-priority": "10",
+        "apns-push-type": "alert",
         "apns-topic": bundleId,
         authorization: `bearer ${apnsJwt}`,
         "content-type": "application/json",
