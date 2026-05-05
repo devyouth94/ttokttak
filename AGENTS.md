@@ -25,6 +25,20 @@
 - 의존성 audit 운영 기준은 `docs/security/DEPENDENCY_AUDIT.md`를 확인한다.
 - secret 노출 점검 운영 기준은 `docs/security/SECRET_EXPOSURE_CHECK.md`를 확인한다.
 
+## Agent skills
+
+### Issue tracker
+
+이슈와 PRD는 GitHub Issues에서 관리한다. 자세한 기준은 `docs/agents/issue-tracker.md`를 본다.
+
+### Triage labels
+
+triage 라벨은 기본 5개 역할 이름을 그대로 사용한다. 자세한 매핑은 `docs/agents/triage-labels.md`를 본다.
+
+### Domain docs
+
+도메인 문서는 single-context 구조를 사용한다. 자세한 기준은 `docs/agents/domain.md`를 본다.
+
 ## COMMIT
 
 - prefix: `feat:` | `fix:` | `refactor:` | `chore:` | `docs:` | `test:`
