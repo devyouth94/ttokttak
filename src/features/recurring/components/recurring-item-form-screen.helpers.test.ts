@@ -5,6 +5,7 @@ import {
   normalizeStartDateSelection,
   recurringItemFormSchema,
   type RecurringItemFormValues,
+  toDraft,
 } from "~/features/recurring/components/recurring-item-form-screen.helpers";
 
 function getValidationMessages(
@@ -167,5 +168,21 @@ describe("recurring item form validation messages", () => {
     expect(messages).not.toMatch(
       /intervalValue|weekdayMask|completion_based|HH:mm|YYYY-MM-DD/
     );
+  });
+});
+
+describe("recurring item form draft", () => {
+  it("신규 일정 draft는 기본 일정 색상 blue를 가진다", () => {
+    const draft = toDraft(
+      {
+        ...createDefaultFormState(),
+        reminderTimeLocal: "09:00",
+        startDateLocal: "2026-05-06",
+        title: "물 마시기",
+      },
+      "Asia/Seoul"
+    );
+
+    expect(draft.colorKey).toBe("blue");
   });
 });

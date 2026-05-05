@@ -16,6 +16,7 @@ function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return {
     anchorType: "fixed",
     category: null,
+    colorKey: "blue",
     createdAt: "2026-04-01T00:00:00.000Z",
     description: null,
     id: "item-1",

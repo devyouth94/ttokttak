@@ -19,6 +19,16 @@ export const occurrenceStatuses = [
 ] as const;
 
 export const completionActions = ["completed", "skipped"] as const;
+export const recurringItemColorKeys = [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "indigo",
+  "purple",
+] as const;
+export const defaultRecurringItemColorKey: RecurringItemColorKey = "blue";
 export const devicePlatforms = ["ios", "android", "web", "unknown"] as const;
 export const pushProviders = ["apns", "fcm"] as const;
 export const devicePushTokenPermissionStatuses = ["granted", "denied"] as const;
@@ -65,6 +75,7 @@ export type RecurrenceType = (typeof recurrenceTypes)[number];
 export type AnchorType = (typeof anchorTypes)[number];
 export type OccurrenceStatus = (typeof occurrenceStatuses)[number];
 export type CompletionAction = (typeof completionActions)[number];
+export type RecurringItemColorKey = (typeof recurringItemColorKeys)[number];
 export type DevicePlatform = (typeof devicePlatforms)[number];
 export type PushProvider = (typeof pushProviders)[number];
 export type DevicePushTokenPermissionStatus =
@@ -102,6 +113,7 @@ export interface RecurringItem {
   title: string;
   description?: string | null;
   category?: string | null;
+  colorKey: RecurringItemColorKey;
   recurrenceType: RecurrenceType;
   intervalValue?: number | null;
   weekdayMask?: number[] | null;
@@ -228,6 +240,7 @@ export type RecurringItemDraft = Pick<
   RecurringItem,
   | "anchorType"
   | "category"
+  | "colorKey"
   | "description"
   | "intervalValue"
   | "isArchived"

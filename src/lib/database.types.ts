@@ -436,6 +436,7 @@ export type Database = {
       recurring_items: {
         Row: {
           category: string | null;
+          color_key: string;
           created_at: string;
           description: string | null;
           id: string;
@@ -447,6 +448,7 @@ export type Database = {
         };
         Insert: {
           category?: string | null;
+          color_key?: string;
           created_at?: string;
           description?: string | null;
           id?: string;
@@ -458,6 +460,7 @@ export type Database = {
         };
         Update: {
           category?: string | null;
+          color_key?: string;
           created_at?: string;
           description?: string | null;
           id?: string;
@@ -557,6 +560,7 @@ export type Database = {
         Args: {
           p_anchor_type: string;
           p_category: string | null;
+          p_color_key?: string | null;
           p_description: string | null;
           p_effective_from_utc: string;
           p_interval_value: number | null;
@@ -576,6 +580,7 @@ export type Database = {
         Args: {
           p_anchor_type?: string | null;
           p_category: string | null;
+          p_color_key?: string | null;
           p_description: string | null;
           p_effective_from_utc?: string | null;
           p_has_rule_changes: boolean;

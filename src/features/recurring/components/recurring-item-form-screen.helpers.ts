@@ -13,6 +13,7 @@ import {
   type AnchorType,
   anchorTypes,
   completionBasedRecurrenceTypes,
+  defaultRecurringItemColorKey,
   type RecurrenceType,
   recurrenceTypes,
   type RecurringItem,
@@ -434,6 +435,7 @@ export function toDraft(
       formState.recurrenceType
     ),
     category: normalizeOptionalText(formState.category),
+    colorKey: defaultRecurringItemColorKey,
     description: normalizeOptionalText(formState.description),
     intervalValue: requiresIntervalValue(formState.recurrenceType)
       ? Number.parseInt(formState.intervalValue, 10)
