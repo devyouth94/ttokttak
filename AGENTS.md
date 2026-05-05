@@ -29,7 +29,7 @@
 
 ### Issue tracker
 
-이슈와 PRD는 GitHub Issues에서 관리한다. 자세한 기준은 `docs/agents/issue-tracker.md`를 본다.
+이슈, PRD, 이슈 기반 작업 흐름은 GitHub Issues 기준으로 관리한다. 자세한 기준은 `docs/agents/issue-tracker.md`를 본다.
 
 ### Triage labels
 
