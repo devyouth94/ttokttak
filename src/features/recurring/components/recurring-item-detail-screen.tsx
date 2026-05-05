@@ -33,23 +33,19 @@ import {
 } from "~/design-system/tokens";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import {
+  buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
   getItemDetailBasisOccurrence,
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
-  shouldShowOccurrenceActions,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
-import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
-import type { CompletionAction } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
-import { createCompletionLog } from "~/features/recurring/repositories/completion-logs-repository";
 import { archiveRecurringItem } from "~/features/recurring/repositories/recurring-items-repository";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
-const ACTION_BAR_HEIGHT = 64;
 const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
 const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
@@ -331,71 +327,6 @@ function DetailNotFoundCard(): React.JSX.Element {
   );
 }
 
-function DetailActionBar({
-  disabled,
-  insetsBottom,
-  isProcessing,
-  onPress,
-}: {
-  disabled: boolean;
-  insetsBottom: number;
-  isProcessing: boolean;
-  onPress: (action: CompletionAction) => void;
-}): React.JSX.Element {
-  return (
-    <View
-      style={[
-        styles.actionBarWrapper,
-        {
-          paddingBottom: insetsBottom,
-        },
-      ]}
-    >
-      <View style={styles.actionBar}>
-        <View style={styles.actionRow}>
-          <Pressable
-            accessibilityHint="대표 처리 대상 일정을 완료 처리해요."
-            accessibilityLabel="일정 완료"
-            accessibilityRole="button"
-            disabled={disabled}
-            onPress={() => {
-              onPress("completed");
-            }}
-            style={({ pressed }) => [
-              styles.primaryActionButton,
-              disabled && styles.actionButtonDisabled,
-              pressed && !disabled && styles.primaryActionButtonPressed,
-            ]}
-          >
-            <AppText style={styles.primaryActionButtonText} variant="body">
-              완료
-            </AppText>
-          </Pressable>
-
-          <Pressable
-            accessibilityHint="대표 처리 대상 일정 occurrence를 이번만 건너뜁니다."
-            accessibilityLabel="건너뛰기"
-            accessibilityRole="button"
-            disabled={disabled}
-            onPress={() => {
-              onPress("skipped");
-            }}
-            style={({ pressed }) => [
-              styles.secondaryActionButton,
-              disabled && styles.actionButtonDisabled,
-              pressed && !disabled && styles.secondaryActionButtonPressed,
-            ]}
-          >
-            <AppText style={styles.secondaryActionButtonText} variant="body">
-              {isProcessing ? "처리 중..." : "건너뛰기"}
-            </AppText>
-          </Pressable>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 export function RecurringItemDetailScreen({
   itemId,
   returnTo,
@@ -419,8 +350,6 @@ export function RecurringItemDetailScreen({
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
     null
   );
-  const [processingAction, setProcessingAction] =
-    useState<CompletionAction | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
 
   const itemQuery = useRecurringItemByIdQuery({
@@ -469,107 +398,30 @@ export function RecurringItemDetailScreen({
           timezone,
         })
       : null;
-  const isProcessing = processingAction !== null;
-  const isMutating = isProcessing || isArchiving;
+  const statusCard =
+    basisOccurrence && scheduledAtUtc
+      ? buildOccurrenceStatusCard({
+          now,
+          occurrence: basisOccurrence,
+          timezone,
+        })
+      : viewModel?.statusCard;
+  const isMutating = isArchiving;
   const isNotFound =
     !item &&
     !isLoading &&
     (queryErrorMessage === ITEM_NOT_FOUND_MESSAGE ||
       queryErrorMessage === null);
-  const showsActionBar =
-    Boolean(item) &&
-    !queryErrorMessage &&
-    shouldShowOccurrenceActions({
-      occurrence: basisOccurrence,
-      now,
-      timezone,
-    });
-  const scrollBottomPadding = showsActionBar
-    ? ACTION_BAR_HEIGHT + insets.bottom + spacing.xxl
-    : spacing.lg;
+  const scrollBottomPadding = spacing.lg;
   const scrollTopPadding = headerHeight;
 
   const refetchDetail = async (): Promise<void> => {
     await Promise.all([itemQuery.refetch(), completionLogsQuery.refetch()]);
   };
 
-  const navigateAfterOccurrenceAction = (): void => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-
-    router.replace("/");
-  };
-
   const handleRetry = (): void => {
     setActionErrorMessage(null);
     void refetchDetail();
-  };
-
-  const handleOccurrenceAction = async (
-    action: CompletionAction
-  ): Promise<void> => {
-    if (!item || !userId || !basisOccurrence) {
-      return;
-    }
-
-    setActionErrorMessage(null);
-    setProcessingAction(action);
-
-    try {
-      const occurrencesToResolve = getOccurrencesToResolve({
-        completionLogs,
-        item,
-        now: new Date(),
-        primaryOccurrence: basisOccurrence,
-        timezone,
-      });
-      const existingScheduledAtUtcSet = new Set(
-        completionLogs
-          .filter((log) => log.itemId === item.id)
-          .map((log) => log.scheduledAtUtc)
-      );
-      const pendingOccurrences = occurrencesToResolve.filter(
-        (occurrence) =>
-          !existingScheduledAtUtcSet.has(occurrence.scheduledAtUtc)
-      );
-
-      if (pendingOccurrences.length > 0) {
-        await Promise.all(
-          pendingOccurrences.map((occurrence) =>
-            createCompletionLog({
-              action,
-              itemId: item.id,
-              scheduledAtUtc: occurrence.scheduledAtUtc,
-              userId,
-            })
-          )
-        );
-      }
-
-      await syncAfterMutation({
-        reason:
-          action === "completed"
-            ? "occurrence-completed"
-            : "occurrence-skipped",
-        scope: {
-          effectiveFromUtc: new Date().toISOString(),
-          itemId: item.id,
-          type: "item",
-        },
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: recurringQueryKeys.user(userId),
-      });
-      await refetchDetail();
-      navigateAfterOccurrenceAction();
-    } catch (actionError) {
-      setActionErrorMessage(getErrorMessage(actionError));
-    } finally {
-      setProcessingAction(null);
-    }
   };
 
   const handleEdit = (): void => {
@@ -767,7 +619,7 @@ export function RecurringItemDetailScreen({
                   message={queryErrorMessage}
                   onRetry={handleRetry}
                 />
-              ) : isNotFound || !item || !viewModel ? (
+              ) : isNotFound || !item || !viewModel || !statusCard ? (
                 <DetailNotFoundCard />
               ) : (
                 <>
@@ -786,27 +638,16 @@ export function RecurringItemDetailScreen({
                   />
 
                   <DetailScheduleSection
-                    dateLabel={viewModel.statusCard.dateLabel}
-                    metaLabel={viewModel.statusCard.metaLabel}
-                    timeLabel={viewModel.statusCard.timeLabel}
-                    title={viewModel.statusCard.title}
+                    dateLabel={statusCard.dateLabel}
+                    metaLabel={statusCard.metaLabel}
+                    timeLabel={statusCard.timeLabel}
+                    title={statusCard.title}
                   />
 
                   <DetailHistorySection entries={viewModel.historyPreview} />
                 </>
               )}
             </ScrollView>
-
-            {showsActionBar && item && viewModel ? (
-              <DetailActionBar
-                disabled={isMutating}
-                insetsBottom={insets.bottom}
-                isProcessing={isProcessing}
-                onPress={(action) => {
-                  void handleOccurrenceAction(action);
-                }}
-              />
-            ) : null}
           </>
         )}
       </View>
@@ -815,30 +656,6 @@ export function RecurringItemDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  actionBar: {
-    alignItems: "center",
-    backgroundColor: colors.background,
-    justifyContent: "center",
-    minHeight: ACTION_BAR_HEIGHT,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  actionBarWrapper: {
-    backgroundColor: colors.background,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-  },
-  actionButtonDisabled: {
-    opacity: 0.5,
-  },
-  actionRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-    width: "100%",
-  },
   emptyCard: {
     minHeight: 120,
   },
@@ -1030,25 +847,6 @@ const styles = StyleSheet.create({
     height: typography.lineHeight.title,
     width: "48%",
   },
-  primaryActionButton: {
-    alignItems: "center",
-    backgroundColor: color.jetBlack,
-    borderColor: color.jetBlack,
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    flex: 1,
-    flexDirection: "row",
-    gap: spacing.xs,
-    justifyContent: "center",
-    height: 48,
-    paddingHorizontal: spacing.lg,
-  },
-  primaryActionButtonPressed: {
-    opacity: 0.9,
-  },
-  primaryActionButtonText: {
-    color: color.white,
-  },
   screenContent: {
     flex: 1,
   },
@@ -1059,25 +857,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
-  },
-  secondaryActionButton: {
-    alignItems: "center",
-    backgroundColor: "transparent",
-    borderColor: color.jetBlack,
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    flex: 1,
-    flexDirection: "row",
-    gap: spacing.xs,
-    justifyContent: "center",
-    height: 48,
-    paddingHorizontal: spacing.lg,
-  },
-  secondaryActionButtonPressed: {
-    opacity: 0.9,
-  },
-  secondaryActionButtonText: {
-    color: color.jetBlack,
   },
   scheduleDate: {
     color: color.white,

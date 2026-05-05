@@ -1,9 +1,9 @@
 import {
   buildHistoryPreview,
+  buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
   buildSummarySettingBadges,
   getItemDetailBasisOccurrence,
-  shouldShowOccurrenceActions,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import type {
   CompletionLog,
@@ -203,112 +203,7 @@ describe("recurring item detail helpers", () => {
     expect(entries.map((entry) => entry.id)).toEqual(["start-date"]);
   });
 
-  it("대표 상태가 overdue면 액션 버튼을 노출한다", () => {
-    const viewModel = buildRecurringItemDetailViewModel({
-      completionLogs: [],
-      item: createItem(),
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      timezone,
-    });
-
-    expect(
-      shouldShowOccurrenceActions({
-        occurrence: viewModel.primaryOccurrence,
-        now: new Date("2026-04-10T03:00:00.000Z"),
-        timezone,
-      })
-    ).toBe(true);
-  });
-
-  it("대표 상태가 오늘 scheduled면 액션 버튼을 노출한다", () => {
-    expect(
-      shouldShowOccurrenceActions({
-        occurrence: {
-          itemId: "item-1",
-          localDate: "2026-04-10",
-          localTime: "09:00",
-          scheduledAtLocal: "2026-04-10T09:00:00",
-          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-          status: "scheduled",
-        },
-        now: new Date("2026-04-10T03:00:00.000Z"),
-        timezone,
-      })
-    ).toBe(true);
-  });
-
-  it("미래 일정만 남아 있으면 액션 버튼을 숨긴다", () => {
-    const viewModel = buildRecurringItemDetailViewModel({
-      completionLogs: [
-        createLog({
-          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-        }),
-      ],
-      item: createItem({
-        recurrenceType: "interval_days",
-        intervalValue: 3,
-        startDateLocal: "2026-04-10",
-      }),
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      timezone,
-    });
-
-    expect(viewModel.primaryOccurrence?.status).toBe("scheduled");
-    expect(viewModel.primaryOccurrence?.localDate).toBe("2026-04-13");
-    expect(
-      shouldShowOccurrenceActions({
-        occurrence: viewModel.primaryOccurrence,
-        now: new Date("2026-04-10T03:00:00.000Z"),
-        timezone,
-      })
-    ).toBe(false);
-  });
-
-  it("대표 상태가 completed면 액션 버튼을 숨긴다", () => {
-    expect(
-      shouldShowOccurrenceActions({
-        occurrence: {
-          itemId: "item-1",
-          localDate: "2026-04-10",
-          localTime: "09:00",
-          scheduledAtLocal: "2026-04-10T09:00:00",
-          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-          status: "completed",
-        },
-        now: new Date("2026-04-10T03:00:00.000Z"),
-        timezone,
-      })
-    ).toBe(false);
-  });
-
-  it("대표 상태가 skipped면 액션 버튼을 숨긴다", () => {
-    expect(
-      shouldShowOccurrenceActions({
-        occurrence: {
-          itemId: "item-1",
-          localDate: "2026-04-10",
-          localTime: "09:00",
-          scheduledAtLocal: "2026-04-10T09:00:00",
-          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-          status: "skipped",
-        },
-        now: new Date("2026-04-10T03:00:00.000Z"),
-        timezone,
-      })
-    ).toBe(false);
-  });
-
-  it("대표 occurrence가 없으면 액션 버튼을 숨긴다", () => {
-    expect(
-      shouldShowOccurrenceActions({
-        occurrence: null,
-        now: new Date("2026-04-10T03:00:00.000Z"),
-        timezone,
-      })
-    ).toBe(false);
-  });
-
-  it("선택된 completion log occurrence를 기준 occurrence로 사용한다", () => {
+  it("선택된 completion log occurrence를 상세 진입 맥락으로 사용한다", () => {
     const item = createItem();
     const completionLogs = [
       createLog({
@@ -334,13 +229,20 @@ describe("recurring item detail helpers", () => {
 
     expect(basisOccurrence?.status).toBe("completed");
     expect(basisOccurrence?.localDate).toBe("2026-04-13");
+    if (!basisOccurrence) {
+      throw new Error("상세 진입 맥락 occurrence를 찾지 못했어요.");
+    }
+
     expect(
-      shouldShowOccurrenceActions({
-        occurrence: basisOccurrence ?? null,
+      buildOccurrenceStatusCard({
         now: new Date("2026-04-14T03:00:00.000Z"),
+        occurrence: basisOccurrence,
         timezone,
       })
-    ).toBe(false);
+    ).toMatchObject({
+      metaLabel: "완료",
+      title: "완료한 일정",
+    });
   });
 
   it("상세 화면도 latest schedule version 기준 현재 규칙과 다음 일정을 보여준다", () => {

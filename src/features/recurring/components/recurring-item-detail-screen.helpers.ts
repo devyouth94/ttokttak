@@ -58,29 +58,6 @@ export type ItemDetailViewModel = {
   };
 };
 
-export function shouldShowOccurrenceActions({
-  occurrence,
-  now,
-  timezone,
-}: {
-  occurrence: DerivedOccurrence | null;
-  now: Date;
-  timezone: string;
-}): boolean {
-  if (!occurrence) {
-    return false;
-  }
-
-  if (occurrence.status === "overdue") {
-    return true;
-  }
-
-  return (
-    occurrence.status === "scheduled" &&
-    occurrence.localDate === formatInTimeZone(now, timezone, "yyyy-MM-dd")
-  );
-}
-
 export function getItemDetailBasisOccurrence({
   completionLogs,
   item,
@@ -134,6 +111,37 @@ export function getItemDetailBasisOccurrence({
       now.toISOString()
     ).find((occurrence) => occurrence.scheduledAtUtc === scheduledAtUtc) ?? null
   );
+}
+
+export function buildOccurrenceStatusCard({
+  now,
+  occurrence,
+  timezone,
+}: {
+  now: Date;
+  occurrence: DerivedOccurrence;
+  timezone: string;
+}): ItemDetailStatusCard {
+  const titleByStatus: Record<DerivedOccurrence["status"], string> = {
+    completed: "완료한 일정",
+    overdue: "놓친 일정",
+    scheduled: "예정 일정",
+    skipped: "건너뛴 일정",
+  };
+
+  return {
+    dateLabel: formatInTimeZone(
+      occurrence.scheduledAtUtc,
+      timezone,
+      "M월 d일",
+      {
+        locale: ko,
+      }
+    ),
+    metaLabel: getOccurrenceStatusMetaLabel({ now, occurrence, timezone }),
+    timeLabel: formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone),
+    title: titleByStatus[occurrence.status],
+  };
 }
 
 export function buildRecurringItemDetailViewModel({
@@ -392,4 +400,37 @@ function getRelativeDayLabel(
   }
 
   return `${dayDiff}일 후`;
+}
+
+function getOccurrenceStatusMetaLabel({
+  now,
+  occurrence,
+  timezone,
+}: {
+  now: Date;
+  occurrence: DerivedOccurrence;
+  timezone: string;
+}): string {
+  if (occurrence.status === "completed") {
+    return "완료";
+  }
+
+  if (occurrence.status === "skipped") {
+    return "건너뜀";
+  }
+
+  if (occurrence.status === "overdue") {
+    const overdueDays = differenceInCalendarDays(
+      parse(
+        formatInTimeZone(now, timezone, "yyyy-MM-dd"),
+        "yyyy-MM-dd",
+        new Date()
+      ),
+      parse(occurrence.localDate, "yyyy-MM-dd", new Date())
+    );
+
+    return overdueDays === 0 ? "오늘" : `${overdueDays}일 지남`;
+  }
+
+  return getRelativeDayLabel(occurrence.scheduledAtUtc, now, timezone);
 }
