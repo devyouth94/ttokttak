@@ -130,10 +130,10 @@ function openHomeFeedCard(card: HomeFeedCard): void {
   });
 }
 
-function getFeedItemMetaLine(card: HomeFeedCard): string {
+export function getFeedItemMetaLine(card: HomeFeedCard): string {
   const scheduledDateTimeLabel = [card.metaLabel, card.timeLabel]
     .filter((value): value is string => Boolean(value))
-    .join(" ");
+    .join(" · ");
 
   return [scheduledDateTimeLabel, card.recurrenceLabel]
     .filter((value): value is string => Boolean(value))

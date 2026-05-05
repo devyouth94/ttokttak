@@ -1,3 +1,4 @@
+import { getFeedItemMetaLine } from "~/features/home/components/home-feed-item-row";
 import {
   buildHomeFeedSections,
   createHomeDateOptions,
@@ -113,6 +114,30 @@ describe("buildHomeFeedSections", () => {
     expect(sections[2]?.items[0]?.item.title).toBe("다가오는 필터 교체");
     expect(sections[2]?.items[0]?.dateSeparatorLabel).toBe("4월 13일");
     expect(sections[2]?.items[0]?.metaLabel).toBe("오전 9:00");
+  });
+
+  it("지난 일정 row meta는 지난 날짜와 알림 시간 사이에 점을 넣는다", () => {
+    const sections = buildHomeFeedSections({
+      completionLogs: [],
+      items: [
+        createItem({
+          id: "overdue-item",
+          startDateLocal: "2026-04-08",
+          title: "지난 영양제",
+        }),
+      ],
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      selectedDateId: "2026-04-10",
+      timezone,
+    });
+
+    const overdueCard = sections.find((section) => section.id === "overdue")
+      ?.items[0];
+
+    expect(overdueCard).toBeDefined();
+    expect(getFeedItemMetaLine(overdueCard!)).toBe(
+      "2일 지남 · 오전 9:00 · 한 번"
+    );
   });
 
   it("지난 일정은 오늘 이전 날짜 중 같은 항목당 최신 overdue 1개만 노출한다", () => {
