@@ -26,12 +26,22 @@ export type OccurrenceStatus =
   | "skipped"
   | "overdue";
 
+export type RecurringItemColorKey =
+  | "red"
+  | "orange"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "indigo"
+  | "purple";
+
 export interface RecurringItem {
   id: string;
   userId: string;
   title: string;
   description?: string | null;
   category?: string | null;
+  colorKey: RecurringItemColorKey;
   startDateLocal: string; // YYYY-MM-DD
   timezone: string;
   isArchived: boolean;
@@ -78,6 +88,7 @@ export interface DerivedOccurrence {
 ### Type Notes
 
 - `RecurringItem`은 item identity와 메타를 가진다.
+- `colorKey`는 일정 색상 팔레트 key이며 occurrence 상태와 독립적이다.
 - recurrence 관련 source of truth는 `RecurringItemScheduleVersion` 목록이다.
 - `occurrence`는 `RecurringItem`과 로그를 기준으로 계산되는 파생 개념이며 별도 row로 저장하지 않는다.
 - `recurrenceType`이 `interval_days`, `interval_weeks`, `interval_months`면 `intervalValue`가 필요하다.
@@ -91,6 +102,8 @@ export interface DerivedOccurrence {
 - `notificationsEnabled = false`인 version은 알림 발송 대상에서 제외된다.
 - `anchorType`은 다음 future occurrence 계산 기준만 바꾸며, occurrence 상태 판정 규칙 자체를 바꾸지는 않는다.
 - `isArchived = true`인 item은 활성 화면과 future notification 대상에서 제외하는 방향을 기본으로 본다.
+- 모든 item은 하나의 `colorKey`를 가진다.
+- 신규 item과 기존 item 마이그레이션의 기본 `colorKey`는 `blue`다.
 - `CompletionLog`는 `(itemId, scheduledAtUtc)` 기준으로 특정 occurrence에 연결된다.
 - `CompletionLog.action`은 `completed` 또는 `skipped`만 가진다.
 - `DerivedOccurrence.scheduledAtUtc`는 occurrence identity로 사용한다.
@@ -662,6 +675,7 @@ provider 오류 규칙:
 ## 16. Validation Rules
 
 - title: required
+- colorKey: required, 허용된 일정 색상 팔레트 key
 - recurrenceType: required
 - intervalValue: interval 계열에서는 required, 1 이상
 - weekdayMask: weekly / interval_weeks에서는 최소 1개 필요

@@ -155,6 +155,8 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 - recurring_item_schedule_versions
 - completion_logs
 
+`recurring_items`는 일정 메타로 일정 색상 key를 가진다. 저장값은 영문 팔레트 key이고, 사용자-facing 라벨은 한국어 색상 이름이다.
+
 ### Derived concepts
 
 - occurrence
@@ -164,6 +166,8 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 - 캘린더 날짜 요약
 
 occurrence는 테이블로 저장하지 않고 런타임에서 계산한다.
+
+일정 색상은 occurrence 상태와 독립이다. 캘린더 월간 날짜 셀은 상태 색상 대신 일정 색상 선을 표시한다.
 
 ---
 
