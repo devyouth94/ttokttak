@@ -433,40 +433,84 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_content_encryption_keys: {
+        Row: {
+          created_at: string;
+          key_version: number;
+          updated_at: string;
+          user_id: string;
+          wrap_algorithm: string;
+          wrap_metadata: Record<string, unknown>;
+          wrapped_key: string;
+        };
+        Insert: {
+          created_at?: string;
+          key_version?: number;
+          updated_at?: string;
+          user_id: string;
+          wrap_algorithm: string;
+          wrap_metadata?: Record<string, unknown>;
+          wrapped_key: string;
+        };
+        Update: {
+          created_at?: string;
+          key_version?: number;
+          updated_at?: string;
+          user_id?: string;
+          wrap_algorithm?: string;
+          wrap_metadata?: Record<string, unknown>;
+          wrapped_key?: string;
+        };
+        Relationships: [
+          {
+            columns: ["user_id"];
+            foreignKeyName: "user_content_encryption_keys_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
       recurring_items: {
         Row: {
           category: string | null;
           color_key: string;
+          content_encryption_metadata: Record<string, unknown>;
+          content_key_version: number;
           created_at: string;
-          description: string | null;
+          description_ciphertext: string | null;
           id: string;
           is_archived: boolean;
           start_date_local: string;
-          title: string;
+          title_ciphertext: string;
           updated_at: string;
           user_id: string;
         };
         Insert: {
           category?: string | null;
           color_key?: string;
+          content_encryption_metadata?: Record<string, unknown>;
+          content_key_version?: number;
           created_at?: string;
-          description?: string | null;
+          description_ciphertext?: string | null;
           id?: string;
           is_archived?: boolean;
           start_date_local: string;
-          title: string;
+          title_ciphertext: string;
           updated_at?: string;
           user_id: string;
         };
         Update: {
           category?: string | null;
           color_key?: string;
+          content_encryption_metadata?: Record<string, unknown>;
+          content_key_version?: number;
           created_at?: string;
-          description?: string | null;
+          description_ciphertext?: string | null;
           id?: string;
           is_archived?: boolean;
           start_date_local?: string;
-          title?: string;
+          title_ciphertext?: string;
           updated_at?: string;
           user_id?: string;
         };
@@ -561,7 +605,9 @@ export type Database = {
           p_anchor_type: string;
           p_category: string | null;
           p_color_key?: string | null;
-          p_description: string | null;
+          p_content_encryption_metadata: Record<string, unknown>;
+          p_content_key_version: number;
+          p_description_ciphertext: string | null;
           p_effective_from_utc: string;
           p_interval_value: number | null;
           p_is_archived: boolean;
@@ -570,7 +616,7 @@ export type Database = {
           p_reminder_time_local: string;
           p_seed_start_date_local: string;
           p_start_date_local: string;
-          p_title: string;
+          p_title_ciphertext: string;
           p_user_id: string;
           p_weekday_mask: number[] | null;
         };
@@ -581,7 +627,9 @@ export type Database = {
           p_anchor_type?: string | null;
           p_category: string | null;
           p_color_key?: string | null;
-          p_description: string | null;
+          p_content_encryption_metadata: Record<string, unknown>;
+          p_content_key_version: number;
+          p_description_ciphertext: string | null;
           p_effective_from_utc?: string | null;
           p_has_rule_changes: boolean;
           p_interval_value?: number | null;
@@ -591,7 +639,7 @@ export type Database = {
           p_recurrence_type?: string | null;
           p_reminder_time_local?: string | null;
           p_seed_start_date_local?: string | null;
-          p_title: string;
+          p_title_ciphertext: string;
           p_user_id: string;
           p_weekday_mask?: number[] | null;
         };
@@ -649,3 +697,7 @@ export type RecurringItemScheduleVersionInsert =
   Database["public"]["Tables"]["recurring_item_schedule_versions"]["Insert"];
 export type RecurringItemScheduleVersionRow =
   Database["public"]["Tables"]["recurring_item_schedule_versions"]["Row"];
+export type UserContentEncryptionKeyInsert =
+  Database["public"]["Tables"]["user_content_encryption_keys"]["Insert"];
+export type UserContentEncryptionKeyRow =
+  Database["public"]["Tables"]["user_content_encryption_keys"]["Row"];

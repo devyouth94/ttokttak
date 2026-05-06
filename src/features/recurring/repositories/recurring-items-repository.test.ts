@@ -8,8 +8,12 @@ import {
 const recurringItemRow = {
   id: "item-1",
   user_id: "user-1",
-  title: "물 마시기",
-  description: null,
+  title_ciphertext: "encrypted-title",
+  description_ciphertext: "encrypted-description",
+  content_key_version: 1,
+  content_encryption_metadata: {
+    algorithm: "test",
+  },
   category: null,
   color_key: "blue",
   start_date_local: "2026-05-06",
@@ -56,7 +60,67 @@ function createRecurringItemsSelectClient() {
   };
 }
 
+const contentCipher = {
+  decryptRecurringItemContent: jest.fn().mockResolvedValue({
+    title: "물 마시기",
+    description: "하루 8잔",
+  }),
+  encryptRecurringItemContent: jest.fn().mockResolvedValue({
+    titleCiphertext: "encrypted-title",
+    descriptionCiphertext: "encrypted-description",
+    keyVersion: 1,
+    metadata: {
+      algorithm: "test",
+    },
+  }),
+};
+
 describe("recurring items repository", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("신규 일정 생성은 제목과 설명을 암호화해서 저장하고 조회 시 복호화된 값을 제공한다", async () => {
+    const rpc = jest.fn().mockResolvedValue({
+      data: "item-1",
+      error: null,
+    });
+    const { from } = createRecurringItemsSelectClient();
+
+    const item = await createRecurringItem(
+      {
+        anchorType: "fixed",
+        category: null,
+        description: "하루 8잔",
+        intervalValue: null,
+        isArchived: false,
+        notificationsEnabled: true,
+        recurrenceType: "daily",
+        reminderTimeLocal: "09:00",
+        startDateLocal: "2026-05-06",
+        timezone: "Asia/Seoul",
+        title: "물 마시기",
+        userId: "user-1",
+        weekdayMask: null,
+      },
+      { client: { from, rpc } as never, contentCipher }
+    );
+
+    expect(rpc).toHaveBeenCalledWith(
+      "create_recurring_item_with_initial_version",
+      expect.objectContaining({
+        p_content_encryption_metadata: { algorithm: "test" },
+        p_content_key_version: 1,
+        p_description_ciphertext: "encrypted-description",
+        p_title_ciphertext: "encrypted-title",
+      })
+    );
+    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_title");
+    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_description");
+    expect(item.title).toBe("물 마시기");
+    expect(item.description).toBe("하루 8잔");
+  });
+
   it("신규 일정 생성은 색상을 명시하지 않아도 기본 일정 색상 red를 저장한다", async () => {
     const rpc = jest.fn().mockResolvedValue({
       data: "item-1",
@@ -80,7 +144,7 @@ describe("recurring items repository", () => {
         userId: "user-1",
         weekdayMask: null,
       },
-      { from, rpc } as never
+      { client: { from, rpc } as never, contentCipher }
     );
 
     expect(rpc).toHaveBeenCalledWith(
@@ -96,6 +160,7 @@ describe("recurring items repository", () => {
 
     const item = await getRecurringItemById({
       client: { from } as never,
+      contentCipher,
       id: "item-1",
       timezone: "Asia/Seoul",
       userId: "user-1",
@@ -118,7 +183,7 @@ describe("recurring items repository", () => {
         timezone: "Asia/Seoul",
         userId: "user-1",
       },
-      { from, rpc } as never
+      { client: { from, rpc } as never, contentCipher }
     );
 
     expect(rpc).toHaveBeenCalledWith(
