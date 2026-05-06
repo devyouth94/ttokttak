@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   cardRow: {
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.md,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
@@ -146,11 +146,11 @@ const styles = StyleSheet.create({
   },
   statusBadgeCompleted: {
     backgroundColor: colors.statusCompletedSoft,
-    borderColor: "#D3E8D6",
+    borderColor: colors.statusCompletedBorder,
   },
   statusBadgeSkipped: {
     backgroundColor: colors.statusSkippedSoft,
-    borderColor: "#F6D8BC",
+    borderColor: colors.statusSkippedBorder,
   },
   statusBadgeText: {
     fontSize: 11,

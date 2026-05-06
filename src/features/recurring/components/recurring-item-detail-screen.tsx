@@ -26,7 +26,6 @@ import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import {
   borderRadius,
-  color,
   colors,
   spacing,
   typography,
@@ -119,7 +118,7 @@ function DetailSummarySection({
               <View style={styles.summaryNotificationIconSlot}>
                 <NotificationIcon
                   absoluteStrokeWidth
-                  color={color.jetBlack}
+                  color={colors.text}
                   size={14}
                   strokeWidth={1.2}
                 />
@@ -347,14 +346,27 @@ function DetailHistoryCard({
   entry: ItemDetailHistoryEntry;
   isFirst: boolean;
 }): React.JSX.Element {
+  const isCompleted = entry.action === "completed";
+  const statusChipStyle = isCompleted
+    ? styles.historyStatusChipCompleted
+    : styles.historyStatusChipSkipped;
+  const statusChipTextStyle = isCompleted
+    ? styles.historyStatusChipTextCompleted
+    : styles.historyStatusChipTextSkipped;
+
   return (
     <View style={[styles.historyRow, !isFirst && styles.historyRowDivider]}>
       <AppText style={styles.historyDate} variant="body3">
         {entry.timeLabel}
       </AppText>
-      <AppText style={styles.historyStatus} variant="body3">
-        {entry.statusLabel}
-      </AppText>
+      <View style={[styles.historyStatusChip, statusChipStyle]}>
+        <AppText
+          style={[styles.historyStatusChipText, statusChipTextStyle]}
+          variant="label"
+        >
+          {entry.statusLabel}
+        </AppText>
+      </View>
     </View>
   );
 }
@@ -563,7 +575,7 @@ export function RecurringItemDetailScreen({
                   pressed && styles.headerButtonPressed,
                 ]}
               >
-                <ArrowLeft color={color.white} size={18} />
+                <ArrowLeft color={colors.primaryForeground} size={18} />
               </Pressable>
             }
             onHeightChange={onHeaderHeightChange}
@@ -575,9 +587,7 @@ export function RecurringItemDetailScreen({
                       accessibilityHint="일정 관리 메뉴를 열어요."
                       accessibilityLabel="일정 관리"
                       disabled={isMutating}
-                      icon={
-                        <EllipsisVertical color={color.jetBlack} size={20} />
-                      }
+                      icon={<EllipsisVertical color={colors.text} size={20} />}
                       size="lg"
                     />
                   </DropdownMenu.Trigger>
@@ -721,7 +731,7 @@ const styles = StyleSheet.create({
   },
   headerBackButton: {
     alignItems: "center",
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     height: 32,
     justifyContent: "center",
@@ -752,27 +762,50 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   historyRowDivider: {
-    borderTopColor: color.jetBlack,
+    borderTopColor: colors.dividerOnPrimary,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   historySection: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     paddingBottom: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
   },
   historySectionLabel: {
-    color: color.jetBlack,
+    color: colors.text,
   },
-  historyStatus: {
-    color: colors.textMuted,
+  historyStatusChip: {
+    alignItems: "center",
+    borderRadius: borderRadius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: "center",
+    minWidth: 56,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 3,
+  },
+  historyStatusChipCompleted: {
+    backgroundColor: colors.statusCompletedSoft,
+    borderColor: colors.statusCompletedBorder,
+  },
+  historyStatusChipSkipped: {
+    backgroundColor: colors.statusSkippedSoft,
+    borderColor: colors.statusSkippedBorder,
+  },
+  historyStatusChipText: {
+    fontSize: 11,
+  },
+  historyStatusChipTextCompleted: {
+    color: colors.statusCompletedText,
+  },
+  historyStatusChipTextSkipped: {
+    color: colors.statusSkippedText,
   },
   managementDeleteText: {
     color: colors.error,
   },
   managementMenuContent: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: MANAGEMENT_MENU_CONTAINER_PADDING,
     width: 80,
@@ -790,7 +823,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   managementMenuText: {
-    color: color.jetBlack,
+    color: colors.text,
     flex: 1,
     textAlign: "center",
   },
@@ -801,7 +834,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   loadingBadge: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 36,
   },
@@ -830,17 +863,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingHistoryDate: {
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     flex: 1,
     height: 20,
   },
   loadingHistoryDivider: {
-    borderTopColor: color.jetBlack,
+    borderTopColor: colors.dividerOnPrimary,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   loadingHistoryLabel: {
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: typography.lineHeight.caption,
     width: 80,
@@ -852,38 +885,38 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   loadingHistorySection: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     paddingBottom: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
   },
   loadingHistoryStatus: {
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 20,
     width: 52,
   },
   loadingScheduleDate: {
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: typography.lineHeight.title,
     width: 96,
   },
   loadingScheduleLabel: {
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: typography.lineHeight.caption,
     width: 64,
   },
   loadingScheduleMeta: {
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 20,
     width: 144,
   },
   loadingScheduleSection: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     gap: spacing.xxs,
     padding: spacing.md,
@@ -895,7 +928,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   loadingSummaryTitle: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: typography.lineHeight.title,
     width: "48%",
@@ -912,22 +945,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   scheduleDate: {
-    color: color.white,
+    color: colors.primaryForeground,
     textAlign: "left",
   },
   scheduleMetaText: {
-    color: color.white,
+    color: colors.primaryForeground,
     flexShrink: 1,
   },
   scheduleSection: {
     alignItems: "flex-start",
-    backgroundColor: color.royalBlue,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.xl,
     gap: spacing.xxs,
     padding: spacing.md,
   },
   scheduleTitle: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   summaryBadgeStack: {
     alignItems: "center",
@@ -947,7 +980,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryOutlineLabel: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   summaryOutlineGroup: {
     alignItems: "center",
@@ -959,7 +992,7 @@ const styles = StyleSheet.create({
   },
   summaryOutlineRow: {
     alignItems: "center",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
@@ -969,7 +1002,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   summaryOutlineValue: {
-    color: color.jetBlack,
+    color: colors.text,
     flexShrink: 1,
   },
   summaryNotificationIconSlot: {
@@ -985,11 +1018,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   summaryTitle: {
-    color: color.jetBlack,
+    color: colors.text,
     textAlign: "center",
   },
   statePanel: {
-    borderColor: colors.outlineSoft,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.md,
     borderWidth: StyleSheet.hairlineWidth,
   },

@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { color, spacing } from "~/design-system/tokens";
+import { colors, spacing } from "~/design-system/tokens";
 
 import { HomeDateCarousel } from "./home-date-carousel";
 import { HomeHeader } from "./home-header";
@@ -42,7 +42,7 @@ export function HomeTopPanel({
 
 const styles = StyleSheet.create({
   topPanel: {
-    backgroundColor: color.white,
+    backgroundColor: colors.background,
     gap: spacing.lg,
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.md,

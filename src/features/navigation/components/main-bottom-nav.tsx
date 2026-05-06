@@ -10,7 +10,7 @@ import {
 } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { color, spacing } from "~/design-system/tokens";
+import { colors, spacing } from "~/design-system/tokens";
 import { pressMainBottomNavRoute } from "~/features/navigation/components/main-bottom-nav.helpers";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 
@@ -142,7 +142,7 @@ export function MainBottomNav({
           pressed && styles.createButtonPressed,
         ]}
       >
-        <Plus color={color.jetBlack} size={28} />
+        <Plus color={colors.text} size={28} />
       </Pressable>
     </View>
   );
@@ -181,7 +181,10 @@ function MainBottomNavItem({
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
     >
       <View style={styles.icon}>
-        <Icon color={isActive ? color.white : color.gray} size={22} />
+        <Icon
+          color={isActive ? colors.primaryForeground : colors.textSoft}
+          size={22}
+        />
       </View>
       <AppText
         numberOfLines={1}
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     alignItems: "center",
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
     borderRadius: 30,
     flexDirection: "row",
     height: 60,
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
   },
   createButton: {
     alignItems: "center",
-    backgroundColor: color.white,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     height: 48,
     justifyContent: "center",
@@ -251,11 +254,11 @@ const styles = StyleSheet.create({
     width: 36,
   },
   label: {
-    color: color.gray,
+    color: colors.textSoft,
     marginTop: spacing.xxs,
     textAlign: "center",
   },
   labelActive: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
 });

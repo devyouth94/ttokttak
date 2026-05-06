@@ -4,7 +4,7 @@ import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 
 import { createHomeDateOptions } from "./home-screen.helpers";
 
@@ -122,7 +122,7 @@ export function HomeDateCarousel({
               pressed && styles.todayShortcutButtonPressed,
             ]}
           >
-            <Undo2 color={color.jetBlack} size={13} />
+            <Undo2 color={colors.text} size={13} />
             <AppText style={styles.todayShortcutText} variant="caption">
               오늘로
             </AppText>
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   dateChip: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
@@ -159,23 +159,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   dateChipLabel: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   dateChipLabelSelected: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   dateChipPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.97 }],
   },
   dateChipSelected: {
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
   },
   dateChipValue: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   dateChipValueSelected: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   dateSelectorRow: {
     alignItems: "center",
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   todayShortcutButton: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
@@ -199,6 +199,6 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   todayShortcutText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
 });

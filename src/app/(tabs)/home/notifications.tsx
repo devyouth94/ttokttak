@@ -3,7 +3,7 @@ import { Alert, FlatList, RefreshControl, StyleSheet } from "react-native";
 import { router } from "expo-router";
 
 import { AppScreen } from "~/design-system/components/app-screen";
-import { color, spacing } from "~/design-system/tokens";
+import { colors, spacing } from "~/design-system/tokens";
 import { NotificationInboxHeader } from "~/features/notifications/components/notification-inbox-header";
 import { NotificationInboxPlaceholder } from "~/features/notifications/components/notification-inbox-placeholder";
 import { NotificationInboxRow } from "~/features/notifications/components/notification-inbox-row";
@@ -223,7 +223,7 @@ export default function HomeNotificationsPage(): React.JSX.Element {
                 void inboxItemsQuery.refetch();
               }}
               refreshing={inboxItemsQuery.isRefetching}
-              tintColor={color.jetBlack}
+              tintColor={colors.text}
             />
           }
           renderItem={({ item }) => (

@@ -15,7 +15,7 @@ import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown, Info } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { color, colors } from "~/design-system/tokens";
+import { colors } from "~/design-system/tokens";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -259,7 +259,7 @@ export function ColorPickerSection({
                 {selectedOption.label}
               </AppText>
             </View>
-            <ChevronDown color={color.jetBlack} size={16} />
+            <ChevronDown color={colors.text} size={16} />
           </Pressable>
         </Select.Trigger>
 
@@ -495,7 +495,7 @@ export function NotificationSection({
       <Switch
         onValueChange={onToggle}
         thumbColor={colors.primaryForeground}
-        trackColor={{ false: colors.outlineSoft, true: colors.primary }}
+        trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
         value={enabled}
       />
     </View>
@@ -554,7 +554,7 @@ export function AdvancedOptionsSection({
           >
             <Info
               absoluteStrokeWidth
-              color={color.gray}
+              color={colors.textSoft}
               size={16}
               strokeWidth={1.2}
             />
@@ -564,7 +564,7 @@ export function AdvancedOptionsSection({
           disabled={!isCompletionBasedSwitchEnabled}
           onValueChange={handleToggleCompletionBased}
           thumbColor={colors.primaryForeground}
-          trackColor={{ false: colors.outlineSoft, true: colors.primary }}
+          trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
           value={isCompletionBasedSelected}
         />
       </View>

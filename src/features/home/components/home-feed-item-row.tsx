@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 
 import type { HomeFeedCard } from "./home-screen.helpers";
@@ -37,7 +37,7 @@ export function HomeFeedItemRow({
   const dividerStyle = usesLightContent
     ? styles.feedItemDividerLight
     : styles.feedItemDividerDark;
-  const iconColor = usesLightContent ? color.white : color.jetBlack;
+  const iconColor = usesLightContent ? colors.primaryForeground : colors.text;
 
   return (
     <View style={[styles.feedItemRow, !isLast && dividerStyle]}>
@@ -153,10 +153,10 @@ const styles = StyleSheet.create({
     opacity: 0.42,
   },
   feedItemActionIconDark: {
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
   },
   feedItemActionIconLight: {
-    borderColor: color.white,
+    borderColor: colors.primaryForeground,
   },
   feedItemActions: {
     alignItems: "center",
@@ -169,11 +169,11 @@ const styles = StyleSheet.create({
   },
   feedItemDividerDark: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(41, 43, 45, 0.2)",
+    borderBottomColor: colors.dividerOnPrimary,
   },
   feedItemDividerLight: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255, 255, 255, 0.32)",
+    borderBottomColor: colors.dividerOnPrimary,
   },
   feedItemMetaSlot: {
     marginTop: spacing.xxs,
@@ -189,9 +189,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   feedSectionTextDark: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   feedSectionTextLight: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
 });

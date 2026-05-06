@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import {
   type CalendarDayEntry,
   formatCalendarDayEntryMetaLine,
@@ -66,7 +66,7 @@ export function CalendarEntryRow({
       </View>
 
       <View style={styles.listItemActionIcon}>
-        <ArrowRight color={color.jetBlack} size={16} />
+        <ArrowRight color={colors.text} size={16} />
       </View>
     </Pressable>
   );
@@ -75,7 +75,7 @@ export function CalendarEntryRow({
 const styles = StyleSheet.create({
   listItemActionIcon: {
     alignItems: "center",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     height: 34,
@@ -92,14 +92,14 @@ const styles = StyleSheet.create({
     width: 10,
   },
   listItemDivider: {
-    borderBottomColor: color.jetBlack,
+    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   listItemMetaSlot: {
     marginTop: spacing.xxs,
   },
   listItemMetaText: {
-    color: color.gray,
+    color: colors.textSoft,
   },
   listItemRow: {
     alignItems: "center",
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   listItemText: {
-    color: color.jetBlack,
+    color: colors.text,
     flex: 1,
     minWidth: 0,
   },

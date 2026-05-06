@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 
 const NOTIFICATION_PLACEHOLDER_ROW_COUNT = 5;
 
@@ -33,11 +33,11 @@ export function NotificationInboxPlaceholder(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   divider: {
-    borderBottomColor: color.jetBlack,
+    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   meta: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 15,
     width: "68%",
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   title: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 23,
     width: "34%",

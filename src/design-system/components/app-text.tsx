@@ -7,7 +7,7 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { color, colors, typography } from "~/design-system/tokens";
+import { colors, typography } from "~/design-system/tokens";
 
 type AppTextVariant =
   | "body"
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeight.caption,
   },
   display: {
-    color: color.jetBlack,
+    color: colors.text,
     fontSize: typography.size.display,
     fontWeight: typography.fontWeight.semibold,
     letterSpacing: typography.letterSpacing.display,

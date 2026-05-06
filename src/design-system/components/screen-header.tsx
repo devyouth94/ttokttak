@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
-import { color, spacing } from "~/design-system/tokens";
+import { colors, spacing } from "~/design-system/tokens";
 
 import { AppText } from "./app-text";
 
@@ -21,7 +21,7 @@ export function ScreenHeader({
   rightSlot,
   style,
   title,
-  titleColor = color.jetBlack,
+  titleColor = colors.text,
 }: ScreenHeaderProps): React.JSX.Element {
   return (
     <View
@@ -55,12 +55,11 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    backgroundColor: color.white,
+    backgroundColor: colors.background,
     flexDirection: "row",
+    height: 64,
     justifyContent: "space-between",
-    paddingBottom: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
     width: "100%",
   },
   leftSlot: {
@@ -75,6 +74,6 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   title: {
-    color: color.jetBlack,
+    color: colors.text,
   },
 });

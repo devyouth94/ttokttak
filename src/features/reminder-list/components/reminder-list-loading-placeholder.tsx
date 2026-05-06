@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 
 const PLACEHOLDER_ROW_COUNT = 4;
 
@@ -31,7 +31,7 @@ export function ReminderListLoadingPlaceholder(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   placeholderAction: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 34,
     width: 34,
@@ -42,11 +42,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   placeholderDivider: {
-    borderBottomColor: color.jetBlack,
+    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   placeholderMeta: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 15,
     opacity: 0.72,
@@ -59,14 +59,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   placeholderTitle: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 23,
     width: "42%",
   },
   sortControlPlaceholder: {
     alignSelf: "flex-end",
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 36,
     marginBottom: spacing.md,

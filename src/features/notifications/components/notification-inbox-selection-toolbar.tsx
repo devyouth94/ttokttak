@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Check } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 
 type NotificationInboxSelectionToolbarProps = {
   hasSelection: boolean;
@@ -48,7 +48,9 @@ export function NotificationInboxSelectionToolbar({
             isSelectedAll ? styles.checkSelected : undefined,
           ]}
         >
-          {isSelectedAll ? <Check color={color.white} size={12} /> : null}
+          {isSelectedAll ? (
+            <Check color={colors.primaryForeground} size={12} />
+          ) : null}
         </View>
         <AppText
           style={[
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
   },
   check: {
     alignItems: "center",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     height: 20,
@@ -129,24 +131,24 @@ const styles = StyleSheet.create({
     width: 20,
   },
   checkSelected: {
-    backgroundColor: color.jetBlack,
-    borderColor: color.jetBlack,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   deleteButton: {
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
   },
   deleteText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   disabled: {
     opacity: 0.5,
   },
   markReadButton: {
-    backgroundColor: color.jetBlack,
-    borderColor: color.jetBlack,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   markReadText: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   pressed: {
     opacity: 0.88,
@@ -160,10 +162,10 @@ const styles = StyleSheet.create({
     minHeight: 34,
   },
   selectAllText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   selectAllTextDisabled: {
-    color: color.gray,
+    color: colors.textSoft,
   },
   toolbar: {
     alignItems: "center",

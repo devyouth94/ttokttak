@@ -2,7 +2,6 @@ import { StyleSheet } from "react-native";
 
 import {
   borderRadius,
-  color,
   colors,
   spacing,
   typography,
@@ -20,7 +19,7 @@ export const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   optionToggleLabel: {
-    color: color.gray,
+    color: colors.textSoft,
   },
   optionToggleLabelGroup: {
     alignItems: "center",
@@ -36,7 +35,7 @@ export const styles = StyleSheet.create({
   chip: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
-    backgroundColor: colors.surfaceLow,
+    backgroundColor: colors.surface,
     justifyContent: "center",
     minHeight: 42,
     minWidth: 72,
@@ -46,10 +45,10 @@ export const styles = StyleSheet.create({
     opacity: 0.88,
   },
   chipSelected: {
-    backgroundColor: "#333333",
+    backgroundColor: colors.primary,
   },
   chipText: {
-    color: "#666666",
+    color: colors.textMuted,
   },
   chipTextSelected: {
     color: colors.primaryForeground,
@@ -58,7 +57,7 @@ export const styles = StyleSheet.create({
     minHeight: 48,
   },
   colorSelectContent: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.xxs,
     width: "100%",
@@ -79,7 +78,7 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   colorSelectItemText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   colorSelectOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -91,7 +90,7 @@ export const styles = StyleSheet.create({
   colorSelectTrigger: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: color.gray,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     flexDirection: "row",
@@ -100,18 +99,15 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   colorSelectTriggerText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   colorSwatch: {
-    borderColor: "rgba(41, 43, 45, 0.14)",
     borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    height: 24,
-    width: 24,
+    height: 12,
+    width: 12,
   },
   colorSwatchSelected: {
-    borderColor: color.jetBlack,
-    borderWidth: 2,
+    opacity: 1,
   },
   createSaveButton: {
     width: "100%",
@@ -143,7 +139,7 @@ export const styles = StyleSheet.create({
   deleteButton: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: color.salmonOrange,
+    borderColor: colors.accent,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     height: 48,
@@ -178,7 +174,7 @@ export const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   fieldLabel: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   headerActionSpacer: {
     height: 48,
@@ -186,7 +182,7 @@ export const styles = StyleSheet.create({
   },
   headerBackButton: {
     alignItems: "center",
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     height: 32,
     justifyContent: "center",
@@ -217,7 +213,7 @@ export const styles = StyleSheet.create({
   iconInputShell: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: color.gray,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     flexDirection: "row",
@@ -239,7 +235,7 @@ export const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   inputFocused: {
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -261,7 +257,7 @@ export const styles = StyleSheet.create({
   pickerModalBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.28)",
+    backgroundColor: colors.scrim,
   },
   pickerModalCancelText: {
     color: colors.textMuted,
@@ -302,7 +298,7 @@ export const styles = StyleSheet.create({
   },
   quickRecurrenceChip: {
     backgroundColor: "transparent",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     height: 36,
@@ -311,13 +307,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   quickRecurrenceChipSelected: {
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
   },
   quickRecurrenceChipText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   quickRecurrenceChipTextSelected: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   quickRecurrenceContent: {
     gap: spacing.xs,
@@ -341,20 +337,20 @@ export const styles = StyleSheet.create({
     opacity: 0.88,
   },
   recurrenceModeTabs: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     flexDirection: "row",
     height: 36,
     overflow: "hidden",
   },
   recurrenceModeTabSelected: {
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
   },
   recurrenceModeTabText: {
-    color: color.gray,
+    color: colors.textSoft,
   },
   recurrenceModeTabTextSelected: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   row: {
     flexDirection: "row",
@@ -369,7 +365,7 @@ export const styles = StyleSheet.create({
   },
   saveButton: {
     alignItems: "center",
-    backgroundColor: "#333333",
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     height: 48,
     justifyContent: "center",
@@ -398,11 +394,11 @@ export const styles = StyleSheet.create({
     position: "relative",
   },
   subFieldLabel: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   textInput: {
     backgroundColor: "transparent",
-    borderColor: color.gray,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     color: colors.text,
@@ -420,7 +416,7 @@ export const styles = StyleSheet.create({
     aspectRatio: 1,
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderWidth: 1,
     borderRadius: borderRadius.pill,
     flex: 1,
@@ -430,13 +426,13 @@ export const styles = StyleSheet.create({
     opacity: 0.88,
   },
   weekdayChipSelected: {
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
   },
   weekdayChipText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   weekdayChipTextSelected: {
-    color: color.white,
+    color: colors.primaryForeground,
   },
   weekdayGroup: {
     flexDirection: "row",

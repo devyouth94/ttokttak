@@ -21,7 +21,7 @@ import { ArrowLeft, CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import { color, colors } from "~/design-system/tokens";
+import { colors } from "~/design-system/tokens";
 
 import { type RecurringItemFormScreenContentProps } from "./recurring-item-form-screen.contracts";
 import {
@@ -210,7 +210,7 @@ export function RecurringItemFormScreenContent({
                     pressed && styles.headerButtonPressed,
                   ]}
                 >
-                  <ArrowLeft color={color.white} size={18} />
+                  <ArrowLeft color={colors.primaryForeground} size={18} />
                 </Pressable>
               }
               onHeightChange={onHeaderHeightChange}
@@ -346,7 +346,7 @@ export function RecurringItemFormScreenContent({
                   icon={
                     <CalendarDays
                       absoluteStrokeWidth
-                      color={color.jetBlack}
+                      color={colors.text}
                       size={18}
                       strokeWidth={1.2}
                     />
@@ -362,7 +362,7 @@ export function RecurringItemFormScreenContent({
                   icon={
                     <Clock3
                       absoluteStrokeWidth
-                      color={color.jetBlack}
+                      color={colors.text}
                       size={18}
                       strokeWidth={1.2}
                     />
@@ -473,11 +473,11 @@ export function RecurringItemFormScreenContent({
                   ]}
                 >
                   {view.isDeleting ? (
-                    <ActivityIndicator color={color.salmonOrange} />
+                    <ActivityIndicator color={colors.accent} />
                   ) : (
                     <Trash2
                       absoluteStrokeWidth
-                      color={color.salmonOrange}
+                      color={colors.accent}
                       size={18}
                       strokeWidth={1.2}
                     />

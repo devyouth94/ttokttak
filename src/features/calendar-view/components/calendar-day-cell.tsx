@@ -214,8 +214,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   todaySurface: {
-    backgroundColor: colors.surfaceHigh,
-    borderColor: colors.outlineSoft,
+    backgroundColor: colors.surface,
+    borderColor: colors.dividerOnPrimary,
     borderWidth: 1,
   },
 });

@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 
 import { HomeFeedItemRow } from "./home-feed-item-row";
@@ -27,10 +27,6 @@ export function HomeFeedSectionBlock({
   section,
   style,
 }: HomeFeedSectionBlockProps): React.JSX.Element {
-  const usesLightContent = section.id === "upcoming";
-  const textStyle = usesLightContent
-    ? styles.feedSectionTextLight
-    : styles.feedSectionTextDark;
   const summary = getFeedSectionSummary(section, isLoading);
   const showsActions =
     section.id === "overdue" ||
@@ -46,17 +42,17 @@ export function HomeFeedSectionBlock({
     >
       <View style={styles.feedSectionHeader}>
         <View style={styles.feedSectionTitleSlot}>
-          <AppText style={textStyle} variant="title">
+          <AppText style={styles.feedSectionText} variant="title">
             {section.title}
           </AppText>
         </View>
-        <AppText style={textStyle} variant="body">
+        <AppText style={styles.feedSectionText} variant="body">
           {isLoading ? "-" : `${section.items.length}개`}
         </AppText>
       </View>
       {section.caption ? (
         <View style={styles.feedSectionCaption}>
-          <AppText style={textStyle} variant="caption">
+          <AppText style={styles.feedSectionText} variant="caption">
             {section.caption}
           </AppText>
         </View>
@@ -86,20 +82,26 @@ export function HomeFeedSectionBlock({
                     ]}
                   >
                     <AppText
-                      style={[textStyle, styles.feedDateSeparatorText]}
-                      variant="body3"
+                      style={styles.feedDateSeparatorText}
+                      variant="body2"
                     >
                       {card.dateSeparatorLabel}
+                    </AppText>
+                    <AppText
+                      style={styles.feedDateSeparatorCount}
+                      variant="body3"
+                    >
+                      {getDateSeparatorItemCount(section.items, card)}개
                     </AppText>
                   </View>
                 ) : null}
                 <HomeFeedItemRow
                   card={card}
-                  isLast={shouldHideItemDivider(card, nextCard)}
+                  isLast={shouldHideItemDivider(section.id, card, nextCard)}
                   isProcessing={processingOccurrenceIds.includes(card.id)}
                   onAction={onAction}
                   showsActions={showsActions}
-                  usesLightContent={usesLightContent}
+                  usesLightContent={false}
                 />
               </Fragment>
             );
@@ -108,7 +110,7 @@ export function HomeFeedSectionBlock({
       ) : (
         <View style={styles.feedSectionSummarySlot}>
           <View style={styles.feedSectionSummaryCopy}>
-            <AppText style={textStyle} variant="body">
+            <AppText style={styles.feedSectionText} variant="body">
               {summary}
             </AppText>
           </View>
@@ -131,6 +133,15 @@ function getFeedSectionSummary(
   }
 
   return section.emptyMessage;
+}
+
+function getDateSeparatorItemCount(
+  cards: HomeFeedCard[],
+  targetCard: HomeFeedCard
+): number {
+  return cards.filter(
+    (card) => card.occurrence.localDate === targetCard.occurrence.localDate
+  ).length;
 }
 
 function getFeedSectionCardStyle(
@@ -158,6 +169,7 @@ function shouldShowDateSeparator(
 }
 
 function shouldHideItemDivider(
+  sectionId: HomeFeedSection["id"],
   card: HomeFeedCard,
   nextCard: HomeFeedCard | undefined
 ): boolean {
@@ -165,22 +177,29 @@ function shouldHideItemDivider(
     return true;
   }
 
-  if (!card.dateSeparatorLabel) {
+  if (sectionId !== "upcoming") {
     return false;
   }
 
-  return card.occurrence.localDate !== nextCard.occurrence.localDate;
+  return true;
 }
 
 const styles = StyleSheet.create({
   feedDateSeparator: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingTop: spacing.xs,
+  },
+  feedDateSeparatorCount: {
+    color: colors.textSoft,
   },
   feedDateSeparatorStacked: {
     paddingTop: spacing.sm,
   },
   feedDateSeparatorText: {
-    opacity: 0.72,
+    color: colors.text,
+    flex: 1,
   },
   feedItemList: {
     marginTop: spacing.xxs,
@@ -203,10 +222,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   feedSectionOverdue: {
-    backgroundColor: color.oldFlax,
+    backgroundColor: colors.statusOverdueSoft,
   },
   feedSectionSelectedDate: {
-    backgroundColor: color.purple,
+    backgroundColor: colors.statusCompletedSoft,
   },
   feedSectionSummarySlot: {
     alignItems: "center",
@@ -218,16 +237,13 @@ const styles = StyleSheet.create({
   feedSectionSummaryCopy: {
     opacity: 0.72,
   },
-  feedSectionTextDark: {
-    color: color.jetBlack,
-  },
-  feedSectionTextLight: {
-    color: color.white,
+  feedSectionText: {
+    color: colors.text,
   },
   feedSectionTitleSlot: {
     flex: 1,
   },
   feedSectionUpcoming: {
-    backgroundColor: color.royalBlue,
+    backgroundColor: colors.statusScheduledSoft,
   },
 });

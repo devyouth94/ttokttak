@@ -18,7 +18,6 @@ import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import {
   borderRadius,
-  color,
   colors,
   spacing,
   typography,
@@ -91,7 +90,7 @@ const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
 
 const calendarTheme = {
   arrowColor: colors.text,
-  calendarBackground: color.smokyWhite,
+  calendarBackground: colors.surface,
   dayTextColor: colors.text,
   monthTextColor: colors.text,
   selectedDayBackgroundColor: colors.primary,
@@ -100,8 +99,8 @@ const calendarTheme = {
   textDayHeaderFontFamily: typography.fontFamily.body,
   textDayHeaderFontSize: typography.label,
   textDayHeaderFontWeight: "600" as const,
-  textDisabledColor: colors.outlineSoft,
-  textInactiveColor: colors.outlineSoft,
+  textDisabledColor: colors.dividerOnPrimary,
+  textInactiveColor: colors.dividerOnPrimary,
   textMonthFontFamily: typography.fontFamily.body,
   textSectionTitleColor: colors.textMuted,
   todayTextColor: colors.text,
@@ -264,7 +263,7 @@ export function CalendarScreen(): React.JSX.Element {
           <MonthArrowButton
             accessibilityLabel="이전 달 보기"
             disabled={isPreviousMonthDisabled}
-            icon={<ChevronLeft color={color.white} size={18} />}
+            icon={<ChevronLeft color={colors.primaryForeground} size={18} />}
             onPress={() => {
               shiftMonth(-1);
             }}
@@ -274,7 +273,7 @@ export function CalendarScreen(): React.JSX.Element {
           </AppText>
           <MonthArrowButton
             accessibilityLabel="다음 달 보기"
-            icon={<ChevronRight color={color.white} size={18} />}
+            icon={<ChevronRight color={colors.primaryForeground} size={18} />}
             onPress={() => {
               shiftMonth(1);
             }}
@@ -438,7 +437,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   calendarCard: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.xs,
     paddingBottom: spacing.xs,
@@ -451,7 +450,7 @@ const styles = StyleSheet.create({
   emptyCard: {
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.lg,
     borderStyle: "dashed",
     borderWidth: 1,
@@ -474,7 +473,7 @@ const styles = StyleSheet.create({
   },
   monthArrowButton: {
     alignItems: "center",
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     height: 32,
     justifyContent: "center",
@@ -492,12 +491,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   monthTitle: {
-    color: color.jetBlack,
+    color: colors.text,
     flex: 1,
     textAlign: "center",
   },
   placeholderAction: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 34,
     width: 34,
@@ -508,11 +507,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   placeholderDivider: {
-    borderBottomColor: color.jetBlack,
+    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   placeholderMeta: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: typography.lineHeight.caption,
     opacity: 0.72,
@@ -525,13 +524,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   placeholderTitle: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: typography.lineHeight.body,
     width: "44%",
   },
   selectedDateCount: {
-    color: color.gray,
+    color: colors.textSoft,
   },
   selectedDateHeader: {
     alignItems: "center",
@@ -542,7 +541,7 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   selectedDateTitle: {
-    color: color.jetBlack,
+    color: colors.text,
     flex: 1,
   },
   selectedDateState: {

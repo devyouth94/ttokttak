@@ -3,7 +3,7 @@ import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, color, colors, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 
 import type { ReminderListSortMode } from "../reminder-list.helpers";
 
@@ -58,7 +58,7 @@ export function ReminderListSortControl({
               {selectedOption.label}
             </AppText>
           </View>
-          <ChevronDown color={color.jetBlack} size={16} />
+          <ChevronDown color={colors.text} size={16} />
         </Pressable>
       </Select.Trigger>
 
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   sortMenuContent: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     minWidth: 180,
     padding: SORT_MENU_CONTAINER_PADDING,
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   sortMenuItemText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   sortMenuItemTextSlot: {
     flex: 1,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-end",
     backgroundColor: "transparent",
-    borderColor: color.jetBlack,
+    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   sortTriggerText: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   sortTriggerTextSlot: {
     flexShrink: 1,

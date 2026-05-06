@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    borderBottomColor: colors.outlineSoft,
+    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     height: 60,

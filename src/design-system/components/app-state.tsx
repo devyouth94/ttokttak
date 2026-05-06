@@ -106,7 +106,7 @@ export function AppStatePlaceholder({
 const styles = StyleSheet.create({
   action: {
     alignItems: "center",
-    borderColor: colors.outlineSoft,
+    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.pill,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     alignItems: "center",
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 44,
     justifyContent: "center",
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   placeholderBody: {
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 12,
     width: "58%",
@@ -155,21 +155,21 @@ const styles = StyleSheet.create({
   },
   placeholderHeader: {
     alignSelf: "flex-start",
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 16,
     marginBottom: spacing.xs,
     width: 112,
   },
   placeholderIcon: {
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 28,
     width: 28,
   },
   placeholderRow: {
     alignItems: "center",
-    borderBottomColor: colors.outlineSoft,
+    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: spacing.sm,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   placeholderTitle: {
-    backgroundColor: colors.surfaceHigh,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 14,
     width: "72%",

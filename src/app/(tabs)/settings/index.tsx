@@ -15,7 +15,7 @@ import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import { borderRadius, color, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { useSession } from "~/features/session/session-provider";
@@ -242,9 +242,9 @@ export default function SettingsTabPage(): React.JSX.Element {
               <SettingsRow
                 accessory={
                   isRequestingPermission ? (
-                    <ActivityIndicator color={color.gray} size="small" />
+                    <ActivityIndicator color={colors.textSoft} size="small" />
                   ) : (
-                    <ExternalLink color={color.gray} size={16} />
+                    <ExternalLink color={colors.textSoft} size={16} />
                   )
                 }
                 description="원격 푸시 토큰 등록을 위해 알림 권한이 필요합니다."
@@ -257,7 +257,7 @@ export default function SettingsTabPage(): React.JSX.Element {
             ) : null}
             {permission.canOpenSettings ? (
               <SettingsRow
-                accessory={<ExternalLink color={color.gray} size={16} />}
+                accessory={<ExternalLink color={colors.textSoft} size={16} />}
                 description="권한이 꺼져 있으면 시스템 설정에서 다시 허용해야 합니다."
                 isPressable
                 onPress={() => {
@@ -276,7 +276,7 @@ export default function SettingsTabPage(): React.JSX.Element {
 
         <View style={styles.logoutSlot}>
           {isSigningOut ? (
-            <ActivityIndicator color={color.gray} size="small" />
+            <ActivityIndicator color={colors.textSoft} size="small" />
           ) : (
             <Pressable
               accessibilityLabel="로그아웃"
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoutText: {
-    color: color.gray,
+    color: colors.textSoft,
     textDecorationLine: "underline",
   },
   logoutSlot: {
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowDivider: {
-    borderTopColor: color.jetBlack,
+    borderTopColor: colors.dividerOnPrimary,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   rowContent: {
@@ -343,16 +343,16 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   rowDescription: {
-    color: color.gray,
+    color: colors.textSoft,
   },
   rowPressed: {
     opacity: 0.72,
   },
   rowTitle: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   rowValue: {
-    color: color.gray,
+    color: colors.textSoft,
     flexShrink: 1,
     textAlign: "right",
   },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   sectionCard: {
-    backgroundColor: color.smokyWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
     paddingBottom: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   sectionTitle: {
-    color: color.jetBlack,
+    color: colors.text,
   },
   screenContent: {
     flex: 1,

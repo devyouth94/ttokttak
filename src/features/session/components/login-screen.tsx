@@ -131,8 +131,8 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   appleButton: {
-    backgroundColor: "#111111",
-    borderColor: "#111111",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   appleButtonText: {
     color: colors.primaryForeground,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     backgroundColor: colors.surface,
-    borderColor: colors.outlineSoft,
+    borderColor: colors.dividerOnPrimary,
   },
   googleButtonText: {
     color: colors.text,

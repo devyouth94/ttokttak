@@ -3,7 +3,7 @@ import { ArrowLeft, ListChecks, X } from "lucide-react-native";
 
 import { IconButton } from "~/design-system/components/icon-button";
 import { ScreenHeader } from "~/design-system/components/screen-header";
-import { borderRadius, color } from "~/design-system/tokens";
+import { borderRadius, colors } from "~/design-system/tokens";
 
 type NotificationInboxHeaderProps = {
   disabled: boolean;
@@ -35,14 +35,14 @@ export function NotificationInboxHeader({
             pressed ? styles.pressed : undefined,
           ]}
         >
-          <ArrowLeft color={color.white} size={18} />
+          <ArrowLeft color={colors.primaryForeground} size={18} />
         </Pressable>
       }
       rightSlot={
         <IconButton
           accessibilityLabel={actionLabel}
           disabled={disabled}
-          icon={<ActionIcon color={color.jetBlack} size={20} />}
+          icon={<ActionIcon color={colors.text} size={20} />}
           onPress={onToggleSelectionMode}
           size="lg"
         />
@@ -55,7 +55,7 @@ export function NotificationInboxHeader({
 const styles = StyleSheet.create({
   backButton: {
     alignItems: "center",
-    backgroundColor: color.jetBlack,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     height: 32,
     justifyContent: "center",

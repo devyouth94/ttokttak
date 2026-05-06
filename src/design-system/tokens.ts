@@ -1,53 +1,49 @@
-export const color = {
-  white: "#FFFFFF",
-  smokyWhite: "#EFF0F6",
-  gray: "#8F9295",
-  purple: "#D9B8F3",
-  oldFlax: "#DFF37D",
-  jetBlack: "#292B2D",
-  royalBlue: "#4558C8",
-  salmonOrange: "#EE5E37",
-} as const;
-
-export const legacyColors = {
-  background: "#FFFFFF",
-  surface: "#ffffff",
-  surfaceLow: "#f9f9f9",
-  surfaceContainer: "#fafafa",
-  surfaceHigh: "#f5f5f5",
-  primary: "#605f5f",
-  primaryForeground: "#ffffff",
-  text: "#212121",
-  textMuted: "#757575",
-  textSoft: "#757575",
-  secondary: "#516455",
-  secondaryContainer: "#e8f5e9",
-  secondaryForeground: "#1b5e20",
-  tertiary: "#635c71",
-  tertiaryContainer: "#f3e5f5",
-  error: "#ac3434",
-  errorContainer: "#f56965",
-  statusCompleted: "#4F7A5A",
-  statusCompletedSoft: "#E8F5E9",
-  statusCompletedText: "#1B5E20",
-  statusScheduled: "#A9A9A9",
-  statusScheduledSoft: "#F3F4F6",
-  statusScheduledText: "#5F6368",
-  statusSkipped: "#D9822B",
-  statusSkippedSoft: "#FFF1E3",
-  statusSkippedText: "#A35A16",
-  statusOverdue: "#C94F4F",
-  statusOverdueSoft: "#FDECEC",
-  statusOverdueText: "#A53434",
-  weekendSunday: "#C94F4F",
-  weekendSaturday: "#4A79C9",
-  outlineSoft: "#e0e0e0",
-  shadow: "rgba(33, 33, 33, 0.08)",
-} as const;
-
 export const colors = {
-  ...legacyColors,
-  legacy: legacyColors,
+  background: "#FAFAFB",
+  surface: "#FFFFFF",
+
+  primary: "#292B2D",
+  primaryPressed: "#1C1F23",
+  primaryForeground: "#FFFFFF",
+
+  accent: "#E06A4F",
+  accentSoft: "#FCEBE6",
+  accentForeground: "#FFFFFF",
+
+  text: "#1C1F23",
+  textMuted: "#5B616B",
+  textSoft: "#8A9099",
+
+  error: "#D64545",
+  errorContainer: "#FBE9E7",
+
+  statusCompleted: "#2E7D32",
+  statusCompletedBorder: "#CFE7D2",
+  statusCompletedSoft: "#DDEEDD",
+  statusCompletedText: "#1F6B2A",
+
+  statusScheduled: "#B8860B",
+  statusScheduledBorder: "#E9D8AE",
+  statusScheduledSoft: "#F6E8C8",
+  statusScheduledText: "#7E5C08",
+
+  statusSkipped: "#9AA3AD",
+  statusSkippedBorder: "#D8DEE4",
+  statusSkippedSoft: "#E8ECEF",
+  statusSkippedText: "#68727D",
+
+  statusOverdue: "#D64545",
+  statusOverdueBorder: "#F1C6C1",
+  statusOverdueSoft: "#F8DCD7",
+  statusOverdueText: "#A83636",
+
+  weekendSunday: "#D64545",
+  weekendSaturday: "#357ABD",
+
+  dividerOnPrimary: "rgba(28, 31, 35, 0.4)",
+
+  scrim: "rgba(28, 31, 35, 0.28)",
+  shadow: "rgba(28, 31, 35, 0.08)",
 } as const;
 
 export const spacing = {
@@ -104,7 +100,7 @@ export const elevation = {
   },
   nav: {
     android: 10,
-    shadowColor: "rgba(0, 0, 0, 0.08)",
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: -6,
