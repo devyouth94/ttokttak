@@ -57,3 +57,6 @@ yarn-error.*
 
 # Examples
 app-example
+
+# Private articles
+docs/articles/

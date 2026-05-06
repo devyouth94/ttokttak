@@ -404,7 +404,7 @@ UI 정책:
 4. 수정 시점 이후 첫 future occurrence local date 계산
 5. 새 schedule version 저장
 6. 과거 completion log는 유지
-7. mutation 직후 미래 원격 푸시 job을 재계산
+7. mutation 직후 미래 로컬 알림을 재예약
 
 전제조건:
 
@@ -430,8 +430,8 @@ MVP 확정 정책:
 
 - mutation 성공 후 미래 occurrence를 다시 계산한다.
 - 홈, 목록, 상세, 캘린더에서 서버 기준 최신 상태를 다시 반영한다.
-- 서버 발송 job을 다시 계산한다.
-- job 재계산 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위로 제한한다.
+- 현재 기기 로컬 알림을 다시 예약한다.
+- 재예약 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위로 제한한다.
 - 동일 occurrence가 다른 기기에서 먼저 처리된 경우 최신 상태를 재조회하고 짧은 안내 메시지를 1회 표시한다.
 
 ## 13. Delete Item Flow
@@ -439,7 +439,7 @@ MVP 확정 정책:
 ### deleteItem(itemId)
 
 1. 사용자 액션은 delete로 보이되, 현재 스키마 기준 내부 상태는 `is_archived = true`로 반영
-2. archive와 pending/retrying notification job 취소는 서버 RPC에서 함께 처리
+2. archive 저장 후 현재 기기의 future local notification을 취소
 3. 홈, 목록, 캘린더에서 제외
 
 전제조건:
@@ -453,22 +453,117 @@ MVP 확정 정책:
 
 후속 액션:
 
-- 미래 occurrence와 관련된 서버 발송 job을 취소한다.
-- worker는 발송 직전 archived/missing item을 다시 확인하고 provider 요청 없이 job을 취소한다.
+- 미래 occurrence와 관련된 현재 기기 로컬 알림을 취소한다.
 - 홈, 목록, 캘린더에서 archive 반영 후 서버 기준 최신 상태를 다시 반영한다.
 
-## 14. Notification Delivery Logic
+## 14. Notification Logic
 
-### syncRemotePushJobs(userId, nowUtc)
+알림은 기기 로컬 알림을 기본 경로로 사용한다.
+서버 원격 푸시 기반 delivery job 규칙은 현재 목표 구조가 아니며, 나중에 fallback이 필요할 때도 실제 일정 제목과 설명을 payload에 싣지 않는다.
+
+### syncLocalNotifications(userId, nowUtc)
+
+암호화 목표:
+
+- 일정 제목과 설명은 Supabase DB, 운영 화면, 로그에서 평문으로 보이지 않아야 한다.
+- 엄격한 E2EE보다는 새 기기 로그인과 앱 재설치 뒤 복구 가능한 사용성을 우선한다.
+- 사용자는 별도 복구 비밀번호 없이 일정 제목과 설명을 복구할 수 있어야 한다.
+- 앱은 사용자별 data encryption key로 일정 제목과 설명을 암호화한다.
+- 서버 DB에는 제목/설명 암호문, key version, 암호화 메타데이터만 저장한다.
+- data encryption key 원문은 일반 테이블에 저장하지 않는다.
+- 복구를 위해 data encryption key는 사용자와 연결된 wrapped key로 저장한다.
+- 서버 운영자가 악의적 클라이언트 업데이트를 배포하면 사용자가 앱에서 복호화하는 순간 내용을 볼 수 있다는 한계를 인정한다.
+- 제목과 설명 기반 검색/정렬은 서버에서 수행하지 않는다.
+- 목록 정렬은 앱이 데이터를 받은 뒤 복호화한 값을 사용해 클라이언트에서 수행한다.
+- 서버 쿼리는 사용자 scope, 보관 여부, 변경 시각 같은 동기화와 필터링 기준만 사용한다.
+- MVP 암호화 범위는 일정 제목과 설명으로 제한한다.
+- 반복 규칙, 예정 시각, 완료/건너뛰기 기록, 색상, 보관 여부는 서버 동기화와 화면 계산을 위해 평문 메타데이터로 유지한다.
+- 평문 메타데이터도 생활 패턴을 드러낼 수 있다는 한계를 인정한다.
+- 로컬 알림 제목은 복호화한 일정 제목을 사용한다.
+- 로컬 알림 본문에는 설명을 넣지 않고 예정 시각을 짧게 표시한다.
+- 로컬 알림 본문 예시는 `오후 9:00` 형식이다.
+- 설명은 앱 내부 상세와 입력 화면에서만 표시하는 개인 메모다.
+- 설명은 로컬 알림, 원격 푸시 fallback, 서버 로그, 진단 값에 사용하지 않는다.
+- 설명은 제목과 같은 방식으로 암호화해서 저장한다.
+- 복호화 실패는 정상 사용자 흐름이 아니라 예외 상태다.
+- 복호화에 실패한 일정은 목록에서 숨기지 않고 `복구가 필요한 일정` 같은 fallback 제목으로 표시한다.
+- 복호화에 실패한 일정의 설명은 비워 둔다.
+- 복호화에 실패한 일정 상세는 내용을 복구하지 못했다는 상태와 삭제 액션을 제공한다.
+- 복호화에 실패한 일정은 로컬 알림 예약 대상에서 제외한다.
+- 원격 푸시 fallback을 나중에 도입하면 제목과 본문은 일반 문구만 사용한다.
 
 1. 현재 사용자 timezone 조회
 2. `notificationsEnabled = true` 아이템 조회
-3. `range = [now, now + 14 days]`
-4. 각 아이템 occurrence 계산
-5. `scheduled` 상태만 추림
-6. occurrence별 `dedupeKey` 생성
-7. future job upsert
-8. 필요 없는 future job cancel
+3. OS notification permission 조회
+4. OS notification permission이 없으면 local notification 예약 없이 종료
+5. 앞으로 30일 rolling window 계산
+6. 각 아이템 occurrence 계산
+7. 30일 범위 밖이어도 item별 다음 occurrence 1개 추가
+8. `scheduled` 상태만 추림
+9. 기기 pending 예약 상한에 가까우면 예정 시각이 가까운 occurrence 우선 선택
+10. occurrence별 local notification identifier 생성
+11. future local notification 예약
+12. 필요 없는 future local notification 취소
+13. 예약 후보 수, 실제 예약 수, 누락된 먼 알림 수를 개발용 진단 값으로 기록
+
+identifier 규칙:
+
+- `reminder:${userId}:${itemId}:${scheduledAtUtc}`
+- 같은 occurrence에는 현재 기기에서 local notification이 1개만 존재한다.
+- 서버 동기화형 delivery job id로 사용하지 않는다.
+
+payload 식별 규칙:
+
+- local notification payload는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 필수로 포함한다.
+- `notificationKind = 'reminder'`는 MVP 알림 유형을 식별한다.
+- `source = 'recurring-item'`는 상세 이동 대상 엔티티 계열을 식별한다.
+- `itemId`는 상세 이동 대상 반복 항목을 식별한다.
+- `scheduledAtUtc`는 대상 occurrence를 식별한다.
+- payload 필수 필드가 없거나 허용 값이 아니면 앱은 상세 이동을 수행하지 않는다.
+
+예약 갱신 규칙:
+
+- item 생성 시 해당 item의 future local notification을 예약한다.
+- item 수정 시 `effective_from_utc` 이후 future local notification만 다시 계산한다.
+- item archive 또는 삭제 시 해당 item의 future local notification을 취소한다.
+- completion / skip 시 해당 occurrence와 future 재계산 범위의 local notification을 다시 맞춘다.
+- 앱 시작, 로그인 복원, 동기화 완료, 알림 tap 진입 뒤 pending local notification을 점검한다.
+- 기기 pending 예약 상한 초과는 사용자-facing 경고로 표시하지 않는다.
+- 상한 때문에 예약하지 못한 먼 occurrence는 다음 notification sync에서 다시 시도한다.
+
+완료일 기준 반복 규칙:
+
+- 완료일 기준 반복은 사용자가 완료하거나 건너뛴 뒤에만 다음 occurrence를 만든다.
+- 완료일 기준 반복의 미완료 occurrence는 다음 반복 알림을 자동으로 새로 만들지 않는다.
+- 같은 occurrence의 반복 재알림과 snooze는 MVP 범위에서 제외한다.
+
+알림함 제거 규칙:
+
+- 알림함과 알림 기록 화면은 MVP에서 제공하지 않는다.
+- 서버 동기화형 inbox row를 만들지 않는다.
+- local notification 예약, 표시, tap 이벤트를 알림 기록 row로 저장하지 않는다.
+- 홈의 알림함 진입 버튼과 미확인 알림 badge를 제거한다.
+- 놓친 일정은 홈 피드와 overdue 상태로 다시 드러낸다.
+- 앱은 원격 푸시 token, delivery job, attempt, inbox 저장소를 더 이상 읽거나 쓰지 않는다.
+- `push-delivery-worker` Edge Function과 원격 푸시 cron 호출을 제거한다.
+- 기존 migration 파일은 수정하지 않고, 새 migration으로 필요 없는 원격 푸시 테이블, RPC, cron을 제거한다.
+- 개발 기간에는 기존 일정과 예정 알림 job 데이터를 보존하지 않아도 된다.
+- 일정 제목과 설명 저장 방식을 바꿀 때 기존 평문 데이터는 새 구조로 마이그레이션하지 않고 삭제할 수 있다.
+- implementation issue에는 개발 데이터 reset migration 작성을 포함한다.
+- reset migration은 기존 migration 파일을 수정하지 않고, 새 migration에서 기존 일정 데이터와 원격 푸시 데이터를 삭제하거나 관련 저장소를 제거한다.
+
+원격 푸시 fallback 규칙:
+
+- 원격 푸시는 기본 알림 경로가 아니다.
+- fallback을 도입하더라도 실제 일정 제목과 설명은 payload에 싣지 않는다.
+- fallback 제목은 `일정 알림` 같은 일반 문구만 사용한다.
+- fallback payload는 routing에 필요한 최소 값만 포함한다.
+- fallback은 서버 동기화형 알림함 item을 만들지 않는다.
+
+### Legacy remote push implementation context
+
+아래 규칙은 기존 원격 푸시 구현을 이해하기 위한 legacy context다.
+목표 구조는 위의 기기 로컬 알림 규칙이며, 원격 푸시를 다시 도입할 때도 실제 일정 제목과 설명을 payload에 싣지 않는다.
 
 dedupe key 규칙:
 
@@ -517,12 +612,11 @@ payload 식별 규칙:
 - route는 `/items/[itemId]`다.
 - `itemId`는 반복 항목 상세 path parameter로 전달한다.
 - `scheduledAtUtc`는 상세 화면 기준 occurrence query parameter로 전달한다.
-- 알림함 목록에서 진입하면 `returnTo = '/(tabs)/home/notifications'`를 전달한다.
 - OS 원격 푸시 tap에서 진입하면 `returnTo = '/home'`을 전달한다.
 - mapping에 없는 알림 유형이나 대상 엔티티는 읽음 처리 외 상세 이동을 하지 않는다.
 - mapping에 없는 알림 유형이나 대상 엔티티는 목록 액션 실패로 취급하지 않는다.
 - route mapping은 유효하지만 대상 반복 항목이 없거나 접근할 수 없으면 상세 fallback 상태를 보여준다.
-- 상세 fallback 상태는 알림함 목록 진입이면 알림함으로 돌아가고, OS 원격 푸시 tap 진입이면 홈으로 돌아간다.
+- 상세 fallback 상태는 홈으로 돌아간다.
 
 inbox ingestion trigger:
 
