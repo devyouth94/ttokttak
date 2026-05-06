@@ -91,6 +91,29 @@ describe("syncRemoteNotificationDeliveryJobs", () => {
     expect(jobs).toBeDefined();
     expect(jobs?.every((job) => job.body === "식후에 먹기")).toBe(true);
   });
+
+  it("복구할 수 없는 일정은 알림 예약 후보에서 제외한다", async () => {
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        contentStatus: {
+          reason: "decryption-failed",
+          status: "unrecoverable",
+        },
+        id: "broken-item",
+        title: "일정 내용을 복구할 수 없어요",
+      }),
+    ]);
+
+    const result = await syncRemoteNotificationDeliveryJobs({
+      reason: "item-created",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.scheduledCount).toBe(0);
+    expect(upsertNotificationDeliveryJobs).not.toHaveBeenCalled();
+  });
 });
 
 function createRecurringItem(

@@ -193,6 +193,57 @@ describe("recurring items repository", () => {
     );
   });
 
+  it("복호화 실패한 일정도 목록에서 fallback 제목과 빈 설명으로 제공한다", async () => {
+    const brokenContentCipher = {
+      ...contentCipher,
+      decryptRecurringItemContent: jest
+        .fn()
+        .mockRejectedValue(new Error("corrupted ciphertext")),
+    };
+    const { from } = createRecurringItemsListClient();
+
+    const items = await listRecurringItems({
+      client: { from } as never,
+      contentCipher: brokenContentCipher,
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.title).toBe("일정 내용을 복구할 수 없어요");
+    expect(items[0]?.description).toBeNull();
+    expect(items[0]?.contentStatus).toEqual({
+      reason: "decryption-failed",
+      status: "unrecoverable",
+    });
+  });
+
+  it.each([
+    "corrupted ciphertext",
+    "missing content key",
+    "unsupported key version",
+  ])("복호화 실패 유형 %s도 예외 상태로 분류한다", async (message) => {
+    const brokenContentCipher = {
+      ...contentCipher,
+      decryptRecurringItemContent: jest
+        .fn()
+        .mockRejectedValue(new Error(message)),
+    };
+    const { from } = createRecurringItemsSelectClient();
+
+    const item = await getRecurringItemById({
+      client: { from } as never,
+      contentCipher: brokenContentCipher,
+      id: "item-1",
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+
+    expect(item.contentStatus?.status).toBe("unrecoverable");
+    expect(item.title).toBe("일정 내용을 복구할 수 없어요");
+    expect(item.description).toBeNull();
+  });
+
   it("신규 일정 생성은 색상을 명시하지 않아도 기본 일정 색상 red를 저장한다", async () => {
     const rpc = jest.fn().mockResolvedValue({
       data: "item-1",
@@ -302,6 +353,30 @@ describe("recurring items repository", () => {
     );
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_title");
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_description");
+  });
+
+  it("복호화 실패한 일정은 fallback 내용을 다시 저장하지 않도록 수정할 수 없다", async () => {
+    const rpc = jest.fn();
+    const brokenContentCipher = {
+      ...contentCipher,
+      decryptRecurringItemContent: jest
+        .fn()
+        .mockRejectedValue(new Error("missing content key")),
+    };
+    const { from } = createRecurringItemsSelectClient();
+
+    await expect(
+      updateRecurringItem(
+        {
+          id: "item-1",
+          patch: { title: "다시 저장" },
+          timezone: "Asia/Seoul",
+          userId: "user-1",
+        },
+        { client: { from, rpc } as never, contentCipher: brokenContentCipher }
+      )
+    ).rejects.toThrow("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("상세 조회는 암호문 row를 복호화한 제목과 설명으로 제공한다", async () => {

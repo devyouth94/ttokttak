@@ -35,6 +35,7 @@ type RecurringItemRepositoryOptions = {
 };
 
 const recurringItemSelect = "*, recurring_item_schedule_versions(*)";
+const unrecoverableRecurringItemTitle = "일정 내용을 복구할 수 없어요";
 
 export type CreateRecurringItemInput = Omit<RecurringItemDraft, "colorKey"> & {
   colorKey?: RecurringItemColorKey;
@@ -149,12 +150,9 @@ async function toRecurringItem(
 ): Promise<RecurringItem> {
   const latestVersion = getLatestScheduleVersion(row);
   const scheduleVersions = getSortedScheduleVersions(row);
-  const content = await contentCipher.decryptRecurringItemContent({
-    descriptionCiphertext: row.description_ciphertext,
-    keyVersion: row.content_key_version,
-    metadata: row.content_encryption_metadata,
-    titleCiphertext: row.title_ciphertext,
-    userId: row.user_id,
+  const content = await decryptRecurringItemContentWithFallback({
+    contentCipher,
+    row,
   });
 
   return {
@@ -162,6 +160,7 @@ async function toRecurringItem(
     userId: row.user_id,
     title: content.title,
     description: content.description,
+    contentStatus: content.contentStatus,
     category: row.category,
     colorKey: row.color_key as RecurringItemColorKey,
     recurrenceType: latestVersion.recurrenceType,
@@ -177,6 +176,38 @@ async function toRecurringItem(
     updatedAt: row.updated_at,
     scheduleVersions,
   };
+}
+
+async function decryptRecurringItemContentWithFallback({
+  contentCipher,
+  row,
+}: {
+  contentCipher: RecurringItemContentCipher;
+  row: RecurringItemWithVersionsRow;
+}): Promise<Pick<RecurringItem, "contentStatus" | "description" | "title">> {
+  try {
+    return {
+      ...(await contentCipher.decryptRecurringItemContent({
+        descriptionCiphertext: row.description_ciphertext,
+        keyVersion: row.content_key_version,
+        metadata: row.content_encryption_metadata,
+        titleCiphertext: row.title_ciphertext,
+        userId: row.user_id,
+      })),
+      contentStatus: {
+        status: "available",
+      },
+    };
+  } catch {
+    return {
+      contentStatus: {
+        reason: "decryption-failed",
+        status: "unrecoverable",
+      },
+      description: null,
+      title: unrecoverableRecurringItemTitle,
+    };
+  }
 }
 
 function toRecurringItemDraftFromEntity(
@@ -383,6 +414,10 @@ export async function updateRecurringItem(
     timezone: input.timezone,
     userId: input.userId,
   });
+
+  if (existingItem.contentStatus?.status === "unrecoverable") {
+    throw new Error("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
+  }
 
   const mergedDraft: RecurringItemDraft = {
     ...toRecurringItemDraftFromEntity(existingItem),

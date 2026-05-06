@@ -112,6 +112,10 @@ export interface RecurringItem {
   userId: string;
   title: string;
   description?: string | null;
+  contentStatus?: {
+    reason?: "decryption-failed";
+    status: "available" | "unrecoverable";
+  };
   category?: string | null;
   colorKey: RecurringItemColorKey;
   recurrenceType: RecurrenceType;

@@ -77,7 +77,11 @@ function createDesiredNotificationDeliveryJobs(params: {
   const { completionLogs, item, rangeEndUtc, rangeStartUtc, timezone, userId } =
     params;
 
-  if (item.isArchived || !item.notificationsEnabled) {
+  if (
+    item.isArchived ||
+    !item.notificationsEnabled ||
+    item.contentStatus?.status === "unrecoverable"
+  ) {
     return [];
   }
 

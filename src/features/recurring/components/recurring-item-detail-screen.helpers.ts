@@ -46,7 +46,13 @@ export type ItemDetailStatusCard = {
   title: string;
 };
 
+export type ItemDetailContentRecovery = {
+  description: string;
+  title: string;
+};
+
 export type ItemDetailViewModel = {
+  contentRecovery?: ItemDetailContentRecovery;
   historyPreview: ItemDetailHistoryEntry[];
   nextOccurrence: DerivedOccurrence | null;
   overdueOccurrences: DerivedOccurrence[];
@@ -189,6 +195,7 @@ export function buildRecurringItemDetailViewModel({
   const primaryOccurrence = overdueOccurrences[0] ?? nextOccurrence;
 
   return {
+    contentRecovery: getContentRecoveryState(item),
     historyPreview: buildHistoryPreview(completionLogs, timezone),
     nextOccurrence,
     overdueOccurrences,
@@ -207,6 +214,20 @@ export function buildRecurringItemDetailViewModel({
       settingBadges: buildSummarySettingBadges(item),
       title: item.title,
     },
+  };
+}
+
+function getContentRecoveryState(
+  item: RecurringItem
+): ItemDetailContentRecovery | undefined {
+  if (item.contentStatus?.status !== "unrecoverable") {
+    return undefined;
+  }
+
+  return {
+    description:
+      "암호화 키 또는 저장된 내용에 문제가 있어 내용을 열 수 없어요. 필요하면 이 일정을 삭제할 수 있어요.",
+    title: "일정 내용을 복구하지 못했어요",
   };
 }
 

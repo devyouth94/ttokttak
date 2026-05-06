@@ -295,15 +295,17 @@ function DetailErrorCard({
 
 function DetailInlineErrorCard({
   message,
+  title = "처리를 완료하지 못했어요",
 }: {
   message: string;
+  title?: string;
 }): React.JSX.Element {
   return (
     <View style={styles.statePanel}>
       <AppStateView
         description={message}
         style={styles.inlineErrorState}
-        title="처리를 완료하지 못했어요"
+        title={title}
       />
     </View>
   );
@@ -471,6 +473,8 @@ export function RecurringItemDetailScreen({
         })
       : viewModel?.statusCard;
   const isMutating = isArchiving;
+  const isContentUnrecoverable =
+    item?.contentStatus?.status === "unrecoverable";
   const isNotFound =
     !item &&
     !isLoading &&
@@ -610,20 +614,22 @@ export function RecurringItemDetailScreen({
                       sideOffset={2}
                       style={styles.managementMenuContent}
                     >
-                      <DropdownMenu.Item
-                        accessibilityHint="현재 일정 수정 화면으로 이동해요."
-                        closeOnPress
-                        style={styles.managementMenuItem}
-                        onPress={handleEdit}
-                      >
-                        <AppText
-                          numberOfLines={1}
-                          style={styles.managementMenuText}
-                          variant="label"
+                      {isContentUnrecoverable ? null : (
+                        <DropdownMenu.Item
+                          accessibilityHint="현재 일정 수정 화면으로 이동해요."
+                          closeOnPress
+                          style={styles.managementMenuItem}
+                          onPress={handleEdit}
                         >
-                          수정
-                        </AppText>
-                      </DropdownMenu.Item>
+                          <AppText
+                            numberOfLines={1}
+                            style={styles.managementMenuText}
+                            variant="label"
+                          >
+                            수정
+                          </AppText>
+                        </DropdownMenu.Item>
+                      )}
 
                       <DropdownMenu.Item
                         accessibilityHint="현재 일정을 삭제해요."
@@ -687,6 +693,13 @@ export function RecurringItemDetailScreen({
                 <>
                   {actionErrorMessage ? (
                     <DetailInlineErrorCard message={actionErrorMessage} />
+                  ) : null}
+
+                  {viewModel.contentRecovery ? (
+                    <DetailInlineErrorCard
+                      message={viewModel.contentRecovery.description}
+                      title={viewModel.contentRecovery.title}
+                    />
                   ) : null}
 
                   <DetailSummarySection
