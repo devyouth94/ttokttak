@@ -40,6 +40,8 @@ import {
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
+import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
+import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
@@ -78,12 +80,14 @@ function DetailScheduleSection({
 }
 
 function DetailSummarySection({
+  colorKey,
   notificationLabel,
   notificationsEnabled,
   recurrenceLabel,
   settingBadges,
   title,
 }: {
+  colorKey: RecurringItemColorKey;
   notificationLabel: string;
   notificationsEnabled: boolean;
   recurrenceLabel: string;
@@ -91,7 +95,12 @@ function DetailSummarySection({
   title: string;
 }): React.JSX.Element {
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
+  const colorOption = recurringItemColorOptionByKey[colorKey];
   const notificationStatusLabel = notificationsEnabled ? "사용" : "중지";
+  const anchorBadges = settingBadges.filter(
+    (badge) => badge.id !== "start-date"
+  );
+  const startBadge = settingBadges.find((badge) => badge.id === "start-date");
 
   return (
     <View style={styles.summarySection}>
@@ -121,14 +130,56 @@ function DetailSummarySection({
         </View>
 
         <View style={styles.summaryOutlineGroup}>
-          {settingBadges.map((badge) => (
+          {startBadge ? (
             <DetailSummaryOutlineRow
-              key={badge.id}
-              label={badge.label}
-              value={badge.value}
+              label={startBadge.label}
+              value={startBadge.value}
             />
-          ))}
+          ) : null}
+          <DetailSummaryColorRow
+            colorLabel={colorOption.label}
+            swatchColor={colorOption.swatchColor}
+          />
         </View>
+
+        {anchorBadges.length > 0 ? (
+          <View style={styles.summaryOutlineGroup}>
+            {anchorBadges.map((badge) => (
+              <DetailSummaryOutlineRow
+                key={badge.id}
+                label={badge.label}
+                value={badge.value}
+              />
+            ))}
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function DetailSummaryColorRow({
+  colorLabel,
+  swatchColor,
+}: {
+  colorLabel: string;
+  swatchColor: string;
+}): React.JSX.Element {
+  return (
+    <View
+      accessibilityLabel={`색상 ${colorLabel}`}
+      accessible
+      style={styles.summaryOutlineRow}
+    >
+      <AppText style={styles.summaryOutlineLabel} variant="caption">
+        색상
+      </AppText>
+      <View style={styles.summaryOutlineContent}>
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.summaryColorMarker, { backgroundColor: swatchColor }]}
+        />
       </View>
     </View>
   );
@@ -629,6 +680,7 @@ export function RecurringItemDetailScreen({
                   ) : null}
 
                   <DetailSummarySection
+                    colorKey={viewModel.summary.colorKey}
                     notificationLabel={viewModel.summary.notificationLabel}
                     notificationsEnabled={
                       viewModel.summary.notificationsEnabled
@@ -881,6 +933,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xxs,
     maxWidth: "100%",
+  },
+  summaryColorMarker: {
+    borderRadius: borderRadius.pill,
+    height: 12,
+    width: 12,
   },
   summaryOutlineContent: {
     alignItems: "center",

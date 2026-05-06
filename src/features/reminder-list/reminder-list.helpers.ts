@@ -5,10 +5,12 @@ import { getNextOccurrence } from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
   RecurringItem,
+  RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 import { getRecurrenceLabel } from "~/features/recurring/utils/recurring-display";
 
 export type ReminderListEntry = {
+  colorKey: RecurringItemColorKey;
   id: string;
   item: RecurringItem;
   nextOccurrenceTimeLabel: string;
@@ -46,6 +48,7 @@ export function buildReminderListEntries({
       );
 
       return {
+        colorKey: item.colorKey,
         id: item.id,
         item,
         nextOccurrenceTimeLabel: nextOccurrence

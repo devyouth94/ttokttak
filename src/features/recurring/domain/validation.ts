@@ -2,6 +2,7 @@ import {
   completionBasedRecurrenceTypes,
   type RecurrenceType,
   recurrenceTypes,
+  recurringItemColorKeys,
   type RecurringItemDraft,
 } from "~/features/recurring/domain/types";
 
@@ -10,6 +11,7 @@ const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 type ValidationIssueCode =
   | "anchor_type_not_allowed"
+  | "color_key_invalid"
   | "interval_value_missing"
   | "interval_value_not_allowed"
   | "interval_value_invalid"
@@ -101,6 +103,14 @@ export function validateRecurringItemDraft(
       code: "timezone_missing",
       field: "timezone",
       message: "시간대는 필수입니다.",
+    });
+  }
+
+  if (!recurringItemColorKeys.includes(draft.colorKey)) {
+    issues.push({
+      code: "color_key_invalid",
+      field: "colorKey",
+      message: "지원하지 않는 일정 색상입니다.",
     });
   }
 

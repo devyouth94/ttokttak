@@ -3,32 +3,18 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { DateData } from "react-native-calendars";
 
 import { AppText } from "~/design-system/components/app-text";
-import {
-  borderRadius,
-  color,
-  colors,
-  typography,
-} from "~/design-system/tokens";
-import {
-  CALENDAR_MAX_VISIBLE_MARKERS,
-  type CalendarMarkerStatus,
-  calendarStatusLabelByStatus,
-} from "~/features/calendar-view/calendar-screen.helpers";
+import { borderRadius, colors, typography } from "~/design-system/tokens";
+import { CALENDAR_MAX_VISIBLE_MARKERS } from "~/features/calendar-view/calendar-screen.helpers";
+import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
+import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
 
 type CalendarDayCellProps = {
   date: DateData;
   isSelected: boolean;
   isToday: boolean;
-  markerStatuses: CalendarMarkerStatus[];
+  markerColorKeys: RecurringItemColorKey[];
   overflowCount: number;
   onPress: (date: DateData) => void;
-};
-
-const calendarMarkerColorByStatus: Record<CalendarMarkerStatus, string> = {
-  completed: color.purple,
-  overdue: color.oldFlax,
-  scheduled: color.royalBlue,
-  skipped: color.salmonOrange,
 };
 
 const cellMarkerLineGap = 1;
@@ -49,15 +35,15 @@ function CalendarDayCellComponent({
   date,
   isSelected,
   isToday,
-  markerStatuses,
+  markerColorKeys,
   overflowCount,
   onPress,
 }: CalendarDayCellProps): React.JSX.Element {
   const dayOfWeek = new Date(date.year, date.month - 1, date.day).getDay();
   const isSunday = dayOfWeek === 0;
   const isSaturday = dayOfWeek === 6;
-  const statusLabel = markerStatuses
-    .map((status) => calendarStatusLabelByStatus[status])
+  const colorLabel = markerColorKeys
+    .map((colorKey) => recurringItemColorOptionByKey[colorKey].label)
     .join(", ");
   const accessibilityLabels = [`${date.month}월 ${date.day}일`];
 
@@ -69,8 +55,8 @@ function CalendarDayCellComponent({
     accessibilityLabels.push("선택됨");
   }
 
-  if (statusLabel) {
-    accessibilityLabels.push(statusLabel);
+  if (colorLabel) {
+    accessibilityLabels.push(colorLabel);
   }
 
   if (overflowCount > 0) {
@@ -115,11 +101,11 @@ function CalendarDayCellComponent({
 
       <View style={styles.markerArea}>
         <View style={styles.markerStack}>
-          {markerStatuses.map((status, index) => (
-            <CalendarStatusMarker
-              key={`${status}-${index}`}
+          {markerColorKeys.map((colorKey, index) => (
+            <CalendarColorMarker
+              colorKey={colorKey}
+              key={`${colorKey}-${index}`}
               isSelected={isSelected}
-              status={status}
             />
           ))}
         </View>
@@ -133,22 +119,19 @@ function CalendarDayCellComponent({
   );
 }
 
-export function CalendarStatusMarker({
+export function CalendarColorMarker({
+  colorKey,
   isSelected = false,
-  status,
-  variant = "cell",
 }: {
+  colorKey: RecurringItemColorKey;
   isSelected?: boolean;
-  status: CalendarMarkerStatus;
-  variant?: "cell" | "legend";
 }): React.JSX.Element {
-  const markerColor = calendarMarkerColorByStatus[status];
+  const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
 
   return (
     <View
       style={[
         styles.markerLine,
-        variant === "cell" ? styles.markerLineCell : styles.markerLineLegend,
         { backgroundColor: markerColor },
         isSelected && styles.selectedMarker,
       ]}
@@ -197,12 +180,7 @@ const styles = StyleSheet.create({
   markerLine: {
     borderRadius: borderRadius.pill,
     height: cellMarkerLineHeight,
-  },
-  markerLineCell: {
     width: "85%",
-  },
-  markerLineLegend: {
-    width: 14,
   },
   markerStack: {
     alignItems: "center",

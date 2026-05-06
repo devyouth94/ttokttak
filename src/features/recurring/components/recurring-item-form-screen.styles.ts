@@ -57,6 +57,62 @@ export const styles = StyleSheet.create({
   compactInput: {
     minHeight: 48,
   },
+  colorSelectContent: {
+    backgroundColor: color.smokyWhite,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xxs,
+    width: "100%",
+  },
+  colorSelectIndicator: {
+    alignItems: "center",
+    height: 18,
+    justifyContent: "center",
+    width: 18,
+  },
+  colorSelectItem: {
+    alignItems: "center",
+    borderRadius: borderRadius.md,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  colorSelectItemText: {
+    color: color.jetBlack,
+  },
+  colorSelectOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  colorSelectTextSlot: {
+    flex: 1,
+    minWidth: 0,
+  },
+  colorSelectTrigger: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderColor: color.gray,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+  },
+  colorSelectTriggerText: {
+    color: color.jetBlack,
+  },
+  colorSwatch: {
+    borderColor: "rgba(41, 43, 45, 0.14)",
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    height: 24,
+    width: 24,
+  },
+  colorSwatchSelected: {
+    borderColor: color.jetBlack,
+    borderWidth: 2,
+  },
   createSaveButton: {
     width: "100%",
   },

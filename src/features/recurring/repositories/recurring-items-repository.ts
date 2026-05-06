@@ -3,9 +3,11 @@ import { fromZonedTime } from "date-fns-tz";
 import { getFirstFutureOccurrenceLocalDateAfterEdit } from "~/features/recurring/domain/occurrence";
 import type {
   RecurringItem,
+  RecurringItemColorKey,
   RecurringItemDraft,
   RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
+import { defaultRecurringItemColorKey } from "~/features/recurring/domain/types";
 import { validateRecurringItemDraft } from "~/features/recurring/domain/validation";
 import { listCompletionLogsForItem } from "~/features/recurring/repositories/completion-logs-repository";
 import {
@@ -25,7 +27,8 @@ type RecurringItemWithVersionsRow = RecurringItemRow & {
 
 const recurringItemSelect = "*, recurring_item_schedule_versions(*)";
 
-export type CreateRecurringItemInput = RecurringItemDraft & {
+export type CreateRecurringItemInput = Omit<RecurringItemDraft, "colorKey"> & {
+  colorKey?: RecurringItemColorKey;
   userId: string;
 };
 
@@ -119,6 +122,7 @@ function toRecurringItem(
     title: row.title,
     description: row.description,
     category: row.category,
+    colorKey: row.color_key as RecurringItemColorKey,
     recurrenceType: latestVersion.recurrenceType,
     intervalValue: latestVersion.intervalValue,
     weekdayMask: latestVersion.weekdayMask,
@@ -140,6 +144,7 @@ function toRecurringItemDraftFromEntity(
   return {
     anchorType: item.anchorType,
     category: item.category,
+    colorKey: item.colorKey,
     description: item.description,
     intervalValue: item.intervalValue,
     isArchived: item.isArchived,
@@ -186,6 +191,7 @@ function hasMetaChanges(
     item.title !== draft.title ||
     item.description !== draft.description ||
     item.category !== draft.category ||
+    item.colorKey !== draft.colorKey ||
     item.isArchived !== draft.isArchived
   );
 }
@@ -262,7 +268,13 @@ export async function createRecurringItem(
   input: CreateRecurringItemInput,
   client?: RepositoryClient
 ): Promise<RecurringItem> {
-  assertValidDraft(input);
+  const colorKey = input.colorKey ?? defaultRecurringItemColorKey;
+  const draft = {
+    ...input,
+    colorKey,
+  };
+
+  assertValidDraft(draft);
 
   const supabase = getRepositoryClient(client);
   const effectiveFromUtc = fromZonedTime(
@@ -274,6 +286,7 @@ export async function createRecurringItem(
     {
       p_anchor_type: input.anchorType,
       p_category: input.category ?? null,
+      p_color_key: colorKey,
       p_description: input.description ?? null,
       p_effective_from_utc: effectiveFromUtc,
       p_interval_value: input.intervalValue ?? null,
@@ -327,34 +340,39 @@ export async function updateRecurringItem(
   const hasAnyChanges = metaChanged || ruleChanged;
 
   if (hasAnyChanges) {
-    const effectiveFromUtc = new Date().toISOString();
-    const completionLogs = await listCompletionLogsForItem({
-      client,
-      itemId: input.id,
-      userId: input.userId,
-    });
-    const seedStartDateLocal =
-      getFirstFutureOccurrenceLocalDateAfterEdit({
-        completionLogs,
-        effectiveFromUtc,
-        item: existingItem,
-        nextSchedule: {
-          anchorType: mergedDraft.anchorType,
-          intervalValue: mergedDraft.intervalValue,
-          recurrenceType: mergedDraft.recurrenceType,
-          reminderTimeLocal: mergedDraft.reminderTimeLocal,
-          weekdayMask: mergedDraft.weekdayMask,
-        },
-        timezone: input.timezone,
-      }) ?? existingItem.startDateLocal;
+    let effectiveFromUtc: string | null = null;
+    let seedStartDateLocal: string | null = null;
+
+    if (ruleChanged) {
+      effectiveFromUtc = new Date().toISOString();
+      seedStartDateLocal =
+        getFirstFutureOccurrenceLocalDateAfterEdit({
+          completionLogs: await listCompletionLogsForItem({
+            client,
+            itemId: input.id,
+            userId: input.userId,
+          }),
+          effectiveFromUtc,
+          item: existingItem,
+          nextSchedule: {
+            anchorType: mergedDraft.anchorType,
+            intervalValue: mergedDraft.intervalValue,
+            recurrenceType: mergedDraft.recurrenceType,
+            reminderTimeLocal: mergedDraft.reminderTimeLocal,
+            weekdayMask: mergedDraft.weekdayMask,
+          },
+          timezone: input.timezone,
+        }) ?? existingItem.startDateLocal;
+    }
 
     const { error } = await supabase.rpc(
       "update_recurring_item_with_edit_policy",
       {
         p_anchor_type: ruleChanged ? mergedDraft.anchorType : null,
         p_category: mergedDraft.category ?? null,
+        p_color_key: mergedDraft.colorKey,
         p_description: mergedDraft.description ?? null,
-        p_effective_from_utc: ruleChanged ? effectiveFromUtc : null,
+        p_effective_from_utc: effectiveFromUtc,
         p_has_rule_changes: ruleChanged,
         p_interval_value: ruleChanged
           ? (mergedDraft.intervalValue ?? null)
@@ -368,7 +386,7 @@ export async function updateRecurringItem(
         p_reminder_time_local: ruleChanged
           ? mergedDraft.reminderTimeLocal
           : null,
-        p_seed_start_date_local: ruleChanged ? seedStartDateLocal : null,
+        p_seed_start_date_local: seedStartDateLocal,
         p_title: mergedDraft.title,
         p_user_id: input.userId,
         p_weekday_mask: ruleChanged ? (mergedDraft.weekdayMask ?? null) : null,

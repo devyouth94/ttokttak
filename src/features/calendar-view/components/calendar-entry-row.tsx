@@ -3,7 +3,11 @@ import { ArrowRight } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, color, spacing } from "~/design-system/tokens";
-import type { CalendarDayEntry } from "~/features/calendar-view/calendar-screen.helpers";
+import {
+  type CalendarDayEntry,
+  formatCalendarDayEntryMetaLine,
+} from "~/features/calendar-view/calendar-screen.helpers";
+import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
 
 type CalendarEntryRowProps = {
   entry: CalendarDayEntry;
@@ -16,7 +20,8 @@ export function CalendarEntryRow({
   isLast,
   onPress,
 }: CalendarEntryRowProps): React.JSX.Element {
-  const metaLine = [entry.timeLabel, entry.statusLabel].join(" · ");
+  const metaLine = formatCalendarDayEntryMetaLine(entry);
+  const markerColor = recurringItemColorOptionByKey[entry.colorKey].swatchColor;
 
   return (
     <Pressable
@@ -31,13 +36,23 @@ export function CalendarEntryRow({
       ]}
     >
       <View style={styles.listItemCopy}>
-        <AppText
-          ellipsizeMode="tail"
-          numberOfLines={1}
-          style={styles.listItemText}
-        >
-          {entry.title}
-        </AppText>
+        <View style={styles.listItemTitleRow}>
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[
+              styles.listItemColorMarker,
+              { backgroundColor: markerColor },
+            ]}
+          />
+          <AppText
+            ellipsizeMode="tail"
+            numberOfLines={1}
+            style={styles.listItemText}
+          >
+            {entry.title}
+          </AppText>
+        </View>
         <View style={styles.listItemMetaSlot}>
           <AppText
             ellipsizeMode="tail"
@@ -71,6 +86,11 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  listItemColorMarker: {
+    borderRadius: borderRadius.pill,
+    height: 10,
+    width: 10,
+  },
   listItemDivider: {
     borderBottomColor: color.jetBlack,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -89,6 +109,13 @@ const styles = StyleSheet.create({
   },
   listItemText: {
     color: color.jetBlack,
+    flex: 1,
+    minWidth: 0,
+  },
+  listItemTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
   },
   pressed: {
     opacity: 0.72,

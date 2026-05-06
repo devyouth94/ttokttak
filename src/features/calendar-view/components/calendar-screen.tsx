@@ -26,8 +26,6 @@ import {
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
-  type CalendarMarkerStatus,
-  calendarStatusLabelByStatus,
   clampVisibleMonth,
   createCalendarScreenState,
   formatSelectedDateSectionTitle,
@@ -38,7 +36,6 @@ import {
 import {
   CALENDAR_DAY_CELL_HEIGHT,
   CalendarDayCell,
-  CalendarStatusMarker,
 } from "~/features/calendar-view/components/calendar-day-cell";
 import { CalendarEntryRow } from "~/features/calendar-view/components/calendar-entry-row";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
@@ -91,13 +88,6 @@ LocaleConfig.locales.ko = {
 LocaleConfig.defaultLocale = "ko";
 
 const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
-
-const legendStatuses: CalendarMarkerStatus[] = [
-  "scheduled",
-  "completed",
-  "skipped",
-  "overdue",
-];
 
 const calendarTheme = {
   arrowColor: colors.text,
@@ -304,8 +294,8 @@ export function CalendarScreen(): React.JSX.Element {
                   overflowCount={
                     daySummaries[date.dateString]?.overflowCount ?? 0
                   }
-                  markerStatuses={
-                    daySummaries[date.dateString]?.markerStatuses ?? []
+                  markerColorKeys={
+                    daySummaries[date.dateString]?.markerColorKeys ?? []
                   }
                   onPress={handleDayPress}
                 />
@@ -322,17 +312,6 @@ export function CalendarScreen(): React.JSX.Element {
             style={styles.calendar}
             theme={calendarTheme}
           />
-        </View>
-
-        <View style={styles.legendRow}>
-          {legendStatuses.map((status) => (
-            <View key={status} style={styles.legendItem}>
-              <CalendarStatusMarker status={status} variant="legend" />
-              <AppText style={styles.legendLabel}>
-                {calendarStatusLabelByStatus[status]}
-              </AppText>
-            </View>
-          ))}
         </View>
 
         <View style={styles.selectedDateSection}>
@@ -492,22 +471,6 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     zIndex: 10,
-  },
-  legendItem: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  legendLabel: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-  },
-  legendRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-    justifyContent: "center",
   },
   monthArrowButton: {
     alignItems: "center",

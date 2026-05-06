@@ -10,6 +10,7 @@ import type {
   CompletionLog,
   DerivedOccurrence,
   RecurringItem,
+  RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
 import {
@@ -52,6 +53,7 @@ export type ItemDetailViewModel = {
   primaryOccurrence: DerivedOccurrence | null;
   statusCard: ItemDetailStatusCard;
   summary: {
+    colorKey: RecurringItemColorKey;
     notificationLabel: string;
     notificationsEnabled: boolean;
     recurrenceLabel: string;
@@ -198,6 +200,7 @@ export function buildRecurringItemDetailViewModel({
       timezone,
     }),
     summary: {
+      colorKey: item.colorKey,
       notificationLabel: getSummaryNotificationLabel(item),
       notificationsEnabled: getSummaryNotificationsEnabled(item),
       recurrenceLabel: getRecurrenceLabel(item),

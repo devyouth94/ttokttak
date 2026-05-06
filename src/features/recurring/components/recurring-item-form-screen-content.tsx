@@ -32,6 +32,7 @@ import {
 } from "./recurring-item-form-screen.helpers";
 import {
   AdvancedOptionsSection,
+  ColorPickerSection,
   IosPickerModal,
   NotificationSection,
   RecurrenceSection,
@@ -305,6 +306,11 @@ export function RecurringItemFormScreenContent({
                 )}
               />
             </View>
+
+            <ColorPickerSection
+              selectedColorKey={values.colorKey}
+              onSelectColorKey={actions.field.onSelectColorKey}
+            />
 
             <View
               onLayout={(event) => handleSectionLayout("recurrence", event)}

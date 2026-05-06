@@ -18,6 +18,7 @@ function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return {
     anchorType: "fixed",
     category: "건강",
+    colorKey: "blue",
     createdAt: "2026-04-01T00:00:00.000Z",
     description: "매일 아침 복용합니다.",
     id: "item-1",
@@ -150,6 +151,19 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.nextOccurrence).toBeNull();
     expect(viewModel.statusCard.title).toBe("다음 일정 없음");
     expect(viewModel.statusCard.dateLabel).toBe("없음");
+  });
+
+  it("상세 요약은 일정 색상 key를 함께 제공한다", () => {
+    const viewModel = buildRecurringItemDetailViewModel({
+      completionLogs: [],
+      item: createItem({
+        colorKey: "green",
+      }),
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      timezone,
+    });
+
+    expect(viewModel.summary.colorKey).toBe("green");
   });
 
   it("최근 히스토리 5건만 최신 예정 시각 순으로 만든다", () => {

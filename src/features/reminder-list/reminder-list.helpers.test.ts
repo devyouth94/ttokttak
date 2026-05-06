@@ -99,6 +99,23 @@ describe("reminder-list helpers", () => {
     ).toBe("예정 없음");
   });
 
+  it("일정 목록 entry는 일정 색상 key를 함께 제공한다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          colorKey: "purple",
+          id: "vitamin",
+          title: "영양제",
+        }),
+      ],
+      now: new Date("2026-04-22T00:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries[0]?.colorKey).toBe("purple");
+  });
+
   it("기본 정렬은 제목순이다", () => {
     const entries = buildReminderListEntries({
       completionLogs: [],
@@ -206,6 +223,7 @@ function createRecurringItem(
   return {
     anchorType: "fixed",
     category: null,
+    colorKey: "blue",
     createdAt: "2026-04-20T00:00:00.000Z",
     description: null,
     id,

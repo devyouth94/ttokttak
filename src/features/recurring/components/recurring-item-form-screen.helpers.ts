@@ -13,11 +13,14 @@ import {
   type AnchorType,
   anchorTypes,
   completionBasedRecurrenceTypes,
+  defaultRecurringItemColorKey,
   type RecurrenceType,
   recurrenceTypes,
   type RecurringItem,
+  recurringItemColorKeys,
   type RecurringItemDraft,
 } from "~/features/recurring/domain/types";
+export { recurringItemColorOptions } from "~/features/recurring/domain/color-palette";
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
 export type PickerMode = "date" | "time";
@@ -142,6 +145,7 @@ export function createDefaultFormState(): RecurringItemFormValues {
   return {
     anchorType: "fixed",
     category: "",
+    colorKey: defaultRecurringItemColorKey,
     description: "",
     intervalValue: "",
     notificationsEnabled: true,
@@ -189,6 +193,7 @@ export const recurringItemFormSchema = z
   .object({
     anchorType: z.enum(anchorTypes),
     category: z.string(),
+    colorKey: z.enum(recurringItemColorKeys),
     description: z.string(),
     intervalValue: z.string(),
     notificationsEnabled: z.boolean(),
@@ -434,6 +439,7 @@ export function toDraft(
       formState.recurrenceType
     ),
     category: normalizeOptionalText(formState.category),
+    colorKey: formState.colorKey,
     description: normalizeOptionalText(formState.description),
     intervalValue: requiresIntervalValue(formState.recurrenceType)
       ? Number.parseInt(formState.intervalValue, 10)
@@ -455,6 +461,7 @@ export function toFormState(item: RecurringItem): RecurringItemFormValues {
   return {
     anchorType: getNormalizedAnchorType(item.anchorType, item.recurrenceType),
     category: item.category ?? "",
+    colorKey: item.colorKey,
     description: item.description ?? "",
     intervalValue: item.intervalValue ? `${item.intervalValue}` : "",
     notificationsEnabled: item.notificationsEnabled,

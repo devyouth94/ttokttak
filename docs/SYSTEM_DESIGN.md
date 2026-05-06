@@ -167,7 +167,7 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 
 occurrence는 테이블로 저장하지 않고 런타임에서 계산한다.
 
-일정 색상은 occurrence 상태와 독립이다. 캘린더 월간 날짜 셀은 상태 색상 대신 일정 색상 선을 표시한다.
+일정 색상은 occurrence 상태와 독립이다. 캘린더 월간 날짜 셀은 일정 색상 선을 표시한다.
 
 ---
 

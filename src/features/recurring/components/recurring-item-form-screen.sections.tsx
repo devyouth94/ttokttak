@@ -11,13 +11,15 @@ import {
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Info } from "lucide-react-native";
+import * as Select from "@rn-primitives/select";
+import { Check, ChevronDown, Info } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
 import { color, colors } from "~/design-system/tokens";
 import {
   type AnchorType,
   type RecurrenceType,
+  type RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 
 import {
@@ -27,6 +29,7 @@ import {
   getCompletionBasedInfoText,
   getRecurrenceSectionState,
   quickRecurrenceOptions,
+  recurringItemColorOptions,
   weekdayOptions,
 } from "./recurring-item-form-screen.helpers";
 import { styles } from "./recurring-item-form-screen.styles";
@@ -62,6 +65,11 @@ type RecurrenceModeTabButtonProps = {
   label: string;
   onPress: () => void;
   selected: boolean;
+};
+
+type ColorPickerSectionProps = {
+  selectedColorKey: RecurringItemColorKey;
+  onSelectColorKey: (colorKey: RecurringItemColorKey) => void;
 };
 
 export function RecurrenceSection({
@@ -202,6 +210,130 @@ export function RecurrenceSection({
       </View>
     </View>
   );
+}
+
+export function ColorPickerSection({
+  selectedColorKey,
+  onSelectColorKey,
+}: ColorPickerSectionProps): React.JSX.Element {
+  const selectedOption = getRecurringItemColorOption(selectedColorKey);
+
+  return (
+    <View style={styles.field}>
+      <AppText style={styles.fieldLabel} variant="body2">
+        색상
+      </AppText>
+      <Select.Root
+        onValueChange={(nextOption) => {
+          const nextColorKey = parseRecurringItemColorKey(nextOption?.value);
+
+          if (nextColorKey) {
+            onSelectColorKey(nextColorKey);
+          }
+        }}
+        value={selectedOption}
+      >
+        <Select.Trigger asChild>
+          <Pressable
+            accessibilityHint="일정 색상 선택 메뉴를 열어요."
+            accessibilityLabel={`일정 색상: ${selectedOption.label}`}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.colorSelectTrigger,
+              pressed ? styles.chipPressed : undefined,
+            ]}
+          >
+            <View
+              style={[
+                styles.colorSwatch,
+                { backgroundColor: selectedOption.swatchColor },
+              ]}
+            />
+            <View style={styles.colorSelectTextSlot}>
+              <AppText
+                ellipsizeMode="tail"
+                numberOfLines={1}
+                style={styles.colorSelectTriggerText}
+                variant="body3"
+              >
+                {selectedOption.label}
+              </AppText>
+            </View>
+            <ChevronDown color={color.jetBlack} size={16} />
+          </Pressable>
+        </Select.Trigger>
+
+        <Select.Portal>
+          <Select.Overlay closeOnPress style={styles.colorSelectOverlay} />
+          <Select.Content
+            align="start"
+            avoidCollisions
+            insets={{
+              bottom: 24,
+              left: 16,
+              right: 16,
+              top: 24,
+            }}
+            side="bottom"
+            sideOffset={6}
+            style={styles.colorSelectContent}
+          >
+            {recurringItemColorOptions.map((option) => (
+              <Select.Item
+                accessibilityHint={`${option.label} 일정 색상으로 설정해요.`}
+                closeOnPress
+                key={option.value}
+                label={option.label}
+                style={styles.colorSelectItem}
+                value={option.value}
+              >
+                <View
+                  style={[
+                    styles.colorSwatch,
+                    { backgroundColor: option.swatchColor },
+                  ]}
+                />
+                <View style={styles.colorSelectTextSlot}>
+                  <AppText
+                    ellipsizeMode="tail"
+                    numberOfLines={1}
+                    style={styles.colorSelectItemText}
+                    variant="body3"
+                  >
+                    {option.label}
+                  </AppText>
+                </View>
+                <Select.ItemIndicator style={styles.colorSelectIndicator}>
+                  <Check color={colors.text} size={16} />
+                </Select.ItemIndicator>
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
+    </View>
+  );
+}
+
+function getRecurringItemColorOption(colorKey: RecurringItemColorKey): {
+  label: string;
+  swatchColor: string;
+  value: RecurringItemColorKey;
+} {
+  return (
+    recurringItemColorOptions.find((option) => option.value === colorKey) ??
+    recurringItemColorOptions[0]!
+  );
+}
+
+function parseRecurringItemColorKey(
+  value: string | undefined
+): RecurringItemColorKey | null {
+  const option = recurringItemColorOptions.find(
+    (candidate) => candidate.value === value
+  );
+
+  return option?.value ?? null;
 }
 
 type WeekdayChipButtonProps = {
