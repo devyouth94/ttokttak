@@ -3,6 +3,7 @@ import {
   buildCalendarDaySummaries,
   clampVisibleMonth,
   createCalendarScreenState,
+  formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
   getMinimumVisibleMonth,
@@ -306,6 +307,65 @@ describe("calendar-screen.helpers", () => {
       "건너뜀 일정",
       "예정 일정 B",
     ]);
+  });
+
+  it("선택 날짜 entry는 일정 색상 key와 상태 라벨을 함께 제공한다", () => {
+    const entries = buildCalendarDayEntries({
+      completionLogs: [
+        createLog({
+          action: "completed",
+          itemId: "item-completed",
+          scheduledAtUtc: "2026-04-12T00:00:00.000Z",
+        }),
+      ],
+      items: [
+        createItem({
+          colorKey: "purple",
+          id: "item-completed",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-12",
+          title: "색상 있는 일정",
+        }),
+      ],
+      now: new Date("2026-04-12T00:30:00.000Z"),
+      selectedDate: "2026-04-12",
+      timezone,
+    });
+
+    expect(entries[0]).toEqual(
+      expect.objectContaining({
+        colorKey: "purple",
+        statusLabel: "완료",
+        title: "색상 있는 일정",
+      })
+    );
+  });
+
+  it("선택 날짜 entry 보조 정보는 시간과 상태 라벨을 함께 표시한다", () => {
+    const entries = buildCalendarDayEntries({
+      completionLogs: [
+        createLog({
+          action: "skipped",
+          itemId: "item-skipped",
+          scheduledAtUtc: "2026-04-12T01:00:00.000Z",
+        }),
+      ],
+      items: [
+        createItem({
+          colorKey: "green",
+          id: "item-skipped",
+          reminderTimeLocal: "10:00",
+          startDateLocal: "2026-04-12",
+        }),
+      ],
+      now: new Date("2026-04-12T00:30:00.000Z"),
+      selectedDate: "2026-04-12",
+      timezone,
+    });
+
+    expect(formatCalendarDayEntryMetaLine(entries[0]!)).toBe(
+      "오전 10:00 · 건너뜀"
+    );
   });
 
   it("캘린더의 지난 일정 상태 라벨은 지남으로 표시한다", () => {

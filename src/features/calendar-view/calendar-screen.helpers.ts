@@ -29,6 +29,7 @@ export type CalendarDaySummary = {
 };
 
 export type CalendarDayEntry = {
+  colorKey: RecurringItemColorKey;
   itemId: string;
   scheduledAtUtc: string;
   status: OccurrenceStatus;
@@ -63,6 +64,12 @@ export function formatSelectedDateSectionTitle(selectedDate: string): string {
   return format(parse(selectedDate, "yyyy-MM-dd", new Date()), "M월 d일 EEEE", {
     locale: ko,
   });
+}
+
+export function formatCalendarDayEntryMetaLine(
+  entry: CalendarDayEntry
+): string {
+  return [entry.timeLabel, entry.statusLabel].join(" · ");
 }
 
 export function shiftVisibleMonth(
@@ -189,6 +196,7 @@ export function buildCalendarDayEntries({
       )
         .filter((occurrence) => occurrence.localDate === selectedDate)
         .map((occurrence) => ({
+          colorKey: item.colorKey,
           itemId: item.id,
           scheduledAtUtc: occurrence.scheduledAtUtc,
           status: occurrence.status,
