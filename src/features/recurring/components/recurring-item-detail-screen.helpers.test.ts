@@ -153,6 +153,19 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.statusCard.dateLabel).toBe("없음");
   });
 
+  it("상세 요약은 일정 색상 key를 함께 제공한다", () => {
+    const viewModel = buildRecurringItemDetailViewModel({
+      completionLogs: [],
+      item: createItem({
+        colorKey: "green",
+      }),
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      timezone,
+    });
+
+    expect(viewModel.summary.colorKey).toBe("green");
+  });
+
   it("최근 히스토리 5건만 최신 예정 시각 순으로 만든다", () => {
     const entries = buildHistoryPreview(
       [
