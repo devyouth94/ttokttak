@@ -1,0 +1,256 @@
+import * as Notifications from "expo-notifications";
+
+import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
+import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
+import type { RecurringItem } from "~/features/recurring/domain/types";
+import { listCompletionLogs } from "~/features/recurring/repositories/completion-logs-repository";
+import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
+
+jest.mock("expo-notifications", () => ({
+  AndroidNotificationPriority: {
+    HIGH: "high",
+  },
+  SchedulableTriggerInputTypes: {
+    DATE: "date",
+  },
+  cancelScheduledNotificationAsync: jest.fn(),
+  getAllScheduledNotificationsAsync: jest.fn(),
+  scheduleNotificationAsync: jest.fn(),
+}));
+
+jest.mock("~/features/notifications/notification-permission", () => ({
+  getNotificationPermissionState: jest.fn(),
+}));
+
+jest.mock(
+  "~/features/recurring/repositories/completion-logs-repository",
+  () => ({
+    listCompletionLogs: jest.fn(),
+  })
+);
+
+jest.mock(
+  "~/features/recurring/repositories/recurring-items-repository",
+  () => ({
+    listRecurringItems: jest.fn(),
+  })
+);
+
+const timezone = "Asia/Seoul";
+
+describe("syncLocalReminderNotifications", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-04-21T00:00:00.000Z"));
+    jest.clearAllMocks();
+    jest.mocked(getNotificationPermissionState).mockResolvedValue({
+      canOpenSettings: false,
+      canRequest: false,
+      label: "허용됨",
+      status: "granted",
+    });
+    jest.mocked(listCompletionLogs).mockResolvedValue([]);
+    jest.mocked(listRecurringItems).mockResolvedValue([]);
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([]);
+    jest
+      .mocked(Notifications.scheduleNotificationAsync)
+      .mockResolvedValue("scheduled-1");
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("복호화한 일정 제목과 예정 시각만 담아 현재 기기 로컬 알림을 예약한다", async () => {
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        description: "이 설명은 알림에 들어가면 안 됩니다",
+        id: "item-1",
+        reminderTimeLocal: "21:00",
+        title: "약 먹기",
+      }),
+    ]);
+
+    const result = await syncLocalReminderNotifications({
+      reason: "item-created",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.scheduledCount).toBe(1);
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith({
+      content: {
+        body: "오후 9:00",
+        data: {
+          itemId: "item-1",
+          notificationKind: "reminder",
+          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
+          source: "recurring-item",
+        },
+        priority: "high",
+        sound: "default",
+        title: "약 먹기",
+      },
+      identifier: "ttokttak:reminder:user-1:item-1:2026-04-21T12:00:00.000Z",
+      trigger: {
+        channelId: "reminders",
+        date: new Date("2026-04-21T12:00:00.000Z"),
+        type: "date",
+      },
+    });
+  });
+
+  it("OS 알림 권한이 없으면 현재 기기 로컬 알림 예약을 시도하지 않는다", async () => {
+    jest.mocked(getNotificationPermissionState).mockResolvedValue({
+      canOpenSettings: true,
+      canRequest: false,
+      label: "꺼짐",
+      status: "denied",
+    });
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        id: "item-1",
+        title: "약 먹기",
+      }),
+    ]);
+
+    const result = await syncLocalReminderNotifications({
+      reason: "item-created",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.scheduledCount).toBe(0);
+    expect(
+      Notifications.getAllScheduledNotificationsAsync
+    ).not.toHaveBeenCalled();
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("item-level 알림이 꺼진 일정은 예약하지 않는다", async () => {
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([
+        createScheduledNotificationRequest({
+          identifier:
+            "ttokttak:reminder:user-1:disabled-item:2026-04-21T00:00:00.000Z",
+          itemId: "disabled-item",
+          scheduledAtUtc: "2026-04-21T00:00:00.000Z",
+        }),
+      ]);
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        id: "disabled-item",
+        notificationsEnabled: false,
+        title: "운동하기",
+      }),
+    ]);
+
+    const result = await syncLocalReminderNotifications({
+      reason: "item-updated",
+      scope: {
+        effectiveFromUtc: "2026-04-21T00:00:00.000Z",
+        itemId: "disabled-item",
+        type: "item",
+      },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.scheduledCount).toBe(0);
+    expect(result.cancelledCount).toBe(1);
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+      "ttokttak:reminder:user-1:disabled-item:2026-04-21T00:00:00.000Z"
+    );
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("이미 같은 현재 기기 로컬 알림이 있으면 중복 예약하지 않는다", async () => {
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([
+        createScheduledNotificationRequest({
+          identifier:
+            "ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z",
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-21T00:00:00.000Z",
+        }),
+      ]);
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        id: "item-1",
+        title: "약 먹기",
+      }),
+    ]);
+
+    const result = await syncLocalReminderNotifications({
+      reason: "item-created",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.scheduledCount).toBe(0);
+    expect(result.cancelledCount).toBe(0);
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(
+      Notifications.cancelScheduledNotificationAsync
+    ).not.toHaveBeenCalled();
+  });
+});
+
+function createScheduledNotificationRequest(params: {
+  identifier: string;
+  itemId: string;
+  scheduledAtUtc: string;
+}): Notifications.NotificationRequest {
+  return {
+    content: {
+      body: null,
+      categoryIdentifier: null,
+      data: {
+        itemId: params.itemId,
+        notificationKind: "reminder",
+        scheduledAtUtc: params.scheduledAtUtc,
+        source: "recurring-item",
+      },
+      sound: null,
+      subtitle: null,
+      title: null,
+    },
+    identifier: params.identifier,
+    trigger: null,
+  };
+}
+
+function createRecurringItem(
+  overrides: Partial<RecurringItem> & Pick<RecurringItem, "id" | "title">
+): RecurringItem {
+  const { id, title, ...rest } = overrides;
+
+  return {
+    anchorType: "fixed",
+    category: null,
+    colorKey: "blue",
+    createdAt: "2026-04-20T00:00:00.000Z",
+    description: null,
+    id,
+    intervalValue: null,
+    isArchived: false,
+    notificationsEnabled: true,
+    recurrenceType: "daily",
+    reminderTimeLocal: "09:00",
+    startDateLocal: "2026-04-21",
+    timezone,
+    title,
+    updatedAt: "2026-04-20T00:00:00.000Z",
+    userId: "user-1",
+    weekdayMask: null,
+    ...rest,
+  };
+}

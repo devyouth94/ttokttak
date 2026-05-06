@@ -1,6 +1,9 @@
 import { router } from "expo-router";
 
-import { navigateFromNotificationInboxItem } from "~/features/notifications/notification-response-navigation";
+import {
+  navigateFromNotificationInboxItem,
+  navigateFromNotificationResponse,
+} from "~/features/notifications/notification-response-navigation";
 
 jest.mock("expo-notifications", () => ({
   DEFAULT_ACTION_IDENTIFIER: "default",
@@ -77,5 +80,42 @@ describe("notification response navigation", () => {
 
     expect(didNavigate).toBe(false);
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("로컬 reminder 알림 tap은 payload 기반으로 반복 항목 상세로 이동한다", () => {
+    const didNavigate = navigateFromNotificationResponse({
+      actionIdentifier: "default",
+      notification: {
+        date: new Date("2026-04-23T09:00:00.000Z").getTime(),
+        request: {
+          content: {
+            body: null,
+            categoryIdentifier: null,
+            data: {
+              itemId: "item-1",
+              notificationKind: "reminder",
+              scheduledAtUtc: "2026-04-23T09:00:00.000Z",
+              source: "recurring-item",
+            },
+            sound: null,
+            subtitle: null,
+            title: null,
+          },
+          identifier:
+            "ttokttak:reminder:user-1:item-1:2026-04-23T09:00:00.000Z",
+          trigger: null,
+        },
+      },
+    });
+
+    expect(didNavigate).toBe(true);
+    expect(router.push).toHaveBeenCalledWith({
+      params: {
+        itemId: "item-1",
+        returnTo: "/home",
+        scheduledAtUtc: "2026-04-23T09:00:00.000Z",
+      },
+      pathname: "/items/[itemId]",
+    });
   });
 });

@@ -22,7 +22,7 @@ import {
   deactivateCurrentDevicePushTokens,
   registerCurrentDevicePushToken,
 } from "~/features/notifications/device-push-token-registration";
-import { syncRemoteNotificationDeliveryJobs } from "~/features/notifications/notification-delivery-sync";
+import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
 import {
   type NotificationDeliverySyncReason,
   type NotificationDeliverySyncScope,
@@ -353,7 +353,7 @@ export function NotificationBootstrapProvider({
         return;
       }
 
-      await syncRemoteNotificationDeliveryJobs({
+      await syncLocalReminderNotifications({
         reason,
         scope,
         timezone,
