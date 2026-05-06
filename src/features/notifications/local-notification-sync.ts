@@ -1,22 +1,29 @@
 import * as Notifications from "expo-notifications";
 import { addDays } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 import type {
   NotificationDeliverySyncReason,
   NotificationDeliverySyncScope,
 } from "~/features/notifications/notification-delivery-sync.types";
 import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
-import { getOccurrencesInRange } from "~/features/recurring/domain/occurrence";
+import {
+  getNextOccurrence,
+  getOccurrencesInRange,
+} from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
+  DerivedOccurrence,
   RecurringItem,
 } from "~/features/recurring/domain/types";
+import { completionBasedRecurrenceTypes } from "~/features/recurring/domain/types";
 import { listCompletionLogs } from "~/features/recurring/repositories/completion-logs-repository";
 import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
 import { formatUtcTimeInTimezone } from "~/features/recurring/utils/recurring-display";
 
 const REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 const LOCAL_REMINDER_IDENTIFIER_PREFIX = "ttokttak:reminder";
+const MAX_PENDING_LOCAL_NOTIFICATIONS = 60;
 
 type LocalReminderNotificationSyncParams = {
   reason: NotificationDeliverySyncReason;
@@ -27,6 +34,11 @@ type LocalReminderNotificationSyncParams = {
 
 type LocalReminderNotificationSyncResult = {
   cancelledCount: number;
+  diagnostics: {
+    candidateCount: number;
+    omittedDistantCount: number;
+    scheduledCount: number;
+  };
   scheduledCount: number;
 };
 
@@ -41,6 +53,15 @@ type ExistingLocalReminderNotification = {
   identifier: string;
   itemId: string;
   scheduledAtUtc: string;
+};
+
+type DesiredLocalReminderNotification = {
+  body: string;
+  identifier: string;
+  itemId: string;
+  payload: LocalReminderNotificationPayload;
+  scheduledAtUtc: string;
+  title: string;
 };
 
 function createLocalReminderIdentifier(params: {
@@ -121,6 +142,86 @@ function canScheduleItem(item: RecurringItem): boolean {
   );
 }
 
+function isCompletionBasedItem(item: RecurringItem): boolean {
+  return (
+    item.anchorType === "completion_based" &&
+    completionBasedRecurrenceTypes.includes(
+      item.recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
+    )
+  );
+}
+
+function hasUnresolvedCompletionBasedOccurrence(params: {
+  completionLogs: CompletionLog[];
+  item: RecurringItem;
+  nowUtc: string;
+  timezone: string;
+}): boolean {
+  const { completionLogs, item, nowUtc, timezone } = params;
+
+  if (!isCompletionBasedItem(item)) {
+    return false;
+  }
+
+  const historyStartUtc = fromZonedTime(
+    `${item.startDateLocal}T00:00:00.000`,
+    timezone
+  ).toISOString();
+
+  return getOccurrencesInRange(
+    item,
+    historyStartUtc,
+    nowUtc,
+    timezone,
+    completionLogs,
+    nowUtc
+  ).some(
+    (occurrence) =>
+      occurrence.scheduledAtUtc < nowUtc &&
+      (occurrence.status === "scheduled" || occurrence.status === "overdue")
+  );
+}
+
+function toDesiredLocalReminderNotification(params: {
+  item: RecurringItem;
+  occurrence: DerivedOccurrence;
+  timezone: string;
+  userId: string;
+}): DesiredLocalReminderNotification {
+  const { item, occurrence, timezone, userId } = params;
+
+  return {
+    body: formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone),
+    identifier: createLocalReminderIdentifier({
+      itemId: item.id,
+      scheduledAtUtc: occurrence.scheduledAtUtc,
+      userId,
+    }),
+    itemId: item.id,
+    payload: createLocalReminderPayload({
+      itemId: item.id,
+      scheduledAtUtc: occurrence.scheduledAtUtc,
+    }),
+    scheduledAtUtc: occurrence.scheduledAtUtc,
+    title: item.title,
+  };
+}
+
+function dedupeDesiredNotifications(
+  notifications: DesiredLocalReminderNotification[]
+): DesiredLocalReminderNotification[] {
+  const notificationsByIdentifier = new Map<
+    string,
+    DesiredLocalReminderNotification
+  >();
+
+  for (const notification of notifications) {
+    notificationsByIdentifier.set(notification.identifier, notification);
+  }
+
+  return Array.from(notificationsByIdentifier.values());
+}
+
 function createDesiredLocalReminderNotifications(params: {
   completionLogs: CompletionLog[];
   item: RecurringItem;
@@ -136,31 +237,45 @@ function createDesiredLocalReminderNotifications(params: {
     return [];
   }
 
-  return getOccurrencesInRange(
+  if (
+    hasUnresolvedCompletionBasedOccurrence({
+      completionLogs,
+      item,
+      nowUtc: rangeStartUtc,
+      timezone,
+    })
+  ) {
+    return [];
+  }
+
+  const rangeOccurrences = getOccurrencesInRange(
     item,
     rangeStartUtc,
     rangeEndUtc,
     timezone,
     completionLogs,
     rangeStartUtc
-  )
-    .filter((occurrence) => occurrence.status === "scheduled")
-    .slice(0, 1)
-    .map((occurrence) => ({
-      body: formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone),
-      identifier: createLocalReminderIdentifier({
-        itemId: item.id,
-        scheduledAtUtc: occurrence.scheduledAtUtc,
+  ).filter((occurrence) => occurrence.status === "scheduled");
+  const nextOccurrence = getNextOccurrence(
+    item,
+    rangeStartUtc,
+    timezone,
+    completionLogs
+  );
+  const candidateOccurrences = nextOccurrence
+    ? [...rangeOccurrences, nextOccurrence]
+    : rangeOccurrences;
+
+  return dedupeDesiredNotifications(
+    candidateOccurrences.map((occurrence) =>
+      toDesiredLocalReminderNotification({
+        item,
+        occurrence,
+        timezone,
         userId,
-      }),
-      itemId: item.id,
-      payload: createLocalReminderPayload({
-        itemId: item.id,
-        scheduledAtUtc: occurrence.scheduledAtUtc,
-      }),
-      scheduledAtUtc: occurrence.scheduledAtUtc,
-      title: item.title,
-    }));
+      })
+    )
+  );
 }
 
 export async function syncLocalReminderNotifications(
@@ -172,13 +287,18 @@ export async function syncLocalReminderNotifications(
   if (permission.status !== "granted") {
     return {
       cancelledCount: 0,
+      diagnostics: {
+        candidateCount: 0,
+        omittedDistantCount: 0,
+        scheduledCount: 0,
+      },
       scheduledCount: 0,
     };
   }
 
   const now = new Date();
   const nowUtc = now.toISOString();
-  const rangeEndUtc = addDays(now, 14).toISOString();
+  const rangeEndUtc = addDays(now, 30).toISOString();
   const items = await listRecurringItems({
     timezone,
     userId,
@@ -215,9 +335,9 @@ export async function syncLocalReminderNotifications(
     (notification) => isWithinScope(notification, scope)
   );
 
-  const existingNotifications = (
-    await Notifications.getAllScheduledNotificationsAsync()
-  )
+  const scheduledNotificationRequests =
+    await Notifications.getAllScheduledNotificationsAsync();
+  const existingNotifications = scheduledNotificationRequests
     .map((notification) =>
       parseLocalReminderIdentifier(notification.identifier, userId)
     )
@@ -232,8 +352,20 @@ export async function syncLocalReminderNotifications(
   const notificationsToCancel = existingNotifications.filter(
     (notification) => !desiredIdentifiers.has(notification.identifier)
   );
-  const notificationsToSchedule = scopedDesiredNotifications.filter(
-    (notification) => !existingIdentifiers.has(notification.identifier)
+  const remainingPendingCount =
+    scheduledNotificationRequests.length - notificationsToCancel.length;
+  const availableScheduleSlots = Math.max(
+    0,
+    MAX_PENDING_LOCAL_NOTIFICATIONS - remainingPendingCount
+  );
+  const notificationsReadyToSchedule = scopedDesiredNotifications
+    .filter((notification) => !existingIdentifiers.has(notification.identifier))
+    .sort((left, right) =>
+      left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
+    );
+  const notificationsToSchedule = notificationsReadyToSchedule.slice(
+    0,
+    availableScheduleSlots
   );
 
   for (const notification of notificationsToCancel) {
@@ -262,6 +394,12 @@ export async function syncLocalReminderNotifications(
 
   return {
     cancelledCount: notificationsToCancel.length,
+    diagnostics: {
+      candidateCount: scopedDesiredNotifications.length,
+      omittedDistantCount:
+        notificationsReadyToSchedule.length - notificationsToSchedule.length,
+      scheduledCount: notificationsToSchedule.length,
+    },
     scheduledCount: notificationsToSchedule.length,
   };
 }
