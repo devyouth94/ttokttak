@@ -1,7 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
 const googleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME!;
-const iconBackgroundColor = "#FCF2E4";
+const iconBackgroundColor = "#FFFFFF";
 
 export default function getAppConfig(): ExpoConfig {
   return {
