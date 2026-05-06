@@ -25,6 +25,13 @@
 - 의존성 audit 운영 기준은 `docs/security/DEPENDENCY_AUDIT.md`를 확인한다.
 - secret 노출 점검 운영 기준은 `docs/security/SECRET_EXPOSURE_CHECK.md`를 확인한다.
 
+## TOOLING
+
+- 외부 서비스 작업은 사용 가능한 플러그인/MCP를 먼저 사용한다.
+- GitHub, Supabase, Notion, Figma 등 플러그인이 있는 작업은 CLI나 웹 수동 확인보다 플러그인 도구를 우선한다.
+- CLI는 로컬 검증, 플러그인이 제공하지 않는 기능, 또는 플러그인 실패 시 fallback으로 사용한다.
+- Supabase schema, migration, cron, function 확인과 적용은 Supabase MCP를 먼저 시도한다.
+
 ## Agent skills
 
 ### Issue tracker

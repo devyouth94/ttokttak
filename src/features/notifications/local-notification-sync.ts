@@ -2,11 +2,11 @@ import * as Notifications from "expo-notifications";
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
-import type {
-  NotificationDeliverySyncReason,
-  NotificationDeliverySyncScope,
-} from "~/features/notifications/notification-delivery-sync.types";
 import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
+import type {
+  NotificationSyncReason,
+  NotificationSyncScope,
+} from "~/features/notifications/notification-sync.types";
 import {
   getNextOccurrence,
   getOccurrencesInRange,
@@ -26,8 +26,8 @@ const LOCAL_REMINDER_IDENTIFIER_PREFIX = "ttokttak:reminder";
 const MAX_PENDING_LOCAL_NOTIFICATIONS = 60;
 
 type LocalReminderNotificationSyncParams = {
-  reason: NotificationDeliverySyncReason;
-  scope: NotificationDeliverySyncScope;
+  reason: NotificationSyncReason;
+  scope: NotificationSyncScope;
   timezone: string;
   userId: string;
 };
@@ -122,7 +122,7 @@ function isWithinScope(
     ExistingLocalReminderNotification,
     "itemId" | "scheduledAtUtc"
   >,
-  scope: NotificationDeliverySyncScope
+  scope: NotificationSyncScope
 ): boolean {
   if (scope.type === "all") {
     return true;

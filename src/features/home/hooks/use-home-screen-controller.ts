@@ -4,7 +4,6 @@ import { useIsFocused } from "@react-navigation/native";
 import { format, startOfDay } from "date-fns";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import { useNotificationInboxItemsQuery } from "~/features/notifications/use-notification-inbox-items-query";
 import type {
   CompletionAction,
   CompletionLog,
@@ -25,7 +24,6 @@ import {
 } from "../components/home-screen.helpers";
 
 let hasShownNotificationPermissionPrompt = false;
-const HOME_NOTIFICATION_INBOX_LIMIT = 50;
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
 const EMPTY_ITEMS: RecurringItem[] = [];
 
@@ -114,11 +112,6 @@ export function useHomeScreenController(): HomeScreenController {
   });
   const completionLogs = completionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;
 
-  const inboxItemsQuery = useNotificationInboxItemsQuery({
-    enabled: isReady,
-    limit: HOME_NOTIFICATION_INBOX_LIMIT,
-  });
-
   const refetchItems = itemsQuery.refetch;
   const refetchCompletionLogs = completionLogsQuery.refetch;
 
@@ -203,9 +196,7 @@ export function useHomeScreenController(): HomeScreenController {
   return {
     errorMessage,
     feedSections,
-    hasUnreadNotification: Boolean(
-      inboxItemsQuery.data?.some((item) => !item.readAt)
-    ),
+    hasUnreadNotification: false,
     isContentReady: isReady && Boolean(userId),
     isLoading,
     onOccurrenceAction: handleOccurrenceAction,
