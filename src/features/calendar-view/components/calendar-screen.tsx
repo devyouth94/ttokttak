@@ -12,7 +12,10 @@ import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
-import { AppStateView } from "~/design-system/components/app-state";
+import {
+  AppEmptyStateView,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
@@ -340,12 +343,10 @@ export function CalendarScreen(): React.JSX.Element {
               />
             </View>
           ) : selectedEntries.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <AppStateView
-                style={styles.selectedDateState}
-                title="선택한 날짜에 기록이 없어요"
-              />
-            </View>
+            <AppEmptyStateView
+              style={styles.selectedDateState}
+              title="선택한 날짜에 일정이 없어요"
+            />
           ) : (
             <View>
               {selectedEntries.map((entry, index) => (

@@ -54,6 +54,10 @@ export default function getAppConfig(): ExpoConfig {
                     path: "./assets/fonts/pretendard/Pretendard-Bold.otf",
                     weight: 700,
                   },
+                  {
+                    path: "./assets/fonts/pretendard/Pretendard-Black.otf",
+                    weight: 900,
+                  },
                 ],
               },
             ],
@@ -64,6 +68,7 @@ export default function getAppConfig(): ExpoConfig {
               "./assets/fonts/pretendard/Pretendard-Medium.otf",
               "./assets/fonts/pretendard/Pretendard-SemiBold.otf",
               "./assets/fonts/pretendard/Pretendard-Bold.otf",
+              "./assets/fonts/pretendard/Pretendard-Black.otf",
             ],
           },
         },

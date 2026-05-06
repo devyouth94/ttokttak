@@ -1,8 +1,9 @@
 import { StyleSheet } from "react-native";
-import { Bell } from "lucide-react-native";
 
-import { AppStateView } from "~/design-system/components/app-state";
-import { colors } from "~/design-system/tokens";
+import {
+  AppEmptyStateView,
+  AppStateView,
+} from "~/design-system/components/app-state";
 
 type NotificationInboxErrorStateProps = {
   onRetry: () => void;
@@ -10,12 +11,7 @@ type NotificationInboxErrorStateProps = {
 
 export function NotificationInboxEmptyState(): React.JSX.Element {
   return (
-    <AppStateView
-      description="성공적으로 발송된 원격 푸시 알림이 이곳에 표시돼요."
-      icon={<Bell color={colors.textSoft} size={20} />}
-      style={styles.stateView}
-      title="받은 알림이 없어요"
-    />
+    <AppEmptyStateView style={styles.stateView} title="받은 알림이 없어요" />
   );
 }
 

@@ -119,6 +119,7 @@ export const typography = {
     medium: "500",
     semibold: "600",
     bold: "700",
+    black: "900",
   },
   letterSpacing: {
     normal: 0,

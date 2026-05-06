@@ -2,16 +2,19 @@ import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
-import { AppStateView } from "~/design-system/components/app-state";
+import {
+  AppEmptyStateView,
+  AppStateView,
+} from "~/design-system/components/app-state";
 import { colors } from "~/design-system/tokens";
 
 export function ReminderListEmptyState(): React.JSX.Element {
   return (
-    <AppStateView
+    <AppEmptyStateView
       action={{
         accessibilityHint: "일정 만들기 화면으로 이동해요.",
         accessibilityLabel: "일정 만들기",
-        icon: <Plus color={colors.text} size={16} />,
+        icon: <Plus color={colors.primaryForeground} size={16} />,
         label: "일정 만들기",
         onPress: () => {
           router.push({
@@ -20,7 +23,6 @@ export function ReminderListEmptyState(): React.JSX.Element {
           });
         },
       }}
-      description="일정을 추가하면 이곳에서 한눈에 볼 수 있어요."
       style={styles.stateView}
       title="등록된 일정이 없어요"
     />

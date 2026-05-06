@@ -33,6 +33,12 @@ type AppStatePlaceholderProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+type AppEmptyStateViewProps = {
+  action?: AppStateAction;
+  style?: StyleProp<ViewStyle>;
+  title: string;
+};
+
 export function AppStateView({
   action,
   description,
@@ -66,6 +72,38 @@ export function AppStateView({
         >
           {action.icon}
           <AppText style={styles.actionText} variant="label">
+            {action.label}
+          </AppText>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function AppEmptyStateView({
+  action,
+  style,
+  title,
+}: AppEmptyStateViewProps): React.JSX.Element {
+  return (
+    <View style={[styles.emptyState, style]}>
+      <AppText style={styles.emptyTitle} variant="body">
+        {title}
+      </AppText>
+
+      {action ? (
+        <Pressable
+          accessibilityHint={action.accessibilityHint}
+          accessibilityLabel={action.accessibilityLabel ?? action.label}
+          accessibilityRole="button"
+          onPress={action.onPress}
+          style={({ pressed }) => [
+            styles.emptyAction,
+            pressed ? styles.pressed : undefined,
+          ]}
+        >
+          {action.icon}
+          <AppText style={styles.emptyActionText} variant="body2">
             {action.label}
           </AppText>
         </Pressable>
@@ -128,6 +166,30 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
+    textAlign: "center",
+  },
+  emptyAction: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.pill,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 42,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyActionText: {
+    color: colors.primaryForeground,
+    letterSpacing: 0,
+  },
+  emptyState: {
+    alignItems: "center",
+    flex: 1,
+    gap: spacing.sm,
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  emptyTitle: {
+    color: colors.textMuted,
     textAlign: "center",
   },
   iconWrap: {

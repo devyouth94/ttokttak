@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
 
+import { AppLogoIcon } from "~/design-system/components/app-logo-icon";
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import {
@@ -65,60 +66,58 @@ export function LoginScreen({
   };
 
   return (
-    <AppScreen contentStyle={styles.screenContent}>
+    <AppScreen
+      contentStyle={styles.screenContent}
+      safeAreaStyle={styles.screen}
+    >
       <View style={styles.container}>
-        <View style={styles.header}>
-          <AppText style={styles.brand}>ttokttak</AppText>
-          <AppText style={styles.subtitle}>
-            번거로운 가입 없이 소셜 로그인으로 바로 시작하세요.
-          </AppText>
-        </View>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <AppLogoIcon size={48} />
+            <AppText style={styles.brand}>똑딱</AppText>
+          </View>
 
-        <View style={styles.actions}>
-          <Pressable
-            accessibilityHint="Google 계정으로 로그인"
-            accessibilityRole="button"
-            disabled={!isConfigured}
-            onPress={handleGooglePress}
-            style={({ pressed }) => [
-              styles.socialButton,
-              styles.googleButton,
-              !isConfigured && styles.disabledButton,
-              pressed && isConfigured && styles.pressedButton,
-            ]}
-          >
-            <GoogleLogoIcon />
-            <AppText style={styles.googleButtonText}>Google로 로그인</AppText>
-          </Pressable>
-
-          {isAppleAvailable ? (
+          <View style={styles.actions}>
             <Pressable
-              accessibilityHint="Apple 계정으로 로그인"
+              accessibilityHint="Google 계정으로 로그인"
               accessibilityRole="button"
               disabled={!isConfigured}
-              onPress={handleApplePress}
+              onPress={handleGooglePress}
               style={({ pressed }) => [
                 styles.socialButton,
-                styles.appleButton,
+                styles.googleButton,
                 !isConfigured && styles.disabledButton,
-                pressed && isConfigured && styles.applePressedButton,
+                pressed && isConfigured && styles.pressedButton,
               ]}
             >
-              <AppleLogoIcon size={17} />
-              <AppText style={styles.appleButtonText}>Apple로 로그인</AppText>
+              <GoogleLogoIcon />
+              <AppText style={styles.googleButtonText}>Google로 로그인</AppText>
             </Pressable>
-          ) : null}
-        </View>
 
-        <View style={styles.footer}>
+            {isAppleAvailable ? (
+              <Pressable
+                accessibilityHint="Apple 계정으로 로그인"
+                accessibilityRole="button"
+                disabled={!isConfigured}
+                onPress={handleApplePress}
+                style={({ pressed }) => [
+                  styles.socialButton,
+                  styles.appleButton,
+                  !isConfigured && styles.disabledButton,
+                  pressed && isConfigured && styles.applePressedButton,
+                ]}
+              >
+                <AppleLogoIcon size={17} />
+                <AppText style={styles.appleButtonText}>Apple로 로그인</AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
           {!isConfigured ? (
             <AppText style={styles.notice}>
               로그인 연결을 위해 Supabase 설정이 먼저 필요합니다.
             </AppText>
           ) : null}
-          <AppText style={styles.legal}>
-            계속 진행하면 약관 및 개인정보 처리방침에 동의하게 됩니다.
-          </AppText>
         </View>
       </View>
     </AppScreen>
@@ -127,7 +126,7 @@ export function LoginScreen({
 
 const styles = StyleSheet.create({
   actions: {
-    gap: spacing.md,
+    gap: spacing.xs,
     width: "100%",
   },
   appleButton: {
@@ -143,23 +142,21 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   brand: {
-    fontSize: 34,
-    letterSpacing: -0.8,
-    lineHeight: 40,
+    fontSize: 18,
+    fontWeight: typography.fontWeight.black,
+    letterSpacing: 0,
+    lineHeight: 24,
     textAlign: "center",
   },
   container: {
     flex: 1,
-    justifyContent: "space-between",
-    paddingBottom: spacing.md,
-    paddingTop: spacing.xxl,
+    justifyContent: "center",
+  },
+  content: {
+    gap: spacing.xl,
   },
   disabledButton: {
     opacity: 0.45,
-  },
-  footer: {
-    gap: spacing.sm,
-    paddingBottom: spacing.sm,
   },
   googleButton: {
     backgroundColor: colors.surface,
@@ -172,8 +169,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    gap: spacing.sm,
-    paddingTop: spacing.md,
+    gap: spacing.xs,
   },
   legal: {
     color: colors.textSoft,
@@ -196,8 +192,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
+    height: 48,
     justifyContent: "center",
-    minHeight: 60,
     paddingHorizontal: spacing.lg,
     shadowColor: colors.shadow,
     shadowOffset: {
@@ -207,15 +203,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 20,
   },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24,
-    maxWidth: 260,
-    textAlign: "center",
-  },
   screenContent: {
+    backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
+  },
+  screen: {
+    backgroundColor: colors.surface,
   },
 });

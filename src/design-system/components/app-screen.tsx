@@ -7,14 +7,19 @@ import { colors } from "~/design-system/tokens";
 
 type AppScreenProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
+  safeAreaStyle?: StyleProp<ViewStyle>;
 }>;
 
 export function AppScreen({
   children,
   contentStyle,
+  safeAreaStyle,
 }: AppScreenProps): React.JSX.Element {
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.safeArea}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={[styles.safeArea, safeAreaStyle]}
+    >
       <View style={[styles.content, contentStyle]}>{children}</View>
     </SafeAreaView>
   );
