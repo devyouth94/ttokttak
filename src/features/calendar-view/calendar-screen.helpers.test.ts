@@ -115,7 +115,7 @@ describe("calendar-screen.helpers", () => {
     expect(clampVisibleMonth("2026-03", null)).toBe("2026-03");
   });
 
-  it("월 상태 라인은 시간순으로 최대 5개까지 보여주고 초과 개수를 따로 계산한다", () => {
+  it("월 색상 라인은 시간순 일정 색상으로 최대 5개까지 보여주고 초과 개수를 따로 계산한다", () => {
     const daySummaries = buildCalendarDaySummaries({
       completionLogs: [
         createLog({
@@ -133,31 +133,37 @@ describe("calendar-screen.helpers", () => {
       ],
       items: [
         createItem({
+          colorKey: "red",
           id: "item-scheduled-1",
           reminderTimeLocal: "18:00",
           startDateLocal: "2026-04-12",
         }),
         createItem({
+          colorKey: "orange",
           id: "item-scheduled-2",
           reminderTimeLocal: "18:30",
           startDateLocal: "2026-04-12",
         }),
         createItem({
+          colorKey: "yellow",
           id: "item-completed",
           reminderTimeLocal: "09:00",
           startDateLocal: "2026-04-12",
         }),
         createItem({
+          colorKey: "green",
           id: "item-skipped",
           reminderTimeLocal: "10:00",
           startDateLocal: "2026-04-12",
         }),
         createItem({
+          colorKey: "blue",
           id: "item-overdue",
           reminderTimeLocal: "07:00",
           startDateLocal: "2026-04-12",
         }),
         createItem({
+          colorKey: "purple",
           id: "item-overdue-2",
           reminderTimeLocal: "07:30",
           startDateLocal: "2026-04-12",
@@ -171,7 +177,7 @@ describe("calendar-screen.helpers", () => {
     expect(daySummaries["2026-04-12"]).toEqual({
       hasEntries: true,
       localDate: "2026-04-12",
-      markerStatuses: ["overdue", "overdue", "completed", "skipped", "overdue"],
+      markerColorKeys: ["blue", "purple", "yellow", "green", "red"],
       occurrenceCount: 6,
       overflowCount: 1,
     });
@@ -195,10 +201,44 @@ describe("calendar-screen.helpers", () => {
     expect(daySummaries["2026-05-01"]).toEqual({
       hasEntries: true,
       localDate: "2026-05-01",
-      markerStatuses: ["scheduled"],
+      markerColorKeys: ["blue"],
       occurrenceCount: 1,
       overflowCount: 0,
     });
+  });
+
+  it("같은 일정의 월 색상 라인은 occurrence 상태와 관계없이 같은 일정 색상을 유지한다", () => {
+    const daySummaries = buildCalendarDaySummaries({
+      completionLogs: [
+        createLog({
+          action: "completed",
+          itemId: "same-item",
+          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
+        }),
+        createLog({
+          action: "skipped",
+          id: "skipped-log",
+          itemId: "same-item",
+          scheduledAtUtc: "2026-04-11T00:00:00.000Z",
+        }),
+      ],
+      items: [
+        createItem({
+          colorKey: "indigo",
+          id: "same-item",
+          recurrenceType: "daily",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-10",
+        }),
+      ],
+      now: new Date("2026-04-12T01:00:00.000Z"),
+      timezone,
+      visibleMonth: "2026-04",
+    });
+
+    expect(daySummaries["2026-04-10"]?.markerColorKeys).toEqual(["indigo"]);
+    expect(daySummaries["2026-04-11"]?.markerColorKeys).toEqual(["indigo"]);
+    expect(daySummaries["2026-04-12"]?.markerColorKeys).toEqual(["indigo"]);
   });
 
   it("선택 날짜 리스트는 시간 오름차순으로 정렬한다", () => {

@@ -5,28 +5,25 @@ import { fromZonedTime } from "date-fns-tz";
 import { getOccurrencesInRange } from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
-  DerivedOccurrence,
   OccurrenceStatus,
   RecurringItem,
+  RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 import { formatUtcTimeInTimezone } from "~/features/recurring/utils/recurring-display";
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
-export type CalendarMarkerStatus = OccurrenceStatus;
-
-export const calendarStatusLabelByStatus: Record<CalendarMarkerStatus, string> =
-  {
-    completed: "완료",
-    overdue: "지남",
-    scheduled: "예정",
-    skipped: "건너뜀",
-  };
+export const calendarStatusLabelByStatus: Record<OccurrenceStatus, string> = {
+  completed: "완료",
+  overdue: "지남",
+  scheduled: "예정",
+  skipped: "건너뜀",
+};
 
 export type CalendarDaySummary = {
   hasEntries: boolean;
   localDate: string;
-  markerStatuses: CalendarMarkerStatus[];
+  markerColorKeys: RecurringItemColorKey[];
   occurrenceCount: number;
   overflowCount: number;
 };
@@ -120,7 +117,7 @@ export function buildCalendarDaySummaries({
   );
   const summaryMap = new Map<
     string,
-    { occurrenceCount: number; occurrences: DerivedOccurrence[] }
+    { markerItems: CalendarMarkerItem[]; occurrenceCount: number }
   >();
 
   items.forEach((item) => {
@@ -135,12 +132,15 @@ export function buildCalendarDaySummaries({
 
     occurrences.forEach((occurrence) => {
       const summary = summaryMap.get(occurrence.localDate) ?? {
+        markerItems: [],
         occurrenceCount: 0,
-        occurrences: [],
       };
 
       summary.occurrenceCount += 1;
-      summary.occurrences.push(occurrence);
+      summary.markerItems.push({
+        colorKey: item.colorKey,
+        scheduledAtUtc: occurrence.scheduledAtUtc,
+      });
       summaryMap.set(occurrence.localDate, summary);
     });
   });
@@ -151,7 +151,7 @@ export function buildCalendarDaySummaries({
       {
         hasEntries: summary.occurrenceCount > 0,
         localDate,
-        markerStatuses: getCalendarMarkerStatusesByTime(summary.occurrences),
+        markerColorKeys: getCalendarMarkerColorKeysByTime(summary.markerItems),
         occurrenceCount: summary.occurrenceCount,
         overflowCount: Math.max(
           0,
@@ -239,19 +239,24 @@ function createLocalDateUtcRange(
   };
 }
 
-function getCalendarMarkerStatusesByTime(
-  occurrences: DerivedOccurrence[]
-): CalendarMarkerStatus[] {
-  return occurrences
+type CalendarMarkerItem = {
+  colorKey: RecurringItemColorKey;
+  scheduledAtUtc: string;
+};
+
+function getCalendarMarkerColorKeysByTime(
+  markerItems: CalendarMarkerItem[]
+): RecurringItemColorKey[] {
+  return markerItems
     .slice()
-    .sort(compareOccurrencesByScheduledAtUtc)
+    .sort(compareCalendarMarkerItemsByScheduledAtUtc)
     .slice(0, CALENDAR_MAX_VISIBLE_MARKERS)
-    .map((occurrence) => occurrence.status);
+    .map((markerItem) => markerItem.colorKey);
 }
 
-function compareOccurrencesByScheduledAtUtc(
-  left: DerivedOccurrence,
-  right: DerivedOccurrence
+function compareCalendarMarkerItemsByScheduledAtUtc(
+  left: CalendarMarkerItem,
+  right: CalendarMarkerItem
 ): number {
   return left.scheduledAtUtc.localeCompare(right.scheduledAtUtc);
 }
