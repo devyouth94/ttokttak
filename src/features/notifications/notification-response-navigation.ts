@@ -8,13 +8,6 @@ type ReminderNotificationPayload = {
   source: "recurring-item";
 };
 
-type NotificationInboxNavigationItem = {
-  itemId: string;
-  itemScheduledAtUtc: string;
-  notificationKind: string;
-  payload: Record<string, unknown>;
-};
-
 function isReminderNotificationPayload(
   value: unknown
 ): value is ReminderNotificationPayload {
@@ -83,17 +76,6 @@ function navigateToReminderDetail(
   });
 }
 
-function isSameUtcInstant(left: string, right: string): boolean {
-  const leftTime = new Date(left).getTime();
-  const rightTime = new Date(right).getTime();
-
-  return (
-    Number.isFinite(leftTime) &&
-    Number.isFinite(rightTime) &&
-    leftTime === rightTime
-  );
-}
-
 export function getNotificationNavigationKey(
   response: Notifications.NotificationResponse
 ): string {
@@ -114,42 +96,6 @@ export function navigateFromNotificationResponse(
   }
 
   navigateToReminderDetail(payload, "/home");
-
-  return true;
-}
-
-export function navigateFromNotificationInboxItem(
-  item: NotificationInboxNavigationItem
-): boolean {
-  if (item.notificationKind !== "reminder") {
-    return false;
-  }
-
-  const payload = item.payload;
-
-  if (isReminderNotificationPayload(payload)) {
-    if (item.itemId !== payload.itemId) {
-      return false;
-    }
-
-    if (!isSameUtcInstant(item.itemScheduledAtUtc, payload.scheduledAtUtc)) {
-      return false;
-    }
-
-    navigateToReminderDetail(payload, "/(tabs)/home/notifications");
-
-    return true;
-  }
-
-  navigateToReminderDetail(
-    {
-      itemId: item.itemId,
-      notificationKind: "reminder",
-      scheduledAtUtc: item.itemScheduledAtUtc,
-      source: "recurring-item",
-    },
-    "/(tabs)/home/notifications"
-  );
 
   return true;
 }

@@ -56,7 +56,6 @@ export function HomeScreen(): React.JSX.Element {
           style={styles.screenScroll}
         >
           <HomeTopPanel
-            hasUnreadNotification={home.hasUnreadNotification}
             onHeightChange={handleTopPanelHeightChange}
             onSelectDate={home.onSelectDate}
             profileName={home.profileName}

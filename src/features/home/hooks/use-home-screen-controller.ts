@@ -30,7 +30,6 @@ const EMPTY_ITEMS: RecurringItem[] = [];
 type HomeScreenController = {
   errorMessage: string | null;
   feedSections: HomeFeedSection[];
-  hasUnreadNotification: boolean;
   isContentReady: boolean;
   isLoading: boolean;
   onOccurrenceAction: (
@@ -196,7 +195,6 @@ export function useHomeScreenController(): HomeScreenController {
   return {
     errorMessage,
     feedSections,
-    hasUnreadNotification: false,
     isContentReady: isReady && Boolean(userId),
     isLoading,
     onOccurrenceAction: handleOccurrenceAction,
