@@ -21,6 +21,17 @@ type PressMainBottomNavRouteParams = {
   stateKey: string;
 };
 
+const MAIN_BOTTOM_NAV_VISIBLE_PATHS = new Set([
+  "/home",
+  "/calendar",
+  "/schedule",
+  "/settings",
+]);
+
+export function shouldShowMainBottomNav(pathname: string): boolean {
+  return MAIN_BOTTOM_NAV_VISIBLE_PATHS.has(pathname);
+}
+
 export function pressMainBottomNavRoute({
   isFocused,
   navigation,

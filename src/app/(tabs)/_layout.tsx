@@ -3,19 +3,13 @@ import { Redirect, Tabs, usePathname } from "expo-router";
 
 import { colors } from "~/design-system/tokens";
 import { MainBottomNav } from "~/features/navigation/components/main-bottom-nav";
+import { shouldShowMainBottomNav } from "~/features/navigation/components/main-bottom-nav.helpers";
 import { useSession } from "~/features/session/session-provider";
-
-const TAB_ROOT_PATHS = new Set([
-  "/home",
-  "/calendar",
-  "/schedule",
-  "/settings",
-]);
 
 export default function TabsLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useSession();
   const pathname = usePathname();
-  const showBottomNav = TAB_ROOT_PATHS.has(pathname);
+  const showBottomNav = shouldShowMainBottomNav(pathname);
 
   if (isLoading) {
     return <View style={styles.loadingScreen} />;
