@@ -17,6 +17,8 @@ import {
   type RecurrenceType,
   recurrenceTypes,
   type RecurringItem,
+  type RecurringItemColorKey,
+  recurringItemColorKeys,
   type RecurringItemDraft,
 } from "~/features/recurring/domain/types";
 
@@ -77,6 +79,20 @@ export const customRecurrenceUnitOptions: {
   { label: "일", value: "days" },
   { label: "주", value: "weeks" },
   { label: "달", value: "months" },
+];
+
+export const recurringItemColorOptions: {
+  label: string;
+  value: RecurringItemColorKey;
+  swatchColor: string;
+}[] = [
+  { label: "빨강", value: "red", swatchColor: "#F5A3A3" },
+  { label: "주황", value: "orange", swatchColor: "#F4BE8A" },
+  { label: "노랑", value: "yellow", swatchColor: "#E8D86A" },
+  { label: "초록", value: "green", swatchColor: "#9FD4A5" },
+  { label: "파랑", value: "blue", swatchColor: "#9DB7F5" },
+  { label: "남색", value: "indigo", swatchColor: "#9EA5E8" },
+  { label: "보라", value: "purple", swatchColor: "#D4A8EA" },
 ];
 
 export function getTodayLocalDate(): string {
@@ -143,6 +159,7 @@ export function createDefaultFormState(): RecurringItemFormValues {
   return {
     anchorType: "fixed",
     category: "",
+    colorKey: defaultRecurringItemColorKey,
     description: "",
     intervalValue: "",
     notificationsEnabled: true,
@@ -190,6 +207,7 @@ export const recurringItemFormSchema = z
   .object({
     anchorType: z.enum(anchorTypes),
     category: z.string(),
+    colorKey: z.enum(recurringItemColorKeys),
     description: z.string(),
     intervalValue: z.string(),
     notificationsEnabled: z.boolean(),
@@ -435,7 +453,7 @@ export function toDraft(
       formState.recurrenceType
     ),
     category: normalizeOptionalText(formState.category),
-    colorKey: defaultRecurringItemColorKey,
+    colorKey: formState.colorKey,
     description: normalizeOptionalText(formState.description),
     intervalValue: requiresIntervalValue(formState.recurrenceType)
       ? Number.parseInt(formState.intervalValue, 10)
@@ -457,6 +475,7 @@ export function toFormState(item: RecurringItem): RecurringItemFormValues {
   return {
     anchorType: getNormalizedAnchorType(item.anchorType, item.recurrenceType),
     category: item.category ?? "",
+    colorKey: item.colorKey,
     description: item.description ?? "",
     intervalValue: item.intervalValue ? `${item.intervalValue}` : "",
     notificationsEnabled: item.notificationsEnabled,

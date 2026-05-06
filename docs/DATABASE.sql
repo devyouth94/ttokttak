@@ -274,7 +274,7 @@ create table if not exists public.recurring_items (
   title text not null,
   description text,
   category text,
-  color_key text not null default 'blue',
+  color_key text not null default 'red',
 
   start_date_local date not null,
 
@@ -404,7 +404,7 @@ create or replace function public.create_recurring_item_with_initial_version(
   p_anchor_type text,
   p_seed_start_date_local date,
   p_notifications_enabled boolean,
-  p_color_key text default 'blue'
+  p_color_key text default 'red'
 )
 returns uuid
 language plpgsql
@@ -428,7 +428,7 @@ begin
     p_title,
     p_description,
     p_category,
-    coalesce(p_color_key, 'blue'),
+    coalesce(p_color_key, 'red'),
     p_start_date_local,
     p_is_archived
   )
@@ -479,7 +479,7 @@ create or replace function public.update_recurring_item_with_edit_policy(
   p_anchor_type text default null,
   p_seed_start_date_local date default null,
   p_notifications_enabled boolean default null,
-  p_color_key text default 'blue'
+  p_color_key text default 'red'
 )
 returns uuid
 language plpgsql
@@ -494,7 +494,7 @@ begin
     title = p_title,
     description = p_description,
     category = p_category,
-    color_key = coalesce(p_color_key, 'blue'),
+    color_key = coalesce(p_color_key, 'red'),
     is_archived = p_is_archived
   where id = p_item_id
     and user_id = p_user_id

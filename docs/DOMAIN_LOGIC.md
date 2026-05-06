@@ -103,7 +103,7 @@ export interface DerivedOccurrence {
 - `anchorType`은 다음 future occurrence 계산 기준만 바꾸며, occurrence 상태 판정 규칙 자체를 바꾸지는 않는다.
 - `isArchived = true`인 item은 활성 화면과 future notification 대상에서 제외하는 방향을 기본으로 본다.
 - 모든 item은 하나의 `colorKey`를 가진다.
-- 신규 item과 기존 item 마이그레이션의 기본 `colorKey`는 `blue`다.
+- 신규 item의 기본 `colorKey`는 `red`다.
 - `CompletionLog`는 `(itemId, scheduledAtUtc)` 기준으로 특정 occurrence에 연결된다.
 - `CompletionLog.action`은 `completed` 또는 `skipped`만 가진다.
 - `DerivedOccurrence.scheduledAtUtc`는 occurrence identity로 사용한다.

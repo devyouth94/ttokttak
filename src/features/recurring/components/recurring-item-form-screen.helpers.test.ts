@@ -3,10 +3,13 @@ import {
   getFirstReminderHelperText,
   getMinimumStartDateLocal,
   normalizeStartDateSelection,
+  recurringItemColorOptions,
   recurringItemFormSchema,
   type RecurringItemFormValues,
   toDraft,
+  toFormState,
 } from "~/features/recurring/components/recurring-item-form-screen.helpers";
+import { type RecurringItem } from "~/features/recurring/domain/types";
 
 function getValidationMessages(
   overrides: Partial<RecurringItemFormValues>
@@ -171,8 +174,27 @@ describe("recurring item form validation messages", () => {
   });
 });
 
+describe("recurring item form color options", () => {
+  it("일정 색상 선택지는 정해진 7개 한국어 라벨만 제공한다", () => {
+    expect(
+      recurringItemColorOptions.map((option) => ({
+        label: option.label,
+        value: option.value,
+      }))
+    ).toEqual([
+      { label: "빨강", value: "red" },
+      { label: "주황", value: "orange" },
+      { label: "노랑", value: "yellow" },
+      { label: "초록", value: "green" },
+      { label: "파랑", value: "blue" },
+      { label: "남색", value: "indigo" },
+      { label: "보라", value: "purple" },
+    ]);
+  });
+});
+
 describe("recurring item form draft", () => {
-  it("신규 일정 draft는 기본 일정 색상 blue를 가진다", () => {
+  it("신규 일정 draft는 기본 일정 색상 red를 가진다", () => {
     const draft = toDraft(
       {
         ...createDefaultFormState(),
@@ -183,6 +205,45 @@ describe("recurring item form draft", () => {
       "Asia/Seoul"
     );
 
-    expect(draft.colorKey).toBe("blue");
+    expect(draft.colorKey).toBe("red");
+  });
+
+  it("선택한 일정 색상 key를 draft에 반영한다", () => {
+    const draft = toDraft(
+      {
+        ...createDefaultFormState(),
+        colorKey: "purple",
+        reminderTimeLocal: "09:00",
+        startDateLocal: "2026-05-06",
+        title: "물 마시기",
+      },
+      "Asia/Seoul"
+    );
+
+    expect(draft.colorKey).toBe("purple");
+  });
+
+  it("수정 화면 form state는 저장된 일정 색상 key를 유지한다", () => {
+    const item: RecurringItem = {
+      anchorType: "fixed",
+      category: null,
+      colorKey: "green",
+      createdAt: "2026-05-06T00:00:00.000Z",
+      description: null,
+      id: "item-1",
+      intervalValue: null,
+      isArchived: false,
+      notificationsEnabled: true,
+      recurrenceType: "daily",
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-05-06",
+      timezone: "Asia/Seoul",
+      title: "물 마시기",
+      updatedAt: "2026-05-06T00:00:00.000Z",
+      userId: "user-1",
+      weekdayMask: null,
+    };
+
+    expect(toFormState(item).colorKey).toBe("green");
   });
 });

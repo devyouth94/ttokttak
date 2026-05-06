@@ -10,6 +10,7 @@ import { useNotificationBootstrap } from "~/features/notifications/notification-
 import {
   type AnchorType,
   type RecurrenceType,
+  type RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import {
@@ -106,6 +107,7 @@ export function useRecurringItemFormScreenController({
   });
   const {
     anchorType = defaultValues.anchorType,
+    colorKey = defaultValues.colorKey,
     intervalValue = defaultValues.intervalValue,
     notificationsEnabled = defaultValues.notificationsEnabled,
     recurrenceType = defaultValues.recurrenceType,
@@ -338,6 +340,10 @@ export function useRecurringItemFormScreenController({
     setField("title", value);
   }
 
+  function handleSelectColorKey(nextColorKey: RecurringItemColorKey): void {
+    setField("colorKey", nextColorKey);
+  }
+
   function handleSubmitPress(): void {
     void handleSubmit(handleValidSubmit, () => {
       setRequestState((current) => ({
@@ -396,6 +402,7 @@ export function useRecurringItemFormScreenController({
           patch: {
             anchorType: draft.anchorType,
             category: draft.category,
+            colorKey: draft.colorKey,
             description: draft.description,
             intervalValue: draft.intervalValue,
             isArchived: draft.isArchived,
@@ -572,6 +579,7 @@ export function useRecurringItemFormScreenController({
 
   const displayValues = {
     anchorType,
+    colorKey,
     intervalValue,
     notificationsEnabled,
     recurrenceType,
@@ -601,6 +609,7 @@ export function useRecurringItemFormScreenController({
   const contentActions = {
     field: {
       onChangeDescription: handleChangeDescription,
+      onSelectColorKey: handleSelectColorKey,
       onChangeTitle: handleChangeTitle,
       onToggleNotifications: handleToggleNotifications,
     },

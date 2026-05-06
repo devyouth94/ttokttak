@@ -57,7 +57,7 @@ function createRecurringItemsSelectClient() {
 }
 
 describe("recurring items repository", () => {
-  it("신규 일정 생성은 색상을 명시하지 않아도 기본 일정 색상 blue를 저장한다", async () => {
+  it("신규 일정 생성은 색상을 명시하지 않아도 기본 일정 색상 red를 저장한다", async () => {
     const rpc = jest.fn().mockResolvedValue({
       data: "item-1",
       error: null,
@@ -86,7 +86,7 @@ describe("recurring items repository", () => {
     expect(rpc).toHaveBeenCalledWith(
       "create_recurring_item_with_initial_version",
       expect.objectContaining({
-        p_color_key: "blue",
+        p_color_key: "red",
       })
     );
   });

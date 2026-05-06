@@ -4,6 +4,7 @@ import { type DateTimePickerEvent } from "@react-native-community/datetimepicker
 import {
   type AnchorType,
   type RecurrenceType,
+  type RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 
 import {
@@ -24,6 +25,7 @@ type RecurringItemFormErrors = {
 
 type RecurringItemFormDisplayValues = {
   anchorType: AnchorType;
+  colorKey: RecurringItemColorKey;
   intervalValue: string;
   notificationsEnabled: boolean;
   recurrenceType: RecurrenceType;
@@ -58,6 +60,7 @@ type RecurringItemFormScreenActions = {
 
 type RecurringItemFormFieldActions = {
   onChangeDescription: (value: string) => void;
+  onSelectColorKey: (colorKey: RecurringItemColorKey) => void;
   onChangeTitle: (value: string) => void;
   onToggleNotifications: (value: boolean) => void;
 };

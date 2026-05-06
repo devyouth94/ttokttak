@@ -28,7 +28,7 @@ export const recurringItemColorKeys = [
   "indigo",
   "purple",
 ] as const;
-export const defaultRecurringItemColorKey: RecurringItemColorKey = "blue";
+export const defaultRecurringItemColorKey: RecurringItemColorKey = "red";
 export const devicePlatforms = ["ios", "android", "web", "unknown"] as const;
 export const pushProviders = ["apns", "fcm"] as const;
 export const devicePushTokenPermissionStatuses = ["granted", "denied"] as const;
