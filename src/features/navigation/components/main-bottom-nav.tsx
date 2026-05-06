@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { type Href, router, usePathname } from "expo-router";
+import { router, usePathname } from "expo-router";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import {
   CalendarDays,
   House,
@@ -11,12 +11,12 @@ import {
 
 import { AppText } from "~/design-system/components/app-text";
 import { color, spacing } from "~/design-system/tokens";
+import { pressMainBottomNavRoute } from "~/features/navigation/components/main-bottom-nav.helpers";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 
 type MainTabKey = "home" | "calendar" | "schedule" | "settings";
 
 type MainTabItem = {
-  href: Href;
   icon: typeof House;
   key: MainTabKey;
   label: string;
@@ -25,31 +25,64 @@ type MainTabItem = {
 type MainBottomNavItemProps = {
   isActive: boolean;
   item: MainTabItem;
+  label: string;
+  navigation: BottomTabBarProps["navigation"];
+  route: BottomTabBarProps["state"]["routes"][number];
+  stateKey: string;
 };
 
-const TAB_ITEMS: MainTabItem[] = [
-  { href: "/(tabs)/home", icon: House, key: "home", label: "홈" },
-  { href: "/(tabs)/schedule", icon: ListTodo, key: "schedule", label: "목록" },
-  {
-    href: "/(tabs)/calendar",
-    icon: CalendarDays,
-    key: "calendar",
-    label: "캘린더",
-  },
-  { href: "/(tabs)/settings", icon: Settings2, key: "settings", label: "설정" },
-];
+type MainBottomNavProps = BottomTabBarProps & {
+  isVisible?: boolean;
+};
 
-function resolveIsActive(pathname: string, key: MainTabKey): boolean {
-  if (pathname === "/") {
-    return key === "home";
-  }
+type MainBottomNavRoute = BottomTabBarProps["state"]["routes"][number];
+type MainTabRoute = MainBottomNavRoute & { name: MainTabKey };
 
-  return pathname === `/${key}` || pathname.startsWith(`/${key}/`);
+const MAIN_TAB_KEYS = ["home", "schedule", "calendar", "settings"] as const;
+
+const TAB_ITEMS: Record<MainTabKey, MainTabItem> = {
+  calendar: { icon: CalendarDays, key: "calendar", label: "캘린더" },
+  home: { icon: House, key: "home", label: "홈" },
+  schedule: { icon: ListTodo, key: "schedule", label: "목록" },
+  settings: { icon: Settings2, key: "settings", label: "설정" },
+};
+
+function isMainTabKey(value: string): value is MainTabKey {
+  return MAIN_TAB_KEYS.includes(value as MainTabKey);
 }
 
-export function MainBottomNav(): React.JSX.Element {
-  const insets = useSafeAreaInsets();
+function isMainTabRoute(route: MainBottomNavRoute): route is MainTabRoute {
+  return isMainTabKey(route.name);
+}
+
+function resolveTabLabel(
+  item: MainTabItem,
+  options: BottomTabBarProps["descriptors"][string]["options"]
+): string {
+  if (typeof options.tabBarLabel === "string") {
+    return options.tabBarLabel;
+  }
+
+  if (typeof options.title === "string") {
+    return options.title;
+  }
+
+  return item.label;
+}
+
+export function MainBottomNav({
+  descriptors,
+  insets,
+  isVisible = true,
+  navigation,
+  state,
+}: MainBottomNavProps): React.JSX.Element | null {
   const pathname = usePathname();
+  const routes = state.routes.filter(isMainTabRoute);
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <View
@@ -62,21 +95,37 @@ export function MainBottomNav(): React.JSX.Element {
       ]}
     >
       <View style={styles.panel}>
-        {TAB_ITEMS.slice(0, 2).map((item) => (
-          <MainBottomNavItem
-            isActive={resolveIsActive(pathname, item.key)}
-            item={item}
-            key={item.key}
-          />
-        ))}
+        {routes.slice(0, 2).map((route) => {
+          const item = TAB_ITEMS[route.name];
+
+          return (
+            <MainBottomNavItem
+              isActive={state.routes[state.index]?.key === route.key}
+              item={item}
+              key={route.key}
+              label={resolveTabLabel(item, descriptors[route.key].options)}
+              navigation={navigation}
+              route={route}
+              stateKey={state.key}
+            />
+          );
+        })}
         <View pointerEvents="none" style={styles.createSlot} />
-        {TAB_ITEMS.slice(2).map((item) => (
-          <MainBottomNavItem
-            isActive={resolveIsActive(pathname, item.key)}
-            item={item}
-            key={item.key}
-          />
-        ))}
+        {routes.slice(2).map((route) => {
+          const item = TAB_ITEMS[route.name];
+
+          return (
+            <MainBottomNavItem
+              isActive={state.routes[state.index]?.key === route.key}
+              item={item}
+              key={route.key}
+              label={resolveTabLabel(item, descriptors[route.key].options)}
+              navigation={navigation}
+              route={route}
+              stateKey={state.key}
+            />
+          );
+        })}
       </View>
       <Pressable
         accessibilityHint="일정 만들기 화면으로 이동해요."
@@ -102,22 +151,32 @@ export function MainBottomNav(): React.JSX.Element {
 function MainBottomNavItem({
   isActive,
   item,
+  label,
+  navigation,
+  route,
+  stateKey,
 }: MainBottomNavItemProps): React.JSX.Element {
   const Icon = item.icon;
 
   return (
     <Pressable
-      accessibilityLabel={item.label}
-      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityRole="tab"
       accessibilityState={{ selected: isActive }}
       hitSlop={8}
+      onLongPress={() => {
+        navigation.emit({
+          target: route.key,
+          type: "tabLongPress",
+        });
+      }}
       onPress={() => {
-        if (isActive) {
-          router.dismissTo(item.href);
-          return;
-        }
-
-        router.navigate(item.href);
+        pressMainBottomNavRoute({
+          isFocused: isActive,
+          navigation,
+          route,
+          stateKey,
+        });
       }}
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
     >
@@ -129,7 +188,7 @@ function MainBottomNavItem({
         style={[styles.label, isActive && styles.labelActive]}
         variant="caption"
       >
-        {item.label}
+        {label}
       </AppText>
     </Pressable>
   );
