@@ -79,6 +79,28 @@ export function NotificationBootstrapProvider({
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const lastSessionSyncKeyRef = useRef<string | null>(null);
 
+  const syncAllLocalReminderNotifications = useCallback(
+    (params: { feature: string; reason: NotificationSyncReason }): void => {
+      if (!user?.id) {
+        return;
+      }
+
+      void syncLocalReminderNotifications({
+        reason: params.reason,
+        scope: { type: "all" },
+        timezone,
+        userId: user.id,
+      }).catch((error) => {
+        Sentry.captureException(error, {
+          tags: {
+            feature: params.feature,
+          },
+        });
+      });
+    },
+    [timezone, user?.id]
+  );
+
   useEffect(() => {
     void ensureAndroidReminderNotificationChannel().catch((error) => {
       Sentry.captureException(error, {
@@ -125,13 +147,17 @@ export function NotificationBootstrapProvider({
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         void refreshPermission();
+        syncAllLocalReminderNotifications({
+          feature: "local-notification-foreground-sync",
+          reason: "app-foregrounded",
+        });
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [refreshPermission]);
+  }, [refreshPermission, syncAllLocalReminderNotifications]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -147,19 +173,11 @@ export function NotificationBootstrapProvider({
 
     lastSessionSyncKeyRef.current = syncKey;
 
-    void syncLocalReminderNotifications({
+    syncAllLocalReminderNotifications({
+      feature: "local-notification-session-sync",
       reason: "session-restored",
-      scope: { type: "all" },
-      timezone,
-      userId: user.id,
-    }).catch((error) => {
-      Sentry.captureException(error, {
-        tags: {
-          feature: "local-notification-session-sync",
-        },
-      });
     });
-  }, [timezone, user?.id]);
+  }, [syncAllLocalReminderNotifications, timezone, user?.id]);
 
   const syncAfterMutation = useCallback(
     async ({

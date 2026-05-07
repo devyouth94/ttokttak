@@ -12,7 +12,7 @@ function joinPath(...parts: string[]): string {
 }
 
 describe("notification sync lifecycle", () => {
-  it("세션 복원과 알림 tap 뒤 현재 기기 로컬 알림을 전체 재동기화한다", () => {
+  it("세션 복원, 앱 foreground 복귀, 알림 tap 뒤 현재 기기 로컬 알림을 전체 재동기화한다", () => {
     const bootstrapSource = readFileSync(
       joinPath(
         process.cwd(),
@@ -26,6 +26,7 @@ describe("notification sync lifecycle", () => {
     );
 
     expect(bootstrapSource).toContain('reason: "session-restored"');
+    expect(bootstrapSource).toContain('reason: "app-foregrounded"');
     expect(bootstrapSource).toContain("syncLocalReminderNotifications");
     expect(rootLayoutSource).toContain('reason: "notification-tapped"');
     expect(rootLayoutSource).toContain("syncLocalReminderNotifications");
