@@ -48,4 +48,3 @@
 - 제품 요구사항: [docs/PRODUCT_SPEC.md](/Users/youngzin/Documents/coding/ttokttak/docs/PRODUCT_SPEC.md)
 - 시스템 설계: [docs/SYSTEM_DESIGN.md](/Users/youngzin/Documents/coding/ttokttak/docs/SYSTEM_DESIGN.md)
 - 도메인 규칙: [docs/DOMAIN_LOGIC.md](/Users/youngzin/Documents/coding/ttokttak/docs/DOMAIN_LOGIC.md)
-- 구현 계획: [docs/IMPLEMENTATION_PLAN.md](/Users/youngzin/Documents/coding/ttokttak/docs/IMPLEMENTATION_PLAN.md)

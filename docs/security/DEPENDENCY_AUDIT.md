@@ -1,7 +1,7 @@
 # Dependency Audit
 
 이 문서는 npm 의존성 보안 점검 운영 기준이다.
-출시별 실행 결과는 `docs/security/RELEASE_SECURITY_REVIEW.md`에 기록한다.
+출시별 실행 결과는 해당 출시의 QA 문서나 이슈에 기록한다.
 
 ## 목적
 

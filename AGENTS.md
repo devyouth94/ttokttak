@@ -21,9 +21,7 @@
 
 ## SECURITY
 
-- 릴리즈 보안 점검은 `docs/security/RELEASE_SECURITY_REVIEW.md`를 확인한다.
 - 의존성 audit 운영 기준은 `docs/security/DEPENDENCY_AUDIT.md`를 확인한다.
-- secret 노출 점검 운영 기준은 `docs/security/SECRET_EXPOSURE_CHECK.md`를 확인한다.
 
 ## TOOLING
 

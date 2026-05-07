@@ -3,7 +3,6 @@
 이 문서는 `PRODUCT_SPEC.md`와 `SYSTEM_DESIGN.md`에서 이미 정한 제품 범위와 공통 용어를 그대로 사용한다.
 여기서는 반복 규칙, occurrence 계산, 상태 판정처럼 도메인 규칙의 세부 동작만 정의한다.
 시스템 계층 구조와 구성요소 책임은 `SYSTEM_DESIGN.md`를 기준으로 보고, 이 문서는 그 안에서 실행되는 계산 규칙과 mutation 후속 규칙만 다룬다.
-구현 순서와 작업 분할은 `IMPLEMENTATION_PLAN.md`를 따르되, 계산 규칙의 기준은 이 문서를 따른다.
 
 ## 1. Core Types
 

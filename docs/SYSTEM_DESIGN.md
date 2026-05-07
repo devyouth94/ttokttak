@@ -5,7 +5,6 @@
 이 문서는 `PRODUCT_SPEC.md`에서 정의한 제품 범위와 용어를 구현 관점으로 풀어낸다.
 제품 정의와 MVP 포함/제외 범위의 기준 서술은 `PRODUCT_SPEC.md`를 따른다.
 반복 계산, 상태 판정, 알림 동기화 절차의 상세 규칙은 `DOMAIN_LOGIC.md`를 따른다.
-구현 순서와 사용자 검토 단위는 `IMPLEMENTATION_PLAN.md`를 따른다.
 
 ### Stack
 
@@ -69,6 +68,51 @@
    - timezone utils
    - auth/session
    - logging/monitoring
+
+### Presentation UI implementation rules
+
+UI 관련 작업은 아래 규칙을 따른다.
+이 규칙은 새 화면, 리디자인, UI 리팩터링에 모두 적용한다.
+
+#### AppText
+
+- 텍스트 스타일은 `AppText`의 `variant`를 우선 사용한다.
+- `AppText`에 외부 `style`을 주입할 때는 variant가 이미 가진 타이포 값을 중복 지정하지 않는다.
+- 글자 크기, 굵기, 줄 높이, 자간은 임시 스타일로 덮어쓰지 않는다.
+- 색상, 정렬, flex 관련 레이아웃 속성은 화면 맥락에 따라 외부 `style`로 주입할 수 있다.
+- 필요한 텍스트 스타일은 `AppText` variant 또는 typography token으로 추가한다.
+
+#### Style placement
+
+- `styles`만 담는 파일로 분리하지 않는다.
+
+#### Render structure
+
+- `renderItem`, `renderHeader`, `renderFooter`처럼 `render~` 이름의 별도 함수나 변수를 만들지 않는다.
+- 반복 UI가 복잡해지면 렌더 함수로 빼지 말고 컴포넌트로 분리한다.
+- `FlatList`처럼 API가 `renderItem` prop을 요구하는 경우에도 화면 파일에는 짧은 연결 JSX만 남긴다.
+
+#### Loading placeholder
+
+- `AppStatePlaceholder`는 레거시 로딩 UI다.
+- 새 화면에서는 `AppStatePlaceholder`를 새로 사용하지 않는다.
+- 로딩 UI는 화면 구조에 맞는 전용 placeholder로 만든다.
+- 여러 화면에서 같은 구조가 반복될 때만 새 기준의 공용 placeholder를 만든다.
+
+#### Icon button
+
+- 아이콘만 있는 버튼은 `IconButton`을 우선 사용한다.
+- 헤더의 아이콘-only 액션은 기본적으로 `IconButton` `size="lg"`와 lucide icon `size={20}`을 사용한다.
+- 채워진 원형 배경처럼 버튼 자체의 시각 구조가 다른 경우에만 화면 전용 버튼을 만든다.
+
+#### Component order
+
+- 외부 입력과 훅을 먼저 둔다.
+- 로컬 상태를 그다음에 둔다.
+- 파생 값은 상태와 쿼리 결과 아래에 둔다.
+- 이벤트 핸들러와 액션 함수는 `useEffect`보다 위에 둔다.
+- `useEffect`는 의존하는 값과 함수가 선언된 뒤에 둔다.
+- 마지막에 JSX 또는 훅의 반환 객체를 둔다.
 
 ### Core components
 
@@ -625,6 +669,15 @@ MVP에서는 “여러 기기 동시 편집에 대한 완전한 conflict UX” �
 - RLS로 user_id 기준 접근 제한
 - 사용자는 본인 데이터만 읽고 수정할 수 있어야 한다
 
+### Secret and public env boundary
+
+- secret은 git, 앱 번들, Sentry event, Supabase 로그, Edge Function 로그, EAS / CI 로그에 남기지 않는다.
+- 앱 번들에는 `EXPO_PUBLIC_*` public env만 포함할 수 있다.
+- `EXPO_PUBLIC_*`에는 service role key, private key, OAuth client secret, Sentry auth token, EAS / CI token을 넣지 않는다.
+- Supabase service role key와 provider private key는 서버 실행 환경에만 둔다.
+- 예시 파일이 필요하면 secret 없는 placeholder만 둔다.
+- secret 노출이 확인되면 해당 credential을 폐기하고 새 값으로 교체한 뒤, 필요한 경우 새 앱 빌드와 재배포까지 수행한다.
+
 ---
 
 ## 12. Error Handling Strategy
@@ -717,35 +770,7 @@ src/
 
 ---
 
-## 15. Implementation Phase Reference
-
-이 문서의 구현 단계 설명은 구조 이해를 위한 상위 묶음만 남긴다.
-
-사용자가 직접 검토하는 상세 phase와 작업 단위는 `IMPLEMENTATION_PLAN.md`를 단일 기준으로 본다.
-
-### Foundation
-
-- auth / session bootstrap
-- profile timezone initialization
-- base app infrastructure
-
-### Core product flows
-
-- recurrence / occurrence domain logic
-- item CRUD
-- home / reminder list / item detail / calendar
-- remote push sync
-
-### Hardening and finish
-
-- 위젯 읽기 전용
-- device-scoped metadata hardening
-- monitoring
-- polish
-
----
-
-## 16. Portfolio Talking Points
+## 15. Portfolio Talking Points
 
 1. 반복 일정 앱의 도메인 모델을 어떻게 설계했는가
 2. 고정형과 완료 기준형을 한 UX 안에서 어떻게 공존시켰는가
