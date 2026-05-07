@@ -22,6 +22,7 @@ import {
   updateRecurringItem,
 } from "~/features/recurring/repositories/recurring-items-repository";
 import { useSession } from "~/features/session/session-provider";
+import { Sentry } from "~/lib/sentry";
 
 import { type RecurringItemFormScreenModel } from "./recurring-item-form-screen.contracts";
 import {
@@ -423,6 +424,7 @@ export function useRecurringItemFormScreenController({
           userId: user.id,
         });
         await completeRecurringItemMutationFlow({
+          captureException: Sentry.captureException,
           effectiveFromUtc,
           invalidateRecurringUserQueries,
           itemId,
@@ -436,6 +438,7 @@ export function useRecurringItemFormScreenController({
           userId: user.id,
         });
         await completeRecurringItemMutationFlow({
+          captureException: Sentry.captureException,
           effectiveFromUtc,
           invalidateRecurringUserQueries,
           itemId: createdItem.id,
@@ -477,6 +480,7 @@ export function useRecurringItemFormScreenController({
         userId,
       });
       await completeRecurringItemMutationFlow({
+        captureException: Sentry.captureException,
         effectiveFromUtc,
         invalidateRecurringUserQueries,
         itemId: currentItemId,

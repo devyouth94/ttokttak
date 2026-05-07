@@ -308,7 +308,7 @@ function createDesiredLocalReminderNotifications(params: {
   );
 }
 
-function createDesiredLocalReminderNotificationsForItems(params: {
+export function createLocalReminderNotificationCandidates(params: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
   rangeEndUtc: string;
@@ -470,7 +470,7 @@ export async function syncLocalReminderNotifications(
           userId,
         })
       : [];
-  const desiredNotifications = createDesiredLocalReminderNotificationsForItems({
+  const desiredNotifications = createLocalReminderNotificationCandidates({
     completionLogs,
     items,
     rangeEndUtc,

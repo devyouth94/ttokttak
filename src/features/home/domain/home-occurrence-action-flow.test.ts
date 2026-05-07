@@ -272,4 +272,54 @@ describe("processHomeFeedOccurrenceAction", () => {
       },
     });
   });
+
+  it("알림 동기화 실패는 기록하고 홈 피드 재조회는 계속한다", async () => {
+    const item = createItem({ id: "scheduled-item" });
+    const occurrence = getTodayOccurrence(item);
+    const syncError = new Error("notification sync failed");
+    const events: string[] = [];
+    const createCompletionLog = jest.fn(async () => {
+      events.push("create-log");
+
+      return createLog({
+        itemId: item.id,
+        scheduledAtUtc: occurrence.scheduledAtUtc,
+      });
+    });
+    const syncAfterMutation = jest.fn(async () => {
+      events.push("sync");
+      throw syncError;
+    });
+    const invalidateRecurringUserQueries = jest.fn(async () => {
+      events.push("invalidate");
+    });
+    const refetchFeed = jest.fn(async () => {
+      events.push("refetch");
+    });
+    const captureException = jest.fn();
+
+    await expect(
+      processHomeFeedOccurrenceAction({
+        action: "completed",
+        captureException,
+        completionLogs: [],
+        createCompletionLog,
+        invalidateRecurringUserQueries,
+        now: new Date("2026-04-10T03:00:00.000Z"),
+        refetchFeed,
+        syncAfterMutation,
+        target: { item, occurrence },
+        timezone,
+        userId: "user-1",
+      })
+    ).resolves.toBeUndefined();
+
+    expect(captureException).toHaveBeenCalledWith(syncError, {
+      tags: {
+        feature: "recurring-mutation-notification-sync",
+        reason: "occurrence-completed",
+      },
+    });
+    expect(events).toEqual(["create-log", "sync", "invalidate", "refetch"]);
+  });
 });

@@ -32,4 +32,38 @@ describe("completeRecurringItemMutationFlow", () => {
     expect(invalidateRecurringUserQueries).toHaveBeenCalledWith("user-1");
     expect(events).toEqual(["sync", "invalidate"]);
   });
+
+  it("알림 동기화 실패는 기록하고 recurring query 무효화는 계속한다", async () => {
+    const syncError = new Error("notification sync failed");
+    const events: string[] = [];
+    const syncAfterMutation = jest.fn(async () => {
+      events.push("sync");
+      throw syncError;
+    });
+    const invalidateRecurringUserQueries = jest.fn(async () => {
+      events.push("invalidate");
+    });
+    const captureException = jest.fn();
+
+    await expect(
+      completeRecurringItemMutationFlow({
+        captureException,
+        effectiveFromUtc,
+        invalidateRecurringUserQueries,
+        itemId: "item-1",
+        reason: "item-updated",
+        syncAfterMutation,
+        userId: "user-1",
+      })
+    ).resolves.toBeUndefined();
+
+    expect(captureException).toHaveBeenCalledWith(syncError, {
+      tags: {
+        feature: "recurring-mutation-notification-sync",
+        reason: "item-updated",
+      },
+    });
+    expect(invalidateRecurringUserQueries).toHaveBeenCalledWith("user-1");
+    expect(events).toEqual(["sync", "invalidate"]);
+  });
 });

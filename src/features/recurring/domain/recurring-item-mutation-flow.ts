@@ -2,6 +2,10 @@ import type {
   NotificationSyncReason,
   NotificationSyncScope,
 } from "~/features/notifications/notification-sync.types";
+import {
+  type CaptureRecurringMutationPostprocessException,
+  completeRecurringMutationPostprocessFlow,
+} from "~/features/recurring/domain/recurring-mutation-postprocess-flow";
 
 type RecurringItemMutationReason = Extract<
   NotificationSyncReason,
@@ -9,6 +13,7 @@ type RecurringItemMutationReason = Extract<
 >;
 
 type CompleteRecurringItemMutationFlowInput = {
+  captureException?: CaptureRecurringMutationPostprocessException;
   effectiveFromUtc: string;
   invalidateRecurringUserQueries: (userId: string) => Promise<unknown>;
   itemId: string;
@@ -21,6 +26,7 @@ type CompleteRecurringItemMutationFlowInput = {
 };
 
 export async function completeRecurringItemMutationFlow({
+  captureException,
   effectiveFromUtc,
   invalidateRecurringUserQueries,
   itemId,
@@ -28,14 +34,16 @@ export async function completeRecurringItemMutationFlow({
   syncAfterMutation,
   userId,
 }: CompleteRecurringItemMutationFlowInput): Promise<void> {
-  await syncAfterMutation({
+  await completeRecurringMutationPostprocessFlow({
+    captureException,
+    invalidateRecurringUserQueries,
     reason,
     scope: {
       effectiveFromUtc,
       itemId,
       type: "item",
     },
+    syncAfterMutation,
+    userId,
   });
-
-  await invalidateRecurringUserQueries(userId);
 }

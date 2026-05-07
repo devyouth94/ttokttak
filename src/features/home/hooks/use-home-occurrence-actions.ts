@@ -8,6 +8,7 @@ import type {
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { createCompletionLog } from "~/features/recurring/repositories/completion-logs-repository";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
+import { Sentry } from "~/lib/sentry";
 
 import type { HomeFeedCard } from "../components/home-screen.helpers";
 import {
@@ -66,6 +67,7 @@ export function useHomeOccurrenceActions({
       try {
         await processHomeFeedOccurrenceAction({
           action,
+          captureException: Sentry.captureException,
           completionLogs,
           createCompletionLog,
           invalidateRecurringUserQueries: async (readyUserId) => {

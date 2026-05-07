@@ -39,6 +39,7 @@ import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurrin
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 import { archiveRecurringItem } from "~/features/recurring/repositories/recurring-items-repository";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
+import { Sentry } from "~/lib/sentry";
 
 const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
@@ -507,6 +508,7 @@ export function RecurringItemDetailScreen({
         userId,
       });
       await completeRecurringItemMutationFlow({
+        captureException: Sentry.captureException,
         effectiveFromUtc,
         invalidateRecurringUserQueries,
         itemId: item.id,

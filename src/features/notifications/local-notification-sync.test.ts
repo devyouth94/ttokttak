@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 
 import {
   cancelAllTtokttakLocalReminderNotifications,
+  createLocalReminderNotificationCandidates,
   createLocalReminderNotificationSyncPlan,
   syncLocalReminderNotifications,
 } from "~/features/notifications/local-notification-sync";
@@ -436,6 +437,51 @@ describe("createLocalReminderNotificationSyncPlan", () => {
       omittedDistantCount: 1,
       scheduledCount: 1,
     });
+  });
+});
+
+describe("createLocalReminderNotificationCandidates", () => {
+  it("저장소와 OS Adapter 없이 예약 가능한 기기 로컬 알림 후보를 만든다", () => {
+    const result = createLocalReminderNotificationCandidates({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          id: "item-1",
+          recurrenceType: "once",
+          reminderTimeLocal: "21:00",
+          title: "약 먹기",
+        }),
+        createRecurringItem({
+          contentStatus: {
+            reason: "decryption-failed",
+            status: "unrecoverable",
+          },
+          id: "unrecoverable-item",
+          recurrenceType: "once",
+          title: "복구 불가",
+        }),
+      ],
+      rangeEndUtc: "2026-04-22T00:00:00.000Z",
+      rangeStartUtc: "2026-04-21T00:00:00.000Z",
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        body: "오후 9:00",
+        identifier: "ttokttak:reminder:user-1:item-1:2026-04-21T12:00:00.000Z",
+        itemId: "item-1",
+        payload: {
+          itemId: "item-1",
+          notificationKind: "reminder",
+          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
+          source: "recurring-item",
+        },
+        scheduledAtUtc: "2026-04-21T12:00:00.000Z",
+        title: "약 먹기",
+      }),
+    ]);
   });
 });
 

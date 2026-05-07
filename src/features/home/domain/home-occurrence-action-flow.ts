@@ -1,4 +1,8 @@
 import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
+import {
+  type CaptureRecurringMutationPostprocessException,
+  completeRecurringMutationPostprocessFlow,
+} from "~/features/recurring/domain/recurring-mutation-postprocess-flow";
 import type {
   CompletionAction,
   CompletionLog,
@@ -29,6 +33,7 @@ export type HomeFeedOccurrenceActionTarget = {
 
 export type ProcessHomeFeedOccurrenceActionOptions = {
   action: CompletionAction;
+  captureException?: CaptureRecurringMutationPostprocessException;
   completionLogs: CompletionLog[];
   createCompletionLog: (input: HomeFeedOccurrenceLogInput) => Promise<unknown>;
   invalidateRecurringUserQueries: (userId: string) => Promise<void>;
@@ -42,6 +47,7 @@ export type ProcessHomeFeedOccurrenceActionOptions = {
 
 export async function processHomeFeedOccurrenceAction({
   action,
+  captureException,
   completionLogs,
   createCompletionLog,
   invalidateRecurringUserQueries,
@@ -85,16 +91,18 @@ export async function processHomeFeedOccurrenceAction({
     );
   }
 
-  await syncAfterMutation({
+  await completeRecurringMutationPostprocessFlow({
+    captureException,
+    invalidateRecurringUserQueries,
     reason:
       action === "completed" ? "occurrence-completed" : "occurrence-skipped",
+    refetchFeed,
     scope: {
       effectiveFromUtc: now.toISOString(),
       itemId: target.item.id,
       type: "item",
     },
+    syncAfterMutation,
+    userId,
   });
-
-  await invalidateRecurringUserQueries(userId);
-  await refetchFeed();
 }
