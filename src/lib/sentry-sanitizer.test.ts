@@ -57,4 +57,30 @@ describe("sanitizeSentryEvent", () => {
       },
     });
   });
+
+  it("복호화된 일정 제목과 설명이 진단 field 이름에 들어가도 마스킹한다", () => {
+    const event = sanitizeSentryEvent({
+      extra: {
+        decryptedDescription: "개인 메모",
+        decryptedTitle: "병원 예약",
+        itemId: "item-1",
+        localNotificationDiagnostics: {
+          candidateCount: 2,
+          scheduledCount: 1,
+        },
+      },
+    });
+
+    expect(event).toMatchObject({
+      extra: {
+        decryptedDescription: SENTRY_MASKED_VALUE,
+        decryptedTitle: SENTRY_MASKED_VALUE,
+        itemId: "item-1",
+        localNotificationDiagnostics: {
+          candidateCount: 2,
+          scheduledCount: 1,
+        },
+      },
+    });
+  });
 });

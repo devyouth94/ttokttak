@@ -1,5 +1,12 @@
 import type { PropsWithChildren } from "react";
-import { createContext, use, useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
@@ -70,6 +77,7 @@ export function NotificationBootstrapProvider({
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const lastSessionSyncKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     void ensureAndroidReminderNotificationChannel().catch((error) => {
@@ -124,6 +132,34 @@ export function NotificationBootstrapProvider({
       subscription.remove();
     };
   }, [refreshPermission]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      lastSessionSyncKeyRef.current = null;
+      return;
+    }
+
+    const syncKey = `${user.id}:${timezone}`;
+
+    if (lastSessionSyncKeyRef.current === syncKey) {
+      return;
+    }
+
+    lastSessionSyncKeyRef.current = syncKey;
+
+    void syncLocalReminderNotifications({
+      reason: "session-restored",
+      scope: { type: "all" },
+      timezone,
+      userId: user.id,
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: {
+          feature: "local-notification-session-sync",
+        },
+      });
+    });
+  }, [timezone, user?.id]);
 
   const syncAfterMutation = useCallback(
     async ({

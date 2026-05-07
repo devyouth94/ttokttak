@@ -1,4 +1,6 @@
 export type NotificationSyncReason =
+  | "notification-tapped"
+  | "session-restored"
   | "item-archived"
   | "item-created"
   | "item-updated"

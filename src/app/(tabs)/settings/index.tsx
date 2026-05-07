@@ -247,7 +247,7 @@ export default function SettingsTabPage(): React.JSX.Element {
                     <ExternalLink color={colors.textSoft} size={16} />
                   )
                 }
-                description="원격 푸시 토큰 등록을 위해 알림 권한이 필요합니다."
+                description="정해둔 시간에 현재 기기에서 알려드리려면 알림 권한이 필요합니다."
                 isPressable
                 onPress={() => {
                   void handleRequestNotificationPermission();

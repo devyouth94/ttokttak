@@ -85,6 +85,15 @@ describe("syncLocalReminderNotifications", () => {
     });
 
     expect(result.scheduledCount).toBe(1);
+    expect(result.diagnostics).toEqual({
+      candidateCount: 1,
+      omittedDistantCount: 0,
+      scheduledCount: 1,
+    });
+    expect(JSON.stringify(result.diagnostics)).not.toContain("약 먹기");
+    expect(JSON.stringify(result.diagnostics)).not.toContain(
+      "이 설명은 알림에 들어가면 안 됩니다"
+    );
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith({
       content: {

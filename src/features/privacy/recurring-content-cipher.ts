@@ -40,7 +40,7 @@ type AesGcmMetadata = {
 const contentKeyVersion = 1;
 
 function getSecureStoreKey(userId: string): string {
-  return `ttokttak:user-content-key:v${contentKeyVersion}:${userId}`;
+  return `ttokttak.user-content-key.v${contentKeyVersion}.${userId}`;
 }
 
 async function getOrCreateContentKey(
