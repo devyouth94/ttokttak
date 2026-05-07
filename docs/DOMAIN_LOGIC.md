@@ -1,820 +1,240 @@
 # Domain Logic
 
-이 문서는 `PRODUCT_SPEC.md`와 `SYSTEM_DESIGN.md`에서 이미 정한 제품 범위와 공통 용어를 그대로 사용한다.
-여기서는 반복 규칙, occurrence 계산, 상태 판정처럼 도메인 규칙의 세부 동작만 정의한다.
-시스템 계층 구조와 구성요소 책임은 `SYSTEM_DESIGN.md`를 기준으로 보고, 이 문서는 그 안에서 실행되는 계산 규칙과 mutation 후속 규칙만 다룬다.
+이 문서는 현재 코드에서 사용하는 반복 일정 규칙과 상태 계산만 정의한다.
+제품 범위는 `PRODUCT_SPEC.md`, 구현 구조는 `SYSTEM_DESIGN.md`를 따른다.
 
-## 1. Core Types
+## Core Model
 
-```ts
-export type RecurrenceType =
-  | "once"
-  | "daily"
-  | "interval_days"
-  | "weekly"
-  | "interval_weeks"
-  | "monthly"
-  | "interval_months"
-  | "yearly";
+### Recurring Item
 
-export type AnchorType = "fixed" | "completion_based";
+일정은 사용자가 관리하는 반복 생활 항목이다.
+일정은 제목, 설명, 시작일, 색상, 보관 여부를 가진다.
+제목과 설명은 도메인에서는 평문으로 다루지만 저장소에서는 암호화된다.
 
-export type OccurrenceStatus =
-  | "scheduled"
-  | "completed"
-  | "skipped"
-  | "overdue";
+### Schedule Version
 
-export type RecurringItemColorKey =
-  | "red"
-  | "orange"
-  | "yellow"
-  | "green"
-  | "blue"
-  | "indigo"
-  | "purple";
+반복 규칙의 source of truth는 schedule version이다.
+하나의 일정은 시간순 schedule version 목록을 가진다.
+현재 화면 표시는 최신 schedule version을 기준으로 한다.
 
-export interface RecurringItem {
-  id: string;
-  userId: string;
-  title: string;
-  description?: string | null;
-  category?: string | null;
-  colorKey: RecurringItemColorKey;
-  startDateLocal: string; // YYYY-MM-DD
-  timezone: string;
-  isArchived: boolean;
-  createdAt: string; // UTC ISO
-  updatedAt: string; // UTC ISO
-}
+schedule version은 다음 값을 가진다.
 
-export interface RecurringItemScheduleVersion {
-  id: string;
-  itemId: string;
-  userId: string;
-  effectiveFromUtc: string; // UTC ISO
-  recurrenceType: RecurrenceType;
-  intervalValue?: number | null;
-  weekdayMask?: number[] | null;
-  reminderTimeLocal: string; // HH:mm
-  notificationsEnabled: boolean;
-  anchorType: AnchorType;
-  seedStartDateLocal: string; // YYYY-MM-DD
-  createdAt: string; // UTC ISO
-}
+- `effectiveFromUtc`.
+- `recurrenceType`.
+- `intervalValue`.
+- `weekdayMask`.
+- `reminderTimeLocal`.
+- `anchorType`.
+- `seedStartDateLocal`.
+- `notificationsEnabled`.
 
-export interface CompletionLog {
-  id: string;
-  userId: string;
-  itemId: string;
-  scheduledAtUtc: string; // occurrence identity
-  action: "completed" | "skipped";
-  actedAtUtc: string;
-  deviceId?: string | null;
-  createdAt: string;
-}
+### Occurrence
 
-export interface DerivedOccurrence {
-  itemId: string;
-  scheduledAtUtc: string;
-  scheduledAtLocal: string;
-  localDate: string; // YYYY-MM-DD
-  localTime?: string | null; // HH:mm
-  status: OccurrenceStatus;
-}
-```
+occurrence는 저장 row가 아니라 계산 결과다.
+식별자는 `(itemId, scheduledAtUtc)`이다.
 
-### Type Notes
+### Completion Log
 
-- `RecurringItem`은 item identity와 메타를 가진다.
-- `colorKey`는 일정 색상 팔레트 key이며 occurrence 상태와 독립적이다.
-- recurrence 관련 source of truth는 `RecurringItemScheduleVersion` 목록이다.
-- `occurrence`는 `RecurringItem`과 로그를 기준으로 계산되는 파생 개념이며 별도 row로 저장하지 않는다.
-- `recurrenceType`이 `interval_days`, `interval_weeks`, `interval_months`면 `intervalValue`가 필요하다.
-- `recurrenceType`이 `weekly`, `interval_weeks`면 `weekdayMask`가 필요하다.
-- `startDateLocal`은 항목의 원래 시작점이며 생성 후 수정하지 않는다.
-- `seedStartDateLocal`은 해당 version이 책임지는 첫 future occurrence local date다.
-- `reminderTimeLocal`은 local timezone 기준 예정 시각이다.
-- 생성 시 시작일이 오늘이면 알림 시간이 이미 지났더라도 첫 occurrence는 오늘로 유지한다.
-- MVP에서는 `reminderTimeLocal`을 필수 입력으로 보고 검증한다.
-- `notificationsEnabled = false`여도 overdue 판단과 정렬 기준이 필요하므로 값은 유지한다.
-- `notificationsEnabled = false`인 version은 알림 발송 대상에서 제외된다.
-- `anchorType`은 다음 future occurrence 계산 기준만 바꾸며, occurrence 상태 판정 규칙 자체를 바꾸지는 않는다.
-- `isArchived = true`인 item은 활성 화면과 future notification 대상에서 제외하는 방향을 기본으로 본다.
-- 모든 item은 하나의 `colorKey`를 가진다.
-- 신규 item의 기본 `colorKey`는 `red`다.
-- `CompletionLog`는 `(itemId, scheduledAtUtc)` 기준으로 특정 occurrence에 연결된다.
-- `CompletionLog.action`은 `completed` 또는 `skipped`만 가진다.
-- `DerivedOccurrence.scheduledAtUtc`는 occurrence identity로 사용한다.
-- `scheduledAtLocal`, `localDate`, `localTime`은 사용자에게 보여줄 local 기준 값이다.
+completion log는 특정 occurrence에 대한 처리 기록이다.
+`action`은 `completed` 또는 `skipped`만 가진다.
+하나의 occurrence에는 최대 하나의 completion log만 연결된다.
 
-## 2. Occurrence Identity
+## Supported Values
 
-Occurrence는 저장된 row가 아니라 계산 결과이므로 식별 기준이 필요합니다.
+### Recurrence Type
 
-- identity: `(item_id, scheduled_at_utc)`
-- 이유: completion / skip 로그를 정확히 연결하기 위해
+- `once`.
+- `daily`.
+- `interval_days`.
+- `weekly`.
+- `interval_weeks`.
+- `monthly`.
+- `interval_months`.
 
-## 2.1 Schedule Version Policy
+### Anchor Type
 
-- 각 item은 시간순 `schedule version` 목록을 가진다.
-- version 활성 구간 시작은 자신의 `effectiveFromUtc`다.
-- version 활성 구간 끝은 다음 version의 `effectiveFromUtc` 직전이다.
-- version은 자신의 `seedStartDateLocal`부터 occurrence를 생성한다.
-- 생성 결과 중 `scheduledAtUtc < effectiveFromUtc` 값은 버린다.
-- 수정은 과거 occurrence를 다시 계산하지 않고 미래 occurrence만 바꾼다.
+- `fixed`: 원래 반복 규칙 기준으로 다음 occurrence를 계산한다.
+- `completion_based`: 마지막 완료일을 기준으로 다음 occurrence를 계산한다.
 
-## 3. Recurrence Rules
+`completion_based`는 `daily`, `interval_days`, `monthly`, `interval_months`에서만 허용한다.
+`once`, `weekly`, `interval_weeks`는 고정 패턴을 유지한다.
+
+### Occurrence Status
+
+- `scheduled`: 아직 처리되지 않았고 local date가 오늘 또는 이후다.
+- `completed`: 완료 log가 있다.
+- `skipped`: 건너뛰기 log가 있다.
+- `overdue`: 처리 log가 없고 local date가 오늘보다 이전이다.
+
+### Color Key
+
+일정 색상은 `red`, `orange`, `yellow`, `green`, `blue`, `indigo`, `purple` 중 하나다.
+새 일정의 기본값은 `red`다.
+일정 색상은 occurrence 상태에 따라 바뀌지 않는다.
+
+## Validation
+
+- 제목은 빈 문자열일 수 없다.
+- 시작일은 `YYYY-MM-DD` 형식이다.
+- 알림 시간은 필수이며 `HH:mm` 형식이다.
+- 시간대는 비어 있을 수 없다.
+- `interval_days`, `interval_weeks`, `interval_months`는 1 이상의 `intervalValue`가 필요하다.
+- interval 규칙이 아니면 `intervalValue`를 저장하지 않는다.
+- `weekly`, `interval_weeks`는 중복 없는 0~6 범위의 `weekdayMask`가 필요하다.
+- weekly 규칙이 아니면 `weekdayMask`를 저장하지 않는다.
+
+## Schedule Version Policy
+
+- 각 version의 활성 시작은 자신의 `effectiveFromUtc`다.
+- 활성 끝은 다음 version의 `effectiveFromUtc` 직전이다.
+- version은 자신의 `seedStartDateLocal`부터 occurrence를 만든다.
+- 계산 결과 중 `scheduledAtUtc < effectiveFromUtc`인 occurrence는 버린다.
+- 일정 수정은 과거 occurrence를 다시 쓰지 않고 future occurrence에만 반영한다.
+- 시작일은 생성 후 수정하지 않는다.
+- 규칙 영향 필드가 바뀌면 새 schedule version을 추가한다.
+
+규칙 영향 필드는 다음과 같다.
+
+- 반복 규칙.
+- interval 값.
+- 요일 목록.
+- 알림 시간.
+- 알림 켜기/끄기.
+- anchor type.
+
+## Recurrence Rules
 
 ### once
 
-- start date/time에 한 번만 발생
-- 완료 또는 건너뜀 이후 추가 occurrence 없음
+`seedStartDateLocal`과 `reminderTimeLocal`에 한 번 발생한다.
 
 ### daily
 
-- 매일 같은 local time에 발생
+매일 같은 local time에 발생한다.
 
 ### interval_days
 
-- start date를 anchor로 `n`일마다 발생
+기준일에서 `n`일마다 발생한다.
 
 ### weekly
 
-- 선택한 weekday에 매주 발생
-- weekday가 하나도 없으면 invalid
-- 첫 occurrence는 start date 이상인 가장 가까운 선택 weekday다
-- start date가 선택 weekday가 아니면 start date 당일 occurrence는 만들지 않는다
+선택한 요일에 매주 발생한다.
+첫 occurrence는 `seedStartDateLocal` 이상인 가장 가까운 선택 요일이다.
 
 ### interval_weeks
 
-- start date가 속한 주를 기준으로 `n`주마다 발생
-- weekday가 하나도 없으면 invalid
-- 첫 occurrence도 start date 이상인 선택 weekday만 허용한다
-- start date가 속한 주의 선택 weekday가 이미 지났으면 다음 유효 interval 주차에서 찾는다
+`seedStartDateLocal`이 속한 주를 기준으로 `n`주마다 선택 요일에 발생한다.
+주의 시작은 일요일이다.
+이미 지난 선택 요일은 첫 occurrence로 만들지 않는다.
 
 ### monthly
 
-- start date의 day-of-month 기준으로 매달 발생
+기준일의 day-of-month로 매달 발생한다.
 
 ### interval_months
 
-- start date의 day-of-month 기준으로 `n`달마다 발생
+기준일의 day-of-month로 `n`달마다 발생한다.
 
-### yearly
+## Day Correction
 
-- start date의 month/day 기준으로 매년 발생
+월 단위 반복에서 대상 월에 같은 날짜가 없으면 그 달의 마지막 날로 보정한다.
 
-## 4. Day-of-month Edge Cases
+예시:
 
-월 단위 규칙에서 시작일이 29, 30, 31일일 수 있습니다.
+- 1월 31일 매달 반복은 2월 28일 또는 29일, 3월 31일, 4월 30일로 이어진다.
 
-- rule: 해당 월에 같은 날짜가 없으면 그 달의 마지막 날로 보정
-- example: Jan 31 monthly -> Feb 28(or 29), Mar 31, Apr 30
-- example: Aug 31 every 2 months -> Oct 31, Dec 31, Feb 28(or 29)
+## Time Construction
 
-## 5. Anchor Type Rules
+입력 날짜와 시각은 사용자 timezone의 local 의미로 해석한다.
+저장과 비교는 UTC ISO 문자열을 사용한다.
+
+절차:
+
+1. `localDate`와 `reminderTimeLocal`을 결합한다.
+2. 사용자 timezone에서 해석한다.
+3. UTC로 변환한다.
+
+## Anchor Rules
 
 ### fixed
 
-원래 recurrence rule 기준으로 occurrence를 계산합니다.
-
-예시:
-
-- item: every 3 months
-- scheduled: Apr 1
-- actual completion: Apr 5
-- next: Jul 1
+항상 schedule version의 반복 규칙과 기준일을 따른다.
+완료 시점은 다음 occurrence 계산 기준을 바꾸지 않는다.
 
 ### completion_based
 
-마지막 `completed` 시점을 기준으로 다음 occurrence를 계산합니다.
+마지막 `completed` log의 실제 처리일을 다음 계산 기준으로 사용한다.
+`skipped`는 기준을 이동시키지 않는다.
+새 schedule version 시작 시에는 `effectiveFromUtc` 이전 마지막 완료일을 초기 기준으로 사용할 수 있다.
 
-- `completed`만 anchor를 이동시킴
-- `skipped`는 anchor를 이동시키지 않음
-- 새 version 시작 시 edit 이전 마지막 `completed`는 초기 anchor 결정에만 사용한다.
-- 새 version occurrence는 `seedStartDateLocal` 이후부터만 생성한다.
+미해결 occurrence가 남아 있는 완료일 기준 일정은 다음 알림 후보를 만들지 않는다.
+사용자가 완료 또는 건너뛰기 처리한 뒤 다음 occurrence가 다시 계산된다.
 
-예시:
+## Status Resolution
 
-- item: every 3 months
-- completed: Apr 5
-- next: Jul 5
+상태 계산 순서는 다음과 같다.
 
-권장 사항:
+1. 같은 `scheduledAtUtc`의 completion log를 찾는다.
+2. log가 `completed`면 `completed`.
+3. log가 `skipped`면 `skipped`.
+4. log가 없고 scheduled local date가 오늘보다 이전이면 `overdue`.
+5. 나머지는 `scheduled`.
 
-- 우선 적용 대상: once, daily, interval_days, monthly, interval_months, yearly
-- MVP에서는 weekly, interval_weeks에 completion_based를 적용하지 않는다
-- weekly 계열은 사용자 기대가 요일 패턴에 더 가깝기 때문에 fixed만 지원한다
+오늘 날짜의 예정 시각이 이미 지나도 같은 local date이면 `scheduled`로 남는다.
+지난 일정 여부는 시각이 아니라 local date 기준이다.
 
-## 6. Scheduled Datetime Construction
+## Projections
 
-입력:
+### Home
 
-- local date
-- local time
-- user timezone
+홈은 occurrence 처리를 위한 projection을 만든다.
 
-출력:
+- 선택 날짜 섹션은 해당 local date의 `scheduled` occurrence를 보여준다.
+- 오늘을 선택하면 지난 일정과 다가오는 일정도 함께 보여준다.
+- 지난 일정은 각 일정별 최신 overdue occurrence를 우선 보여준다.
+- 다가오는 일정은 오늘 이후 14일 범위의 `scheduled` occurrence를 보여준다.
 
-- UTC datetime
+### Schedule List
 
-규칙:
+목록은 각 일정의 다음 `scheduled` occurrence를 계산한다.
+다음 occurrence가 없으면 `예정 없음`으로 표시한다.
 
-1. local date와 local time을 결합한다.
-2. user timezone으로 해석한다.
-3. UTC ISO로 변환한다.
+### Calendar
 
-MVP에서는 reminder time을 필수로 둔다. 이 값은 알림 발송 여부와 별개로 예정 일시 계산, 정렬, 화면 표시 기준에 사용한다.
+달력은 보이는 월 범위의 occurrence를 계산한다.
+날짜 셀 marker는 일정 색상을 사용한다.
+선택 날짜 목록은 occurrence 상태를 함께 보여준다.
 
-## 7. Range Query Functions
+### Detail
 
-### getOccurrencesInRange
+상세는 지난 일정이 있으면 최신 overdue occurrence를 대표 상태로 사용한다.
+지난 일정이 없으면 다음 occurrence를 사용한다.
+알림에서 전달된 `scheduledAtUtc`는 상세의 기준 occurrence를 찾는 데만 사용한다.
 
-```ts
-getOccurrencesInRange(
-  item,
-  scheduleVersions,
-  rangeStartUtc,
-  rangeEndUtc,
-  timezone,
-  completionLogs
-);
-```
+## Occurrence Actions
 
-- 지정 범위 내 occurrence 계산
-- 각 occurrence의 상태까지 resolve
-- item 메타, schedule version 목록, completion log를 함께 사용한다.
+완료와 건너뛰기는 홈에서만 수행한다.
 
-### getNextOccurrence
+처리 절차:
 
-```ts
-getNextOccurrence(item, scheduleVersions, nowUtc, timezone, completionLogs);
-```
+1. 대상 occurrence를 확정한다.
+2. 이미 completion log가 있는 occurrence는 새 기록을 만들지 않는다.
+3. 지난 일정이면 대상 이전의 미해결 overdue occurrence도 함께 처리한다.
+4. completion log를 생성한다.
+5. 관련 쿼리를 무효화한다.
+6. 현재 기기의 로컬 알림을 다시 맞춘다.
 
-- 현재 이후 가장 가까운 occurrence 계산
-- version 경계를 따라 현재 시점 이후 첫 future occurrence를 찾는다.
+`completion_based` 일정의 `completed`는 완료일 기준 anchor를 이동시킨다.
+`skipped`는 해당 occurrence만 소비하고 anchor를 이동시키지 않는다.
 
-### getLastCompletedLog
+## Edit And Archive
 
-```ts
-getLastCompletedLog(itemId, logs);
-```
+수정은 메타 변경과 규칙 변경을 구분한다.
 
-- completion_based 계산용 마지막 완료 로그 조회
+- 제목, 설명, 색상, 보관 여부만 바뀌면 item 메타만 갱신한다.
+- 규칙 영향 필드가 바뀌면 새 schedule version을 추가한다.
+- 새 version의 `seedStartDateLocal`은 수정 시점 이후 첫 future occurrence local date다.
+- 과거 completion log는 유지한다.
 
-## 8. Status Resolution
-
-입력:
-
-- occurrence `scheduledAtUtc`
-- completion logs
-- current time `nowUtc`
-
-출력:
-
-- `scheduled | completed | skipped | overdue`
-
-알고리즘:
-
-1. `scheduledAtUtc`에 대응하는 log를 찾는다.
-2. `log.action === "completed"`면 `completed`
-3. `log.action === "skipped"`면 `skipped`
-4. log가 없고 `scheduledLocalDate < today(local timezone)`면 `overdue`
-5. 나머지는 `scheduled`
-
-## 9. Home Feed Construction
-
-### 오늘
-
-- `localDate == today(local timezone)`
-- `status == scheduled`
-
-### 다가오는 일정
-
-- `scheduledAtUtc > nowUtc`
-- 오늘 이후 범위
-- `status == scheduled`
-
-### 지난 일정
-
-- `status == overdue`
-
-UI 정책:
-
-- 홈에서는 오래된 지난 일정 전체를 다 보여주지 않고 최근 항목 위주로 제한 노출
-
-## 10. Occurrence Action Scope
-
-완료, 건너뛰기 같은 occurrence 액션은
-홈 피드에서만 제공한다.
-
-기준:
-
-- 홈 피드는 현재 처리 가능한 미해결 occurrence에만 액션을 노출한다.
-- `status == overdue`면 홈 피드에서 노출한다.
-- `status == scheduled` 이고 `localDate == today(local timezone)`면 홈 피드에서 노출한다.
-- `status == scheduled` 이지만 오늘 이후 future date면 숨긴다.
-- `status == completed`면 숨긴다.
-- `status == skipped`면 숨긴다.
-- 대표 occurrence가 없으면 숨긴다.
-- 상세 화면이 특정 occurrence를 기준으로 열렸다면 그 occurrence는 대표 상태 표시 기준으로만 사용한다.
-
-의도:
-
-- 과거 기록 기준 상세와 현재 actionable occurrence를 섞어서 보이지 않는다.
-- 이미 처리한 occurrence에는 중복 액션을 보이지 않는다.
-- future occurrence에는 성급한 처리 액션을 보이지 않는다.
-- 상세 화면은 일정 상태, 설정, 최근 히스토리, 수정/삭제 관리에 집중한다.
-- 오늘 일정과 지난 일정만 바로 처리할 수 있게 한다.
-- 홈 화면은 처리 기준을 담당하고 상세 화면은 표시 기준을 담당한다.
-
-## 11. Completion Flow
-
-### completeOccurrence(itemId, scheduledAtUtc)
-
-1. occurrence identity 확인
-2. `action = completed` 로그 생성
-3. 서버 저장
-4. 관련 쿼리 무효화
-5. 현재 기기 notification sync 실행
-
-전제조건:
-
-- `itemId`와 `scheduledAtUtc`로 occurrence identity를 확정할 수 있어야 한다.
-- 현재 사용자 세션과 사용자 timezone이 유효해야 한다.
-- completion log 저장 권한이 있어야 한다.
-
-부수 효과:
-
-- `fixed`: 원래 recurrence 기준 유지
-- `completion_based`: 마지막 completed 시점 기준으로 future occurrence 재계산
-
-예상 예외:
-
-- network error
-- auth expired
-- server mutation conflict-like race
-
-후속 액션:
-
-- mutation 성공 후 서버 기준 홈, 목록, 상세 데이터를 다시 읽는다.
-- 현재 기기 기준 notification sync를 다시 실행한다.
-
-## 11. Skip Flow
-
-### skipOccurrence(itemId, scheduledAtUtc)
-
-1. occurrence identity 확인
-2. `action = skipped` 로그 생성
-3. 서버 저장
-4. 관련 쿼리 무효화
-5. notification sync 실행
-
-전제조건:
-
-- `itemId`와 `scheduledAtUtc`로 occurrence identity를 확정할 수 있어야 한다.
-- 현재 사용자 세션과 사용자 timezone이 유효해야 한다.
-- skip 로그 저장 권한이 있어야 한다.
-
-중요 규칙:
-
-- skipped는 해당 occurrence만 소비
-- completion_based anchor는 이동시키지 않음
-
-예상 예외:
-
-- network error
-- auth expired
-- server mutation conflict-like race
-
-후속 액션:
-
-- mutation 성공 후 서버 기준 홈, 목록, 상세 데이터를 다시 읽는다.
-- 현재 기기 기준 notification sync를 다시 실행한다.
-
-## 12. Edit Item Flow
-
-### editItem(item)
-
-1. item 메타와 기존 version 목록 조회
-2. 메타만 바뀌면 item 메타만 저장
-3. 규칙 영향 필드가 바뀌면 `effectiveFromUtc` 확정
-4. 수정 시점 이후 첫 future occurrence local date 계산
-5. 새 schedule version 저장
-6. 과거 completion log는 유지
-7. mutation 직후 미래 로컬 알림을 재예약
-
-전제조건:
-
-- item validation rules를 먼저 통과해야 한다.
-- 현재 사용자 세션과 사용자 timezone이 유효해야 한다.
-- 수정 대상 item을 서버 기준 최신 상태로 읽을 수 있어야 한다.
-
-MVP 확정 정책:
-
-- 과거 log는 immutable
-- 수정은 미래 occurrence 계산에만 반영
-- `startDateLocal`은 edit 모드와 저장 계층 모두에서 수정 불가
-- 수정 영향이 큰 경우 “변경은 이후 일정에 적용됩니다” 같은 안내 문구를 표시한다
-
-예상 예외:
-
-- invalid recurrence config
-- network error
-- auth expired
-- server mutation conflict-like race
-
-후속 액션:
-
-- mutation 성공 후 미래 occurrence를 다시 계산한다.
-- 홈, 목록, 상세, 캘린더에서 서버 기준 최신 상태를 다시 반영한다.
-- 현재 기기 로컬 알림을 다시 예약한다.
-- 재예약 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위로 제한한다.
-- 동일 occurrence가 다른 기기에서 먼저 처리된 경우 최신 상태를 재조회하고 짧은 안내 메시지를 1회 표시한다.
-
-## 13. Delete Item Flow
-
-### deleteItem(itemId)
-
-1. 사용자 액션은 delete로 보이되, 현재 스키마 기준 내부 상태는 `is_archived = true`로 반영
-2. archive 저장 후 현재 기기의 future local notification을 취소
-3. 홈, 목록, 캘린더에서 제외
-
-전제조건:
-
-- 삭제 대상 item을 현재 사용자 소유 데이터로 확인할 수 있어야 한다.
-
-예상 예외:
-
-- network error
-- auth expired
-
-후속 액션:
-
-- 미래 occurrence와 관련된 현재 기기 로컬 알림을 취소한다.
-- 홈, 목록, 캘린더에서 archive 반영 후 서버 기준 최신 상태를 다시 반영한다.
-
-## 14. Notification Logic
-
-알림은 기기 로컬 알림을 기본 경로로 사용한다.
-서버 원격 푸시 기반 delivery job 규칙은 현재 목표 구조가 아니며, 나중에 fallback이 필요할 때도 실제 일정 제목과 설명을 payload에 싣지 않는다.
-
-### syncLocalNotifications(userId, nowUtc)
-
-암호화 목표:
-
-- 일정 제목과 설명은 Supabase DB, 운영 화면, 로그에서 평문으로 보이지 않아야 한다.
-- 엄격한 E2EE보다는 새 기기 로그인과 앱 재설치 뒤 복구 가능한 사용성을 우선한다.
-- 사용자는 별도 복구 비밀번호 없이 일정 제목과 설명을 복구할 수 있어야 한다.
-- 앱은 사용자별 data encryption key로 일정 제목과 설명을 암호화한다.
-- 서버 DB에는 제목/설명 암호문, key version, 암호화 메타데이터만 저장한다.
-- data encryption key 원문은 일반 테이블에 저장하지 않는다.
-- 복구를 위해 data encryption key는 사용자와 연결된 wrapped key로 저장한다.
-- wrapped key는 앱 정적 key가 아니라 서버 측 내용 복구 Edge Function의 secret으로 만든다.
-- 서버 측 내용 복구 Edge Function은 content key만 복구하고 제목/설명 ciphertext를 평문으로 복호화하지 않는다.
-- 새 기기 또는 앱 재설치 뒤 로컬 content key가 없을 때만 서버 측 내용 복구를 호출한다.
-- 서버 운영자가 악의적 클라이언트 업데이트를 배포하면 사용자가 앱에서 복호화하는 순간 내용을 볼 수 있다는 한계를 인정한다.
-- 제목과 설명 기반 검색/정렬은 서버에서 수행하지 않는다.
-- 목록 정렬은 앱이 데이터를 받은 뒤 복호화한 값을 사용해 클라이언트에서 수행한다.
-- 서버 쿼리는 사용자 scope, 보관 여부, 변경 시각 같은 동기화와 필터링 기준만 사용한다.
-- MVP 암호화 범위는 일정 제목과 설명으로 제한한다.
-- 반복 규칙, 예정 시각, 완료/건너뛰기 기록, 색상, 보관 여부는 서버 동기화와 화면 계산을 위해 평문 메타데이터로 유지한다.
-- 평문 메타데이터도 생활 패턴을 드러낼 수 있다는 한계를 인정한다.
-- 로컬 알림 제목은 복호화한 일정 제목을 사용한다.
-- 로컬 알림 본문에는 설명을 넣지 않고 예정 시각을 짧게 표시한다.
-- 로컬 알림 본문 예시는 `오후 9:00` 형식이다.
-- 설명은 앱 내부 상세와 입력 화면에서만 표시하는 개인 메모다.
-- 설명은 로컬 알림, 원격 푸시 fallback, 서버 로그, 진단 값에 사용하지 않는다.
-- 설명은 제목과 같은 방식으로 암호화해서 저장한다.
-- 복호화 실패는 정상 사용자 흐름이 아니라 예외 상태다.
-- 복호화에 실패한 일정은 목록에서 숨기지 않고 `복구가 필요한 일정` 같은 fallback 제목으로 표시한다.
-- 복호화에 실패한 일정의 설명은 비워 둔다.
-- 복호화에 실패한 일정 상세는 내용을 복구하지 못했다는 상태와 삭제 액션을 제공한다.
-- 복호화에 실패한 일정은 로컬 알림 예약 대상에서 제외한다.
-- 원격 푸시 fallback을 나중에 도입하면 제목과 본문은 일반 문구만 사용한다.
-
-1. 현재 사용자 timezone 조회
-2. `notificationsEnabled = true` 아이템 조회
-3. OS notification permission 조회
-4. OS notification permission이 없으면 local notification 예약 없이 종료
-5. 앞으로 30일 rolling window 계산
-6. 각 아이템 occurrence 계산
-7. 30일 범위 밖이어도 item별 다음 occurrence 1개 추가
-8. `scheduled` 상태만 추림
-9. 기기 pending 예약 상한에 가까우면 예정 시각이 가까운 occurrence 우선 선택
-10. occurrence별 local notification identifier 생성
-11. future local notification 예약
-12. 필요 없는 future local notification 취소
-13. 예약 후보 수, 실제 예약 수, 누락된 먼 알림 수를 개발용 진단 값으로 기록
-
-identifier 규칙:
-
-- `reminder:${userId}:${itemId}:${scheduledAtUtc}`
-- 같은 occurrence에는 현재 기기에서 local notification이 1개만 존재한다.
-- 서버 동기화형 delivery job id로 사용하지 않는다.
-
-payload 식별 규칙:
-
-- local notification payload는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 필수로 포함한다.
-- `notificationKind = 'reminder'`는 MVP 알림 유형을 식별한다.
-- `source = 'recurring-item'`는 상세 이동 대상 엔티티 계열을 식별한다.
-- `itemId`는 상세 이동 대상 반복 항목을 식별한다.
-- `scheduledAtUtc`는 대상 occurrence를 식별한다.
-- payload 필수 필드가 없거나 허용 값이 아니면 앱은 상세 이동을 수행하지 않는다.
-
-예약 갱신 규칙:
-
-- item 생성 시 해당 item의 future local notification을 예약한다.
-- item 수정 시 `effective_from_utc` 이후 future local notification만 다시 계산한다.
-- item archive 또는 삭제 시 해당 item의 future local notification을 취소한다.
-- completion / skip 시 해당 occurrence와 future 재계산 범위의 local notification을 다시 맞춘다.
-- 앱 시작, 로그인 복원, 동기화 완료, 알림 tap 진입 뒤 pending local notification을 점검한다.
-- 기기 pending 예약 상한 초과는 사용자-facing 경고로 표시하지 않는다.
-- 상한 때문에 예약하지 못한 먼 occurrence는 다음 notification sync에서 다시 시도한다.
-
-완료일 기준 반복 규칙:
-
-- 완료일 기준 반복은 사용자가 완료하거나 건너뛴 뒤에만 다음 occurrence를 만든다.
-- 완료일 기준 반복의 미완료 occurrence는 다음 반복 알림을 자동으로 새로 만들지 않는다.
-- 같은 occurrence의 반복 재알림과 snooze는 MVP 범위에서 제외한다.
-
-알림함 제거 규칙:
-
-- 알림함과 알림 기록 화면은 MVP에서 제공하지 않는다.
-- 서버 동기화형 inbox row를 만들지 않는다.
-- local notification 예약, 표시, tap 이벤트를 알림 기록 row로 저장하지 않는다.
-- 홈의 알림함 진입 버튼과 미확인 알림 badge를 제거한다.
-- 놓친 일정은 홈 피드와 overdue 상태로 다시 드러낸다.
-- 앱은 원격 푸시 token, delivery job, attempt, inbox 저장소를 더 이상 읽거나 쓰지 않는다.
-- `push-delivery-worker` Edge Function과 원격 푸시 cron 호출을 제거한다.
-- 기존 migration 파일은 수정하지 않고, 새 migration으로 필요 없는 원격 푸시 테이블, RPC, cron을 제거한다.
-- 개발 기간에는 기존 일정과 예정 알림 job 데이터를 보존하지 않아도 된다.
-- 일정 제목과 설명 저장 방식을 바꿀 때 기존 평문 데이터는 새 구조로 마이그레이션하지 않고 삭제할 수 있다.
-- implementation issue에는 개발 데이터 reset migration 작성을 포함한다.
-- reset migration은 기존 migration 파일을 수정하지 않고, 새 migration에서 기존 일정 데이터와 원격 푸시 데이터를 삭제하거나 관련 저장소를 제거한다.
-
-원격 푸시 fallback 규칙:
-
-- 원격 푸시는 기본 알림 경로가 아니다.
-- fallback을 도입하더라도 실제 일정 제목과 설명은 payload에 싣지 않는다.
-- fallback 제목은 `일정 알림` 같은 일반 문구만 사용한다.
-- fallback payload는 routing에 필요한 최소 값만 포함한다.
-- fallback은 서버 동기화형 알림함 item을 만들지 않는다.
-
-### Legacy remote push implementation context
-
-아래 규칙은 기존 원격 푸시 구현을 이해하기 위한 legacy context다.
-목표 구조는 위의 기기 로컬 알림 규칙이며, 원격 푸시를 다시 도입할 때도 실제 일정 제목과 설명을 payload에 싣지 않는다.
-
-dedupe key 규칙:
-
-- `reminder:${userId}:${itemId}:${scheduledAtUtc}`
-- 같은 occurrence에는 job이 1개만 존재한다.
-- 재시도는 같은 job row에서 처리한다.
-- stale job은 삭제하지 않고 `cancelled`로 전환한다.
-
-job 상태 규칙:
-
-- `pending`: 아직 발송 시각 전이거나 첫 발송 대기
-- `processing`: worker가 현재 fan-out 중
-- `retrying`: 재시도 대기 중
-- `succeeded`: 모든 활성 token 발송 성공
-- `partially-failed`: 일부 token만 성공
-- `failed`: 재시도 종료 후 최종 실패
-- `cancelled`: 더 이상 보낼 필요가 없음
-
-cancel 규칙:
-
-- item archive 시 future job을 `cancelled`로 전환한다.
-- completion / skip 시 해당 occurrence와 future 재계산 범위 밖 job을 `cancelled`로 전환한다.
-- edit 시 `effective_from_utc` 이후 future job만 다시 계산한다.
-- 활성 token이 없으면 `cancel_reason = 'no-active-tokens'`로 끝낸다.
-
-attempt 기록 규칙:
-
-- APNs / FCM 호출마다 token별 attempt row를 1건 남긴다.
-- 성공과 실패를 모두 기록한다.
-- provider message id와 provider error code를 함께 저장한다.
-- 무효 token 오류면 해당 token을 `delivery-failed`로 비활성화한다.
-
-payload 식별 규칙:
-
-- 원격 푸시 payload는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 필수로 포함한다.
-- `notificationKind = 'reminder'`는 MVP 알림 유형을 식별한다.
-- `source = 'recurring-item'`는 상세 이동 대상 엔티티 계열을 식별한다.
-- `itemId`는 상세 이동 대상 반복 항목을 식별한다.
-- `scheduledAtUtc`는 대상 occurrence를 식별한다.
-- payload 필수 필드가 없거나 허용 값이 아니면 앱은 상세 이동을 수행하지 않는다.
-- token, device, provider 식별자는 사용자-facing payload 필수 필드가 아니다.
-
-상세 이동 mapping:
-
-- `notificationKind = 'reminder'`와 `source = 'recurring-item'`만 route 생성 대상이다.
-- route는 `/items/[itemId]`다.
-- `itemId`는 반복 항목 상세 path parameter로 전달한다.
-- `scheduledAtUtc`는 상세 화면 기준 occurrence query parameter로 전달한다.
-- OS 원격 푸시 tap에서 진입하면 `returnTo = '/home'`을 전달한다.
-- mapping에 없는 알림 유형이나 대상 엔티티는 읽음 처리 외 상세 이동을 하지 않는다.
-- mapping에 없는 알림 유형이나 대상 엔티티는 목록 액션 실패로 취급하지 않는다.
-- route mapping은 유효하지만 대상 반복 항목이 없거나 접근할 수 없으면 상세 fallback 상태를 보여준다.
-- 상세 fallback 상태는 홈으로 돌아간다.
-
-inbox ingestion trigger:
-
-- ingestion 입력은 push delivery worker의 token별 발송 결과다.
-- APNs / FCM 호출이 성공 응답을 반환하면 해당 attempt를 `succeeded`로 본다.
-- worker가 같은 job의 attempt 결과를 받은 직후 성공 attempt 존재 여부를 판단한다.
-- 성공 attempt가 1건 이상이면 inbox 저장 대상이 된다.
-- 이 판단은 기기 수신 확인, OS 표시 확인, 사용자 tap 확인을 기다리지 않는다.
-
-inbox 생성 규칙:
-
-- inbox row 생성 시점은 worker가 성공 attempt를 확인한 직후다.
-- 발송 예정 job은 성공 attempt가 생기기 전까지 inbox 저장 대상이 아니다.
-- scheduled send 대기, 실패 job, local notification, 앱 내부 이벤트는 inbox 대상이 아니다.
-- local notification과 앱 내부 이벤트는 storage 요구사항과 listing 요구사항 모두에서 제외한다.
-- 모든 token 발송이 실패해 job이 `retrying` 또는 `failed`가 되면 inbox row를 만들지 않는다.
-- device receipt 확인과 사용자 tap 확인은 inbox 생성 조건이 아니다.
-- user-facing notification identity와 collapse key는 `(user_id, item_id, item_scheduled_at_utc)`이다.
-- `user_id`는 알림함 소유자, `item_id`는 반복 항목, `item_scheduled_at_utc`는 occurrence 예정 시각이다.
-- 같은 사용자의 같은 반복 항목, 같은 예정 시각에 대해 여러 기기 token 발송이 성공해도 inbox row는 1개만 만든다.
-- collapse는 `notification_inbox_items` upsert와 unique constraint로 보장한다.
-- `source_job_id`, `push_token_ref`, `device_id`, `push_provider`는 사용자-facing inbox 고유성 기준이 아니다.
-- MVP의 inbox 알림 종류는 `reminder` 하나이며, 고유성 기준에 `notification_kind`를 추가하지 않는다.
-- token별 성공/실패 상세는 `notification_delivery_attempts`에만 남긴다.
-
-inbox 필수 저장 필드:
-
-- 대상 사용자: `user_id`
-- collapse 및 상세 기준: `item_id`, `item_scheduled_at_utc`
-- 발송 출처: `source_job_id`, `notification_kind`
-- 사용자-facing 문구: `title`, 선택적 `body`
-- push payload: `payload`
-- 성공 응답 시각: `delivered_at_utc`
-- 사용자 액션 상태: `read_at`, `hidden_at`
-
-payload 규칙:
-
-- payload는 알림 탭과 inbox 상세 이동에 필요한 최소 routing 값을 포함한다.
-- `notificationKind`는 `reminder`다.
-- `source`는 `recurring-item`이다.
-- `itemId`는 `notification_inbox_items.item_id`와 같아야 한다.
-- `scheduledAtUtc`는 `notification_inbox_items.item_scheduled_at_utc`와 같아야 한다.
-- provider 응답 payload와 token별 발송 결과는 이 `payload`에 병합하지 않는다.
-
-target validation 규칙:
-
-- inbox 생성 target 필수 값은 `user_id`, `item_id`, `item_scheduled_at_utc`, `notification_kind`, `payload.notificationKind`, `payload.source`, `payload.itemId`, `payload.scheduledAtUtc`다.
-- `notification_kind`와 `payload.notificationKind`는 모두 `reminder`여야 한다.
-- `payload.source`는 `recurring-item`이어야 한다.
-- `payload.itemId`는 job의 `item_id`와 같아야 한다.
-- `payload.scheduledAtUtc`는 job의 `item_scheduled_at_utc`와 같아야 한다.
-- 필수 target 값이 없거나 빈 문자열이면 inbox row를 만들지 않는다.
-- payload와 job target 값이 서로 다르면 inbox row를 만들지 않는다.
-- target validation 실패는 push service 성공 응답을 취소하지 않는다.
-- target validation 실패는 token별 성공 attempt와 job operation log에 남기고 사용자-facing inbox item만 생략한다.
-- target validation 실패는 local notification이나 앱 내부 이벤트로 보정하지 않는다.
-
-inbox idempotency 규칙:
-
-- 첫 성공 응답이 같은 collapse 기준의 inbox row를 만든다.
-- 같은 job이 재시도되거나 worker가 같은 job을 반복 처리해도 같은 collapse 기준의 inbox row는 추가로 만들지 않는다.
-- 중복 성공 응답은 `notification_delivery_attempts`에 새 attempt로 남길 수 있다.
-- 같은 collapse 기준으로 다른 `source_job_id`가 들어와도 새 사용자-facing inbox row를 만들지 않는다.
-- 기존 inbox row가 있으면 `read_at`, `hidden_at`, `delivered_at_utc`를 덮어쓰지 않는다.
-- 사용자가 숨긴 inbox row는 같은 occurrence 재처리로 다시 보이게 만들지 않는다.
-
-inbox 조회 규칙:
-
-- 목록 조회 source는 `notification_inbox_items` 단일 테이블이다.
-- 사용자는 자신의 inbox row 중 `hidden_at is null`인 row만 본다.
-- 조회 정렬은 `delivered_at_utc desc`다.
-- 조회 결과는 성공한 원격 푸시 기반 row만 포함한다.
-- 성공 여부는 inbox row 생성 시점에 확정되므로 조회 시점에 delivery job이나 attempt 상태를 다시 계산하지 않는다.
-- 조회는 `notification_delivery_attempts`를 join하지 않는다.
-- token별 delivery record가 여러 개 있어도 같은 `(user_id, item_id, item_scheduled_at_utc)` logical event는 목록 row 1개로 반환한다.
-- route mapping에 없는 target도 이미 생성된 row라면 목록 조회에서 제외하지 않는다.
-- `pending`, `processing`, `retrying` 상태의 발송 예정 job은 inbox 목록에 노출하지 않는다.
-- local notification과 앱 내부 이벤트는 조회 fallback이나 임시 목록 항목으로 만들지 않는다.
-
-inbox 표시 규칙:
-
-- MVP 목록은 collapsed inbox row의 `title`, `body`, `delivered_at_utc`, 읽음 여부만 표시한다.
-- 목록과 상세 진입 UI는 기기별 성공/실패 내역을 표시하지 않는다.
-- 성공 기기 수, 실패 기기 수, provider별 요약 배지는 MVP UI에 두지 않는다.
-- `device_id`, `push_token_ref`, `push_provider`, provider message id, provider 응답 요약은 사용자 UI에 노출하지 않는다.
-- 기기별 delivery detail은 `notification_delivery_attempts`의 token 참조값과 provider error code로 확인한다.
-- 사용자 UI는 기기별 detail을 숨긴 상태로 들고 있지 않고, 목록 조회 단계에서 아예 가져오지 않는다.
-
-inbox 액션 규칙:
-
-- 사용자가 inbox 알림을 탭하면 즉시 `read_at`을 기록한다.
-- 읽음 처리는 상세 화면 이동 성공 여부와 분리한다.
-- 지원하지 않는 target이라 상세 이동을 생략해도 해당 row의 읽음 처리는 성공해야 한다.
-- 전체 읽음은 현재 사용자의 `hidden_at is null` 미읽음 row 전체를 갱신하며 target 지원 여부로 필터링하지 않는다.
-- 상세 화면 이동이 실패해도 이미 탭한 inbox row는 읽음 상태를 유지한다.
-- 상세 fallback 상태는 이미 기록한 `read_at`을 되돌리지 않는다.
-- 상세 fallback 상태는 inbox row를 숨김 처리하거나 삭제하지 않는다.
-- 상세 fallback 상태는 local notification이나 앱 내부 이벤트로 대체하지 않는다.
-- 사용자가 inbox 알림을 삭제하면 해당 row의 `hidden_at`을 기록한다.
-- 삭제 mutation은 `id`와 `user_id`를 함께 조건으로 사용한다.
-- 삭제 mutation은 target 지원 여부를 검사하지 않는다.
-- 삭제된 row는 현재 사용자 inbox 목록에서만 숨긴다.
-- 삭제는 현재 사용자 소유 row에만 적용되며 다른 사용자의 row를 변경하지 않는다.
-- 삭제는 `notification_delivery_jobs`와 `notification_delivery_attempts`를 변경하지 않는다.
-- 삭제 flow는 `notification_delivery_jobs`를 update/delete하지 않고 delivery job/attempt 기록으로 cascade하지 않는다.
-- 삭제된 row는 operation/send log 감사 목적을 위해 물리 삭제하지 않는다.
-
-token 선택 규칙:
-
-- `device_push_tokens.is_active = true`
-- `permission_status = 'granted'`
-- iOS token은 `push_provider = 'apns'`만 사용한다.
-- Android token은 `push_provider = 'fcm'`만 사용한다.
-- 활성 token이 여러 개면 모두 발송한다.
-
-provider 오류 규칙:
-
-- APNs `BadDeviceToken`, `Unregistered`는 무효 token으로 본다.
-- FCM `UNREGISTERED`, `INVALID_ARGUMENT`는 무효 token으로 본다.
-- 무효 token은 재시도하지 않는다.
-
-재시도 규칙:
-
-- 네트워크 오류, provider 5xx, rate limit만 재시도한다.
-- backoff는 1분, 5분, 15분 3회다.
-- `next_retry_at <= nowUtc`가 되면 같은 job을 다시 처리한다.
-- 재시도 성공으로 이미 inbox row가 있는 occurrence가 다시 성공해도 inbox row는 추가 생성하지 않는다.
-- 영구 실패와 무효 token은 재시도하지 않는다.
-
-## 15. Multi-device Notes
-
-목표:
-
-- MVP에서는 완전한 충돌 해결까지 다루지 않지만, 구조는 확장 가능해야 함
-
-규칙:
-
-- completion log는 append-only 성격 유지
-- row마다 `createdAt`, `updatedAt` 유지
-- item 업데이트 후 서버 재조회
-- 원격 푸시는 활성 token 전체 fan-out을 기본값으로 사용
-- token 실패는 기기 전체 실패가 아니라 token 단위로 기록
-
-향후 문제 영역:
-
-- 같은 occurrence를 여러 기기에서 동시에 completed
-- item 수정 경쟁 상태
-- 동일 계정의 다중 기기 알림 정책
-
-## 16. Validation Rules
-
-- title: required
-- colorKey: required, 허용된 일정 색상 팔레트 key
-- recurrenceType: required
-- intervalValue: interval 계열에서는 required, 1 이상
-- weekdayMask: weekly / interval_weeks에서는 최소 1개 필요
-- startDateLocal: required
-- reminderTimeLocal: required for MVP
-- timezone: valid IANA string
-
-## 17. Pseudocode Example
-
-```ts
-function resolveOccurrenceStatus(
-  scheduledAtUtc: string,
-  logsByOccurrence: Map<string, CompletionLog>,
-  nowUtc: string,
-  timezone: string
-): OccurrenceStatus {
-  const log = logsByOccurrence.get(scheduledAtUtc);
-
-  if (log?.action === "completed") return "completed";
-  if (log?.action === "skipped") return "skipped";
-  if (scheduledLocalDate < todayLocalDate) return "overdue";
-  return "scheduled";
-}
-```
-
-```ts
-function shouldIncludeInToday(
-  localDate: string,
-  todayLocalDate: string,
-  status: OccurrenceStatus
-) {
-  return localDate === todayLocalDate && status === "scheduled";
-}
-```
-
-## 18. Guidance Summary
-
-구현 우선순위:
-
-1. recurrence domain pure functions
-2. occurrence identity
-3. status resolution
-4. completion/skip mutations
-5. notification sync orchestration
-
-핵심 로직은 반드시 UI 바깥 domain layer에서 테스트 가능해야 합니다.
+삭제는 물리 삭제가 아니라 `isArchived = true`로 저장한다.
+보관된 일정은 활성 화면과 future local notification 후보에서 제외한다.

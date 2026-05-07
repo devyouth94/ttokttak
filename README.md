@@ -1,50 +1,109 @@
-# Personal Recurring Reminder App
+# Ttokttak
 
-반복되는 생활 항목을 등록하고, 알림을 받고, 완료 또는 건너뜀 처리할 수 있는 개인 리마인더 앱입니다.
+반복되는 생활 항목을 일정으로 등록하고, 알림을 받고, 완료 또는 건너뛰기 기록을 남기는 개인 리마인더 앱입니다.
 
-이 앱은 단순한 habit tracker보다 범위가 넓습니다. 약 복용, 교체 주기, 정비 일정, 일상 루틴처럼 반복 규칙이 있는 항목을 관리하는 데 초점을 둡니다.
+핵심 대상은 매일 반복되는 루틴만이 아닙니다.
+복용, 교체, 정비, 학습처럼 주기가 있는 생활 항목을 같은 방식으로 관리합니다.
 
-## 핵심 기능
+## Current Scope
 
-- 반복 일정 생성, 수정, 삭제
-- 다양한 반복 규칙 지원
-- 알림 1회 발송
-- 오늘 / 다가오는 일정 / 지난 일정 구분
-- 리마인더 목록 조회와 정렬
-- 완료 / 건너뜀 처리
-- 항목 상세 최근 히스토리 조회
-- Supabase 로그인
-- 읽기 전용 달력
-- 읽기 전용 위젯
+- Supabase Auth 기반 로그인.
+- Apple / Google 로그인 진입점.
+- 일정 생성, 수정, 삭제.
+- 한 번, 매일, n일마다, 매주, n주마다, 매달, n달마다 반복 규칙.
+- 고정형 또는 완료일 기준 계산.
+- 홈의 오늘, 다가오는 일정, 지난 일정.
+- 홈에서 완료와 건너뛰기 처리.
+- 일정 목록 조회와 제목순 / 생성순 정렬.
+- 일정 상세, 최근 히스토리, 수정 / 삭제 진입.
+- 월간 달력과 선택 날짜 일정 목록.
+- 기기 로컬 알림.
+- 일정 제목과 설명의 서버 저장 내용 복구 경계.
 
-## 핵심 결정
+현재 제공하지 않는 범위:
 
-- 기본 반복 기준은 `fixed`
-- `completion_based`는 `once`, `daily`, `interval_days`, `monthly`, `interval_months`, `yearly`에만 사용
-- `weekly`, `interval_weeks`는 MVP에서 `fixed`만 지원
-- overdue는 자동으로 미루지 않음
-- snooze는 MVP 범위에서 제외
-- occurrence는 저장하지 않고 계산
+- 위젯.
+- 알림함.
+- 원격 푸시 발송.
+- snooze.
+- 반복 재알림.
+- 통계 화면.
+- 협업 또는 공유.
+- 완전한 오프라인 충돌 해결 UX.
 
-## 용어
+## Product Decisions
 
-- `recurrence`: 반복 규칙 자체. 예: 매일, 3일마다, 매주 월/수
-- `occurrence`: 반복 규칙으로부터 계산된 개별 일정 1개. 예: 4월 1일 오전 9시 약 복용
-- `fixed`: 원래 일정 기준으로 다음 occurrence를 계산하는 방식
-- `completion_based`: 실제 완료 시점을 기준으로 다음 occurrence를 계산하는 방식
-- `overdue`: 예정 시각이 지났지만 완료 또는 건너뜀 처리되지 않은 상태
+- 사용자-facing 관리 대상은 **일정**이라고 부릅니다.
+- occurrence는 저장하지 않고 계산합니다.
+- occurrence identity는 `(itemId, scheduledAtUtc)`입니다.
+- 완료와 건너뛰기는 홈에서만 수행합니다.
+- 지난 일정은 자동으로 다음날로 밀리지 않습니다.
+- `completion_based`는 `daily`, `interval_days`, `monthly`, `interval_months`에서만 사용합니다.
+- 한 번 일정은 고정형만 사용합니다.
+- `weekly`, `interval_weeks`는 요일 패턴을 유지하기 위해 고정형만 사용합니다.
+- 알림은 Expo Notifications 기반 기기 로컬 알림입니다.
+- 일정 제목과 설명은 서버 DB에 평문으로 저장하지 않습니다.
 
-## 기술 스택
+## Stack
 
-- Expo / React Native
-- TypeScript
-- Supabase
-- Zustand
-- React Hook Form
-- Expo Notifications
+- Expo / React Native.
+- Expo Router.
+- TypeScript.
+- React Hook Form.
+- Zod.
+- TanStack Query.
+- Supabase Auth / Postgres / Edge Functions.
+- Expo Notifications.
+- Expo SecureStore.
+- Expo Crypto.
+- date-fns / date-fns-tz.
+- Sentry.
 
-## 문서
+## Run
 
-- 제품 요구사항: [docs/PRODUCT_SPEC.md](/Users/youngzin/Documents/coding/ttokttak/docs/PRODUCT_SPEC.md)
-- 시스템 설계: [docs/SYSTEM_DESIGN.md](/Users/youngzin/Documents/coding/ttokttak/docs/SYSTEM_DESIGN.md)
-- 도메인 규칙: [docs/DOMAIN_LOGIC.md](/Users/youngzin/Documents/coding/ttokttak/docs/DOMAIN_LOGIC.md)
+```sh
+pnpm install
+pnpm start
+```
+
+자주 쓰는 명령:
+
+```sh
+pnpm ios
+pnpm android
+pnpm web
+pnpm test
+pnpm lint
+npx tsc --noEmit
+```
+
+## Environment
+
+앱 번들에는 public env만 넣습니다.
+service role key와 private key는 `EXPO_PUBLIC_*`에 넣지 않습니다.
+
+앱 실행에 사용하는 env 이름:
+
+- `EXPO_PUBLIC_SUPABASE_URL`.
+- `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- `EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID`.
+- `EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID`.
+- `GOOGLE_AUTH_IOS_URL_SCHEME`.
+- `EXPO_PUBLIC_SENTRY_DSN`.
+
+Supabase Edge Function secret:
+
+- `TTOKTTAK_CONTENT_KEY_WRAP_SECRET_BASE64`.
+- `SUPABASE_SERVICE_ROLE_KEY`.
+- `SB_PUBLISHABLE_KEY` 또는 `SUPABASE_ANON_KEY`.
+- `SUPABASE_URL`.
+
+## Docs
+
+- 도메인 용어: [CONTEXT.md](CONTEXT.md)
+- 제품 범위: [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md)
+- 도메인 규칙: [docs/DOMAIN_LOGIC.md](docs/DOMAIN_LOGIC.md)
+- 시스템 설계: [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md)
+- 스키마 기준: [docs/DATABASE.sql](docs/DATABASE.sql)
+- 설계 결정: [docs/adr/](docs/adr/)
+- 에이전트 작업 규칙: [AGENTS.md](AGENTS.md)

@@ -21,6 +21,76 @@ create table if not exists public.profiles (
 create index if not exists idx_profiles_timezone on public.profiles(timezone);
 
 -- =========================================================
+-- user_content_encryption_keys
+-- 일정 제목/설명 content key 복구용 wrapped key
+-- =========================================================
+create table if not exists public.user_content_encryption_keys (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  key_version integer not null default 1,
+  wrapped_key text not null,
+  wrap_algorithm text not null,
+  wrap_metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, key_version),
+  constraint user_content_encryption_keys_version_positive_check check (
+    key_version >= 1
+  ),
+  constraint user_content_encryption_keys_wrapped_key_not_blank_check check (
+    length(trim(wrapped_key)) > 0
+  ),
+  constraint user_content_encryption_keys_wrap_algorithm_check check (
+    wrap_algorithm = 'AES-GCM'
+  ),
+  constraint user_content_encryption_keys_wrap_metadata_key_source_check check (
+    wrap_metadata->>'keySource' = 'edge-secret-v1'
+  )
+);
+
+comment on table public.user_content_encryption_keys is
+  '일정 제목/설명 content key의 서버 측 복구용 wrapped key. DB table만으로 content key를 복구할 수 없어야 한다.';
+
+comment on column public.user_content_encryption_keys.wrapped_key is
+  'Supabase Edge Function secret으로 감싼 content key. 앱 정적 key로 복호화할 수 없어야 한다.';
+
+-- =========================================================
+-- content_key_recovery_audit_events
+-- 서버 측 내용 복구 호출 감사 이벤트
+-- =========================================================
+create table if not exists public.content_key_recovery_audit_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  action text not null,
+  key_version integer,
+  result text not null,
+  created_at timestamptz not null default now(),
+  constraint content_key_recovery_audit_events_action_check check (
+    action in ('wrap', 'recover', 'unknown')
+  ),
+  constraint content_key_recovery_audit_events_result_check check (
+    result in (
+      'success',
+      'denied',
+      'invalid_request',
+      'rate_limited',
+      'server_error'
+    )
+  ),
+  constraint content_key_recovery_audit_events_key_version_positive_check check (
+    key_version is null or key_version >= 1
+  )
+);
+
+create index if not exists idx_content_key_recovery_audit_events_user_created
+  on public.content_key_recovery_audit_events(user_id, created_at desc);
+
+comment on table public.content_key_recovery_audit_events is
+  '서버 측 내용 복구 호출 결과를 평문 내용이나 key 없이 추적하는 내부 운영 기록.';
+
+comment on column public.content_key_recovery_audit_events.result is
+  '복구 호출 결과의 낮은 해상도 enum. 내부 exception message를 저장하지 않는다.';
+
+-- =========================================================
 -- devices
 -- 기기 식별과 마지막 활성 상태 관리용
 -- =========================================================
@@ -46,8 +116,10 @@ create table if not exists public.recurring_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
 
-  title text not null,
-  description text,
+  title_ciphertext text not null,
+  description_ciphertext text,
+  content_key_version integer not null default 1,
+  content_encryption_metadata jsonb not null default '{}'::jsonb,
   color_key text not null default 'red',
 
   start_date_local date not null,
@@ -59,6 +131,12 @@ create table if not exists public.recurring_items (
 
   constraint recurring_items_color_key_check check (
     color_key in ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple')
+  ),
+  constraint recurring_items_title_ciphertext_not_blank_check check (
+    length(trim(title_ciphertext)) > 0
+  ),
+  constraint recurring_items_content_key_version_positive_check check (
+    content_key_version >= 1
   )
 );
 
@@ -164,8 +242,10 @@ $$;
 
 create or replace function public.create_recurring_item_with_initial_version(
   p_user_id uuid,
-  p_title text,
-  p_description text,
+  p_title_ciphertext text,
+  p_description_ciphertext text,
+  p_content_key_version integer,
+  p_content_encryption_metadata jsonb,
   p_start_date_local date,
   p_is_archived boolean,
   p_effective_from_utc timestamptz,
@@ -188,16 +268,20 @@ declare
 begin
   insert into public.recurring_items (
     user_id,
-    title,
-    description,
+    title_ciphertext,
+    description_ciphertext,
+    content_key_version,
+    content_encryption_metadata,
     color_key,
     start_date_local,
     is_archived
   )
   values (
     p_user_id,
-    p_title,
-    p_description,
+    p_title_ciphertext,
+    p_description_ciphertext,
+    p_content_key_version,
+    coalesce(p_content_encryption_metadata, '{}'::jsonb),
     coalesce(p_color_key, 'red'),
     p_start_date_local,
     p_is_archived
@@ -236,8 +320,10 @@ $$;
 create or replace function public.update_recurring_item_with_edit_policy(
   p_item_id uuid,
   p_user_id uuid,
-  p_title text,
-  p_description text,
+  p_title_ciphertext text,
+  p_description_ciphertext text,
+  p_content_key_version integer,
+  p_content_encryption_metadata jsonb,
   p_is_archived boolean,
   p_has_rule_changes boolean,
   p_effective_from_utc timestamptz default null,
@@ -260,8 +346,13 @@ declare
 begin
   update public.recurring_items
   set
-    title = p_title,
-    description = p_description,
+    title_ciphertext = p_title_ciphertext,
+    description_ciphertext = p_description_ciphertext,
+    content_key_version = p_content_key_version,
+    content_encryption_metadata = coalesce(
+      p_content_encryption_metadata,
+      '{}'::jsonb
+    ),
     color_key = coalesce(p_color_key, 'red'),
     is_archived = p_is_archived
   where id = p_item_id
@@ -308,9 +399,87 @@ begin
     );
   end if;
 
-  return p_item_id;
+  return v_updated_item_id;
 end;
 $$;
+
+revoke all on function public.create_recurring_item_with_initial_version(
+  uuid,
+  text,
+  text,
+  integer,
+  jsonb,
+  date,
+  boolean,
+  timestamptz,
+  text,
+  integer,
+  integer[],
+  time,
+  text,
+  date,
+  boolean,
+  text
+) from public, anon;
+
+revoke all on function public.update_recurring_item_with_edit_policy(
+  uuid,
+  uuid,
+  text,
+  text,
+  integer,
+  jsonb,
+  boolean,
+  boolean,
+  timestamptz,
+  text,
+  integer,
+  integer[],
+  time,
+  text,
+  date,
+  boolean,
+  text
+) from public, anon;
+
+grant execute on function public.create_recurring_item_with_initial_version(
+  uuid,
+  text,
+  text,
+  integer,
+  jsonb,
+  date,
+  boolean,
+  timestamptz,
+  text,
+  integer,
+  integer[],
+  time,
+  text,
+  date,
+  boolean,
+  text
+) to authenticated;
+
+grant execute on function public.update_recurring_item_with_edit_policy(
+  uuid,
+  uuid,
+  text,
+  text,
+  integer,
+  jsonb,
+  boolean,
+  boolean,
+  timestamptz,
+  text,
+  integer,
+  integer[],
+  time,
+  text,
+  date,
+  boolean,
+  text
+) to authenticated;
 
 create or replace function public.archive_recurring_item(p_item_id uuid)
 returns void
@@ -347,6 +516,12 @@ create trigger trg_profiles_set_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
 
+drop trigger if exists trg_user_content_encryption_keys_set_updated_at
+on public.user_content_encryption_keys;
+create trigger trg_user_content_encryption_keys_set_updated_at
+before update on public.user_content_encryption_keys
+for each row execute function public.set_updated_at();
+
 drop trigger if exists trg_devices_set_updated_at on public.devices;
 create trigger trg_devices_set_updated_at
 before update on public.devices
@@ -361,6 +536,8 @@ for each row execute function public.set_updated_at();
 -- Row Level Security
 -- =========================================================
 alter table public.profiles enable row level security;
+alter table public.user_content_encryption_keys enable row level security;
+alter table public.content_key_recovery_audit_events enable row level security;
 alter table public.devices enable row level security;
 alter table public.recurring_items enable row level security;
 alter table public.recurring_item_schedule_versions enable row level security;
@@ -384,6 +561,38 @@ create policy "profiles_update_own"
 on public.profiles
 for update
 using (auth.uid() = id);
+
+-- user_content_encryption_keys
+drop policy if exists user_content_encryption_keys_select_own
+on public.user_content_encryption_keys;
+create policy user_content_encryption_keys_select_own
+on public.user_content_encryption_keys
+for select
+using (auth.uid() = user_id);
+
+drop policy if exists user_content_encryption_keys_insert_own
+on public.user_content_encryption_keys;
+create policy user_content_encryption_keys_insert_own
+on public.user_content_encryption_keys
+for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists user_content_encryption_keys_update_own
+on public.user_content_encryption_keys;
+create policy user_content_encryption_keys_update_own
+on public.user_content_encryption_keys
+for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+revoke all privileges on table public.user_content_encryption_keys
+from anon;
+grant select, insert, update on table public.user_content_encryption_keys
+to authenticated;
+
+-- content_key_recovery_audit_events
+revoke all privileges on table public.content_key_recovery_audit_events
+from anon, authenticated;
 
 -- devices
 drop policy if exists "devices_select_own" on public.devices;
