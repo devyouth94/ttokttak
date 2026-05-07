@@ -7,7 +7,7 @@ import { type DateTimePickerEvent } from "@react-native-community/datetimepicker
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import { processRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
+import { completeRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -401,43 +401,47 @@ export function useRecurringItemFormScreenController({
     }));
 
     try {
+      const effectiveFromUtc = new Date().toISOString();
+
       if (isEditMode && itemId) {
-        await processRecurringItemMutationFlow({
-          invalidateRecurringUserQueries,
-          mutation: {
-            itemId,
-            patch: {
-              anchorType: draft.anchorType,
-              category: draft.category,
-              colorKey: draft.colorKey,
-              description: draft.description,
-              intervalValue: draft.intervalValue,
-              isArchived: draft.isArchived,
-              notificationsEnabled: draft.notificationsEnabled,
-              recurrenceType: draft.recurrenceType,
-              reminderTimeLocal: draft.reminderTimeLocal,
-              title: draft.title,
-              weekdayMask: draft.weekdayMask,
-            },
-            timezone,
-            type: "update",
-            userId: user.id,
+        await updateRecurringItem({
+          id: itemId,
+          patch: {
+            anchorType: draft.anchorType,
+            category: draft.category,
+            colorKey: draft.colorKey,
+            description: draft.description,
+            intervalValue: draft.intervalValue,
+            isArchived: draft.isArchived,
+            notificationsEnabled: draft.notificationsEnabled,
+            recurrenceType: draft.recurrenceType,
+            reminderTimeLocal: draft.reminderTimeLocal,
+            title: draft.title,
+            weekdayMask: draft.weekdayMask,
           },
-          now: () => new Date(),
+          timezone,
+          userId: user.id,
+        });
+        await completeRecurringItemMutationFlow({
+          effectiveFromUtc,
+          invalidateRecurringUserQueries,
+          itemId,
+          reason: "item-updated",
           syncAfterMutation,
-          updateRecurringItem,
+          userId: user.id,
         });
       } else {
-        await processRecurringItemMutationFlow({
-          createRecurringItem,
+        const createdItem = await createRecurringItem({
+          ...draft,
+          userId: user.id,
+        });
+        await completeRecurringItemMutationFlow({
+          effectiveFromUtc,
           invalidateRecurringUserQueries,
-          mutation: {
-            draft,
-            type: "create",
-            userId: user.id,
-          },
-          now: () => new Date(),
+          itemId: createdItem.id,
+          reason: "item-created",
           syncAfterMutation,
+          userId: user.id,
         });
       }
 
@@ -466,16 +470,19 @@ export function useRecurringItemFormScreenController({
     }));
 
     try {
-      await processRecurringItemMutationFlow({
-        archiveRecurringItem,
+      const effectiveFromUtc = new Date().toISOString();
+
+      await archiveRecurringItem({
+        id: currentItemId,
+        userId,
+      });
+      await completeRecurringItemMutationFlow({
+        effectiveFromUtc,
         invalidateRecurringUserQueries,
-        mutation: {
-          itemId: currentItemId,
-          type: "archive",
-          userId,
-        },
-        now: () => new Date(),
+        itemId: currentItemId,
+        reason: "item-archived",
         syncAfterMutation,
+        userId,
       });
 
       router.replace("/");

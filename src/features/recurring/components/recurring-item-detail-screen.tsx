@@ -40,7 +40,7 @@ import {
   type ItemDetailSummaryBadge,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
-import { processRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
+import { completeRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
 import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
@@ -524,16 +524,19 @@ export function RecurringItemDetailScreen({
     setIsArchiving(true);
 
     try {
-      await processRecurringItemMutationFlow({
-        archiveRecurringItem,
+      const effectiveFromUtc = new Date().toISOString();
+
+      await archiveRecurringItem({
+        id: item.id,
+        userId,
+      });
+      await completeRecurringItemMutationFlow({
+        effectiveFromUtc,
         invalidateRecurringUserQueries,
-        mutation: {
-          itemId: item.id,
-          type: "archive",
-          userId,
-        },
-        now: () => new Date(),
+        itemId: item.id,
+        reason: "item-archived",
         syncAfterMutation,
+        userId,
       });
 
       router.replace(getRecurringItemDetailDeleteReturnPath(returnTo));
