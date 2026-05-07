@@ -32,7 +32,6 @@ function toRecurringItemDraftFromEntity(
 ): RecurringItemDraft {
   return {
     anchorType: item.anchorType,
-    category: item.category,
     colorKey: item.colorKey,
     description: item.description,
     intervalValue: item.intervalValue,
@@ -79,7 +78,6 @@ function hasMetaChanges(
   return (
     item.title !== draft.title ||
     item.description !== draft.description ||
-    item.category !== draft.category ||
     item.colorKey !== draft.colorKey ||
     item.isArchived !== draft.isArchived
   );

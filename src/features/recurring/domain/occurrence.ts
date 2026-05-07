@@ -73,32 +73,6 @@ function addMonthsWithDayCorrection(
   return formatInTimeZone(targetBaseDate, "UTC", "yyyy-MM-dd");
 }
 
-function addYearsWithDayCorrection(
-  currentLocalDate: string,
-  referenceLocalDate: string,
-  years: number
-): string {
-  const currentDate = parseLocalDate(currentLocalDate);
-  const referenceDate = parseLocalDate(referenceLocalDate);
-  const targetBaseDate = new Date(
-    Date.UTC(
-      currentDate.getUTCFullYear() + years,
-      referenceDate.getUTCMonth(),
-      1,
-      CALENDAR_HOUR
-    )
-  );
-  const targetMonthLastDay = getLastDayOfUtcMonth(
-    targetBaseDate.getUTCFullYear(),
-    targetBaseDate.getUTCMonth()
-  );
-  const dayOfMonth = Math.min(referenceDate.getUTCDate(), targetMonthLastDay);
-
-  targetBaseDate.setUTCDate(dayOfMonth);
-
-  return formatInTimeZone(targetBaseDate, "UTC", "yyyy-MM-dd");
-}
-
 function findLastCompletedLog(
   itemId: string,
   logs: CompletionLog[],
@@ -255,8 +229,6 @@ function getNextLocalDate(
         referenceLocalDate,
         schedule.intervalValue ?? 1
       );
-    case "yearly":
-      return addYearsWithDayCorrection(localDate, referenceLocalDate, 1);
     default:
       return localDate;
   }

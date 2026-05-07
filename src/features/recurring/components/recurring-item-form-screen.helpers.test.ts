@@ -235,7 +235,6 @@ describe("recurring item form draft", () => {
   it("수정 화면 form state는 저장된 일정 색상 key를 유지한다", () => {
     const item: RecurringItem = {
       anchorType: "fixed",
-      category: null,
       colorKey: "green",
       createdAt: "2026-05-06T00:00:00.000Z",
       description: null,

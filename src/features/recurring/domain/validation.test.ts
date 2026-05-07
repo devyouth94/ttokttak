@@ -9,7 +9,6 @@ function createDraft(
 ): RecurringItemDraft {
   return {
     anchorType: "fixed",
-    category: null,
     colorKey: defaultRecurringItemColorKey,
     description: null,
     intervalValue: null,

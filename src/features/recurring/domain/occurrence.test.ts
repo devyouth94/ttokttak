@@ -18,7 +18,6 @@ function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
     userId: "user-1",
     title: "테스트 항목",
     description: null,
-    category: null,
     colorKey: "blue",
     recurrenceType: "daily",
     intervalValue: null,

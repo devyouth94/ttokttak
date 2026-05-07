@@ -6,7 +6,6 @@ export const recurrenceTypes = [
   "interval_weeks",
   "monthly",
   "interval_months",
-  "yearly",
 ] as const;
 
 export const anchorTypes = ["fixed", "completion_based"] as const;
@@ -38,7 +37,6 @@ export const completionBasedRecurrenceTypes = [
   "interval_days",
   "monthly",
   "interval_months",
-  "yearly",
 ] as const;
 
 export type RecurrenceType = (typeof recurrenceTypes)[number];
@@ -75,7 +73,6 @@ export interface RecurringItem {
     reason?: "decryption-failed";
     status: "available" | "unrecoverable";
   };
-  category?: string | null;
   colorKey: RecurringItemColorKey;
   recurrenceType: RecurrenceType;
   intervalValue?: number | null;
@@ -142,7 +139,6 @@ export interface DerivedOccurrence {
 export type RecurringItemDraft = Pick<
   RecurringItem,
   | "anchorType"
-  | "category"
   | "colorKey"
   | "description"
   | "intervalValue"

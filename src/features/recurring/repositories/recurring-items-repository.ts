@@ -168,7 +168,6 @@ async function toRecurringItem(
     title: content.title,
     description: content.description,
     contentStatus: content.contentStatus,
-    category: row.category,
     colorKey: row.colorKey,
     recurrenceType: latestVersion.recurrenceType,
     intervalValue: latestVersion.intervalValue,
@@ -316,7 +315,6 @@ export async function createRecurringItem(
   });
   const itemId = await persistence.createItemWithInitialVersion({
     anchorType: input.anchorType,
-    category: input.category ?? null,
     colorKey,
     contentEncryptionMetadata: encryptedContent.metadata,
     contentKeyVersion: encryptedContent.keyVersion,
@@ -397,7 +395,6 @@ export async function updateRecurringItem(
     });
     await persistence.updateItemWithEditPolicy({
       anchorType: ruleChanged ? mergedDraft.anchorType : null,
-      category: mergedDraft.category ?? null,
       colorKey: mergedDraft.colorKey,
       contentEncryptionMetadata: encryptedContent.metadata,
       contentKeyVersion: encryptedContent.keyVersion,

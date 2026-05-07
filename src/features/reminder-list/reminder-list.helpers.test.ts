@@ -222,7 +222,6 @@ function createRecurringItem(
 
   return {
     anchorType: "fixed",
-    category: null,
     colorKey: "blue",
     createdAt: "2026-04-20T00:00:00.000Z",
     description: null,

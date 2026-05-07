@@ -2,7 +2,6 @@ import { createSupabaseRecurringItemsPersistence } from "~/features/recurring/re
 import { createAwaitableQuery } from "~/features/recurring/repositories/repository-test-helpers";
 
 const recurringItemRow = {
-  category: null,
   color_key: "blue",
   content_encryption_metadata: {
     algorithm: "test",
@@ -113,7 +112,6 @@ describe("recurring items persistence", () => {
 
     const itemId = await persistence.createItemWithInitialVersion({
       anchorType: "fixed",
-      category: null,
       colorKey: "red",
       contentEncryptionMetadata: {
         algorithm: "test",
@@ -159,7 +157,6 @@ describe("recurring items persistence", () => {
 
     await persistence.updateItemWithEditPolicy({
       anchorType: null,
-      category: null,
       colorKey: "purple",
       contentEncryptionMetadata: {
         algorithm: "test",

@@ -32,7 +32,6 @@ export function createStoredRecurringItemFixture(
   overrides: Partial<StoredRecurringItem> = {}
 ): StoredRecurringItem {
   const item: StoredRecurringItem = {
-    category: null,
     colorKey: "blue",
     contentEncryptionMetadata: {
       algorithm: "test",

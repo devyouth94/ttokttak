@@ -33,7 +33,6 @@ describe("recurring items repository", () => {
     const item = await createRecurringItem(
       {
         anchorType: "fixed",
-        category: null,
         description: "하루 8잔",
         intervalValue: null,
         isArchived: false,
@@ -155,7 +154,6 @@ describe("recurring items repository", () => {
     await createRecurringItem(
       {
         anchorType: "fixed",
-        category: null,
         description: null,
         intervalValue: null,
         isArchived: false,

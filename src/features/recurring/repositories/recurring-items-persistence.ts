@@ -31,7 +31,6 @@ export type StoredRecurringItemScheduleVersion = {
 };
 
 export type StoredRecurringItem = {
-  category: string | null;
   colorKey: RecurringItemColorKey;
   contentEncryptionMetadata: RecurringItemContentEncryptionMetadata;
   contentKeyVersion: number;
@@ -48,7 +47,6 @@ export type StoredRecurringItem = {
 
 export type CreateStoredRecurringItemInput = {
   anchorType: AnchorType;
-  category: string | null;
   colorKey: RecurringItemColorKey;
   contentEncryptionMetadata: RecurringItemContentEncryptionMetadata;
   contentKeyVersion: number;
@@ -68,7 +66,6 @@ export type CreateStoredRecurringItemInput = {
 
 export type UpdateStoredRecurringItemInput = {
   anchorType: AnchorType | null;
-  category: string | null;
   colorKey: RecurringItemColorKey;
   contentEncryptionMetadata: RecurringItemContentEncryptionMetadata;
   contentKeyVersion: number;
@@ -138,7 +135,6 @@ function toStoredRecurringItem(
   row: RecurringItemWithVersionsRow
 ): StoredRecurringItem {
   return {
-    category: row.category,
     colorKey: row.color_key as RecurringItemColorKey,
     contentEncryptionMetadata: row.content_encryption_metadata,
     contentKeyVersion: row.content_key_version,
@@ -177,7 +173,6 @@ export function createSupabaseRecurringItemsPersistence(
         "create_recurring_item_with_initial_version",
         {
           p_anchor_type: input.anchorType,
-          p_category: input.category,
           p_color_key: input.colorKey,
           p_content_encryption_metadata: input.contentEncryptionMetadata,
           p_content_key_version: input.contentKeyVersion,
@@ -257,7 +252,6 @@ export function createSupabaseRecurringItemsPersistence(
         "update_recurring_item_with_edit_policy",
         {
           p_anchor_type: input.anchorType,
-          p_category: input.category,
           p_color_key: input.colorKey,
           p_content_encryption_metadata: input.contentEncryptionMetadata,
           p_content_key_version: input.contentKeyVersion,

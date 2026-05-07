@@ -150,7 +150,6 @@ export function getRecurringItemFormDisplayValues(formState: {
 export function createDefaultFormState(): RecurringItemFormValues {
   return {
     anchorType: "fixed",
-    category: "",
     colorKey: defaultRecurringItemColorKey,
     description: "",
     intervalValue: "",
@@ -195,7 +194,6 @@ function parsePositiveInteger(value: string): number | null {
 export const recurringItemFormSchema = z
   .object({
     anchorType: z.enum(anchorTypes),
-    category: z.string(),
     colorKey: z.enum(recurringItemColorKeys),
     description: z.string(),
     intervalValue: z.string(),
@@ -417,7 +415,6 @@ export function toDraft(
       formState.anchorType,
       formState.recurrenceType
     ),
-    category: normalizeOptionalText(formState.category),
     colorKey: formState.colorKey,
     description: normalizeOptionalText(formState.description),
     intervalValue: requiresIntervalValue(formState.recurrenceType)
@@ -439,7 +436,6 @@ export function toDraft(
 export function toFormState(item: RecurringItem): RecurringItemFormValues {
   return {
     anchorType: getNormalizedAnchorType(item.anchorType, item.recurrenceType),
-    category: item.category ?? "",
     colorKey: item.colorKey,
     description: item.description ?? "",
     intervalValue: item.intervalValue ? `${item.intervalValue}` : "",

@@ -64,8 +64,6 @@ export function getRecurrenceLabel(item: RecurringItem): string {
       return "매달";
     case "interval_months":
       return `${intervalValue ?? 1}달마다`;
-    case "yearly":
-      return "매년";
     default:
       return "반복";
   }

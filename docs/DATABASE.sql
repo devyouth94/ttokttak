@@ -48,7 +48,6 @@ create table if not exists public.recurring_items (
 
   title text not null,
   description text,
-  category text,
   color_key text not null default 'red',
 
   start_date_local date not null,
@@ -97,8 +96,7 @@ create table if not exists public.recurring_item_schedule_versions (
       'weekly',
       'interval_weeks',
       'monthly',
-      'interval_months',
-      'yearly'
+      'interval_months'
     )
   ),
   constraint recurring_item_schedule_versions_anchor_type_check check (
@@ -168,7 +166,6 @@ create or replace function public.create_recurring_item_with_initial_version(
   p_user_id uuid,
   p_title text,
   p_description text,
-  p_category text,
   p_start_date_local date,
   p_is_archived boolean,
   p_effective_from_utc timestamptz,
@@ -193,7 +190,6 @@ begin
     user_id,
     title,
     description,
-    category,
     color_key,
     start_date_local,
     is_archived
@@ -202,7 +198,6 @@ begin
     p_user_id,
     p_title,
     p_description,
-    p_category,
     coalesce(p_color_key, 'red'),
     p_start_date_local,
     p_is_archived
@@ -243,7 +238,6 @@ create or replace function public.update_recurring_item_with_edit_policy(
   p_user_id uuid,
   p_title text,
   p_description text,
-  p_category text,
   p_is_archived boolean,
   p_has_rule_changes boolean,
   p_effective_from_utc timestamptz default null,
@@ -268,7 +262,6 @@ begin
   set
     title = p_title,
     description = p_description,
-    category = p_category,
     color_key = coalesce(p_color_key, 'red'),
     is_archived = p_is_archived
   where id = p_item_id

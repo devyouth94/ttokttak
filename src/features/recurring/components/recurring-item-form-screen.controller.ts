@@ -409,7 +409,6 @@ export function useRecurringItemFormScreenController({
           id: itemId,
           patch: {
             anchorType: draft.anchorType,
-            category: draft.category,
             colorKey: draft.colorKey,
             description: draft.description,
             intervalValue: draft.intervalValue,
