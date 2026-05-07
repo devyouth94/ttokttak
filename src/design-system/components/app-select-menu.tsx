@@ -64,7 +64,9 @@ export function AppSelectMenu<Value extends string>({
           ]}
         >
           {selectedOption.leading}
-          <View style={styles.textSlot}>
+          <View
+            style={isCompact ? styles.compactTriggerTextSlot : styles.textSlot}
+          >
             <AppText
               ellipsizeMode="tail"
               numberOfLines={1}
@@ -164,6 +166,10 @@ const styles = StyleSheet.create({
     maxWidth: 210,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
+  },
+  compactTriggerTextSlot: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   fieldContent: {
     backgroundColor: colors.surface,
