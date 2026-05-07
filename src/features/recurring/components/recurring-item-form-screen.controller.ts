@@ -7,6 +7,7 @@ import { type DateTimePickerEvent } from "@react-native-community/datetimepicker
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { processRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -377,6 +378,12 @@ export function useRecurringItemFormScreenController({
     setField("notificationsEnabled", value);
   }
 
+  async function invalidateRecurringUserQueries(userId: string): Promise<void> {
+    await queryClient.invalidateQueries({
+      queryKey: recurringQueryKeys.user(userId),
+    });
+  }
+
   async function handleValidSubmit(
     values: RecurringItemFormValues
   ): Promise<void> {
@@ -395,54 +402,45 @@ export function useRecurringItemFormScreenController({
 
     try {
       if (isEditMode && itemId) {
-        const syncEffectiveFromUtc = new Date().toISOString();
-
-        await updateRecurringItem({
-          id: itemId,
-          patch: {
-            anchorType: draft.anchorType,
-            category: draft.category,
-            colorKey: draft.colorKey,
-            description: draft.description,
-            intervalValue: draft.intervalValue,
-            isArchived: draft.isArchived,
-            notificationsEnabled: draft.notificationsEnabled,
-            recurrenceType: draft.recurrenceType,
-            reminderTimeLocal: draft.reminderTimeLocal,
-            title: draft.title,
-            weekdayMask: draft.weekdayMask,
-          },
-          timezone,
-          userId: user.id,
-        });
-
-        await syncAfterMutation({
-          reason: "item-updated",
-          scope: {
-            effectiveFromUtc: syncEffectiveFromUtc,
+        await processRecurringItemMutationFlow({
+          invalidateRecurringUserQueries,
+          mutation: {
             itemId,
-            type: "item",
+            patch: {
+              anchorType: draft.anchorType,
+              category: draft.category,
+              colorKey: draft.colorKey,
+              description: draft.description,
+              intervalValue: draft.intervalValue,
+              isArchived: draft.isArchived,
+              notificationsEnabled: draft.notificationsEnabled,
+              recurrenceType: draft.recurrenceType,
+              reminderTimeLocal: draft.reminderTimeLocal,
+              title: draft.title,
+              weekdayMask: draft.weekdayMask,
+            },
+            timezone,
+            type: "update",
+            userId: user.id,
           },
+          now: () => new Date(),
+          syncAfterMutation,
+          updateRecurringItem,
         });
       } else {
-        const createdItem = await createRecurringItem({
-          ...draft,
-          userId: user.id,
-        });
-
-        await syncAfterMutation({
-          reason: "item-created",
-          scope: {
-            effectiveFromUtc: new Date().toISOString(),
-            itemId: createdItem.id,
-            type: "item",
+        await processRecurringItemMutationFlow({
+          createRecurringItem,
+          invalidateRecurringUserQueries,
+          mutation: {
+            draft,
+            type: "create",
+            userId: user.id,
           },
+          now: () => new Date(),
+          syncAfterMutation,
         });
       }
 
-      await queryClient.invalidateQueries({
-        queryKey: recurringQueryKeys.user(user.id),
-      });
       router.replace(getSafeReturnPath(returnTo));
     } catch (error) {
       setRequestState((current) => ({
@@ -468,23 +466,18 @@ export function useRecurringItemFormScreenController({
     }));
 
     try {
-      await archiveRecurringItem({
-        id: currentItemId,
-        userId,
-      });
-
-      await syncAfterMutation({
-        reason: "item-archived",
-        scope: {
-          effectiveFromUtc: new Date().toISOString(),
+      await processRecurringItemMutationFlow({
+        archiveRecurringItem,
+        invalidateRecurringUserQueries,
+        mutation: {
           itemId: currentItemId,
-          type: "item",
+          type: "archive",
+          userId,
         },
+        now: () => new Date(),
+        syncAfterMutation,
       });
 
-      await queryClient.invalidateQueries({
-        queryKey: recurringQueryKeys.user(userId),
-      });
       router.replace("/");
     } catch (error) {
       setRequestState((current) => ({

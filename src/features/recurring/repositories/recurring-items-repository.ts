@@ -4,7 +4,10 @@ import {
   recurringContentCipher,
   type RecurringItemContentCipher,
 } from "~/features/privacy/recurring-content-cipher";
-import { getFirstFutureOccurrenceLocalDateAfterEdit } from "~/features/recurring/domain/occurrence";
+import {
+  type RecurringItemEditPatch,
+  resolveRecurringItemEditPolicy,
+} from "~/features/recurring/domain/recurring-item-edit-policy";
 import type {
   RecurringItem,
   RecurringItemColorKey,
@@ -23,7 +26,7 @@ import type {
   RecurringItemScheduleVersionRow,
 } from "~/lib/database.types";
 
-type RecurringItemPatch = Partial<Omit<RecurringItemDraft, "timezone">>;
+type RecurringItemPatch = RecurringItemEditPatch;
 
 type RecurringItemWithVersionsRow = RecurringItemRow & {
   recurring_item_schedule_versions?: RecurringItemScheduleVersionRow[] | null;
@@ -210,26 +213,6 @@ async function decryptRecurringItemContentWithFallback({
   }
 }
 
-function toRecurringItemDraftFromEntity(
-  item: RecurringItem
-): RecurringItemDraft {
-  return {
-    anchorType: item.anchorType,
-    category: item.category,
-    colorKey: item.colorKey,
-    description: item.description,
-    intervalValue: item.intervalValue,
-    isArchived: item.isArchived,
-    notificationsEnabled: item.notificationsEnabled,
-    recurrenceType: item.recurrenceType,
-    reminderTimeLocal: item.reminderTimeLocal,
-    startDateLocal: item.startDateLocal,
-    timezone: item.timezone,
-    title: item.title,
-    weekdayMask: item.weekdayMask,
-  };
-}
-
 function assertValidDraft(draft: RecurringItemDraft): void {
   const issues = validateRecurringItemDraft(draft);
 
@@ -238,34 +221,6 @@ function assertValidDraft(draft: RecurringItemDraft): void {
   }
 
   throw new Error(issues.map((issue) => issue.message).join(" "));
-}
-
-function hasRuleChanges(
-  item: RecurringItem,
-  draft: RecurringItemDraft
-): boolean {
-  return (
-    item.recurrenceType !== draft.recurrenceType ||
-    item.intervalValue !== draft.intervalValue ||
-    item.reminderTimeLocal !== draft.reminderTimeLocal ||
-    item.notificationsEnabled !== draft.notificationsEnabled ||
-    item.anchorType !== draft.anchorType ||
-    JSON.stringify(item.weekdayMask ?? null) !==
-      JSON.stringify(draft.weekdayMask ?? null)
-  );
-}
-
-function hasMetaChanges(
-  item: RecurringItem,
-  draft: RecurringItemDraft
-): boolean {
-  return (
-    item.title !== draft.title ||
-    item.description !== draft.description ||
-    item.category !== draft.category ||
-    item.colorKey !== draft.colorKey ||
-    item.isArchived !== draft.isArchived
-  );
 }
 
 async function getRecurringItemRowById(params: {
@@ -419,46 +374,30 @@ export async function updateRecurringItem(
     throw new Error("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
   }
 
-  const mergedDraft: RecurringItemDraft = {
-    ...toRecurringItemDraftFromEntity(existingItem),
-    ...input.patch,
-    startDateLocal: existingItem.startDateLocal,
+  const editNow = new Date();
+  const policyWithoutLogs = resolveRecurringItemEditPolicy({
+    item: existingItem,
+    now: () => editNow,
+    patch: input.patch,
     timezone: input.timezone,
-  };
-
-  assertValidDraft(mergedDraft);
-
-  const metaChanged = hasMetaChanges(existingItem, mergedDraft);
-  const ruleChanged = hasRuleChanges(existingItem, mergedDraft);
+  });
+  const policy = policyWithoutLogs.ruleChanged
+    ? resolveRecurringItemEditPolicy({
+        completionLogs: await listCompletionLogsForItem({
+          client,
+          itemId: input.id,
+          userId: input.userId,
+        }),
+        item: existingItem,
+        now: () => editNow,
+        patch: input.patch,
+        timezone: input.timezone,
+      })
+    : policyWithoutLogs;
+  const { hasAnyChanges, mergedDraft, ruleChanged } = policy;
   const supabase = getRepositoryClient(client);
-  const hasAnyChanges = metaChanged || ruleChanged;
 
   if (hasAnyChanges) {
-    let effectiveFromUtc: string | null = null;
-    let seedStartDateLocal: string | null = null;
-
-    if (ruleChanged) {
-      effectiveFromUtc = new Date().toISOString();
-      seedStartDateLocal =
-        getFirstFutureOccurrenceLocalDateAfterEdit({
-          completionLogs: await listCompletionLogsForItem({
-            client,
-            itemId: input.id,
-            userId: input.userId,
-          }),
-          effectiveFromUtc,
-          item: existingItem,
-          nextSchedule: {
-            anchorType: mergedDraft.anchorType,
-            intervalValue: mergedDraft.intervalValue,
-            recurrenceType: mergedDraft.recurrenceType,
-            reminderTimeLocal: mergedDraft.reminderTimeLocal,
-            weekdayMask: mergedDraft.weekdayMask,
-          },
-          timezone: input.timezone,
-        }) ?? existingItem.startDateLocal;
-    }
-
     const encryptedContent = await contentCipher.encryptRecurringItemContent({
       description: mergedDraft.description ?? null,
       title: mergedDraft.title,
@@ -473,7 +412,7 @@ export async function updateRecurringItem(
         p_content_encryption_metadata: encryptedContent.metadata,
         p_content_key_version: encryptedContent.keyVersion,
         p_description_ciphertext: encryptedContent.descriptionCiphertext,
-        p_effective_from_utc: effectiveFromUtc,
+        p_effective_from_utc: policy.effectiveFromUtc,
         p_has_rule_changes: ruleChanged,
         p_interval_value: ruleChanged
           ? (mergedDraft.intervalValue ?? null)
@@ -487,7 +426,7 @@ export async function updateRecurringItem(
         p_reminder_time_local: ruleChanged
           ? mergedDraft.reminderTimeLocal
           : null,
-        p_seed_start_date_local: seedStartDateLocal,
+        p_seed_start_date_local: policy.seedStartDateLocal,
         p_title_ciphertext: encryptedContent.titleCiphertext,
         p_user_id: input.userId,
         p_weekday_mask: ruleChanged ? (mergedDraft.weekdayMask ?? null) : null,
