@@ -4,7 +4,7 @@ import { Plus } from "lucide-react-native";
 
 import {
   AppEmptyStateView,
-  AppStateView,
+  AppRetryStateView,
 } from "~/design-system/components/app-state";
 import { colors } from "~/design-system/tokens";
 
@@ -35,13 +35,10 @@ export function ReminderListErrorState({
   onRetry: () => void;
 }): React.JSX.Element {
   return (
-    <AppStateView
-      action={{
-        accessibilityHint: "일정 목록 조회를 다시 시도해요.",
-        accessibilityLabel: "일정 다시 불러오기",
-        label: "다시 시도",
-        onPress: onRetry,
-      }}
+    <AppRetryStateView
+      onRetry={onRetry}
+      retryAccessibilityHint="일정 목록 조회를 다시 시도해요."
+      retryAccessibilityLabel="일정 다시 불러오기"
       style={styles.stateView}
       title="일정을 불러오지 못했어요"
     />

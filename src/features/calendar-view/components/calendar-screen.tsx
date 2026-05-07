@@ -14,7 +14,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { AppScreen } from "~/design-system/components/app-screen";
 import {
   AppEmptyStateView,
-  AppStateView,
+  AppRetryStatePanel,
 } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
@@ -330,19 +330,16 @@ export function CalendarScreen(): React.JSX.Element {
           {isLoading ? (
             <CalendarEntryListPlaceholder />
           ) : errorMessage ? (
-            <View style={styles.emptyCard}>
-              <AppStateView
-                action={{
-                  accessibilityHint: "캘린더 조회를 다시 시도해요.",
-                  accessibilityLabel: "캘린더 다시 불러오기",
-                  label: "다시 시도",
-                  onPress: handleRetry,
-                }}
-                description={errorMessage}
-                style={styles.selectedDateState}
-                title="캘린더를 불러오지 못했어요"
-              />
-            </View>
+            <AppRetryStatePanel
+              description={errorMessage}
+              minHeight={96}
+              onRetry={handleRetry}
+              panelStyle={styles.emptyCard}
+              retryAccessibilityHint="캘린더 조회를 다시 시도해요."
+              retryAccessibilityLabel="캘린더 다시 불러오기"
+              title="캘린더를 불러오지 못했어요"
+              variant="dashed"
+            />
           ) : selectedEntries.length === 0 ? (
             <AppEmptyStateView
               style={styles.selectedDateState}
@@ -453,15 +450,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   emptyCard: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.dividerOnPrimary,
-    borderRadius: borderRadius.lg,
-    borderStyle: "dashed",
-    borderWidth: 1,
     gap: spacing.xs,
     minHeight: 144,
-    justifyContent: "center",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
   },

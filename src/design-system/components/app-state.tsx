@@ -27,6 +27,28 @@ type AppStateViewProps = {
   title: string;
 };
 
+type AppStatePanelVariant = "dashed" | "outline" | "surface";
+
+type AppStatePanelProps = AppStateViewProps & {
+  minHeight?: number;
+  panelStyle?: StyleProp<ViewStyle>;
+  variant?: AppStatePanelVariant;
+};
+
+type AppRetryStateViewProps = Omit<AppStateViewProps, "action"> & {
+  retryAccessibilityHint: string;
+  retryAccessibilityLabel?: string;
+  retryIcon?: ReactNode;
+  onRetry: () => void;
+};
+
+type AppRetryStatePanelProps = Omit<AppStatePanelProps, "action"> & {
+  retryAccessibilityHint: string;
+  retryAccessibilityLabel?: string;
+  retryIcon?: ReactNode;
+  onRetry: () => void;
+};
+
 type AppStatePlaceholderProps = {
   rowCount?: number;
   showHeader?: boolean;
@@ -77,6 +99,89 @@ export function AppStateView({
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+export function AppRetryStateView({
+  description,
+  icon,
+  retryAccessibilityHint,
+  retryAccessibilityLabel,
+  retryIcon,
+  onRetry,
+  style,
+  title,
+}: AppRetryStateViewProps): React.JSX.Element {
+  return (
+    <AppStateView
+      action={{
+        accessibilityHint: retryAccessibilityHint,
+        accessibilityLabel: retryAccessibilityLabel,
+        icon: retryIcon,
+        label: "다시 시도",
+        onPress: onRetry,
+      }}
+      description={description}
+      icon={icon}
+      style={style}
+      title={title}
+    />
+  );
+}
+
+export function AppStatePanel({
+  action,
+  description,
+  icon,
+  minHeight = 120,
+  panelStyle,
+  style,
+  title,
+  variant = "outline",
+}: AppStatePanelProps): React.JSX.Element {
+  return (
+    <View style={[styles.panel, styles[variant], panelStyle]}>
+      <AppStateView
+        action={action}
+        description={description}
+        icon={icon}
+        style={[styles.panelState, { minHeight }, style]}
+        title={title}
+      />
+    </View>
+  );
+}
+
+export function AppRetryStatePanel({
+  description,
+  icon,
+  minHeight,
+  panelStyle,
+  retryAccessibilityHint,
+  retryAccessibilityLabel,
+  retryIcon,
+  onRetry,
+  style,
+  title,
+  variant,
+}: AppRetryStatePanelProps): React.JSX.Element {
+  return (
+    <AppStatePanel
+      action={{
+        accessibilityHint: retryAccessibilityHint,
+        accessibilityLabel: retryAccessibilityLabel,
+        icon: retryIcon,
+        label: "다시 시도",
+        onPress: onRetry,
+      }}
+      description={description}
+      icon={icon}
+      minHeight={minHeight}
+      panelStyle={panelStyle}
+      style={style}
+      title={title}
+      variant={variant}
+    />
   );
 }
 
@@ -162,6 +267,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
   },
+  dashed: {
+    backgroundColor: colors.surface,
+    borderColor: colors.dividerOnPrimary,
+    borderRadius: borderRadius.lg,
+    borderStyle: "dashed",
+    borderWidth: 1,
+  },
   description: {
     color: colors.textMuted,
     fontSize: 13,
@@ -200,6 +312,17 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: "center",
     width: 44,
+  },
+  outline: {
+    borderColor: colors.dividerOnPrimary,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  panel: {
+    justifyContent: "center",
+  },
+  panelState: {
+    flex: 0,
   },
   placeholder: {
     gap: spacing.sm,
@@ -254,6 +377,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
+  },
+  surface: {
+    backgroundColor: colors.surface,
   },
   title: {
     color: colors.text,

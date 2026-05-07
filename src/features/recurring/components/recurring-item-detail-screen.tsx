@@ -7,7 +7,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
-import { AppStateView } from "~/design-system/components/app-state";
+import {
+  AppRetryStatePanel,
+  AppStatePanel,
+} from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
 import { FocusScreenHeader } from "~/design-system/components/focus-screen-header";
 import { IconButton } from "~/design-system/components/icon-button";
@@ -266,19 +269,14 @@ function DetailErrorCard({
   onRetry: () => void;
 }): React.JSX.Element {
   return (
-    <View style={styles.statePanel}>
-      <AppStateView
-        action={{
-          accessibilityHint: "상세 화면 데이터를 다시 불러와요.",
-          accessibilityLabel: "상세 화면 다시 시도",
-          label: "다시 시도",
-          onPress: onRetry,
-        }}
-        description={message}
-        style={styles.errorState}
-        title="일정을 불러오지 못했어요"
-      />
-    </View>
+    <AppRetryStatePanel
+      description={message}
+      minHeight={120}
+      onRetry={onRetry}
+      retryAccessibilityHint="상세 화면 데이터를 다시 불러와요."
+      retryAccessibilityLabel="상세 화면 다시 시도"
+      title="일정을 불러오지 못했어요"
+    />
   );
 }
 
@@ -289,15 +287,7 @@ function DetailInlineErrorCard({
   message: string;
   title?: string;
 }): React.JSX.Element {
-  return (
-    <View style={styles.statePanel}>
-      <AppStateView
-        description={message}
-        style={styles.inlineErrorState}
-        title={title}
-      />
-    </View>
-  );
+  return <AppStatePanel description={message} minHeight={96} title={title} />;
 }
 
 function DetailHistorySection({
@@ -364,21 +354,19 @@ function DetailHistoryCard({
 
 function DetailNotFoundCard(): React.JSX.Element {
   return (
-    <View style={styles.statePanel}>
-      <AppStateView
-        action={{
-          accessibilityHint: "홈 화면으로 이동해요.",
-          accessibilityLabel: "홈으로 이동",
-          label: "홈으로 이동",
-          onPress: () => {
-            router.replace("/");
-          },
-        }}
-        description="이미 삭제되었거나 접근할 수 없는 일정이에요."
-        style={styles.emptyCard}
-        title="일정을 찾을 수 없어요"
-      />
-    </View>
+    <AppStatePanel
+      action={{
+        accessibilityHint: "홈 화면으로 이동해요.",
+        accessibilityLabel: "홈으로 이동",
+        label: "홈으로 이동",
+        onPress: () => {
+          router.replace("/");
+        },
+      }}
+      description="이미 삭제되었거나 접근할 수 없는 일정이에요."
+      minHeight={120}
+      title="일정을 찾을 수 없어요"
+    />
   );
 }
 
@@ -711,12 +699,6 @@ export function RecurringItemDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  emptyCard: {
-    minHeight: 120,
-  },
-  errorState: {
-    minHeight: 120,
-  },
   headerLayer: {
     left: 0,
     position: "absolute",
@@ -803,9 +785,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     textAlign: "center",
-  },
-  inlineErrorState: {
-    minHeight: 96,
   },
   detailPlaceholder: {
     gap: spacing.xs,
@@ -997,10 +976,5 @@ const styles = StyleSheet.create({
   summaryTitle: {
     color: colors.text,
     textAlign: "center",
-  },
-  statePanel: {
-    borderColor: colors.dividerOnPrimary,
-    borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
   },
 });
