@@ -25,6 +25,24 @@ function createDraft(
 }
 
 describe("validateRecurringItemDraft", () => {
+  it("한 번 일정은 완료일 기준을 사용할 수 없다", () => {
+    expect(
+      validateRecurringItemDraft(
+        createDraft({
+          anchorType: "completion_based",
+          recurrenceType: "once",
+        })
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "anchor_type_not_allowed",
+          field: "anchorType",
+        }),
+      ])
+    );
+  });
+
   it("일정 색상 key는 허용된 팔레트 값만 통과한다", () => {
     expect(
       validateRecurringItemDraft(createDraft({ colorKey: "purple" }))

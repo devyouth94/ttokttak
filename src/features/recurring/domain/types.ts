@@ -32,7 +32,6 @@ export const devicePlatforms = ["ios", "android", "web", "unknown"] as const;
 export const notificationKinds = ["reminder"] as const;
 
 export const completionBasedRecurrenceTypes = [
-  "once",
   "daily",
   "interval_days",
   "monthly",

@@ -181,7 +181,7 @@ export function validateRecurringItemDraft(
       code: "anchor_type_not_allowed",
       field: "anchorType",
       message:
-        "completion_based는 once, daily, interval_days, monthly, interval_months에서만 사용할 수 있습니다.",
+        "completion_based는 daily, interval_days, monthly, interval_months에서만 사용할 수 있습니다.",
     });
   }
 
