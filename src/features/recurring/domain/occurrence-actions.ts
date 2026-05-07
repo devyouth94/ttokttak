@@ -1,6 +1,4 @@
-import { fromZonedTime } from "date-fns-tz";
-
-import { getOccurrencesInRange } from "~/features/recurring/domain/occurrence";
+import { createItemOccurrenceProjection } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   DerivedOccurrence,
@@ -28,17 +26,13 @@ export function getOccurrencesToResolve({
     return [primaryOccurrence];
   }
 
-  const rangeStartUtc = fromZonedTime(
-    `${item.startDateLocal}T00:00:00.000`,
-    timezone
-  ).toISOString();
-
-  return getOccurrencesInRange(
-    item,
-    rangeStartUtc,
-    primaryOccurrence.scheduledAtUtc,
-    timezone,
+  return createItemOccurrenceProjection({
     completionLogs,
-    now.toISOString()
-  ).filter((occurrence) => occurrence.status === "overdue");
+    item,
+    now,
+    timezone,
+  }).getOverdueOccurrences({
+    lookbackStartLocalDate: item.startDateLocal,
+    rangeEndUtc: primaryOccurrence.scheduledAtUtc,
+  });
 }

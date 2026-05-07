@@ -7,13 +7,14 @@ import {
   startOfDay,
 } from "date-fns";
 import { ko } from "date-fns/locale";
-import { fromZonedTime } from "date-fns-tz";
 
-import {
-  getOccurrenceIdentity,
-  getOccurrencesInRange,
-} from "~/features/recurring/domain/occurrence";
+import { getOccurrenceIdentity } from "~/features/recurring/domain/occurrence";
 import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
+import {
+  createItemOccurrenceProjection,
+  createLocalDateUtcRange,
+  type LocalDateUtcRange,
+} from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   DerivedOccurrence,
@@ -23,6 +24,7 @@ import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
 import {
   formatLocalDateTitle,
   formatLocalTimeLabel,
+  getRecurrenceLabel,
 } from "~/features/recurring/utils/recurring-display";
 import type { ProfileRow } from "~/lib/database.types";
 
@@ -30,16 +32,6 @@ export const HOME_DATE_RANGE_DAYS = 15;
 
 const OVERDUE_LOOKBACK_DAYS = 730;
 const UPCOMING_RANGE_DAYS = 14;
-
-const weekdayLabelByValue = new Map<number, string>([
-  [0, "일"],
-  [1, "월"],
-  [2, "화"],
-  [3, "수"],
-  [4, "목"],
-  [5, "금"],
-  [6, "토"],
-]);
 
 export type HomeDateOption = {
   dayLabel: string;
@@ -76,16 +68,11 @@ type BuildHomeFeedSectionsOptions = {
   timezone: string;
 };
 
-type UtcDayRange = {
-  endUtc: string;
-  startUtc: string;
-};
-
 type BuildSectionCardsOptions = {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
-  nowUtc: string;
-  range: UtcDayRange;
+  now: Date;
+  range: LocalDateUtcRange;
   sectionId: HomeFeedSection["id"];
   timezone: string;
   todayLocalDate: string;
@@ -96,7 +83,7 @@ type BuildSelectedDateSectionOptions = Omit<
   "range" | "sectionId"
 > & {
   selectedDateTitle: string;
-  selectedRange: UtcDayRange;
+  selectedRange: LocalDateUtcRange;
 };
 
 type BuildRelativeCardsOptions = Omit<
@@ -137,12 +124,11 @@ export function buildHomeFeedSections({
   const today = startOfDay(now);
   const todayLocalDate = format(today, "yyyy-MM-dd");
   const selectedDateTitle = getSelectedDateTitle(selectedDateId, today);
-  const nowUtc = now.toISOString();
-  const selectedRange = getUtcDayRange(selectedDateId, timezone);
+  const selectedRange = createLocalDateUtcRange(selectedDateId, timezone);
   const selectedSection = buildSelectedDateSection({
     completionLogs,
     items,
-    nowUtc,
+    now,
     selectedDateTitle,
     selectedRange,
     timezone,
@@ -160,7 +146,7 @@ export function buildHomeFeedSections({
       items: buildOverdueCards({
         completionLogs,
         items,
-        nowUtc,
+        now,
         today,
         timezone,
         todayLocalDate,
@@ -175,7 +161,7 @@ export function buildHomeFeedSections({
       items: buildUpcomingCards({
         completionLogs,
         items,
-        nowUtc,
+        now,
         today,
         timezone,
         todayLocalDate,
@@ -208,7 +194,7 @@ export function getOverdueOccurrencesToResolve({
 function buildSelectedDateSection({
   completionLogs,
   items,
-  nowUtc,
+  now,
   selectedDateTitle,
   selectedRange,
   timezone,
@@ -223,7 +209,7 @@ function buildSelectedDateSection({
     items: buildScheduledCards({
       completionLogs,
       items,
-      nowUtc,
+      now,
       range: selectedRange,
       sectionId: "selected-date",
       timezone,
@@ -236,7 +222,7 @@ function buildSelectedDateSection({
 function buildOverdueCards({
   completionLogs,
   items,
-  nowUtc,
+  now,
   today,
   timezone,
   todayLocalDate,
@@ -245,23 +231,16 @@ function buildOverdueCards({
     addDays(today, -OVERDUE_LOOKBACK_DAYS),
     "yyyy-MM-dd"
   );
-  const overdueStartUtc = getUtcDayRange(
-    overdueStartLocalDate,
-    timezone
-  ).startUtc;
-
   return items
     .flatMap((item) => {
-      const latestOverdueOccurrence = getOccurrencesInRange(
-        item,
-        overdueStartUtc,
-        nowUtc,
-        timezone,
+      const latestOverdueOccurrence = createItemOccurrenceProjection({
         completionLogs,
-        nowUtc
-      )
-        .filter((occurrence) => occurrence.status === "overdue")
-        .sort(compareOccurrenceByScheduledAtUtcDesc)[0];
+        item,
+        now,
+        timezone,
+      }).getLatestOverdueOccurrence({
+        lookbackStartLocalDate: overdueStartLocalDate,
+      });
 
       return latestOverdueOccurrence
         ? [
@@ -280,7 +259,7 @@ function buildOverdueCards({
 function buildUpcomingCards({
   completionLogs,
   items,
-  nowUtc,
+  now,
   today,
   timezone,
   todayLocalDate,
@@ -294,10 +273,11 @@ function buildUpcomingCards({
   return buildScheduledCards({
     completionLogs,
     items,
-    nowUtc,
+    now,
     range: {
-      endUtc: getUtcDayRange(upcomingEndLocalDate, timezone).endUtc,
-      startUtc: getUtcDayRange(upcomingStartLocalDate, timezone).startUtc,
+      endUtc: createLocalDateUtcRange(upcomingEndLocalDate, timezone).endUtc,
+      startUtc: createLocalDateUtcRange(upcomingStartLocalDate, timezone)
+        .startUtc,
     },
     sectionId: "upcoming",
     timezone,
@@ -308,7 +288,7 @@ function buildUpcomingCards({
 function buildScheduledCards({
   completionLogs,
   items,
-  nowUtc,
+  now,
   range,
   sectionId,
   timezone,
@@ -316,15 +296,13 @@ function buildScheduledCards({
 }: BuildSectionCardsOptions): HomeFeedCard[] {
   return items
     .flatMap((item) =>
-      getOccurrencesInRange(
-        item,
-        range.startUtc,
-        range.endUtc,
-        timezone,
+      createItemOccurrenceProjection({
         completionLogs,
-        nowUtc
-      )
-        .filter((occurrence) => occurrence.status === "scheduled")
+        item,
+        now,
+        timezone,
+      })
+        .getScheduledOccurrencesInRange(range)
         .map((occurrence) =>
           toHomeFeedCard(item, occurrence, sectionId, todayLocalDate)
         )
@@ -340,16 +318,6 @@ function getSelectedDateTitle(selectedDateId: string, today: Date): string {
   }
 
   return formatLocalDateTitle(selectedDateId);
-}
-
-function getUtcDayRange(localDate: string, timezone: string): UtcDayRange {
-  return {
-    endUtc: fromZonedTime(`${localDate}T23:59:59.999`, timezone).toISOString(),
-    startUtc: fromZonedTime(
-      `${localDate}T00:00:00.000`,
-      timezone
-    ).toISOString(),
-  };
 }
 
 function toHomeFeedCard(
@@ -422,47 +390,6 @@ function getReminderTimeLocal(item: RecurringItem): string {
   return currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
 }
 
-function getRecurrenceLabel(item: RecurringItem): string {
-  const currentSchedule = getCurrentScheduleVersion(item);
-  const recurrenceType = currentSchedule?.recurrenceType ?? item.recurrenceType;
-  const intervalValue = currentSchedule?.intervalValue ?? item.intervalValue;
-  const weekdayMask = currentSchedule?.weekdayMask ?? item.weekdayMask;
-
-  switch (recurrenceType) {
-    case "once":
-      return "한 번";
-    case "daily":
-      return "매일";
-    case "interval_days":
-      return `${intervalValue ?? 1}일마다`;
-    case "weekly":
-      return getWeeklyLabel("매주", weekdayMask);
-    case "interval_weeks":
-      return getWeeklyLabel(`${intervalValue ?? 1}주마다`, weekdayMask);
-    case "monthly":
-      return "매달";
-    case "interval_months":
-      return `${intervalValue ?? 1}달마다`;
-    case "yearly":
-      return "매년";
-    default:
-      return "반복";
-  }
-}
-
-function getWeeklyLabel(
-  baseLabel: string,
-  weekdayMask?: number[] | null
-): string {
-  if (!weekdayMask || weekdayMask.length === 0) {
-    return baseLabel;
-  }
-
-  const labels = weekdayMask.map((value) => weekdayLabelByValue.get(value)!);
-
-  return `${baseLabel} ${labels.join("·")}`;
-}
-
 function compareByScheduledAtUtcAsc(
   left: HomeFeedCard,
   right: HomeFeedCard
@@ -479,11 +406,4 @@ function compareByScheduledAtUtcDesc(
   return right.occurrence.scheduledAtUtc.localeCompare(
     left.occurrence.scheduledAtUtc
   );
-}
-
-function compareOccurrenceByScheduledAtUtcDesc(
-  left: DerivedOccurrence,
-  right: DerivedOccurrence
-): number {
-  return right.scheduledAtUtc.localeCompare(left.scheduledAtUtc);
 }

@@ -1,11 +1,11 @@
 import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
 import { ko } from "date-fns/locale";
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { formatInTimeZone } from "date-fns-tz";
 
 import {
-  getNextOccurrence,
-  getOccurrencesInRange,
-} from "~/features/recurring/domain/occurrence";
+  createItemOccurrenceProjection,
+  type ItemOccurrenceProjection,
+} from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   DerivedOccurrence,
@@ -97,44 +97,15 @@ export function getItemDetailBasisOccurrence({
   scheduledAtUtc?: string;
   timezone: string;
 }): DerivedOccurrence | null {
-  if (!scheduledAtUtc) {
-    return primaryOccurrence;
-  }
-
-  const matchingLog = completionLogs.find(
-    (log) => log.scheduledAtUtc === scheduledAtUtc
-  );
-
-  if (matchingLog) {
-    return {
-      itemId: item.id,
-      localDate: formatInTimeZone(scheduledAtUtc, timezone, "yyyy-MM-dd"),
-      localTime: formatInTimeZone(scheduledAtUtc, timezone, "HH:mm"),
-      scheduledAtLocal: formatInTimeZone(
-        scheduledAtUtc,
-        timezone,
-        "yyyy-MM-dd'T'HH:mm:ss"
-      ),
-      scheduledAtUtc,
-      status: matchingLog.action,
-    };
-  }
-
-  const rangeStartUtc = fromZonedTime(
-    `${item.startDateLocal}T00:00:00.000`,
-    timezone
-  ).toISOString();
-
-  return (
-    getOccurrencesInRange(
-      item,
-      rangeStartUtc,
-      scheduledAtUtc,
-      timezone,
-      completionLogs,
-      now.toISOString()
-    ).find((occurrence) => occurrence.scheduledAtUtc === scheduledAtUtc) ?? null
-  );
+  return createItemOccurrenceProjection({
+    completionLogs,
+    item,
+    now,
+    timezone,
+  }).getBasisOccurrence({
+    fallbackOccurrence: primaryOccurrence,
+    scheduledAtUtc,
+  });
 }
 
 export function buildOccurrenceStatusCard({
@@ -179,19 +150,14 @@ export function buildRecurringItemDetailViewModel({
   now: Date;
   timezone: string;
 }): ItemDetailViewModel {
-  const nowUtc = now.toISOString();
-  const overdueOccurrences = getOverdueOccurrences(
-    item,
+  const projection = createItemOccurrenceProjection({
     completionLogs,
-    now,
-    timezone
-  );
-  const nextOccurrence = getNextOccurrence(
     item,
-    nowUtc,
+    now,
     timezone,
-    completionLogs
-  );
+  });
+  const overdueOccurrences = getOverdueOccurrences(projection, now, timezone);
+  const nextOccurrence = projection.getNextOccurrence();
   const primaryOccurrence = overdueOccurrences[0] ?? nextOccurrence;
 
   return {
@@ -348,8 +314,7 @@ export function buildStatusCard({
 }
 
 function getOverdueOccurrences(
-  item: RecurringItem,
-  completionLogs: CompletionLog[],
+  projection: ItemOccurrenceProjection,
   now: Date,
   timezone: string
 ): DerivedOccurrence[] {
@@ -361,21 +326,11 @@ function getOverdueOccurrences(
     ),
     "yyyy-MM-dd"
   );
-  const rangeStartUtc = fromZonedTime(
-    `${lookbackStartLocalDate}T00:00:00.000`,
-    timezone
-  ).toISOString();
-
-  return getOccurrencesInRange(
-    item,
-    rangeStartUtc,
-    now.toISOString(),
-    timezone,
-    completionLogs,
-    now.toISOString()
-  )
-    .filter((occurrence) => occurrence.status === "overdue")
-    .sort(compareOccurrencesByScheduledAtUtcDesc);
+  return projection.getOverdueOccurrences({
+    lookbackStartLocalDate,
+    order: "scheduledAtDesc",
+    rangeEndUtc: now.toISOString(),
+  });
 }
 
 function formatHistoryPreviewTime(
@@ -390,13 +345,6 @@ function formatHistoryPreviewTime(
 function compareLogsByScheduledAtUtcDesc(
   left: CompletionLog,
   right: CompletionLog
-): number {
-  return right.scheduledAtUtc.localeCompare(left.scheduledAtUtc);
-}
-
-function compareOccurrencesByScheduledAtUtcDesc(
-  left: DerivedOccurrence,
-  right: DerivedOccurrence
 ): number {
   return right.scheduledAtUtc.localeCompare(left.scheduledAtUtc);
 }

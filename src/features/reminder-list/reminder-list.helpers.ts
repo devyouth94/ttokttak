@@ -1,7 +1,7 @@
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { getNextOccurrence } from "~/features/recurring/domain/occurrence";
+import { createItemOccurrenceProjection } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   RecurringItem,
@@ -36,16 +36,14 @@ export function buildReminderListEntries({
   sortMode?: ReminderListSortMode;
   timezone: string;
 }): ReminderListEntry[] {
-  const nowUtc = now.toISOString();
-
   return items
     .map((item) => {
-      const nextOccurrence = getNextOccurrence(
+      const nextOccurrence = createItemOccurrenceProjection({
+        completionLogs,
         item,
-        nowUtc,
+        now,
         timezone,
-        completionLogs
-      );
+      }).getNextOccurrence();
 
       return {
         colorKey: item.colorKey,

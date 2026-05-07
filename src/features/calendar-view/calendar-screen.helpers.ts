@@ -1,8 +1,11 @@
 import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { formatInTimeZone } from "date-fns-tz";
 
-import { getOccurrencesInRange } from "~/features/recurring/domain/occurrence";
+import {
+  createItemOccurrenceProjection,
+  createLocalDateUtcRange as createProjectionLocalDateUtcRange,
+} from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   OccurrenceStatus,
@@ -131,14 +134,12 @@ export function buildCalendarDaySummaries({
   >();
 
   items.forEach((item) => {
-    const occurrences = getOccurrencesInRange(
-      item,
-      startUtc,
-      endUtc,
-      timezone,
+    const occurrences = createItemOccurrenceProjection({
       completionLogs,
-      now.toISOString()
-    );
+      item,
+      now,
+      timezone,
+    }).getOccurrencesInRange({ endUtc, startUtc });
 
     occurrences.forEach((occurrence) => {
       const summary = summaryMap.get(occurrence.localDate) ?? {
@@ -185,18 +186,20 @@ export function buildCalendarDayEntries({
   selectedDate: string;
   timezone: string;
 }): CalendarDayEntry[] {
-  const { endUtc, startUtc } = createLocalDateUtcRange(selectedDate, timezone);
+  const { endUtc, startUtc } = createProjectionLocalDateUtcRange(
+    selectedDate,
+    timezone
+  );
 
   return items
     .flatMap((item) =>
-      getOccurrencesInRange(
-        item,
-        startUtc,
-        endUtc,
-        timezone,
+      createItemOccurrenceProjection({
         completionLogs,
-        now.toISOString()
-      )
+        item,
+        now,
+        timezone,
+      })
+        .getOccurrencesInRange({ endUtc, startUtc })
         .filter((occurrence) => occurrence.localDate === selectedDate)
         .map((occurrence) => ({
           colorKey: item.colorKey,
@@ -226,27 +229,10 @@ function createVisibleMonthUtcRange(
   const monthEndLocalDate = format(endOfMonth(visibleMonthDate), "yyyy-MM-dd");
 
   return {
-    endUtc: fromZonedTime(
-      `${monthEndLocalDate}T23:59:59.999`,
-      timezone
-    ).toISOString(),
-    startUtc: fromZonedTime(
-      `${monthStartLocalDate}T00:00:00.000`,
-      timezone
-    ).toISOString(),
-  };
-}
-
-function createLocalDateUtcRange(
-  localDate: string,
-  timezone: string
-): { endUtc: string; startUtc: string } {
-  return {
-    endUtc: fromZonedTime(`${localDate}T23:59:59.999`, timezone).toISOString(),
-    startUtc: fromZonedTime(
-      `${localDate}T00:00:00.000`,
-      timezone
-    ).toISOString(),
+    endUtc: createProjectionLocalDateUtcRange(monthEndLocalDate, timezone)
+      .endUtc,
+    startUtc: createProjectionLocalDateUtcRange(monthStartLocalDate, timezone)
+      .startUtc,
   };
 }
 
