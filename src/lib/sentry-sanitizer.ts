@@ -6,6 +6,7 @@ const SENSITIVE_KEYWORDS = [
   "auth_token",
   "cookie",
   "credential",
+  "description",
   "id_token",
   "identity_token",
   "password",
@@ -14,6 +15,7 @@ const SENSITIVE_KEYWORDS = [
   "refresh_token",
   "secret",
   "service_role",
+  "title",
   "token",
 ] as const;
 

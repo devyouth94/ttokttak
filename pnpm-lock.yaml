@@ -67,6 +67,9 @@ importers:
       expo-constants:
         specifier: ~55.0.9
         version: 55.0.9(expo@55.0.9)(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(typescript@5.9.3)
+      expo-crypto:
+        specifier: ~55.0.14
+        version: 55.0.14(expo@55.0.9)
       expo-dev-client:
         specifier: ~55.0.19
         version: 55.0.19(expo@55.0.9)(typescript@5.9.3)
@@ -2965,6 +2968,11 @@ packages:
     peerDependencies:
       expo: '*'
       react-native: '*'
+
+  expo-crypto@55.0.14:
+    resolution: {integrity: sha512-TfAADBGZNNv9OOmdKFJCz54wDj87ufxtzQNSY+Roycpm8e5tuCnDIL7EjqUOmNTGH99Jj8ftPGFt4KGG2Ii2fg==}
+    peerDependencies:
+      expo: '*'
 
   expo-dev-client@55.0.19:
     resolution: {integrity: sha512-NViuWgo1oqcKPei/M+FwwFC93cAsVhX7yT1/8pYPjMzPeZjV0DO82eur4H1ZwcmyxqSGjlae5R+MGXW88NeYEA==}
@@ -8949,6 +8957,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
+
+  expo-crypto@55.0.14(expo@55.0.9):
+    dependencies:
+      expo: 55.0.9(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.7)(expo-router@55.0.8)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.4(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
 
   expo-dev-client@55.0.19(expo@55.0.9)(typescript@5.9.3):
     dependencies:

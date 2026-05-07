@@ -10,23 +10,7 @@ import {
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
-import { getOrCreateNotificationDeviceId } from "~/features/notifications/device-identity";
-import {
-  addCurrentDevicePushTokenListener,
-  type CurrentDevicePushToken,
-  getCurrentDevicePushToken,
-} from "~/features/notifications/device-push-token";
-import {
-  createCurrentDevicePushTokenRegistration,
-  type CurrentDevicePushTokenRegistration,
-  deactivateCurrentDevicePushTokens,
-  registerCurrentDevicePushToken,
-} from "~/features/notifications/device-push-token-registration";
-import { syncRemoteNotificationDeliveryJobs } from "~/features/notifications/notification-delivery-sync";
-import {
-  type NotificationDeliverySyncReason,
-  type NotificationDeliverySyncScope,
-} from "~/features/notifications/notification-delivery-sync.types";
+import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
 import {
   getNotificationPermissionState,
   type NotificationPermissionState,
@@ -34,9 +18,9 @@ import {
   requestNotificationPermission,
 } from "~/features/notifications/notification-permission";
 import {
-  isSamePushTokenRegistration,
-  shouldSkipListenerPushTokenRegistration,
-} from "~/features/notifications/notification-push-token-sync-guard";
+  type NotificationSyncReason,
+  type NotificationSyncScope,
+} from "~/features/notifications/notification-sync.types";
 import { useSession } from "~/features/session/session-provider";
 import { Sentry } from "~/lib/sentry";
 
@@ -48,12 +32,10 @@ type NotificationBootstrapContextValue = {
   refreshPermission: () => Promise<NotificationPermissionState>;
   requestPermission: () => Promise<NotificationPermissionState>;
   syncAfterMutation: (params: {
-    reason: NotificationDeliverySyncReason;
-    scope: NotificationDeliverySyncScope;
+    reason: NotificationSyncReason;
+    scope: NotificationSyncScope;
   }) => Promise<void>;
 };
-
-type PushTokenSyncTrigger = "session" | "token-listener";
 
 const initialPermissionState: NotificationPermissionState = {
   canOpenSettings: false,
@@ -87,21 +69,37 @@ async function ensureAndroidReminderNotificationChannel(): Promise<void> {
 export function NotificationBootstrapProvider({
   children,
 }: PropsWithChildren): React.JSX.Element {
-  const { authEvent, isLoading, profile, sessionRevision, user } = useSession();
+  const { profile, user } = useSession();
   const [permission, setPermission] = useState<NotificationPermissionState>(
     initialPermissionState
   );
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
-  const inFlightPushTokenRegistrationRef =
-    useRef<CurrentDevicePushTokenRegistration | null>(null);
-  const inFlightSessionPushTokenSyncKeyRef = useRef<string | null>(null);
-  const lastSessionPushTokenSyncKeyRef = useRef<string | null>(null);
-  const lastSuccessfulPushTokenRegistrationRef =
-    useRef<CurrentDevicePushTokenRegistration | null>(null);
-  const lastSignedInUserIdRef = useRef<string | null>(null);
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const lastSessionSyncKeyRef = useRef<string | null>(null);
+
+  const syncAllLocalReminderNotifications = useCallback(
+    (params: { feature: string; reason: NotificationSyncReason }): void => {
+      if (!user?.id) {
+        return;
+      }
+
+      void syncLocalReminderNotifications({
+        reason: params.reason,
+        scope: { type: "all" },
+        timezone,
+        userId: user.id,
+      }).catch((error) => {
+        Sentry.captureException(error, {
+          tags: {
+            feature: params.feature,
+          },
+        });
+      });
+    },
+    [timezone, user?.id]
+  );
 
   useEffect(() => {
     void ensureAndroidReminderNotificationChannel().catch((error) => {
@@ -143,217 +141,57 @@ export function NotificationBootstrapProvider({
       }
     }, []);
 
-  const syncPushToken = useCallback(
-    async ({
-      currentDevicePushToken,
-      trigger,
-      userId,
-    }: {
-      currentDevicePushToken?: CurrentDevicePushToken;
-      trigger: PushTokenSyncTrigger;
-      userId: string;
-    }): Promise<void> => {
-      const sessionSyncKey = userId;
-      let didMarkSessionInFlight = false;
-      let markedPushTokenRegistration: CurrentDevicePushTokenRegistration | null =
-        null;
-
-      if (
-        trigger === "session" &&
-        (lastSessionPushTokenSyncKeyRef.current === sessionSyncKey ||
-          inFlightSessionPushTokenSyncKeyRef.current === sessionSyncKey)
-      ) {
-        return;
-      }
-
-      if (trigger === "session") {
-        inFlightSessionPushTokenSyncKeyRef.current = sessionSyncKey;
-        didMarkSessionInFlight = true;
-      }
-
-      try {
-        const deviceId = await getOrCreateNotificationDeviceId();
-        const resolvedDevicePushToken =
-          currentDevicePushToken ?? (await getCurrentDevicePushToken());
-
-        if (!resolvedDevicePushToken) {
-          return;
-        }
-
-        const candidateRegistration = createCurrentDevicePushTokenRegistration({
-          currentDevicePushToken: resolvedDevicePushToken,
-          deviceId,
-          userId,
-        });
-
-        if (
-          trigger === "token-listener" &&
-          shouldSkipListenerPushTokenRegistration({
-            candidate: candidateRegistration,
-            inFlightRegistration: inFlightPushTokenRegistrationRef.current,
-            lastSuccessfulRegistration:
-              lastSuccessfulPushTokenRegistrationRef.current,
-          })
-        ) {
-          return;
-        }
-
-        if (
-          isSamePushTokenRegistration(
-            candidateRegistration,
-            inFlightPushTokenRegistrationRef.current
-          )
-        ) {
-          return;
-        }
-
-        inFlightPushTokenRegistrationRef.current = candidateRegistration;
-        markedPushTokenRegistration = candidateRegistration;
-
-        const completedRegistration = await registerCurrentDevicePushToken({
-          currentDevicePushToken: resolvedDevicePushToken,
-          deviceId,
-          userId,
-        });
-
-        if (completedRegistration) {
-          lastSuccessfulPushTokenRegistrationRef.current =
-            completedRegistration;
-
-          if (trigger === "session") {
-            lastSessionPushTokenSyncKeyRef.current = sessionSyncKey;
-          }
-        }
-      } catch (error) {
-        Sentry.captureException(error, {
-          tags: {
-            feature: "notification-push-token-registration",
-          },
-        });
-      } finally {
-        if (
-          didMarkSessionInFlight &&
-          inFlightSessionPushTokenSyncKeyRef.current === sessionSyncKey
-        ) {
-          inFlightSessionPushTokenSyncKeyRef.current = null;
-        }
-
-        if (
-          isSamePushTokenRegistration(
-            markedPushTokenRegistration,
-            inFlightPushTokenRegistrationRef.current
-          )
-        ) {
-          inFlightPushTokenRegistrationRef.current = null;
-        }
-      }
-    },
-    []
-  );
-
-  const deactivatePushToken = useCallback(
-    async (
-      userId: string,
-      reason: "logout" | "permission-denied"
-    ): Promise<void> => {
-      try {
-        await deactivateCurrentDevicePushTokens(userId, reason);
-      } catch {
-        // 비활성화 실패는 다음 세션 복원 시 다시 정리한다.
-      }
-    },
-    []
-  );
-
   useEffect(() => {
     void refreshPermission();
 
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         void refreshPermission();
+        syncAllLocalReminderNotifications({
+          feature: "local-notification-foreground-sync",
+          reason: "app-foregrounded",
+        });
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [refreshPermission]);
+  }, [refreshPermission, syncAllLocalReminderNotifications]);
 
   useEffect(() => {
-    if (user?.id) {
-      lastSignedInUserIdRef.current = user.id;
+    if (!user?.id) {
+      lastSessionSyncKeyRef.current = null;
       return;
     }
 
-    if (authEvent !== "SIGNED_OUT" || !lastSignedInUserIdRef.current) {
+    const syncKey = `${user.id}:${timezone}`;
+
+    if (lastSessionSyncKeyRef.current === syncKey) {
       return;
     }
 
-    const signedOutUserId = lastSignedInUserIdRef.current;
-    lastSignedInUserIdRef.current = null;
-    inFlightPushTokenRegistrationRef.current = null;
-    inFlightSessionPushTokenSyncKeyRef.current = null;
-    lastSessionPushTokenSyncKeyRef.current = null;
-    lastSuccessfulPushTokenRegistrationRef.current = null;
+    lastSessionSyncKeyRef.current = syncKey;
 
-    void deactivatePushToken(signedOutUserId, "logout");
-  }, [authEvent, deactivatePushToken, user?.id]);
-
-  useEffect(() => {
-    if (isLoading || !user?.id || permission.status !== "granted") {
-      return;
-    }
-
-    void syncPushToken({
-      trigger: "session",
-      userId: user.id,
+    syncAllLocalReminderNotifications({
+      feature: "local-notification-session-sync",
+      reason: "session-restored",
     });
-  }, [isLoading, permission.status, sessionRevision, syncPushToken, user?.id]);
-
-  useEffect(() => {
-    if (!user?.id || permission.status !== "granted") {
-      return;
-    }
-
-    const subscription = addCurrentDevicePushTokenListener(
-      (currentDevicePushToken) =>
-        syncPushToken({
-          currentDevicePushToken,
-          trigger: "token-listener",
-          userId: user.id,
-        })
-    );
-
-    return () => {
-      subscription?.remove();
-    };
-  }, [permission.status, syncPushToken, user?.id]);
-
-  useEffect(() => {
-    if (!user?.id || permission.status !== "denied") {
-      return;
-    }
-
-    inFlightPushTokenRegistrationRef.current = null;
-    inFlightSessionPushTokenSyncKeyRef.current = null;
-    lastSessionPushTokenSyncKeyRef.current = null;
-    lastSuccessfulPushTokenRegistrationRef.current = null;
-    void deactivatePushToken(user.id, "permission-denied");
-  }, [deactivatePushToken, permission.status, user?.id]);
+  }, [syncAllLocalReminderNotifications, timezone, user?.id]);
 
   const syncAfterMutation = useCallback(
     async ({
       reason,
       scope,
     }: {
-      reason: NotificationDeliverySyncReason;
-      scope: NotificationDeliverySyncScope;
+      reason: NotificationSyncReason;
+      scope: NotificationSyncScope;
     }): Promise<void> => {
       if (!user?.id) {
         return;
       }
 
-      await syncRemoteNotificationDeliveryJobs({
+      await syncLocalReminderNotifications({
         reason,
         scope,
         timezone,

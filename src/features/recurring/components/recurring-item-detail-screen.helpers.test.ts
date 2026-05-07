@@ -166,6 +166,29 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.summary.colorKey).toBe("green");
   });
 
+  it("복구할 수 없는 일정은 상세에서 복구 실패 상태를 제공한다", () => {
+    const viewModel = buildRecurringItemDetailViewModel({
+      completionLogs: [],
+      item: createItem({
+        contentStatus: {
+          reason: "decryption-failed",
+          status: "unrecoverable",
+        },
+        description: null,
+        title: "일정 내용을 복구할 수 없어요",
+      }),
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      timezone,
+    });
+
+    expect(viewModel.contentRecovery).toEqual({
+      description:
+        "암호화 키 또는 저장된 내용에 문제가 있어 내용을 열 수 없어요. 필요하면 이 일정을 삭제할 수 있어요.",
+      title: "일정 내용을 복구하지 못했어요",
+    });
+    expect(viewModel.summary.title).toBe("일정 내용을 복구할 수 없어요");
+  });
+
   it("최근 히스토리 5건만 최신 예정 시각 순으로 만든다", () => {
     const entries = buildHistoryPreview(
       [

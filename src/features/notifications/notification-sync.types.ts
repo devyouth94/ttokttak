@@ -1,11 +1,14 @@
-export type NotificationDeliverySyncReason =
+export type NotificationSyncReason =
+  | "app-foregrounded"
+  | "notification-tapped"
+  | "session-restored"
   | "item-archived"
   | "item-created"
   | "item-updated"
   | "occurrence-completed"
   | "occurrence-skipped";
 
-export type NotificationDeliverySyncScope =
+export type NotificationSyncScope =
   | {
       type: "all";
     }

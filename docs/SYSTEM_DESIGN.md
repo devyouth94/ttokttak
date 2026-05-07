@@ -29,7 +29,7 @@
 - 사용자 timezone 기반 로컬 입력/표시
 - UTC 저장
 - occurrence는 저장하지 않고 계산
-- 가까운 14일 범위만 원격 푸시 발송 job 생성
+- 기기 로컬 알림 중심
 - 멀티 디바이스 확장 가능한 모델
 
 ### Terminology baseline
@@ -65,7 +65,7 @@
 4. **Infrastructure**
    - Supabase repositories
    - notification bootstrap
-   - remote push delivery worker
+   - local notification scheduler
    - timezone utils
    - auth/session
    - logging/monitoring
@@ -76,7 +76,7 @@
   - 로그인 상태 복원
   - 현재 사용자와 현재 기기 식별
 - **Repositories**
-  - recurring item 메타, schedule versions, completion logs, devices, device push token 조회/저장
+  - recurring item 메타, schedule versions, completion logs, devices 조회/저장
 - **Domain services**
   - recurrence calculation
   - occurrence derivation
@@ -84,12 +84,12 @@
   - next occurrence logic
 - **Notification bootstrap**
   - 알림 권한 상태 확인
-  - 현재 기기 원격 푸시 토큰 등록/비활성화
-  - mutation 이후 서버 발송 job 재계산 요청
-- **Remote push delivery worker**
-  - future occurrence 기준 발송 job upsert
-  - APNs / FCM fan-out 발송
-  - token 단위 성공/실패 기록
+  - 현재 기기 pending local notification 점검
+  - mutation 이후 로컬 알림 재예약
+- **Local notification scheduler**
+  - future occurrence 기준 로컬 알림 예약
+  - 일정 변경과 completion log 변경에 따른 예약 취소/재예약
+  - 알림 tap routing payload 관리
 - **Presentation surfaces**
   - 홈, 목록, 상세, 달력, 설정, 위젯에 필요한 파생 데이터를 조합
 
@@ -99,13 +99,13 @@
 2. mutation은 서버에 item 메타, schedule version, completion log를 저장한다.
 3. 저장된 데이터와 사용자 timezone을 기준으로 occurrence를 다시 계산한다.
 4. 계산 결과로 홈/목록/상세/달력/위젯에 필요한 파생 목록을 만든다.
-5. 알림이 필요한 occurrence만 서버 발송 job으로 다시 맞춘다.
+5. 알림이 필요한 occurrence만 현재 기기 로컬 알림으로 다시 맞춘다.
 
 핵심 원칙:
 
 - 서버 row가 원본 데이터다.
 - occurrence와 화면 목록은 저장하지 않고 계산한다.
-- 원격 푸시 발송 job은 계산 결과를 반영하는 파생 상태다.
+- 로컬 알림 예약은 계산 결과를 반영하는 기기별 파생 상태다.
 
 전제조건:
 
@@ -124,7 +124,7 @@
 
 - mutation 성공 후 서버 기준 파생 목록을 다시 조회한다.
 - 홈, 목록, 상세, 달력, 위젯은 재계산 결과를 다시 반영한다.
-- 알림이 켜진 항목은 서버 발송 job을 다시 계산한다.
+- 알림이 켜진 항목은 현재 기기 로컬 알림을 다시 예약한다.
 
 ---
 
@@ -140,7 +140,7 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 
 ### Notifications
 
-알림 자체는 source of truth가 아니다. DB 기준으로 occurrence를 다시 계산하고, 그 결과에 따라 원격 푸시 발송 대상을 다시 맞춘다.
+알림 자체는 source of truth가 아니다. DB 기준으로 occurrence를 다시 계산하고, 그 결과에 따라 현재 기기 로컬 알림 예약을 다시 맞춘다.
 
 ---
 
@@ -150,7 +150,6 @@ Supabase Postgres를 데이터의 최종 source of truth로 사용한다.
 
 - users / profiles
 - devices
-- device_push_tokens
 - recurring_items
 - recurring_item_schedule_versions
 - completion_logs
@@ -269,22 +268,56 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 
 ### Policy
 
-- 알림은 occurrence 예정 시각에 1회 원격 푸시로 발송한다.
-- 앞으로 14일 범위만 서버 발송 job으로 관리한다.
-- 항목 생성, 수정, 완료, 건너뜀, 보관 뒤 관련 발송 job을 재계산한다.
-- item edit로 인한 재계산 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위만 포함한다.
+- 알림은 occurrence 예정 시각에 1회 기기 로컬 알림으로 표시한다.
+- 항목 생성, 수정, 완료, 건너뜀, 보관 뒤 현재 기기의 로컬 알림을 재예약한다.
+- item edit로 인한 재예약 대상은 `scheduled_at_utc >= effective_from_utc` 미래 범위만 포함한다.
 - item edit 후 생성 대상은 새 schedule version 기준 future occurrence만 포함한다.
-- 앱은 로컬 알림을 예약하지 않는다.
-- 로컬 알림과 앱 내부 이벤트는 MVP inbox row 생성과 inbox 목록 조회의 입력으로 사용하지 않는다.
-- 앱은 푸시 권한 확인과 현재 기기 token 등록만 맡는다.
+- 알림함과 알림 기록 화면은 MVP에서 제거한다.
+- 놓친 일정은 홈 피드와 overdue 상태로 다시 드러낸다.
+- 일정 제목과 설명은 서버 DB에 평문으로 저장하지 않는다.
+- 암호화 목표는 엄격한 E2EE가 아니라 Supabase DB, 운영 화면, 로그에서 일정 제목과 설명 평문을 제거하는 것이다.
+- 새 기기 로그인과 앱 재설치 뒤에도 사용자가 별도 복구 비밀번호 없이 일정 제목과 설명을 복구할 수 있어야 한다.
+- 앱은 사용자별 data encryption key로 일정 제목과 설명을 암호화한다.
+- 서버 DB에는 제목/설명 암호문, key version, 암호화 메타데이터만 저장한다.
+- data encryption key 원문은 일반 테이블에 저장하지 않는다.
+- 복구를 위해 data encryption key는 사용자와 연결된 wrapped key로 저장한다.
+- wrapped key 구조는 DB에서 제목과 설명 평문이 보이지 않게 하는 목표에 맞춘다.
+- 서버 운영자가 악의적 클라이언트 업데이트를 배포하면 사용자가 앱에서 복호화하는 순간 내용을 볼 수 있다는 한계를 인정한다.
+- 제목과 설명 기반 검색/정렬은 서버에서 수행하지 않는다.
+- 목록 정렬은 앱이 데이터를 받은 뒤 복호화한 값을 사용해 클라이언트에서 수행한다.
+- 서버 쿼리는 사용자 scope, 보관 여부, 변경 시각 같은 동기화와 필터링 기준만 사용한다.
+- MVP 암호화 범위는 일정 제목과 설명으로 제한한다.
+- 반복 규칙, 예정 시각, 완료/건너뛰기 기록, 색상, 보관 여부는 서버 동기화와 화면 계산을 위해 평문 메타데이터로 유지한다.
+- 평문 메타데이터도 생활 패턴을 드러낼 수 있다는 한계를 인정한다.
+- 로컬 알림 제목은 복호화한 일정 제목을 사용한다.
+- 로컬 알림 본문에는 설명을 넣지 않고 예정 시각을 짧게 표시한다.
+- 로컬 알림 본문 예시는 `오후 9:00` 형식이다.
+- 설명은 앱 내부 상세와 입력 화면에서만 표시하는 개인 메모다.
+- 설명은 로컬 알림, 원격 푸시 fallback, 서버 로그, 진단 값에 사용하지 않는다.
+- 설명은 제목과 같은 방식으로 암호화해서 저장한다.
+- 복호화 실패는 정상 사용자 흐름이 아니라 예외 상태다.
+- 복호화에 실패한 일정은 목록에서 숨기지 않고 `복구가 필요한 일정` 같은 fallback 제목으로 표시한다.
+- 복호화에 실패한 일정의 설명은 비워 둔다.
+- 복호화에 실패한 일정 상세는 내용을 복구하지 못했다는 상태와 삭제 액션을 제공한다.
+- 복호화에 실패한 일정은 로컬 알림 예약 대상에서 제외한다.
+- 원격 푸시 fallback을 나중에 도입하면 제목과 본문은 일반 문구만 사용한다.
+- 순수 로컬 알림만 사용할 때는 APNs / FCM 토큰과 서버 발송 worker가 필요하지 않다.
+- 앱 active flow는 `device_push_tokens`, `notification_delivery_jobs`, `notification_delivery_attempts`, `notification_inbox_items`를 더 이상 읽거나 쓰지 않는다.
+- `push-delivery-worker` Edge Function과 원격 푸시 cron 호출은 제거한다.
+- 기존 migration 파일은 적용 이력으로 남기고, 새 migration으로 필요 없는 원격 푸시 테이블, RPC, cron을 제거한다.
+- 개발 기간에는 기존 일정과 예정 알림 job 데이터를 보존하지 않아도 된다.
+- 일정 제목과 설명 저장 방식을 바꿀 때 기존 평문 데이터는 새 구조로 마이그레이션하지 않고 삭제할 수 있다.
+- implementation issue에는 개발 데이터 reset migration 작성을 포함한다.
+- reset migration은 기존 migration 파일을 수정하지 않고, 새 migration에서 기존 일정 데이터와 원격 푸시 데이터를 삭제하거나 관련 저장소를 제거한다.
+- 원격 푸시 fallback은 `docs/adr/0002-device-local-notifications.md`의 privacy boundary를 유지한 상태에서 별도 검토한다.
 
-### Why not create jobs forever
+### Why not schedule everything forever
 
 - 변경/삭제 대응이 어려움
-- 장기 일정 관리가 비효율적
-- 발송 상태와 데이터 정합성이 깨질 수 있음
+- iOS pending notification 제한을 넘길 수 있음
+- 장기 반복 일정에서 시간대 변경과 DST 대응이 어려움
 
-### Notification sync triggers
+### Notification reschedule triggers
 
 - item created
 - item updated
@@ -292,49 +325,42 @@ Occurrence는 아래 입력을 기반으로 계산한다.
 - occurrence completed
 - occurrence skipped
 
-### App token lifecycle
+### Local notification algorithm
 
-1. 로그인 직후 세션 복원 시 현재 기기 token을 등록한다.
-2. 알림 권한 허용 직후 현재 기기 token을 등록한다.
-3. `addPushTokenListener`로 token 갱신 시 다시 등록한다.
-4. 로그아웃 시 현재 기기 token을 `logout`으로 비활성화한다.
-5. 권한 거부 시 현재 기기 token을 `permission-denied`로 비활성화한다.
-6. provider가 만료 token을 반환하면 worker가 `delivery-failed`로 비활성화한다.
+1. 서버 데이터를 동기화한다.
+2. 현재 사용자 timezone 기준으로 future occurrence를 계산한다.
+3. `notificationsEnabled = true`이고 `scheduled` 상태인 occurrence만 예약 후보로 삼는다.
+4. OS notification permission이 없으면 local notification 예약을 시도하지 않는다.
+5. OS 반복 트리거로 표현 가능한 단순 반복은 반복 예약을 우선 검토한다.
+6. 기본 예약 범위는 앞으로 30일이다.
+7. 모든 일정은 30일 범위 밖이어도 일정별 다음 occurrence 1개를 추가 예약한다.
+8. 기기 pending 예약 상한에 가까워지면 예정 시각이 가까운 알림을 우선 예약한다.
+9. 상한 초과는 사용자에게 즉시 경고하지 않는다.
+10. 예약하지 못한 먼 알림은 다음 sync에서 다시 시도한다.
+11. 개발용 진단 값은 예약 후보 수, 실제 예약 수, 누락된 먼 알림 수를 포함한다.
+12. 예약 content 제목에는 사용자 기기에서 복호화한 일정 제목을 사용한다.
+13. 예약 content 본문에는 설명을 넣지 않고 예정 시각을 짧게 표시한다.
+14. 예약 payload에는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 포함한다.
+15. 예약 identifier는 occurrence 단위로 안정적으로 만든다.
+16. 더 이상 유효하지 않은 future local notification은 취소한다.
+17. 알림 tap payload가 유효하면 상세 화면으로 이동한다.
 
-### Remote push delivery algorithm
+### Local notification privacy boundary
 
-1. future occurrence 계산 결과를 기준으로 `notification_delivery_jobs`를 upsert 한다.
-2. job의 `dedupe_key`로 occurrence 단위 중복 생성을 막는다.
-3. Supabase `pg_cron`이 매분 Edge Function worker를 호출한다.
-   호출은 Supabase JWT와 내부 secret header를 모두 통과해야 한다.
-   내부 secret은 앱 클라이언트에 포함하지 않는다.
-4. worker가 `status in ('pending', 'retrying')` 이고 `deliver_at_utc <= now()` 인 job을 조회한다.
-5. worker가 발송 직전 target item이 archived/missing인지 다시 확인한다.
-   target이 비활성 상태면 job을 `cancelled`로 바꾸고 provider 요청을 만들지 않는다.
-6. 조회 시점의 활성 `device_push_tokens`를 읽는다.
-7. iOS + `apns` token은 APNs 직접 발송으로 보낸다.
-8. Android + `fcm` token은 FCM 직접 발송으로 보낸다.
-   payload에는 `notificationKind`, `source`, `itemId`, `scheduledAtUtc`를 포함한다.
-   반복 항목 설명이 없으면 provider notification payload에는 `body`를 넣지 않는다.
-9. token별 결과를 `notification_delivery_attempts`에 남긴다.
-10. APNs / FCM 성공 응답 attempt가 1건 이상이면 inbox target을 검증한다.
-   필수 target은 `user_id`, `item_id`, `item_scheduled_at_utc`, `notification_kind`, payload routing 값이다.
-   target이 누락되었거나 payload routing 값이 job target과 다르면 inbox row를 만들지 않는다.
-11. target이 유효하면 즉시 `notification_inbox_items`를 upsert 한다.
-    upsert 기준은 `(user_id, item_id, item_scheduled_at_utc)`이다.
-    같은 key가 이미 있으면 기존 row를 갱신하지 않고 operation log만 추가한다.
-    발송 예정 job과 성공 attempt가 없는 `retrying` 또는 `failed` job은 inbox row를 만들지 않는다.
-12. job 요약 상태와 재시도 시각을 갱신한다.
-13. 무효 token은 `delivery-failed`로 비활성화한다.
+- 일정 제목과 설명은 서버 push payload에 넣지 않는다.
+- 서버 로그, Sentry event, provider response summary에는 일정 제목과 설명을 남기지 않는다.
+- 운영 디버깅은 `itemId`, `scheduledAtUtc`, 상태 코드처럼 표시 문구가 아닌 값으로 수행한다.
+- 원격 푸시 fallback을 도입해도 제목은 일반 문구만 사용한다.
 
-### Remote push security boundary
+### Remote push fallback notes
 
-- 앱 클라이언트는 `notification_delivery_jobs`와 `notification_delivery_attempts`를 직접 쓰지 않는다.
-- job 생성과 취소는 제한된 RPC가 `auth.uid()`, 반복 항목 소유자, 14일 동기화 범위, 허용 상태를 확인한 뒤 처리한다.
-- item 삭제는 제한된 RPC가 archive와 pending/retrying job 취소를 같은 DB 함수 안에서 처리한다.
-- worker만 발송 상태, 성공/실패 count, attempt log, inbox 생성, invalid token 비활성화를 처리한다.
-- worker 호출에는 `PUSH_DELIVERY_WORKER_SECRET`과 동일한 내부 secret header가 필요하다.
-- cron 호출용 anon key와 worker secret은 Supabase Vault에 두고 앱 번들에 넣지 않는다.
+원격 푸시 fallback은 현재 기본 설계가 아니다.
+나중에 필요하면 `docs/adr/0002-device-local-notifications.md`의 privacy boundary를 유지한 상태에서 별도 설계한다.
+
+### Legacy remote push implementation context
+
+아래 원격 푸시 inbox와 provider 설정 설명은 제거 대상인 기존 구현을 이해하기 위한 legacy context다.
+목표 구조는 기기 로컬 알림이며, 원격 푸시를 다시 도입할 때도 실제 일정 제목과 설명을 payload에 싣지 않는다.
 
 ### Notification inbox stored fields
 
@@ -428,24 +454,16 @@ MVP UI는 collapsed inbox row만 표시한다.
 - MVP에서 지원하는 상세 이동 조합은 `reminder` + `recurring-item` 하나다.
 - `itemId`는 route path parameter로 사용한다.
 - `scheduledAtUtc`는 상세 화면이 기준 occurrence를 선택하는 query parameter로 사용한다.
-- inbox 목록에서 진입하면 `returnTo = "/(tabs)/home/notifications"`를 함께 전달한다.
 - OS 원격 푸시 tap에서 진입하면 `returnTo = "/home"`을 함께 전달한다.
 - 허용되지 않은 알림 유형이나 대상 엔티티 조합은 route를 만들지 않는다.
 - 지원하지 않는 상세 이동 target은 navigation failure로만 처리한다.
-- 지원하지 않는 상세 이동 target도 이미 저장된 inbox row의 조회, 읽음, 전체 읽음, 숨김 액션을 막지 않는다.
 
 fallback 규칙:
 
 - route mapping이 없으면 현재 화면을 유지하고 상세 이동을 시도하지 않는다.
-- route mapping이 없어도 알림함 tap으로 시작한 `read_at` 기록은 유지한다.
-- route mapping이 없어도 알림함 목록 새로고침, 전체 읽음, 삭제는 평소처럼 동작한다.
 - route mapping은 유효하지만 대상 반복 항목을 찾을 수 없거나 현재 사용자가 접근할 수 없으면 상세 fallback 화면을 표시한다.
 - fallback 화면은 "알림 대상을 열 수 없습니다." 문구와 돌아가기 액션을 제공한다.
-- 알림함 목록에서 진입한 fallback의 돌아가기 액션은 알림함으로 돌아간다.
 - OS 원격 푸시 tap에서 진입한 fallback의 돌아가기 액션은 홈으로 돌아간다.
-- fallback은 해당 inbox row의 `read_at`을 되돌리지 않는다.
-- fallback은 해당 inbox row의 `hidden_at`을 기록하지 않는다.
-- fallback은 local notification이나 앱 내부 이벤트를 새 inbox item으로 만들지 않는다.
 
 전제조건:
 
@@ -733,5 +751,5 @@ src/
 2. 고정형과 완료 기준형을 한 UX 안에서 어떻게 공존시켰는가
 3. 지난 일정 상태를 자동 미루기 없이 어떻게 처리했는가
 4. occurrence를 저장하지 않고 계산하는 이유
-5. 서버 중심 구조에서 원격 푸시 발송 대상을 어떻게 동기화했는가
+5. 개인 정보 보호를 위해 알림을 기기 로컬 책임으로 둔 이유
 6. 멀티 디바이스 확장을 고려했지만 MVP 복잡도를 어떻게 통제했는가

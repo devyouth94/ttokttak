@@ -1,5 +1,9 @@
 import { fromZonedTime } from "date-fns-tz";
 
+import {
+  recurringContentCipher,
+  type RecurringItemContentCipher,
+} from "~/features/privacy/recurring-content-cipher";
 import { getFirstFutureOccurrenceLocalDateAfterEdit } from "~/features/recurring/domain/occurrence";
 import type {
   RecurringItem,
@@ -25,7 +29,13 @@ type RecurringItemWithVersionsRow = RecurringItemRow & {
   recurring_item_schedule_versions?: RecurringItemScheduleVersionRow[] | null;
 };
 
+type RecurringItemRepositoryOptions = {
+  client?: RepositoryClient;
+  contentCipher?: RecurringItemContentCipher;
+};
+
 const recurringItemSelect = "*, recurring_item_schedule_versions(*)";
+const unrecoverableRecurringItemTitle = "일정 내용을 복구할 수 없어요";
 
 export type CreateRecurringItemInput = Omit<RecurringItemDraft, "colorKey"> & {
   colorKey?: RecurringItemColorKey;
@@ -41,6 +51,7 @@ export type UpdateRecurringItemInput = {
 
 export type ListRecurringItemsOptions = {
   client?: RepositoryClient;
+  contentCipher?: RecurringItemContentCipher;
   includeArchived?: boolean;
   timezone: string;
   userId: string;
@@ -48,6 +59,7 @@ export type ListRecurringItemsOptions = {
 
 export type GetRecurringItemOptions = {
   client?: RepositoryClient;
+  contentCipher?: RecurringItemContentCipher;
   id: string;
   timezone: string;
   userId: string;
@@ -58,6 +70,28 @@ export type ArchiveRecurringItemOptions = {
   id: string;
   userId: string;
 };
+
+function resolveRepositoryOptions(
+  clientOrOptions?: RepositoryClient | RecurringItemRepositoryOptions
+): RecurringItemRepositoryOptions {
+  if (isRecurringItemRepositoryOptions(clientOrOptions)) {
+    return clientOrOptions;
+  }
+
+  return {
+    client: clientOrOptions,
+  };
+}
+
+function isRecurringItemRepositoryOptions(
+  value?: RepositoryClient | RecurringItemRepositoryOptions
+): value is RecurringItemRepositoryOptions {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    ("client" in value || "contentCipher" in value)
+  );
+}
 
 function normalizeTimeLocal(value: string): string {
   return value.slice(0, 5);
@@ -109,18 +143,24 @@ function getLatestScheduleVersion(
  * DB row를 도메인에서 사용하는 반복 항목 형태로 변환한다.
  * 현재 규칙 표시는 latest schedule version 기준으로 계산한다.
  */
-function toRecurringItem(
+async function toRecurringItem(
   row: RecurringItemWithVersionsRow,
+  contentCipher: RecurringItemContentCipher,
   timezone: string
-): RecurringItem {
+): Promise<RecurringItem> {
   const latestVersion = getLatestScheduleVersion(row);
   const scheduleVersions = getSortedScheduleVersions(row);
+  const content = await decryptRecurringItemContentWithFallback({
+    contentCipher,
+    row,
+  });
 
   return {
     id: row.id,
     userId: row.user_id,
-    title: row.title,
-    description: row.description,
+    title: content.title,
+    description: content.description,
+    contentStatus: content.contentStatus,
     category: row.category,
     colorKey: row.color_key as RecurringItemColorKey,
     recurrenceType: latestVersion.recurrenceType,
@@ -136,6 +176,38 @@ function toRecurringItem(
     updatedAt: row.updated_at,
     scheduleVersions,
   };
+}
+
+async function decryptRecurringItemContentWithFallback({
+  contentCipher,
+  row,
+}: {
+  contentCipher: RecurringItemContentCipher;
+  row: RecurringItemWithVersionsRow;
+}): Promise<Pick<RecurringItem, "contentStatus" | "description" | "title">> {
+  try {
+    return {
+      ...(await contentCipher.decryptRecurringItemContent({
+        descriptionCiphertext: row.description_ciphertext,
+        keyVersion: row.content_key_version,
+        metadata: row.content_encryption_metadata,
+        titleCiphertext: row.title_ciphertext,
+        userId: row.user_id,
+      })),
+      contentStatus: {
+        status: "available",
+      },
+    };
+  } catch {
+    return {
+      contentStatus: {
+        reason: "decryption-failed",
+        status: "unrecoverable",
+      },
+      description: null,
+      title: unrecoverableRecurringItemTitle,
+    };
+  }
 }
 
 function toRecurringItemDraftFromEntity(
@@ -222,6 +294,7 @@ async function getRecurringItemRowById(params: {
 
 export async function listRecurringItems({
   client,
+  contentCipher = recurringContentCipher,
   includeArchived = false,
   timezone,
   userId,
@@ -243,13 +316,16 @@ export async function listRecurringItems({
     throw error;
   }
 
-  return (data as RecurringItemWithVersionsRow[]).map((row) =>
-    toRecurringItem(row, timezone)
+  return Promise.all(
+    (data as RecurringItemWithVersionsRow[]).map((row) =>
+      toRecurringItem(row, contentCipher, timezone)
+    )
   );
 }
 
 export async function getRecurringItemById({
   client,
+  contentCipher = recurringContentCipher,
   id,
   timezone,
   userId,
@@ -260,14 +336,17 @@ export async function getRecurringItemById({
       id,
       userId,
     }),
+    contentCipher,
     timezone
   );
 }
 
 export async function createRecurringItem(
   input: CreateRecurringItemInput,
-  client?: RepositoryClient
+  clientOrOptions?: RepositoryClient | RecurringItemRepositoryOptions
 ): Promise<RecurringItem> {
+  const { client, contentCipher = recurringContentCipher } =
+    resolveRepositoryOptions(clientOrOptions);
   const colorKey = input.colorKey ?? defaultRecurringItemColorKey;
   const draft = {
     ...input,
@@ -281,13 +360,20 @@ export async function createRecurringItem(
     `${input.startDateLocal}T00:00:00.000`,
     input.timezone
   ).toISOString();
+  const encryptedContent = await contentCipher.encryptRecurringItemContent({
+    description: input.description ?? null,
+    title: input.title,
+    userId: input.userId,
+  });
   const { data, error } = await supabase.rpc(
     "create_recurring_item_with_initial_version",
     {
       p_anchor_type: input.anchorType,
       p_category: input.category ?? null,
       p_color_key: colorKey,
-      p_description: input.description ?? null,
+      p_content_encryption_metadata: encryptedContent.metadata,
+      p_content_key_version: encryptedContent.keyVersion,
+      p_description_ciphertext: encryptedContent.descriptionCiphertext,
       p_effective_from_utc: effectiveFromUtc,
       p_interval_value: input.intervalValue ?? null,
       p_is_archived: input.isArchived,
@@ -296,7 +382,7 @@ export async function createRecurringItem(
       p_reminder_time_local: input.reminderTimeLocal,
       p_seed_start_date_local: input.startDateLocal,
       p_start_date_local: input.startDateLocal,
-      p_title: input.title,
+      p_title_ciphertext: encryptedContent.titleCiphertext,
       p_user_id: input.userId,
       p_weekday_mask: input.weekdayMask ?? null,
     }
@@ -308,6 +394,7 @@ export async function createRecurringItem(
 
   return getRecurringItemById({
     client,
+    contentCipher,
     id: data,
     timezone: input.timezone,
     userId: input.userId,
@@ -316,14 +403,21 @@ export async function createRecurringItem(
 
 export async function updateRecurringItem(
   input: UpdateRecurringItemInput,
-  client?: RepositoryClient
+  clientOrOptions?: RepositoryClient | RecurringItemRepositoryOptions
 ): Promise<RecurringItem> {
+  const { client, contentCipher = recurringContentCipher } =
+    resolveRepositoryOptions(clientOrOptions);
   const existingItem = await getRecurringItemById({
     client,
+    contentCipher,
     id: input.id,
     timezone: input.timezone,
     userId: input.userId,
   });
+
+  if (existingItem.contentStatus?.status === "unrecoverable") {
+    throw new Error("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
+  }
 
   const mergedDraft: RecurringItemDraft = {
     ...toRecurringItemDraftFromEntity(existingItem),
@@ -365,13 +459,20 @@ export async function updateRecurringItem(
         }) ?? existingItem.startDateLocal;
     }
 
+    const encryptedContent = await contentCipher.encryptRecurringItemContent({
+      description: mergedDraft.description ?? null,
+      title: mergedDraft.title,
+      userId: input.userId,
+    });
     const { error } = await supabase.rpc(
       "update_recurring_item_with_edit_policy",
       {
         p_anchor_type: ruleChanged ? mergedDraft.anchorType : null,
         p_category: mergedDraft.category ?? null,
         p_color_key: mergedDraft.colorKey,
-        p_description: mergedDraft.description ?? null,
+        p_content_encryption_metadata: encryptedContent.metadata,
+        p_content_key_version: encryptedContent.keyVersion,
+        p_description_ciphertext: encryptedContent.descriptionCiphertext,
         p_effective_from_utc: effectiveFromUtc,
         p_has_rule_changes: ruleChanged,
         p_interval_value: ruleChanged
@@ -387,7 +488,7 @@ export async function updateRecurringItem(
           ? mergedDraft.reminderTimeLocal
           : null,
         p_seed_start_date_local: seedStartDateLocal,
-        p_title: mergedDraft.title,
+        p_title_ciphertext: encryptedContent.titleCiphertext,
         p_user_id: input.userId,
         p_weekday_mask: ruleChanged ? (mergedDraft.weekdayMask ?? null) : null,
       }
@@ -400,6 +501,7 @@ export async function updateRecurringItem(
 
   return getRecurringItemById({
     client,
+    contentCipher,
     id: input.id,
     timezone: input.timezone,
     userId: input.userId,

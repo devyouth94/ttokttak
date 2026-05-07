@@ -6,7 +6,6 @@ import { HomeDateCarousel } from "./home-date-carousel";
 import { HomeHeader } from "./home-header";
 
 type HomeTopPanelProps = {
-  hasUnreadNotification: boolean;
   onHeightChange: (height: number) => void;
   onSelectDate: (dateId: string) => void;
   profileName: string;
@@ -14,7 +13,6 @@ type HomeTopPanelProps = {
 };
 
 export function HomeTopPanel({
-  hasUnreadNotification,
   onHeightChange,
   onSelectDate,
   profileName,
@@ -27,10 +25,7 @@ export function HomeTopPanel({
       }}
       style={styles.topPanel}
     >
-      <HomeHeader
-        hasUnreadNotification={hasUnreadNotification}
-        profileName={profileName}
-      />
+      <HomeHeader profileName={profileName} />
 
       <HomeDateCarousel
         onSelectDate={onSelectDate}

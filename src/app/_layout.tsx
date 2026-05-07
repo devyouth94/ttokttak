@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
 import { SplashScreen, Stack } from "expo-router";
@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
+import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
 import { NotificationBootstrapProvider } from "~/features/notifications/notification-bootstrap";
 import {
   getNotificationNavigationKey,
@@ -42,9 +43,41 @@ function SplashScreenController() {
 }
 
 function NotificationResponseController(): null {
-  useEffect(() => {
-    const handledResponseKeys = new Set<string>();
+  const { profile, user } = useSession();
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const handledResponseKeysRef = useRef<Set<string>>(new Set());
+  const hasPendingTapSyncRef = useRef(false);
 
+  const syncAfterNotificationTap = useCallback((): void => {
+    if (!user?.id) {
+      hasPendingTapSyncRef.current = true;
+      return;
+    }
+
+    hasPendingTapSyncRef.current = false;
+
+    void syncLocalReminderNotifications({
+      reason: "notification-tapped",
+      scope: { type: "all" },
+      timezone,
+      userId: user.id,
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: {
+          feature: "local-notification-tap-sync",
+        },
+      });
+    });
+  }, [timezone, user?.id]);
+
+  useEffect(() => {
+    if (hasPendingTapSyncRef.current && user?.id) {
+      syncAfterNotificationTap();
+    }
+  }, [syncAfterNotificationTap, user?.id]);
+
+  useEffect(() => {
     const handleResponse = (
       response: Notifications.NotificationResponse | null
     ): void => {
@@ -54,7 +87,7 @@ function NotificationResponseController(): null {
 
       const responseKey = getNotificationNavigationKey(response);
 
-      if (handledResponseKeys.has(responseKey)) {
+      if (handledResponseKeysRef.current.has(responseKey)) {
         return;
       }
 
@@ -64,7 +97,8 @@ function NotificationResponseController(): null {
         return;
       }
 
-      handledResponseKeys.add(responseKey);
+      handledResponseKeysRef.current.add(responseKey);
+      syncAfterNotificationTap();
     };
 
     void Notifications.getLastNotificationResponseAsync().then((response) => {
@@ -81,7 +115,7 @@ function NotificationResponseController(): null {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [syncAfterNotificationTap]);
 
   return null;
 }
