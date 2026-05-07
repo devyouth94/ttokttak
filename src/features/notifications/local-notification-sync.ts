@@ -64,6 +64,12 @@ type DesiredLocalReminderNotification = {
   title: string;
 };
 
+type LocalReminderNotificationSyncPlan = {
+  diagnostics: LocalReminderNotificationSyncResult["diagnostics"];
+  notificationsToCancel: ExistingLocalReminderNotification[];
+  notificationsToSchedule: DesiredLocalReminderNotification[];
+};
+
 function createLocalReminderIdentifier(params: {
   itemId: string;
   scheduledAtUtc: string;
@@ -222,6 +228,22 @@ function dedupeDesiredNotifications(
   return Array.from(notificationsByIdentifier.values());
 }
 
+function groupCompletionLogsByItemId(
+  completionLogs: CompletionLog[]
+): Record<string, CompletionLog[]> {
+  return completionLogs.reduce<Record<string, CompletionLog[]>>(
+    (accumulator, log) => {
+      const currentLogs = accumulator[log.itemId] ?? [];
+
+      currentLogs.push(log);
+      accumulator[log.itemId] = currentLogs;
+
+      return accumulator;
+    },
+    {}
+  );
+}
+
 function createDesiredLocalReminderNotifications(params: {
   completionLogs: CompletionLog[];
   item: RecurringItem;
@@ -278,6 +300,135 @@ function createDesiredLocalReminderNotifications(params: {
   );
 }
 
+function createDesiredLocalReminderNotificationsForItems(params: {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  rangeEndUtc: string;
+  rangeStartUtc: string;
+  timezone: string;
+  userId: string;
+}): DesiredLocalReminderNotification[] {
+  const {
+    completionLogs,
+    items,
+    rangeEndUtc,
+    rangeStartUtc,
+    timezone,
+    userId,
+  } = params;
+  const completionLogsByItem = groupCompletionLogsByItemId(completionLogs);
+
+  return items.flatMap((item) =>
+    createDesiredLocalReminderNotifications({
+      completionLogs: completionLogsByItem[item.id] ?? [],
+      item,
+      rangeEndUtc,
+      rangeStartUtc,
+      timezone,
+      userId,
+    })
+  );
+}
+
+export function createLocalReminderNotificationSyncPlan(params: {
+  desiredNotifications: DesiredLocalReminderNotification[];
+  existingNotifications: ExistingLocalReminderNotification[];
+  maxPendingLocalNotifications?: number;
+  pendingNotificationCount: number;
+  scope: NotificationSyncScope;
+}): LocalReminderNotificationSyncPlan {
+  const {
+    desiredNotifications,
+    existingNotifications,
+    pendingNotificationCount,
+    scope,
+  } = params;
+  const maxPendingLocalNotifications =
+    params.maxPendingLocalNotifications ?? MAX_PENDING_LOCAL_NOTIFICATIONS;
+  const scopedDesiredNotifications = desiredNotifications.filter(
+    (notification) => isWithinScope(notification, scope)
+  );
+  const scopedExistingNotifications = existingNotifications.filter(
+    (notification) => isWithinScope(notification, scope)
+  );
+  const desiredIdentifiers = new Set(
+    scopedDesiredNotifications.map((notification) => notification.identifier)
+  );
+  const existingIdentifiers = new Set(
+    scopedExistingNotifications.map((notification) => notification.identifier)
+  );
+  const notificationsToCancel = scopedExistingNotifications.filter(
+    (notification) => !desiredIdentifiers.has(notification.identifier)
+  );
+  const remainingPendingCount =
+    pendingNotificationCount - notificationsToCancel.length;
+  const availableScheduleSlots = Math.max(
+    0,
+    maxPendingLocalNotifications - remainingPendingCount
+  );
+  const notificationsReadyToSchedule = scopedDesiredNotifications
+    .filter((notification) => !existingIdentifiers.has(notification.identifier))
+    .sort((left, right) =>
+      left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
+    );
+  const notificationsToSchedule = notificationsReadyToSchedule.slice(
+    0,
+    availableScheduleSlots
+  );
+
+  return {
+    diagnostics: {
+      candidateCount: scopedDesiredNotifications.length,
+      omittedDistantCount:
+        notificationsReadyToSchedule.length - notificationsToSchedule.length,
+      scheduledCount: notificationsToSchedule.length,
+    },
+    notificationsToCancel,
+    notificationsToSchedule,
+  };
+}
+
+function parseExistingLocalReminderNotifications(params: {
+  scheduledNotificationRequests: Notifications.NotificationRequest[];
+  userId: string;
+}): ExistingLocalReminderNotification[] {
+  const { scheduledNotificationRequests, userId } = params;
+
+  return scheduledNotificationRequests
+    .map((notification) =>
+      parseLocalReminderIdentifier(notification.identifier, userId)
+    )
+    .filter((notification) => notification !== null);
+}
+
+async function applyLocalReminderNotificationSyncPlan(
+  plan: LocalReminderNotificationSyncPlan
+): Promise<void> {
+  for (const notification of plan.notificationsToCancel) {
+    await Notifications.cancelScheduledNotificationAsync(
+      notification.identifier
+    );
+  }
+
+  for (const notification of plan.notificationsToSchedule) {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        body: notification.body,
+        data: notification.payload,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+        sound: "default",
+        title: notification.title,
+      },
+      identifier: notification.identifier,
+      trigger: {
+        channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
+        date: new Date(notification.scheduledAtUtc),
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+      },
+    });
+  }
+}
+
 export async function syncLocalReminderNotifications(
   params: LocalReminderNotificationSyncParams
 ): Promise<LocalReminderNotificationSyncResult> {
@@ -311,95 +462,32 @@ export async function syncLocalReminderNotifications(
           userId,
         })
       : [];
-  const completionLogsByItem = completionLogs.reduce<
-    Record<string, CompletionLog[]>
-  >((accumulator, log) => {
-    const currentLogs = accumulator[log.itemId] ?? [];
-
-    currentLogs.push(log);
-    accumulator[log.itemId] = currentLogs;
-
-    return accumulator;
-  }, {});
-  const desiredNotifications = items.flatMap((item) =>
-    createDesiredLocalReminderNotifications({
-      completionLogs: completionLogsByItem[item.id] ?? [],
-      item,
-      rangeEndUtc,
-      rangeStartUtc: nowUtc,
-      timezone,
-      userId,
-    })
-  );
-  const scopedDesiredNotifications = desiredNotifications.filter(
-    (notification) => isWithinScope(notification, scope)
-  );
-
+  const desiredNotifications = createDesiredLocalReminderNotificationsForItems({
+    completionLogs,
+    items,
+    rangeEndUtc,
+    rangeStartUtc: nowUtc,
+    timezone,
+    userId,
+  });
   const scheduledNotificationRequests =
     await Notifications.getAllScheduledNotificationsAsync();
-  const existingNotifications = scheduledNotificationRequests
-    .map((notification) =>
-      parseLocalReminderIdentifier(notification.identifier, userId)
-    )
-    .filter((notification) => notification !== null)
-    .filter((notification) => isWithinScope(notification, scope));
-  const desiredIdentifiers = new Set(
-    scopedDesiredNotifications.map((notification) => notification.identifier)
-  );
-  const existingIdentifiers = new Set(
-    existingNotifications.map((notification) => notification.identifier)
-  );
-  const notificationsToCancel = existingNotifications.filter(
-    (notification) => !desiredIdentifiers.has(notification.identifier)
-  );
-  const remainingPendingCount =
-    scheduledNotificationRequests.length - notificationsToCancel.length;
-  const availableScheduleSlots = Math.max(
-    0,
-    MAX_PENDING_LOCAL_NOTIFICATIONS - remainingPendingCount
-  );
-  const notificationsReadyToSchedule = scopedDesiredNotifications
-    .filter((notification) => !existingIdentifiers.has(notification.identifier))
-    .sort((left, right) =>
-      left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
-    );
-  const notificationsToSchedule = notificationsReadyToSchedule.slice(
-    0,
-    availableScheduleSlots
-  );
+  const existingNotifications = parseExistingLocalReminderNotifications({
+    scheduledNotificationRequests,
+    userId,
+  });
+  const syncPlan = createLocalReminderNotificationSyncPlan({
+    desiredNotifications,
+    existingNotifications,
+    pendingNotificationCount: scheduledNotificationRequests.length,
+    scope,
+  });
 
-  for (const notification of notificationsToCancel) {
-    await Notifications.cancelScheduledNotificationAsync(
-      notification.identifier
-    );
-  }
-
-  for (const notification of notificationsToSchedule) {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        body: notification.body,
-        data: notification.payload,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-        sound: "default",
-        title: notification.title,
-      },
-      identifier: notification.identifier,
-      trigger: {
-        channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
-        date: new Date(notification.scheduledAtUtc),
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-      },
-    });
-  }
+  await applyLocalReminderNotificationSyncPlan(syncPlan);
 
   return {
-    cancelledCount: notificationsToCancel.length,
-    diagnostics: {
-      candidateCount: scopedDesiredNotifications.length,
-      omittedDistantCount:
-        notificationsReadyToSchedule.length - notificationsToSchedule.length,
-      scheduledCount: notificationsToSchedule.length,
-    },
-    scheduledCount: notificationsToSchedule.length,
+    cancelledCount: syncPlan.notificationsToCancel.length,
+    diagnostics: syncPlan.diagnostics,
+    scheduledCount: syncPlan.notificationsToSchedule.length,
   };
 }

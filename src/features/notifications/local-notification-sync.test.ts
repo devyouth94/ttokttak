@@ -1,6 +1,9 @@
 import * as Notifications from "expo-notifications";
 
-import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
+import {
+  createLocalReminderNotificationSyncPlan,
+  syncLocalReminderNotifications,
+} from "~/features/notifications/local-notification-sync";
 import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
 import type {
   CompletionLog,
@@ -377,6 +380,64 @@ describe("syncLocalReminderNotifications", () => {
   });
 });
 
+describe("createLocalReminderNotificationSyncPlan", () => {
+  it("scope 안에서 빠진 기존 알림은 취소하고 가까운 새 알림부터 예약한다", () => {
+    const result = createLocalReminderNotificationSyncPlan({
+      desiredNotifications: [
+        createDesiredNotification({
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
+        }),
+        createDesiredNotification({
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-22T12:00:00.000Z",
+        }),
+        createDesiredNotification({
+          itemId: "item-2",
+          scheduledAtUtc: "2026-04-21T13:00:00.000Z",
+        }),
+      ],
+      existingNotifications: [
+        createExistingNotification({
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-21T11:00:00.000Z",
+        }),
+        createExistingNotification({
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-20T12:00:00.000Z",
+        }),
+        createExistingNotification({
+          itemId: "item-2",
+          scheduledAtUtc: "2026-04-21T13:00:00.000Z",
+        }),
+      ],
+      maxPendingLocalNotifications: 2,
+      pendingNotificationCount: 2,
+      scope: {
+        effectiveFromUtc: "2026-04-21T00:00:00.000Z",
+        itemId: "item-1",
+        type: "item",
+      },
+    });
+
+    expect(
+      result.notificationsToCancel.map(
+        (notification) => notification.identifier
+      )
+    ).toEqual(["ttokttak:reminder:user-1:item-1:2026-04-21T11:00:00.000Z"]);
+    expect(
+      result.notificationsToSchedule.map(
+        (notification) => notification.identifier
+      )
+    ).toEqual(["ttokttak:reminder:user-1:item-1:2026-04-21T12:00:00.000Z"]);
+    expect(result.diagnostics).toEqual({
+      candidateCount: 2,
+      omittedDistantCount: 1,
+      scheduledCount: 1,
+    });
+  });
+});
+
 function createScheduledNotificationRequest(params: {
   identifier: string;
   itemId: string;
@@ -398,6 +459,36 @@ function createScheduledNotificationRequest(params: {
     },
     identifier: params.identifier,
     trigger: null,
+  };
+}
+
+function createExistingNotification(params: {
+  itemId: string;
+  scheduledAtUtc: string;
+}) {
+  return {
+    identifier: `ttokttak:reminder:user-1:${params.itemId}:${params.scheduledAtUtc}`,
+    itemId: params.itemId,
+    scheduledAtUtc: params.scheduledAtUtc,
+  };
+}
+
+function createDesiredNotification(params: {
+  itemId: string;
+  scheduledAtUtc: string;
+}) {
+  return {
+    body: "오후 9:00",
+    identifier: `ttokttak:reminder:user-1:${params.itemId}:${params.scheduledAtUtc}`,
+    itemId: params.itemId,
+    payload: {
+      itemId: params.itemId,
+      notificationKind: "reminder" as const,
+      scheduledAtUtc: params.scheduledAtUtc,
+      source: "recurring-item" as const,
+    },
+    scheduledAtUtc: params.scheduledAtUtc,
+    title: "약 먹기",
   };
 }
 

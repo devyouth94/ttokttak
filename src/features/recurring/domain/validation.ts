@@ -42,7 +42,9 @@ export function requiresWeekdayMask(recurrenceType: RecurrenceType): boolean {
   return recurrenceType === "weekly" || recurrenceType === "interval_weeks";
 }
 
-export function supportsCompletionBased(recurrenceType: RecurrenceType): boolean {
+export function supportsCompletionBased(
+  recurrenceType: RecurrenceType
+): boolean {
   return completionBasedRecurrenceTypes.includes(
     recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
   );
