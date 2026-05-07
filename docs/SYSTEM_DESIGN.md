@@ -664,6 +664,12 @@ MVP에서는 “여러 기기 동시 편집에 대한 완전한 conflict UX” �
 - Supabase Auth 사용
 - Google / Apple provider 추가 가능 구조
 
+### Profile
+
+- 앱 표시 이름의 source of truth는 `profiles.display_name`이다.
+- Apple / Google metadata 이름은 profile 생성 또는 비어 있는 profile 보정에만 사용한다.
+- 사용자가 설정에서 수정한 앱 표시 이름은 provider metadata로 덮어쓰지 않는다.
+
 ### Authorization
 
 - RLS로 user_id 기준 접근 제한

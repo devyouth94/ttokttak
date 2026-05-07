@@ -3,22 +3,33 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Modal,
   Pressable,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
-import { ExternalLink } from "lucide-react-native";
+import { ExternalLink, Pencil } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppText } from "~/design-system/components/app-text";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import {
+  borderRadius,
+  colors,
+  spacing,
+  typography,
+} from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { useSession } from "~/features/session/session-provider";
+import {
+  getEditableProfileDisplayName,
+  validateProfileDisplayName,
+} from "~/features/settings/settings.helpers";
 
 type SectionTitleProps = {
   title: string;
@@ -40,6 +51,8 @@ type SettingsRowProps = {
 
 type SettingsValueRowProps = {
   isFirst?: boolean;
+  isPressable?: boolean;
+  onPress?: () => void;
   title: string;
   value: string;
 };
@@ -102,18 +115,32 @@ function SettingsRow({
 
 function SettingsValueRow({
   isFirst = false,
+  isPressable = false,
+  onPress,
   title,
   value,
 }: SettingsValueRowProps): React.JSX.Element {
   return (
-    <View style={[styles.row, !isFirst ? styles.rowDivider : undefined]}>
+    <Pressable
+      accessibilityRole={isPressable ? "button" : undefined}
+      disabled={!isPressable}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        !isFirst ? styles.rowDivider : undefined,
+        isPressable && pressed ? styles.rowPressed : undefined,
+      ]}
+    >
       <AppText style={styles.rowTitle} variant="body3">
         {title}
       </AppText>
-      <AppText style={styles.rowValue} variant="body3">
-        {value}
-      </AppText>
-    </View>
+      <View style={styles.valueWithIcon}>
+        <AppText style={styles.rowValue} variant="body3">
+          {value}
+        </AppText>
+        {isPressable ? <Pencil color={colors.textSoft} size={14} /> : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -140,7 +167,7 @@ export default function SettingsTabPage(): React.JSX.Element {
     onScroll,
     scrollEventThrottle,
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const { profile, signOut, user } = useSession();
+  const { profile, signOut, updateDisplayName, user } = useSession();
   const {
     isPermissionLoading,
     isRequestingPermission,
@@ -149,6 +176,10 @@ export default function SettingsTabPage(): React.JSX.Element {
     requestPermission,
   } = useNotificationBootstrap();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
+  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState("");
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
 
   const profileName = profile?.display_name?.trim();
   const metadataName = user?.user_metadata?.full_name;
@@ -164,6 +195,58 @@ export default function SettingsTabPage(): React.JSX.Element {
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+
+  function openNameEditor(): void {
+    setDisplayNameDraft(
+      getEditableProfileDisplayName({
+        email: user?.email,
+        metadataName:
+          typeof metadataName === "string" ? metadataName : undefined,
+        profileName,
+      })
+    );
+    setDisplayNameError(null);
+    setIsNameEditorVisible(true);
+  }
+
+  function closeNameEditor(): void {
+    if (isSavingDisplayName) {
+      return;
+    }
+
+    setIsNameEditorVisible(false);
+    setDisplayNameError(null);
+  }
+
+  async function handleSaveDisplayName(): Promise<void> {
+    if (isSavingDisplayName) {
+      return;
+    }
+
+    const validationResult = validateProfileDisplayName(displayNameDraft);
+
+    if (validationResult.value === null) {
+      setDisplayNameError(validationResult.errorMessage);
+      return;
+    }
+
+    const nextDisplayName = validationResult.value;
+
+    setIsSavingDisplayName(true);
+
+    try {
+      await updateDisplayName(nextDisplayName);
+      setIsNameEditorVisible(false);
+      setDisplayNameError(null);
+    } catch (error) {
+      Alert.alert(
+        "이름 저장 실패",
+        error instanceof Error ? error.message : String(error)
+      );
+    } finally {
+      setIsSavingDisplayName(false);
+    }
+  }
 
   async function handleSignOut(): Promise<void> {
     if (isSigningOut) {
@@ -224,7 +307,13 @@ export default function SettingsTabPage(): React.JSX.Element {
       >
         <View style={styles.sections}>
           <SettingsSectionCard title="계정">
-            <SettingsValueRow isFirst title="이름" value={displayName} />
+            <SettingsValueRow
+              isFirst
+              isPressable
+              onPress={openNameEditor}
+              title="이름"
+              value={displayName}
+            />
             <SettingsValueRow title="이메일" value={email} />
           </SettingsSectionCard>
 
@@ -297,6 +386,76 @@ export default function SettingsTabPage(): React.JSX.Element {
           )}
         </View>
       </Animated.ScrollView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={closeNameEditor}
+        transparent
+        visible={isNameEditorVisible}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.nameEditor}>
+            <AppText style={styles.nameEditorTitle} variant="body2">
+              이름 수정
+            </AppText>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isSavingDisplayName}
+              maxLength={30}
+              onChangeText={(value) => {
+                setDisplayNameDraft(value);
+                setDisplayNameError(null);
+              }}
+              placeholder="이름"
+              placeholderTextColor={colors.textSoft}
+              style={styles.nameInput}
+              value={displayNameDraft}
+            />
+            {displayNameError ? (
+              <AppText style={styles.nameErrorText} variant="caption">
+                {displayNameError}
+              </AppText>
+            ) : null}
+            <View style={styles.nameEditorActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSavingDisplayName}
+                onPress={closeNameEditor}
+                style={({ pressed }) => [
+                  styles.nameEditorButton,
+                  styles.nameEditorCancelButton,
+                  pressed ? styles.rowPressed : undefined,
+                ]}
+              >
+                <AppText style={styles.nameEditorCancelText} variant="body3">
+                  취소
+                </AppText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSavingDisplayName}
+                onPress={() => {
+                  void handleSaveDisplayName();
+                }}
+                style={({ pressed }) => [
+                  styles.nameEditorButton,
+                  styles.nameEditorSaveButton,
+                  pressed ? styles.rowPressed : undefined,
+                ]}
+              >
+                {isSavingDisplayName ? (
+                  <ActivityIndicator color={colors.primaryForeground} />
+                ) : (
+                  <AppText style={styles.nameEditorSaveText} variant="body3">
+                    저장
+                  </AppText>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </AppScreen>
   );
 }
@@ -321,6 +480,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: "auto",
     paddingTop: spacing.xl,
+  },
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: colors.scrim,
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  nameEditor: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    gap: spacing.md,
+    padding: spacing.lg,
+    width: "100%",
+  },
+  nameEditorActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "flex-end",
+  },
+  nameEditorButton: {
+    alignItems: "center",
+    borderRadius: borderRadius.pill,
+    minWidth: 72,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  nameEditorCancelButton: {
+    borderColor: colors.dividerOnPrimary,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  nameEditorCancelText: {
+    color: colors.textMuted,
+  },
+  nameEditorSaveButton: {
+    backgroundColor: colors.primary,
+  },
+  nameEditorSaveText: {
+    color: colors.primaryForeground,
+  },
+  nameEditorTitle: {
+    color: colors.text,
+  },
+  nameErrorText: {
+    color: colors.error,
+  },
+  nameInput: {
+    borderColor: colors.dividerOnPrimary,
+    borderRadius: borderRadius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    color: colors.text,
+    fontFamily: typography.fontFamily.body,
+    fontSize: typography.size.body3,
+    lineHeight: typography.lineHeight.body3,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   row: {
     alignItems: "center",
@@ -375,5 +591,11 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     flex: 1,
+  },
+  valueWithIcon: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    gap: spacing.xs,
   },
 });

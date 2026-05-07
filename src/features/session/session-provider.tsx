@@ -22,6 +22,7 @@ type SessionContextValue = {
   signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  updateDisplayName: (displayName: string) => Promise<void>;
   user: User | null;
 };
 
@@ -29,14 +30,6 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 
 function getDeviceTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
-
-function getDisplayName(user: User): string | null {
-  const fullName = user.user_metadata?.full_name;
-
-  return typeof fullName === "string" && fullName.trim()
-    ? fullName.trim()
-    : (user.email ?? null);
 }
 
 function getMetadataDisplayName(user: User): string | null {
@@ -63,8 +56,7 @@ async function ensureProfile(user: User): Promise<ProfileRow> {
     const shouldSyncDisplayName =
       metadataDisplayName &&
       metadataDisplayName !== existingProfile.display_name &&
-      (!existingProfile.display_name ||
-        existingProfile.display_name === user.email);
+      !existingProfile.display_name;
 
     if (!shouldSyncDisplayName) {
       return existingProfile;
@@ -91,7 +83,7 @@ async function ensureProfile(user: User): Promise<ProfileRow> {
     .insert({
       id: user.id,
       timezone: getDeviceTimeZone(),
-      display_name: getDisplayName(user),
+      display_name: getMetadataDisplayName(user),
     })
     .select("*")
     .single();
@@ -266,6 +258,29 @@ export function SessionProvider({
       }
 
       await signOutFromGoogle();
+    },
+    async updateDisplayName(displayName: string) {
+      const client = supabase!;
+      const userId = session?.user.id;
+
+      if (!userId) {
+        throw new Error("로그인이 필요합니다.");
+      }
+
+      const { data, error } = await client
+        .from("profiles")
+        .update({
+          display_name: displayName.trim(),
+        })
+        .eq("id", userId)
+        .select("*")
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setProfile(data);
     },
     user: session?.user ?? null,
   };
