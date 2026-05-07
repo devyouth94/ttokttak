@@ -9,7 +9,6 @@ import {
 import { ko } from "date-fns/locale";
 
 import { getOccurrenceIdentity } from "~/features/recurring/domain/occurrence";
-import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
 import {
   createItemOccurrenceProjection,
   createLocalDateUtcRange,
@@ -169,26 +168,6 @@ export function buildHomeFeedSections({
       title: "다가오는 일정",
     },
   ];
-}
-
-export function getOverdueOccurrencesToResolve({
-  card,
-  completionLogs,
-  now,
-  timezone,
-}: {
-  card: HomeFeedCard;
-  completionLogs: CompletionLog[];
-  now: Date;
-  timezone: string;
-}): DerivedOccurrence[] {
-  return getOccurrencesToResolve({
-    completionLogs,
-    item: card.item,
-    now,
-    primaryOccurrence: card.occurrence,
-    timezone,
-  });
 }
 
 function buildSelectedDateSection({

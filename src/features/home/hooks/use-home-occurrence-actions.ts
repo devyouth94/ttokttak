@@ -9,24 +9,16 @@ import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-k
 import { createCompletionLog } from "~/features/recurring/repositories/completion-logs-repository";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
+import type { HomeFeedCard } from "../components/home-screen.helpers";
 import {
-  getOverdueOccurrencesToResolve,
-  type HomeFeedCard,
-} from "../components/home-screen.helpers";
-
-type SyncAfterMutation = (params: {
-  reason: "occurrence-completed" | "occurrence-skipped";
-  scope: {
-    effectiveFromUtc: string;
-    itemId: string;
-    type: "item";
-  };
-}) => Promise<void>;
+  processHomeFeedOccurrenceAction,
+  type SyncAfterHomeOccurrenceMutation,
+} from "../domain/home-occurrence-action-flow";
 
 type UseHomeOccurrenceActionsOptions = {
   completionLogs: CompletionLog[];
   refetchFeed: () => Promise<void>;
-  syncAfterMutation: SyncAfterMutation;
+  syncAfterMutation: SyncAfterHomeOccurrenceMutation;
   timezone: string;
   userId: string | null;
 };
@@ -72,51 +64,22 @@ export function useHomeOccurrenceActions({
       setActionErrorMessage(null);
 
       try {
-        const occurrencesToResolve = getOverdueOccurrencesToResolve({
-          card,
+        await processHomeFeedOccurrenceAction({
+          action,
           completionLogs,
-          now: new Date(),
-          timezone,
-        });
-        const existingScheduledAtUtcSet = new Set(
-          completionLogs
-            .filter((log) => log.itemId === card.item.id)
-            .map((log) => log.scheduledAtUtc)
-        );
-        const pendingOccurrences = occurrencesToResolve.filter(
-          (occurrence) =>
-            !existingScheduledAtUtcSet.has(occurrence.scheduledAtUtc)
-        );
-
-        if (pendingOccurrences.length > 0) {
-          await Promise.all(
-            pendingOccurrences.map((occurrence) =>
-              createCompletionLog({
-                action,
-                itemId: card.item.id,
-                scheduledAtUtc: occurrence.scheduledAtUtc,
-                userId,
-              })
-            )
-          );
-        }
-
-        await syncAfterMutation({
-          reason:
-            action === "completed"
-              ? "occurrence-completed"
-              : "occurrence-skipped",
-          scope: {
-            effectiveFromUtc: new Date().toISOString(),
-            itemId: card.item.id,
-            type: "item",
+          createCompletionLog,
+          invalidateRecurringUserQueries: async (readyUserId) => {
+            await queryClient.invalidateQueries({
+              queryKey: recurringQueryKeys.user(readyUserId),
+            });
           },
+          now: new Date(),
+          refetchFeed,
+          syncAfterMutation,
+          target: card,
+          timezone,
+          userId,
         });
-
-        await queryClient.invalidateQueries({
-          queryKey: recurringQueryKeys.user(userId),
-        });
-        await refetchFeed();
       } catch (error) {
         setActionErrorMessage(getErrorMessage(error));
       } finally {

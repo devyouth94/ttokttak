@@ -2,7 +2,6 @@ import { getFeedItemMetaLine } from "~/features/home/components/home-feed-item-r
 import {
   buildHomeFeedSections,
   createHomeDateOptions,
-  getOverdueOccurrencesToResolve,
 } from "~/features/home/components/home-screen.helpers";
 import type {
   CompletionLog,
@@ -222,40 +221,6 @@ describe("buildHomeFeedSections", () => {
     expect(upcomingSection?.items[0]?.metaLabel).toBe("오전 9:00");
     expect(upcomingSection?.items[13]?.item.title).toBe("다가오는 일정 14");
     expect(upcomingSection?.items[13]?.dateSeparatorLabel).toBe("4월 24일");
-  });
-
-  it("지난 일정 액션 대상에는 해당 카드 이전 overdue도 함께 포함한다", () => {
-    const sections = buildHomeFeedSections({
-      completionLogs: [],
-      items: [
-        createItem({
-          id: "interval-overdue-item",
-          intervalValue: 3,
-          recurrenceType: "interval_days",
-          startDateLocal: "2026-04-04",
-          title: "치약 교체",
-        }),
-      ],
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      selectedDateId: "2026-04-10",
-      timezone,
-    });
-
-    const overdueCard = sections.find((section) => section.id === "overdue")
-      ?.items[0];
-
-    expect(overdueCard).toBeDefined();
-
-    const occurrencesToResolve = getOverdueOccurrencesToResolve({
-      card: overdueCard!,
-      completionLogs: [],
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      timezone,
-    });
-
-    expect(
-      occurrencesToResolve.map((occurrence) => occurrence.localDate)
-    ).toEqual(["2026-04-04", "2026-04-07"]);
   });
 
   it("수정된 version이 있으면 홈 섹션도 미래 occurrence만 새 규칙으로 보여준다", () => {
