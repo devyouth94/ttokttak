@@ -13,6 +13,7 @@ import {
   type RecurrenceType,
   type RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
+import { supportsCompletionBased } from "~/features/recurring/domain/validation";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import {
   archiveRecurringItem,
@@ -38,7 +39,6 @@ import {
   type PickerMode,
   recurringItemFormSchema,
   type RecurringItemFormValues,
-  supportsCompletionBased,
   toDraft,
   toFormState,
   toggleWeekdayMask,

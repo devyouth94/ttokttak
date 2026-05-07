@@ -12,7 +12,6 @@ import { z } from "zod/v4";
 import {
   type AnchorType,
   anchorTypes,
-  completionBasedRecurrenceTypes,
   defaultRecurringItemColorKey,
   type RecurrenceType,
   recurrenceTypes,
@@ -20,6 +19,14 @@ import {
   recurringItemColorKeys,
   type RecurringItemDraft,
 } from "~/features/recurring/domain/types";
+import {
+  hasValidWeekdayMask,
+  localDatePattern,
+  localTimePattern,
+  requiresIntervalValue,
+  requiresWeekdayMask,
+  supportsCompletionBased,
+} from "~/features/recurring/domain/validation";
 export { recurringItemColorOptions } from "~/features/recurring/domain/color-palette";
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
@@ -38,8 +45,6 @@ export type RecurrenceSectionState = {
   showsWeekdaysInsideCustomPanel: boolean;
 };
 
-const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
-const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const positiveIntegerPattern = /^[1-9]\d*$/;
 const MAX_FIRST_REMINDER_LOOKAHEAD_DAYS = 3710;
 const FORM_ERROR_MESSAGES = {
@@ -177,19 +182,6 @@ export function normalizeStartDateSelection(
   return nextValue < minimumStartDateLocal ? minimumStartDateLocal : nextValue;
 }
 
-function hasValidWeekdayMask(weekdayMask: number[]): boolean {
-  if (weekdayMask.length === 0) {
-    return false;
-  }
-
-  const uniqueDays = new Set(weekdayMask);
-
-  return (
-    uniqueDays.size === weekdayMask.length &&
-    weekdayMask.every((day) => Number.isInteger(day) && day >= 0 && day <= 6)
-  );
-}
-
 function parsePositiveInteger(value: string): number | null {
   const trimmed = value.trim();
 
@@ -279,26 +271,6 @@ export const recurringItemFormSchema = z
   });
 
 export type RecurringItemFormValues = z.infer<typeof recurringItemFormSchema>;
-
-export function requiresIntervalValue(recurrenceType: RecurrenceType): boolean {
-  return (
-    recurrenceType === "interval_days" ||
-    recurrenceType === "interval_weeks" ||
-    recurrenceType === "interval_months"
-  );
-}
-
-export function requiresWeekdayMask(recurrenceType: RecurrenceType): boolean {
-  return recurrenceType === "weekly" || recurrenceType === "interval_weeks";
-}
-
-export function supportsCompletionBased(
-  recurrenceType: RecurrenceType
-): boolean {
-  return completionBasedRecurrenceTypes.includes(
-    recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
-  );
-}
 
 export function getFirstReminderHelperText(formState: {
   intervalValue: string;

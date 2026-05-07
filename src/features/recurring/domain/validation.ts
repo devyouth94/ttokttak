@@ -6,8 +6,8 @@ import {
   type RecurringItemDraft,
 } from "~/features/recurring/domain/types";
 
-const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
-const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+export const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+export const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 type ValidationIssueCode =
   | "anchor_type_not_allowed"
@@ -30,7 +30,7 @@ export type ValidationIssue = {
   message: string;
 };
 
-function requiresIntervalValue(recurrenceType: RecurrenceType): boolean {
+export function requiresIntervalValue(recurrenceType: RecurrenceType): boolean {
   return (
     recurrenceType === "interval_days" ||
     recurrenceType === "interval_weeks" ||
@@ -38,17 +38,17 @@ function requiresIntervalValue(recurrenceType: RecurrenceType): boolean {
   );
 }
 
-function requiresWeekdayMask(recurrenceType: RecurrenceType): boolean {
+export function requiresWeekdayMask(recurrenceType: RecurrenceType): boolean {
   return recurrenceType === "weekly" || recurrenceType === "interval_weeks";
 }
 
-function supportsCompletionBased(recurrenceType: RecurrenceType): boolean {
+export function supportsCompletionBased(recurrenceType: RecurrenceType): boolean {
   return completionBasedRecurrenceTypes.includes(
     recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
   );
 }
 
-function hasValidWeekdayMask(
+export function hasValidWeekdayMask(
   weekdayMask: number[] | null | undefined
 ): boolean {
   if (!weekdayMask || weekdayMask.length === 0) {
