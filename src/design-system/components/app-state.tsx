@@ -103,7 +103,7 @@ export function AppEmptyStateView({
           ]}
         >
           {action.icon}
-          <AppText style={styles.emptyActionText} variant="body2">
+          <AppText style={styles.emptyActionText} variant="body3">
             {action.label}
           </AppText>
         </Pressable>
@@ -174,7 +174,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.pill,
     flexDirection: "row",
     gap: spacing.xs,
-    minHeight: 42,
+    height: 36,
+    minHeight: 36,
     paddingHorizontal: spacing.lg,
   },
   emptyActionText: {

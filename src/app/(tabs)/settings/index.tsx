@@ -503,9 +503,10 @@ const styles = StyleSheet.create({
   nameEditorButton: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
+    height: 36,
+    justifyContent: "center",
     minWidth: 72,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
   nameEditorCancelButton: {
     borderColor: colors.dividerOnPrimary,
@@ -527,9 +528,10 @@ const styles = StyleSheet.create({
     color: colors.error,
   },
   nameInput: {
+    backgroundColor: "transparent",
     borderColor: colors.dividerOnPrimary,
-    borderRadius: borderRadius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
     color: colors.text,
     fontFamily: typography.fontFamily.body,
     fontSize: typography.size.body3,
