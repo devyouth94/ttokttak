@@ -3,61 +3,56 @@ import { ArrowRight } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
 import { borderRadius, colors, spacing } from "~/design-system/tokens";
-import {
-  type CalendarDayEntry,
-  formatCalendarDayEntryMetaLine,
-} from "~/features/calendar-view/calendar-screen.helpers";
 import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
+import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
 
-type CalendarEntryRowProps = {
-  entry: CalendarDayEntry;
+type RecurringItemSummaryRowProps = {
+  accessibilityHint: string;
+  colorKey: RecurringItemColorKey;
   isLast: boolean;
+  metaLine: string;
   onPress: () => void;
+  title: string;
 };
 
-export function CalendarEntryRow({
-  entry,
+export function RecurringItemSummaryRow({
+  accessibilityHint,
+  colorKey,
   isLast,
+  metaLine,
   onPress,
-}: CalendarEntryRowProps): React.JSX.Element {
-  const metaLine = formatCalendarDayEntryMetaLine(entry);
-  const markerColor = recurringItemColorOptionByKey[entry.colorKey].swatchColor;
+  title,
+}: RecurringItemSummaryRowProps): React.JSX.Element {
+  const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
 
   return (
     <Pressable
-      accessibilityHint="반복 항목 상세 화면으로 이동해요."
-      accessibilityLabel={`${entry.title} 상세 보기`}
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={`${title} 상세 보기`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
-        styles.listItemRow,
-        !isLast && styles.listItemDivider,
+        styles.row,
+        !isLast && styles.divider,
         pressed ? styles.pressed : undefined,
       ]}
     >
-      <View style={styles.listItemCopy}>
-        <View style={styles.listItemTitleRow}>
+      <View style={styles.copy}>
+        <View style={styles.titleRow}>
           <View
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
-            style={[
-              styles.listItemColorMarker,
-              { backgroundColor: markerColor },
-            ]}
+            style={[styles.colorMarker, { backgroundColor: markerColor }]}
           />
-          <AppText
-            ellipsizeMode="tail"
-            numberOfLines={1}
-            style={styles.listItemText}
-          >
-            {entry.title}
+          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.title}>
+            {title}
           </AppText>
         </View>
-        <View style={styles.listItemMetaSlot}>
+        <View style={styles.metaSlot}>
           <AppText
             ellipsizeMode="tail"
             numberOfLines={1}
-            style={styles.listItemMetaText}
+            style={styles.metaText}
             variant="caption"
           >
             {metaLine}
@@ -65,7 +60,7 @@ export function CalendarEntryRow({
         </View>
       </View>
 
-      <View style={styles.listItemActionIcon}>
+      <View style={styles.actionIcon}>
         <ArrowRight color={colors.text} size={16} />
       </View>
     </Pressable>
@@ -73,7 +68,7 @@ export function CalendarEntryRow({
 }
 
 const styles = StyleSheet.create({
-  listItemActionIcon: {
+  actionIcon: {
     alignItems: "center",
     borderColor: colors.primary,
     borderRadius: borderRadius.pill,
@@ -82,42 +77,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 34,
   },
-  listItemCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  listItemColorMarker: {
+  colorMarker: {
     borderRadius: borderRadius.pill,
     height: 10,
     width: 10,
   },
-  listItemDivider: {
+  copy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  divider: {
     borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  listItemMetaSlot: {
+  metaSlot: {
     marginTop: spacing.xxs,
   },
-  listItemMetaText: {
+  metaText: {
     color: colors.textSoft,
   },
-  listItemRow: {
+  pressed: {
+    opacity: 0.72,
+  },
+  row: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.md,
     paddingVertical: spacing.sm,
   },
-  listItemText: {
+  title: {
     color: colors.text,
     flex: 1,
     minWidth: 0,
   },
-  listItemTitleRow: {
+  titleRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.xs,
-  },
-  pressed: {
-    opacity: 0.72,
   },
 });

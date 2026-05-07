@@ -7,17 +7,18 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import { colors, spacing } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
+import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 
-import { ReminderListItemRow } from "./reminder-list-item-row";
 import { ReminderListLoadingPlaceholder } from "./reminder-list-loading-placeholder";
 import { ReminderListSortControl } from "./reminder-list-sort-control";
 import {
@@ -142,9 +143,27 @@ export function ReminderListScreen(): React.JSX.Element {
             />
           }
           renderItem={({ index, item }) => (
-            <ReminderListItemRow
-              entry={item}
+            <RecurringItemSummaryRow
+              accessibilityHint="일정 상세 화면으로 이동해요."
+              colorKey={item.colorKey}
               isLast={index === entries.length - 1}
+              metaLine={[
+                item.nextOccurrenceTimeLabel,
+                item.recurrenceLabel,
+              ].join(" · ")}
+              onPress={() => {
+                router.push({
+                  params: {
+                    itemId: item.id,
+                    returnTo: "/schedule",
+                    ...(item.nextScheduledAtUtc
+                      ? { scheduledAtUtc: item.nextScheduledAtUtc }
+                      : {}),
+                  },
+                  pathname: "/items/[itemId]",
+                });
+              }}
+              title={item.title}
             />
           )}
           onScroll={onScroll}

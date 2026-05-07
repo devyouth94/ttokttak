@@ -30,6 +30,7 @@ import {
   buildCalendarDaySummaries,
   clampVisibleMonth,
   createCalendarScreenState,
+  formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
   getMinimumVisibleMonth,
@@ -39,8 +40,8 @@ import {
   CALENDAR_DAY_CELL_HEIGHT,
   CalendarDayCell,
 } from "~/features/calendar-view/components/calendar-day-cell";
-import { CalendarEntryRow } from "~/features/calendar-view/components/calendar-entry-row";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
+import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
@@ -350,10 +351,12 @@ export function CalendarScreen(): React.JSX.Element {
           ) : (
             <View>
               {selectedEntries.map((entry, index) => (
-                <CalendarEntryRow
-                  entry={entry}
+                <RecurringItemSummaryRow
+                  accessibilityHint="반복 항목 상세 화면으로 이동해요."
+                  colorKey={entry.colorKey}
                   isLast={index === selectedEntries.length - 1}
                   key={`${entry.itemId}:${entry.scheduledAtUtc}`}
+                  metaLine={formatCalendarDayEntryMetaLine(entry)}
                   onPress={() => {
                     router.push({
                       params: {
@@ -364,6 +367,7 @@ export function CalendarScreen(): React.JSX.Element {
                       pathname: "/items/[itemId]",
                     });
                   }}
+                  title={entry.title}
                 />
               ))}
             </View>
