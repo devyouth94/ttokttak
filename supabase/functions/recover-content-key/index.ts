@@ -18,6 +18,14 @@ type UserContentEncryptionKeyRow = {
   wrap_metadata: JsonRecord;
   wrapped_key: string;
 };
+type RecoveryAuditAction = RequestBody["action"] | "unknown";
+type RecoveryAuditResult =
+  | "denied"
+  | "invalid_request"
+  | "rate_limited"
+  | "server_error"
+  | "success";
+type SupabaseClient = ReturnType<typeof createClient>;
 
 const wrapAlgorithm = "AES-GCM";
 const wrapMetadata = {
@@ -143,6 +151,54 @@ function isRequestBody(value: unknown): value is RequestBody {
   );
 }
 
+function getAuditAction(value: unknown): RecoveryAuditAction {
+  if (!value || typeof value !== "object") {
+    return "unknown";
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  if (candidate.action === "wrap" || candidate.action === "recover") {
+    return candidate.action;
+  }
+
+  return "unknown";
+}
+
+function getAuditKeyVersion(value: unknown): number | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return Number.isInteger(candidate.keyVersion)
+    ? Number(candidate.keyVersion)
+    : null;
+}
+
+async function recordRecoveryAuditEvent(params: {
+  action: RecoveryAuditAction;
+  auditClient: SupabaseClient;
+  keyVersion: number | null;
+  result: RecoveryAuditResult;
+  userId: string;
+}): Promise<void> {
+  const { action, auditClient, keyVersion, result, userId } = params;
+  const { error } = await auditClient
+    .from("content_key_recovery_audit_events")
+    .insert({
+      action,
+      key_version: keyVersion,
+      result,
+      user_id: userId,
+    });
+
+  if (error) {
+    throw error;
+  }
+}
+
 function checkRateLimit(userId: string): boolean {
   const now = Date.now();
   const bucket = requestBuckets.get(userId);
@@ -177,8 +233,9 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseAnonKey =
     Deno.env.get("SB_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
+  const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return jsonResponse({ error: "server_not_configured" }, 500);
   }
 
@@ -198,14 +255,42 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 
-  if (!checkRateLimit(user.id)) {
-    return jsonResponse({ error: "rate_limited" }, 429);
-  }
+  const auditClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
   const body = await req.json().catch(() => null);
+  const auditAction = getAuditAction(body);
+  const auditKeyVersion = getAuditKeyVersion(body);
+
+  async function recordAndRespond(
+    result: RecoveryAuditResult,
+    responseBody: JsonRecord,
+    status = 200
+  ): Promise<Response> {
+    try {
+      await recordRecoveryAuditEvent({
+        action: auditAction,
+        auditClient,
+        keyVersion: auditKeyVersion,
+        result,
+        userId: user.id,
+      });
+    } catch {
+      return jsonResponse({ error: "server_error" }, 500);
+    }
+
+    return jsonResponse(responseBody, status);
+  }
+
+  if (!checkRateLimit(user.id)) {
+    return recordAndRespond("rate_limited", { error: "rate_limited" }, 429);
+  }
 
   if (!isRequestBody(body)) {
-    return jsonResponse({ error: "invalid_request" }, 400);
+    return recordAndRespond(
+      "invalid_request",
+      { error: "invalid_request" },
+      400
+    );
   }
 
   console.info("content_key_recovery", {
@@ -214,37 +299,45 @@ Deno.serve(async (req) => {
     userId: user.id,
   });
 
-  if (body.action === "wrap") {
-    return jsonResponse({
-      wrapAlgorithm,
-      wrapMetadata,
-      wrappedKey: await encryptContentKey(body.encodedKey),
+  try {
+    if (body.action === "wrap") {
+      return recordAndRespond("success", {
+        wrapAlgorithm,
+        wrapMetadata,
+        wrappedKey: await encryptContentKey(body.encodedKey),
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("user_content_encryption_keys")
+      .select("wrap_algorithm, wrap_metadata, wrapped_key")
+      .eq("user_id", user.id)
+      .eq("key_version", body.keyVersion)
+      .maybeSingle<UserContentEncryptionKeyRow>();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return recordAndRespond("success", { encodedKey: null });
+    }
+
+    if (
+      data.wrap_algorithm !== wrapAlgorithm ||
+      data.wrap_metadata?.keySource !== wrapMetadata.keySource
+    ) {
+      return recordAndRespond(
+        "denied",
+        { error: "unsupported_wrapped_key" },
+        422
+      );
+    }
+
+    return recordAndRespond("success", {
+      encodedKey: await decryptContentKey(data.wrapped_key),
     });
+  } catch {
+    return recordAndRespond("server_error", { error: "server_error" }, 500);
   }
-
-  const { data, error } = await supabase
-    .from("user_content_encryption_keys")
-    .select("wrap_algorithm, wrap_metadata, wrapped_key")
-    .eq("user_id", user.id)
-    .eq("key_version", body.keyVersion)
-    .maybeSingle<UserContentEncryptionKeyRow>();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return jsonResponse({ encodedKey: null });
-  }
-
-  if (
-    data.wrap_algorithm !== wrapAlgorithm ||
-    data.wrap_metadata?.keySource !== wrapMetadata.keySource
-  ) {
-    return jsonResponse({ error: "unsupported_wrapped_key" }, 422);
-  }
-
-  return jsonResponse({
-    encodedKey: await decryptContentKey(data.wrapped_key),
-  });
 });

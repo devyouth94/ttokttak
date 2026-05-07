@@ -1,6 +1,41 @@
 export type Database = {
   public: {
     Tables: {
+      content_key_recovery_audit_events: {
+        Row: {
+          action: string;
+          created_at: string;
+          id: string;
+          key_version: number | null;
+          result: string;
+          user_id: string;
+        };
+        Insert: {
+          action: string;
+          created_at?: string;
+          id?: string;
+          key_version?: number | null;
+          result: string;
+          user_id: string;
+        };
+        Update: {
+          action?: string;
+          created_at?: string;
+          id?: string;
+          key_version?: number | null;
+          result?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            columns: ["user_id"];
+            foreignKeyName: "content_key_recovery_audit_events_user_id_fkey";
+            isOneToOne: false;
+            referencedColumns: ["id"];
+            referencedRelation: "profiles";
+          },
+        ];
+      };
       completion_logs: {
         Row: {
           acted_at_utc: string;
@@ -336,6 +371,10 @@ export type CompletionLogInsert =
   Database["public"]["Tables"]["completion_logs"]["Insert"];
 export type CompletionLogRow =
   Database["public"]["Tables"]["completion_logs"]["Row"];
+export type ContentKeyRecoveryAuditEventInsert =
+  Database["public"]["Tables"]["content_key_recovery_audit_events"]["Insert"];
+export type ContentKeyRecoveryAuditEventRow =
+  Database["public"]["Tables"]["content_key_recovery_audit_events"]["Row"];
 export type DeviceInsert = Database["public"]["Tables"]["devices"]["Insert"];
 export type DeviceRow = Database["public"]["Tables"]["devices"]["Row"];
 export type DeviceUpdate = Database["public"]["Tables"]["devices"]["Update"];
