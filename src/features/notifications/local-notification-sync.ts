@@ -42,6 +42,10 @@ type LocalReminderNotificationSyncResult = {
   scheduledCount: number;
 };
 
+type LocalReminderNotificationCancellationResult = {
+  cancelledCount: number;
+};
+
 type LocalReminderNotificationPayload = {
   itemId: string;
   notificationKind: "reminder";
@@ -121,6 +125,10 @@ function parseLocalReminderIdentifier(
     itemId,
     scheduledAtUtc,
   };
+}
+
+function isTtokttakLocalReminderIdentifier(identifier: string): boolean {
+  return identifier.startsWith(`${LOCAL_REMINDER_IDENTIFIER_PREFIX}:`);
 }
 
 function isWithinScope(
@@ -489,5 +497,23 @@ export async function syncLocalReminderNotifications(
     cancelledCount: syncPlan.notificationsToCancel.length,
     diagnostics: syncPlan.diagnostics,
     scheduledCount: syncPlan.notificationsToSchedule.length,
+  };
+}
+
+export async function cancelAllTtokttakLocalReminderNotifications(): Promise<LocalReminderNotificationCancellationResult> {
+  const scheduledNotificationRequests =
+    await Notifications.getAllScheduledNotificationsAsync();
+  const reminderNotifications = scheduledNotificationRequests.filter(
+    (notification) => isTtokttakLocalReminderIdentifier(notification.identifier)
+  );
+
+  for (const notification of reminderNotifications) {
+    await Notifications.cancelScheduledNotificationAsync(
+      notification.identifier
+    );
+  }
+
+  return {
+    cancelledCount: reminderNotifications.length,
   };
 }

@@ -15,6 +15,8 @@ type SyncLocalReminderNotifications = (params: {
   userId: string;
 }) => Promise<unknown>;
 
+type CancelAllTtokttakLocalReminderNotifications = () => Promise<unknown>;
+
 type CaptureException = (
   error: unknown,
   context: {
@@ -46,16 +48,19 @@ type LocalNotificationSyncLifecycle = {
 };
 
 type LocalNotificationSyncLifecycleDeps = {
+  cancelAllTtokttakLocalReminderNotifications: CancelAllTtokttakLocalReminderNotifications;
   captureException: CaptureException;
   syncLocalReminderNotifications: SyncLocalReminderNotifications;
 };
 
 export function createLocalNotificationSyncLifecycle({
+  cancelAllTtokttakLocalReminderNotifications,
   captureException,
   syncLocalReminderNotifications,
 }: LocalNotificationSyncLifecycleDeps): LocalNotificationSyncLifecycle {
   let hasPendingNotificationTapSync = false;
   let lastSessionSyncKey: string | null = null;
+  let lastObservedUserId: string | null = null;
 
   async function syncAllSafely(params: {
     context: LocalNotificationSyncContext;
@@ -135,9 +140,25 @@ export function createLocalNotificationSyncLifecycle({
 
     async syncAfterSessionRestored({ timezone, userId }) {
       if (!userId) {
+        if (lastObservedUserId) {
+          lastObservedUserId = null;
+
+          try {
+            await cancelAllTtokttakLocalReminderNotifications();
+          } catch (error) {
+            captureException(error, {
+              tags: {
+                feature: "local-notification-session-ended-cleanup",
+              },
+            });
+          }
+        }
+
         lastSessionSyncKey = null;
         return;
       }
+
+      lastObservedUserId = userId;
 
       const syncKey = `${userId}:${timezone}`;
 

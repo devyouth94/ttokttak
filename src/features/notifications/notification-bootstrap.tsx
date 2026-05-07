@@ -10,7 +10,10 @@ import {
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
-import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
+import {
+  cancelAllTtokttakLocalReminderNotifications,
+  syncLocalReminderNotifications,
+} from "~/features/notifications/local-notification-sync";
 import {
   getNotificationPermissionState,
   type NotificationPermissionState,
@@ -86,6 +89,7 @@ export function NotificationBootstrapProvider({
   if (!notificationSyncLifecycleRef.current) {
     notificationSyncLifecycleRef.current = createLocalNotificationSyncLifecycle(
       {
+        cancelAllTtokttakLocalReminderNotifications,
         captureException: (error, context) => {
           Sentry.captureException(error, context);
         },

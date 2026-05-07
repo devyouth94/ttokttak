@@ -1,6 +1,7 @@
 import * as Notifications from "expo-notifications";
 
 import {
+  cancelAllTtokttakLocalReminderNotifications,
   createLocalReminderNotificationSyncPlan,
   syncLocalReminderNotifications,
 } from "~/features/notifications/local-notification-sync";
@@ -435,6 +436,52 @@ describe("createLocalReminderNotificationSyncPlan", () => {
       omittedDistantCount: 1,
       scheduledCount: 1,
     });
+  });
+});
+
+describe("cancelAllTtokttakLocalReminderNotifications", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("현재 기기에 예약된 Ttokttak reminder 알림만 전부 취소한다", async () => {
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([
+        createUnrelatedScheduledNotificationRequest("other-app"),
+        createUnrelatedScheduledNotificationRequest("ttokttak:other:user-1"),
+        createScheduledNotificationRequest({
+          identifier:
+            "ttokttak:reminder:user-1:item-1:2026-04-21T12:00:00.000Z",
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
+        }),
+        createScheduledNotificationRequest({
+          identifier:
+            "ttokttak:reminder:user-2:item-2:2026-04-22T12:00:00.000Z",
+          itemId: "item-2",
+          scheduledAtUtc: "2026-04-22T12:00:00.000Z",
+        }),
+      ]);
+
+    const result = await cancelAllTtokttakLocalReminderNotifications();
+
+    expect(result).toEqual({ cancelledCount: 2 });
+    expect(
+      Notifications.cancelScheduledNotificationAsync
+    ).toHaveBeenCalledTimes(2);
+    expect(
+      Notifications.cancelScheduledNotificationAsync
+    ).toHaveBeenNthCalledWith(
+      1,
+      "ttokttak:reminder:user-1:item-1:2026-04-21T12:00:00.000Z"
+    );
+    expect(
+      Notifications.cancelScheduledNotificationAsync
+    ).toHaveBeenNthCalledWith(
+      2,
+      "ttokttak:reminder:user-2:item-2:2026-04-22T12:00:00.000Z"
+    );
   });
 });
 

@@ -4,8 +4,12 @@ const timezone = "Asia/Seoul";
 
 describe("createLocalNotificationSyncLifecycle", () => {
   it("세션 복원은 사용자와 timezone 조합마다 현재 기기 로컬 알림을 한 번만 전체 재동기화한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
     const syncLocalReminderNotifications = jest.fn(async () => undefined);
     const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
       captureException: jest.fn(),
       syncLocalReminderNotifications,
     });
@@ -39,12 +43,16 @@ describe("createLocalNotificationSyncLifecycle", () => {
   });
 
   it("앱 foreground 복귀 동기화 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
     const syncError = new Error("sync failed");
     const captureException = jest.fn();
     const syncLocalReminderNotifications = jest.fn(async () => {
       throw syncError;
     });
     const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
       captureException,
       syncLocalReminderNotifications,
     });
@@ -70,8 +78,12 @@ describe("createLocalNotificationSyncLifecycle", () => {
   });
 
   it("알림 tap 뒤 user가 아직 없으면 동기화를 보류하고 user 준비 뒤 한 번만 실행한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
     const syncLocalReminderNotifications = jest.fn(async () => undefined);
     const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
       captureException: jest.fn(),
       syncLocalReminderNotifications,
     });
@@ -99,12 +111,16 @@ describe("createLocalNotificationSyncLifecycle", () => {
   });
 
   it("mutation 이후 동기화는 user가 있을 때 지정 scope로 실행하고 실패를 caller에게 돌려준다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
     const syncError = new Error("mutation sync failed");
     const syncLocalReminderNotifications = jest
       .fn(async () => undefined)
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(syncError);
     const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
       captureException: jest.fn(),
       syncLocalReminderNotifications,
     });
@@ -142,6 +158,66 @@ describe("createLocalNotificationSyncLifecycle", () => {
       scope,
       timezone,
       userId: "user-1",
+    });
+  });
+
+  it("로그아웃처럼 세션이 없어지면 현재 기기의 Ttokttak 로컬 알림을 정리한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: "user-1",
+    });
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: null,
+    });
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: null,
+    });
+
+    expect(cancelAllTtokttakLocalReminderNotifications).toHaveBeenCalledTimes(
+      1
+    );
+  });
+
+  it("세션 종료 알림 정리 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
+    const cleanupError = new Error("cleanup failed");
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(async () => {
+      throw cleanupError;
+    });
+    const captureException = jest.fn();
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException,
+      syncLocalReminderNotifications: jest.fn(async () => undefined),
+    });
+
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: "user-1",
+    });
+
+    await expect(
+      lifecycle.syncAfterSessionRestored({
+        timezone,
+        userId: null,
+      })
+    ).resolves.toBeUndefined();
+
+    expect(captureException).toHaveBeenCalledWith(cleanupError, {
+      tags: {
+        feature: "local-notification-session-ended-cleanup",
+      },
     });
   });
 });
