@@ -31,6 +31,16 @@ export type GetUserContentEncryptionKeyOptions = {
   userId: string;
 };
 
+type WrapContentKeyResponse = {
+  wrapAlgorithm: string;
+  wrapMetadata: Record<string, unknown>;
+  wrappedKey: string;
+};
+
+type RecoverContentKeyResponse = {
+  encodedKey: string | null;
+};
+
 function toUserContentEncryptionKey(
   row: UserContentEncryptionKeyRow
 ): UserContentEncryptionKey {
@@ -95,4 +105,60 @@ export async function getUserContentEncryptionKey({
   }
 
   return data ? toUserContentEncryptionKey(data) : null;
+}
+
+export async function wrapUserContentKeyForRecovery(
+  input: {
+    encodedKey: string;
+    keyVersion: number;
+  },
+  client?: RepositoryClient
+): Promise<WrapContentKeyResponse> {
+  const supabase = getRepositoryClient(client);
+  const { data, error } =
+    await supabase.functions.invoke<WrapContentKeyResponse>(
+      "recover-content-key",
+      {
+        body: {
+          action: "wrap",
+          encodedKey: input.encodedKey,
+          keyVersion: input.keyVersion,
+        },
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("일정 내용 암호화 키를 감싸지 못했습니다.");
+  }
+
+  return data;
+}
+
+export async function recoverUserContentKey(
+  input: {
+    keyVersion: number;
+  },
+  client?: RepositoryClient
+): Promise<string | null> {
+  const supabase = getRepositoryClient(client);
+  const { data, error } =
+    await supabase.functions.invoke<RecoverContentKeyResponse>(
+      "recover-content-key",
+      {
+        body: {
+          action: "recover",
+          keyVersion: input.keyVersion,
+        },
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.encodedKey ?? null;
 }

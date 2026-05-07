@@ -8,7 +8,9 @@ import { getItemAsync, setItemAsync } from "expo-secure-store";
 
 import {
   getUserContentEncryptionKey,
+  recoverUserContentKey,
   upsertUserContentEncryptionKey,
+  wrapUserContentKeyForRecovery,
 } from "~/features/privacy/user-content-encryption-keys-repository";
 
 export type RecurringItemContentEncryptionMetadata = Record<string, unknown>;
@@ -49,12 +51,6 @@ type StoredContentKey = {
 };
 
 const contentKeyVersion = 1;
-const wrapAlgorithm = "AES-GCM";
-const wrapMetadata = {
-  encoding: "combined-base64",
-  keySource: "app-static-v1",
-};
-const appStaticWrappingKeyV1 = "dHRva3R0YWstYXBwLXN0YXRpYy13cmFwLWtleS12MSE=";
 
 function assertSupportedKeyVersion(keyVersion: number): void {
   if (keyVersion !== contentKeyVersion) {
@@ -66,24 +62,23 @@ function getSecureStoreKey(userId: string, keyVersion: number): string {
   return `ttokttak.user-content-key.v${keyVersion}.${userId}`;
 }
 
-async function getWrappingKey(): Promise<AESEncryptionKey> {
-  return AESEncryptionKey.import(appStaticWrappingKeyV1, "base64");
-}
-
 async function upsertWrappedContentKey(params: {
   encodedKey: string;
   keyVersion: number;
   userId: string;
 }): Promise<void> {
   const { encodedKey, keyVersion, userId } = params;
-  const wrappedKey = await encryptText(encodedKey, await getWrappingKey());
+  const wrappedContentKey = await wrapUserContentKeyForRecovery({
+    encodedKey,
+    keyVersion,
+  });
 
   await upsertUserContentEncryptionKey({
     keyVersion,
     userId,
-    wrapAlgorithm,
-    wrapMetadata,
-    wrappedKey,
+    wrapAlgorithm: wrappedContentKey.wrapAlgorithm,
+    wrapMetadata: wrappedContentKey.wrapMetadata,
+    wrappedKey: wrappedContentKey.wrappedKey,
   });
 }
 
@@ -143,22 +138,16 @@ async function getServerWrappedContentKey(params: {
 }): Promise<StoredContentKey | null> {
   const { keyVersion, userId } = params;
   const secureStoreKey = getSecureStoreKey(userId, keyVersion);
-  const serverKey = await getUserContentEncryptionKey({
+  const recoveredKey = await recoverUserContentKey({
     keyVersion,
-    userId,
   });
 
-  if (serverKey) {
-    const unwrappedKey = await decryptText(
-      serverKey.wrappedKey,
-      await getWrappingKey()
-    );
-
-    await setItemAsync(secureStoreKey, unwrappedKey);
+  if (recoveredKey) {
+    await setItemAsync(secureStoreKey, recoveredKey);
 
     return {
-      encodedKey: unwrappedKey,
-      key: await AESEncryptionKey.import(unwrappedKey, "base64"),
+      encodedKey: recoveredKey,
+      key: await AESEncryptionKey.import(recoveredKey, "base64"),
       source: "server",
     };
   }

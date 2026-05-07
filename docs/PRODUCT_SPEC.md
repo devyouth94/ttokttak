@@ -282,6 +282,9 @@
 - data encryption key 원문은 일반 테이블에 저장하지 않는다.
 - 복구를 위해 data encryption key는 사용자와 연결된 wrapped key로 저장한다.
 - wrapped key 구조는 DB에서 제목과 설명 평문이 보이지 않게 하는 목표에 맞춘다.
+- wrapped key는 앱 정적 key가 아니라 서버 측 내용 복구 Edge Function의 secret으로 만든다.
+- 서버 측 내용 복구 Edge Function은 content key만 복구하고 제목/설명 ciphertext를 평문으로 복호화하지 않는다.
+- 새 기기 또는 앱 재설치 뒤 로컬 content key가 없을 때만 서버 측 내용 복구를 호출한다.
 - 서버 운영자가 악의적 클라이언트 업데이트를 배포하면 사용자가 앱에서 복호화하는 순간 내용을 볼 수 있다는 한계를 인정한다.
 - 제목과 설명 기반 검색/정렬은 서버에서 수행하지 않는다.
 - 목록 정렬은 앱이 데이터를 받은 뒤 복호화한 값을 사용해 클라이언트에서 수행한다.

@@ -1,7 +1,9 @@
 import { recurringContentCipher } from "~/features/privacy/recurring-content-cipher";
 import {
   getUserContentEncryptionKey,
+  recoverUserContentKey,
   upsertUserContentEncryptionKey,
+  wrapUserContentKeyForRecovery,
 } from "~/features/privacy/user-content-encryption-keys-repository";
 
 const mockGetItemAsync = jest.fn();
@@ -10,7 +12,6 @@ const mockEncoded = jest.fn();
 const mockGenerate = jest.fn();
 const mockImport = jest.fn();
 const titleCiphertext = "dGl0bGUtY2lwaGVydGV4dA==";
-const wrappedContentKey = "d3JhcHBlZC1jb250ZW50LWtleQ==";
 
 jest.mock("expo-secure-store", () => ({
   getItemAsync: (...args: unknown[]) => mockGetItemAsync(...args),
@@ -36,10 +37,6 @@ jest.mock("expo-crypto", () => ({
         throw new Error("복호화 실패");
       }
 
-      if (sealedData.combined === "wrapped-content-key") {
-        return new TextEncoder().encode("server-content-key");
-      }
-
       return new TextEncoder().encode("복구된 일정");
     }
   ),
@@ -50,7 +47,9 @@ jest.mock("expo-crypto", () => ({
 
 jest.mock("~/features/privacy/user-content-encryption-keys-repository", () => ({
   getUserContentEncryptionKey: jest.fn(),
+  recoverUserContentKey: jest.fn(),
   upsertUserContentEncryptionKey: jest.fn(),
+  wrapUserContentKeyForRecovery: jest.fn(),
 }));
 
 describe("recurringContentCipher", () => {
@@ -63,6 +62,15 @@ describe("recurringContentCipher", () => {
       imported: value,
     }));
     jest.mocked(getUserContentEncryptionKey).mockResolvedValue(null);
+    jest.mocked(recoverUserContentKey).mockResolvedValue(null);
+    jest.mocked(wrapUserContentKeyForRecovery).mockResolvedValue({
+      wrapAlgorithm: "AES-GCM",
+      wrapMetadata: {
+        encoding: "combined-base64",
+        keySource: "edge-secret-v1",
+      },
+      wrappedKey: "edge-wrapped-content-key",
+    });
   });
 
   it("SecureStore key는 iOS에서 허용되는 문자만 사용한다", async () => {
@@ -91,9 +99,13 @@ describe("recurringContentCipher", () => {
       wrapAlgorithm: "AES-GCM",
       wrapMetadata: {
         encoding: "combined-base64",
-        keySource: "app-static-v1",
+        keySource: "edge-secret-v1",
       },
-      wrappedKey: "ciphertext",
+      wrappedKey: "edge-wrapped-content-key",
+    });
+    expect(wrapUserContentKeyForRecovery).toHaveBeenCalledWith({
+      encodedKey: "generated-key",
+      keyVersion: 1,
     });
     expect(
       JSON.stringify(jest.mocked(upsertUserContentEncryptionKey).mock.calls)
@@ -116,9 +128,13 @@ describe("recurringContentCipher", () => {
       wrapAlgorithm: "AES-GCM",
       wrapMetadata: {
         encoding: "combined-base64",
-        keySource: "app-static-v1",
+        keySource: "edge-secret-v1",
       },
-      wrappedKey: "ciphertext",
+      wrappedKey: "edge-wrapped-content-key",
+    });
+    expect(wrapUserContentKeyForRecovery).toHaveBeenCalledWith({
+      encodedKey: "local-only-content-key",
+      keyVersion: 1,
     });
     expect(
       JSON.stringify(jest.mocked(upsertUserContentEncryptionKey).mock.calls)
@@ -126,18 +142,7 @@ describe("recurringContentCipher", () => {
   });
 
   it("새 기기에서 서버 wrapped key로 일정 내용을 복구하고 content key를 기기에 캐시한다", async () => {
-    jest.mocked(getUserContentEncryptionKey).mockResolvedValue({
-      createdAt: "2026-05-07T00:00:00.000Z",
-      keyVersion: 1,
-      updatedAt: "2026-05-07T00:00:00.000Z",
-      userId: "user-1",
-      wrapAlgorithm: "AES-GCM",
-      wrapMetadata: {
-        encoding: "combined-base64",
-        keySource: "app-static-v1",
-      },
-      wrappedKey: wrappedContentKey,
-    });
+    jest.mocked(recoverUserContentKey).mockResolvedValue("server-content-key");
 
     const content = await recurringContentCipher.decryptRecurringItemContent({
       descriptionCiphertext: null,
@@ -152,9 +157,8 @@ describe("recurringContentCipher", () => {
     });
 
     expect(content.title).toBe("복구된 일정");
-    expect(getUserContentEncryptionKey).toHaveBeenCalledWith({
+    expect(recoverUserContentKey).toHaveBeenCalledWith({
       keyVersion: 1,
-      userId: "user-1",
     });
     expect(mockSetItemAsync).toHaveBeenCalledWith(
       "ttokttak.user-content-key.v1.user-1",
@@ -163,18 +167,7 @@ describe("recurringContentCipher", () => {
   });
 
   it("기존 expo-secure-store metadata도 서버 wrapped key가 있으면 복구한다", async () => {
-    jest.mocked(getUserContentEncryptionKey).mockResolvedValue({
-      createdAt: "2026-05-07T00:00:00.000Z",
-      keyVersion: 1,
-      updatedAt: "2026-05-07T00:00:00.000Z",
-      userId: "user-1",
-      wrapAlgorithm: "AES-GCM",
-      wrapMetadata: {
-        encoding: "combined-base64",
-        keySource: "app-static-v1",
-      },
-      wrappedKey: wrappedContentKey,
-    });
+    jest.mocked(recoverUserContentKey).mockResolvedValue("server-content-key");
 
     const content = await recurringContentCipher.decryptRecurringItemContent({
       descriptionCiphertext: null,
@@ -193,18 +186,6 @@ describe("recurringContentCipher", () => {
 
   it("기존 expo-secure-store 항목을 로컬 key로 복구하면 서버 wrapped key를 갱신한다", async () => {
     mockGetItemAsync.mockResolvedValue("valid-local-content-key");
-    jest.mocked(getUserContentEncryptionKey).mockResolvedValue({
-      createdAt: "2026-05-07T00:00:00.000Z",
-      keyVersion: 1,
-      updatedAt: "2026-05-07T00:00:00.000Z",
-      userId: "user-1",
-      wrapAlgorithm: "AES-GCM",
-      wrapMetadata: {
-        encoding: "combined-base64",
-        keySource: "app-static-v1",
-      },
-      wrappedKey: "wrong-wrapped-content-key",
-    });
 
     const content = await recurringContentCipher.decryptRecurringItemContent({
       descriptionCiphertext: null,
@@ -225,26 +206,15 @@ describe("recurringContentCipher", () => {
       wrapAlgorithm: "AES-GCM",
       wrapMetadata: {
         encoding: "combined-base64",
-        keySource: "app-static-v1",
+        keySource: "edge-secret-v1",
       },
-      wrappedKey: "ciphertext",
+      wrappedKey: "edge-wrapped-content-key",
     });
   });
 
   it("기기에 남은 content key가 틀리면 서버 wrapped key로 다시 복구한다", async () => {
     mockGetItemAsync.mockResolvedValue("wrong-local-content-key");
-    jest.mocked(getUserContentEncryptionKey).mockResolvedValue({
-      createdAt: "2026-05-07T00:00:00.000Z",
-      keyVersion: 1,
-      updatedAt: "2026-05-07T00:00:00.000Z",
-      userId: "user-1",
-      wrapAlgorithm: "AES-GCM",
-      wrapMetadata: {
-        encoding: "combined-base64",
-        keySource: "app-static-v1",
-      },
-      wrappedKey: wrappedContentKey,
-    });
+    jest.mocked(recoverUserContentKey).mockResolvedValue("server-content-key");
 
     const content = await recurringContentCipher.decryptRecurringItemContent({
       descriptionCiphertext: null,

@@ -37,6 +37,11 @@ const disallowedDatabaseSchemaTerms = [
   "upsert_notification_delivery_jobs",
   "cancel_notification_delivery_jobs",
 ];
+const disallowedContentKeyTerms = [
+  "appStaticWrappingKey",
+  "app-static-v1",
+  "dHRva3R0YWstYXBwLXN0YXRpYy13cmFwLWtleS12MSE=",
+];
 
 function listSourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {
@@ -73,6 +78,18 @@ describe("notification privacy regression guard", () => {
     const matches = disallowedDatabaseSchemaTerms.filter((term) =>
       content.includes(term)
     );
+
+    expect(matches).toEqual([]);
+  });
+
+  it("앱 source에 content key 복구용 정적 wrapping key를 두지 않는다", () => {
+    const matches = listSourceFiles(sourceRoot).flatMap((filePath) => {
+      const content = readFileSync(filePath, "utf8");
+
+      return disallowedContentKeyTerms
+        .filter((term) => content.includes(term))
+        .map((term) => `${filePath.replace(`${process.cwd()}/`, "")}: ${term}`);
+    });
 
     expect(matches).toEqual([]);
   });
