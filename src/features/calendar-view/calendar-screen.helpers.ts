@@ -1,6 +1,6 @@
 import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
-import { fromZonedTime } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import { getOccurrencesInRange } from "~/features/recurring/domain/occurrence";
 import type {
@@ -43,10 +43,13 @@ export type CalendarScreenState = {
   visibleMonth: string;
 };
 
-export function createCalendarScreenState(now: Date): CalendarScreenState {
+export function createCalendarScreenState(
+  now: Date,
+  timezone: string
+): CalendarScreenState {
   return {
-    selectedDate: format(now, "yyyy-MM-dd"),
-    visibleMonth: format(now, "yyyy-MM"),
+    selectedDate: formatInTimeZone(now, timezone, "yyyy-MM-dd"),
+    visibleMonth: formatInTimeZone(now, timezone, "yyyy-MM"),
   };
 }
 

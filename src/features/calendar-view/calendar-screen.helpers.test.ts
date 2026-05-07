@@ -77,9 +77,21 @@ function createVersion(
 describe("calendar-screen.helpers", () => {
   it("오늘 기준으로 선택 날짜와 보이는 월 상태를 만든다", () => {
     expect(
-      createCalendarScreenState(new Date("2026-04-14T04:30:00.000Z"))
+      createCalendarScreenState(new Date("2026-04-14T04:30:00.000Z"), timezone)
     ).toEqual({
       selectedDate: "2026-04-14",
+      visibleMonth: "2026-04",
+    });
+  });
+
+  it("초기 선택 날짜는 profile timezone의 날짜 경계를 따른다", () => {
+    expect(
+      createCalendarScreenState(
+        new Date("2026-05-01T06:30:00.000Z"),
+        "America/Los_Angeles"
+      )
+    ).toEqual({
+      selectedDate: "2026-04-30",
       visibleMonth: "2026-04",
     });
   });

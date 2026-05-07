@@ -16,6 +16,7 @@ function joinPath(...parts: string[]): string {
 }
 
 const sourceRoot = joinPath(process.cwd(), "src");
+const databaseSchemaPath = joinPath(process.cwd(), "docs", "DATABASE.sql");
 const sourceFileExtensions = new Set([".ts", ".tsx"]);
 const disallowedActiveFlowTerms = [
   "원격 푸시 토큰 등록",
@@ -26,6 +27,15 @@ const disallowedActiveFlowTerms = [
   "notification_delivery_attempts",
   "notification_inbox_items",
   "push-delivery-worker",
+];
+const disallowedDatabaseSchemaTerms = [
+  "device_push_tokens",
+  "notification_delivery_jobs",
+  "notification_delivery_attempts",
+  "notification_inbox_items",
+  "invoke_push_delivery_worker",
+  "upsert_notification_delivery_jobs",
+  "cancel_notification_delivery_jobs",
 ];
 
 function listSourceFiles(directory: string): string[] {
@@ -54,6 +64,15 @@ describe("notification privacy regression guard", () => {
         .filter((term) => content.includes(term))
         .map((term) => `${filePath.replace(`${process.cwd()}/`, "")}: ${term}`);
     });
+
+    expect(matches).toEqual([]);
+  });
+
+  it("기준 DB 문서가 원격 푸시 저장소와 worker RPC를 되살리지 않는다", () => {
+    const content = readFileSync(databaseSchemaPath, "utf8");
+    const matches = disallowedDatabaseSchemaTerms.filter((term) =>
+      content.includes(term)
+    );
 
     expect(matches).toEqual([]);
   });

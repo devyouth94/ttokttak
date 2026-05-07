@@ -153,9 +153,9 @@ export function CalendarScreen(): React.JSX.Element {
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const [screenState, setScreenState] = useState(() =>
-    createCalendarScreenState(new Date())
+    createCalendarScreenState(new Date(), timezone)
   );
-  const todayState = createCalendarScreenState(new Date());
+  const todayState = createCalendarScreenState(new Date(), timezone);
   const itemsQuery = useRecurringItemsQuery({
     enabled: isReady,
     timezone,

@@ -128,6 +128,15 @@ describe("recurring item form validation messages", () => {
     ).toContain("반복 간격은 1 이상이어야 해요.");
   });
 
+  it("직접 설정 간격은 숫자만 허용한다", () => {
+    expect(
+      getValidationMessages({
+        intervalValue: "1abc",
+        recurrenceType: "interval_days",
+      })
+    ).toContain("반복 간격은 1 이상이어야 해요.");
+  });
+
   it("매주 설정에서 요일이 없으면 선택 안내 문구를 보여준다", () => {
     expect(
       getValidationMessages({

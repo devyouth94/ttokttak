@@ -40,6 +40,7 @@ export type RecurrenceSectionState = {
 
 const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const positiveIntegerPattern = /^[1-9]\d*$/;
 const MAX_FIRST_REMINDER_LOOKAHEAD_DAYS = 3710;
 const FORM_ERROR_MESSAGES = {
   completionBasedNotAllowed: "완료일 기준은 이 반복 설정에서 사용할 수 없어요.",
@@ -189,6 +190,16 @@ function hasValidWeekdayMask(weekdayMask: number[]): boolean {
   );
 }
 
+function parsePositiveInteger(value: string): number | null {
+  const trimmed = value.trim();
+
+  if (!positiveIntegerPattern.test(trimmed)) {
+    return null;
+  }
+
+  return Number.parseInt(trimmed, 10);
+}
+
 export const recurringItemFormSchema = z
   .object({
     anchorType: z.enum(anchorTypes),
@@ -210,7 +221,7 @@ export const recurringItemFormSchema = z
   })
   .superRefine((formState, context) => {
     if (requiresIntervalValue(formState.recurrenceType)) {
-      const parsedIntervalValue = Number.parseInt(formState.intervalValue, 10);
+      const parsedIntervalValue = parsePositiveInteger(formState.intervalValue);
 
       if (formState.intervalValue.trim().length === 0) {
         context.addIssue({
@@ -218,10 +229,7 @@ export const recurringItemFormSchema = z
           message: FORM_ERROR_MESSAGES.intervalMissing,
           path: ["intervalValue"],
         });
-      } else if (
-        !Number.isInteger(parsedIntervalValue) ||
-        parsedIntervalValue < 1
-      ) {
+      } else if (parsedIntervalValue === null) {
         context.addIssue({
           code: "custom",
           message: FORM_ERROR_MESSAGES.intervalInvalid,
@@ -330,10 +338,9 @@ function getFirstWeeklyOccurrenceLocalDate(formState: {
 
   const intervalValue =
     formState.recurrenceType === "interval_weeks"
-      ? Number.parseInt(formState.intervalValue, 10)
+      ? parsePositiveInteger(formState.intervalValue)
       : 1;
-  const weekInterval =
-    Number.isInteger(intervalValue) && intervalValue > 0 ? intervalValue : 1;
+  const weekInterval = intervalValue ?? 1;
   const selectedWeekdaySet = new Set(formState.weekdayMask);
   const startDate = parseLocalDateToDate(formState.startDateLocal);
   const startWeek = startOfWeek(startDate, { weekStartsOn: 0 });
@@ -369,7 +376,7 @@ export function getIosPickerChangeHandler(
 }
 
 export function getWeekdayMaskFromDate(dateText: string): number[] {
-  const date = new Date(`${dateText}T00:00:00`);
+  const date = parseLocalDateToDate(dateText);
 
   return [date.getDay()];
 }
@@ -442,7 +449,7 @@ export function toDraft(
     colorKey: formState.colorKey,
     description: normalizeOptionalText(formState.description),
     intervalValue: requiresIntervalValue(formState.recurrenceType)
-      ? Number.parseInt(formState.intervalValue, 10)
+      ? parsePositiveInteger(formState.intervalValue)
       : null,
     isArchived: false,
     notificationsEnabled: formState.notificationsEnabled,

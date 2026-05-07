@@ -1,9 +1,10 @@
 import type { ExpoConfig } from "expo/config";
 
-const googleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME!;
 const iconBackgroundColor = "#FFFFFF";
 
 export default function getAppConfig(): ExpoConfig {
+  const googleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME!;
+
   return {
     name: "똑딱",
     slug: "ttokttak",
