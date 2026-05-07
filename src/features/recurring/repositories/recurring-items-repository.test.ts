@@ -5,92 +5,7 @@ import {
   listRecurringItems,
   updateRecurringItem,
 } from "~/features/recurring/repositories/recurring-items-repository";
-
-const recurringItemRow = {
-  id: "item-1",
-  user_id: "user-1",
-  title_ciphertext: "encrypted-title",
-  description_ciphertext: "encrypted-description",
-  content_key_version: 1,
-  content_encryption_metadata: {
-    algorithm: "test",
-  },
-  category: null,
-  color_key: "blue",
-  start_date_local: "2026-05-06",
-  is_archived: false,
-  created_at: "2026-05-06T00:00:00.000Z",
-  updated_at: "2026-05-06T00:00:00.000Z",
-  recurring_item_schedule_versions: [
-    {
-      id: "version-1",
-      item_id: "item-1",
-      user_id: "user-1",
-      effective_from_utc: "2026-05-05T15:00:00.000Z",
-      recurrence_type: "daily",
-      interval_value: null,
-      weekday_mask: null,
-      reminder_time_local: "09:00:00",
-      anchor_type: "fixed",
-      seed_start_date_local: "2026-05-06",
-      notifications_enabled: true,
-      created_at: "2026-05-06T00:00:00.000Z",
-    },
-  ],
-};
-
-function createRecurringItemsSelectClient() {
-  const maybeSingle = jest.fn().mockResolvedValue({
-    data: recurringItemRow,
-    error: null,
-  });
-  type QueryDouble = {
-    eq: jest.Mock<QueryDouble, unknown[]>;
-    maybeSingle: typeof maybeSingle;
-    select: jest.Mock<QueryDouble, unknown[]>;
-  };
-  const query = {} as QueryDouble;
-
-  query.eq = jest.fn(() => query);
-  query.maybeSingle = maybeSingle;
-  query.select = jest.fn(() => query);
-
-  return {
-    from: jest.fn(() => query),
-    query,
-  };
-}
-
-function createRecurringItemsListClient() {
-  type QueryResult = {
-    data: (typeof recurringItemRow)[];
-    error: null;
-  };
-  type QueryDouble = {
-    eq: jest.Mock<QueryDouble, unknown[]>;
-    order: jest.Mock<QueryDouble, unknown[]>;
-    select: jest.Mock<QueryDouble, unknown[]>;
-    then: PromiseLike<QueryResult>["then"];
-  };
-  const query = {} as QueryDouble;
-  const result: QueryResult = {
-    data: [recurringItemRow],
-    error: null,
-  };
-
-  query.eq = jest.fn(() => query);
-  query.order = jest.fn(() => query);
-  query.select = jest.fn(() => query);
-  query.then = ((onfulfilled) =>
-    Promise.resolve(
-      onfulfilled ? onfulfilled(result) : result
-    )) as PromiseLike<QueryResult>["then"];
-
-  return {
-    from: jest.fn(() => query),
-    query,
-  };
-}
+import { createRecurringItemsPersistenceDouble } from "~/features/recurring/repositories/repository-test-helpers";
 
 const contentCipher = {
   decryptRecurringItemContent: jest.fn().mockResolvedValue({
@@ -113,11 +28,7 @@ describe("recurring items repository", () => {
   });
 
   it("신규 일정 생성은 제목과 설명을 암호화해서 저장하고 조회 시 복호화된 값을 제공한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({
-      data: "item-1",
-      error: null,
-    });
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     const item = await createRecurringItem(
       {
@@ -135,30 +46,27 @@ describe("recurring items repository", () => {
         userId: "user-1",
         weekdayMask: null,
       },
-      { client: { from, rpc } as never, contentCipher }
+      { contentCipher, persistence }
     );
 
-    expect(rpc).toHaveBeenCalledWith(
-      "create_recurring_item_with_initial_version",
+    expect(persistence.createItemWithInitialVersion).toHaveBeenCalledWith(
       expect.objectContaining({
-        p_content_encryption_metadata: { algorithm: "test" },
-        p_content_key_version: 1,
-        p_description_ciphertext: "encrypted-description",
-        p_title_ciphertext: "encrypted-title",
+        contentEncryptionMetadata: { algorithm: "test" },
+        contentKeyVersion: 1,
+        descriptionCiphertext: "encrypted-description",
+        titleCiphertext: "encrypted-title",
       })
     );
-    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_title");
-    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_description");
     expect(item.title).toBe("물 마시기");
     expect(item.description).toBe("하루 8잔");
   });
 
   it("일정 목록은 암호문 row를 복호화한 제목과 설명으로 제공한다", async () => {
-    const { from } = createRecurringItemsListClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     const items = await listRecurringItems({
-      client: { from } as never,
       contentCipher,
+      persistence,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
@@ -174,23 +82,20 @@ describe("recurring items repository", () => {
     expect(items[0]?.description).toBe("하루 8잔");
   });
 
-  it("일정 목록 조회는 서버에 제목/설명 기반 정렬을 요청하지 않는다", async () => {
-    const { from, query } = createRecurringItemsListClient();
+  it("일정 목록 조회는 보관 일정 제외 의미를 persistence에 전달한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble();
 
     await listRecurringItems({
-      client: { from } as never,
       contentCipher,
+      persistence,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
 
-    expect(query.order).toHaveBeenCalledWith("created_at", {
-      ascending: false,
+    expect(persistence.listItems).toHaveBeenCalledWith({
+      includeArchived: false,
+      userId: "user-1",
     });
-    expect(query.order).not.toHaveBeenCalledWith(
-      expect.stringMatching(/title|description/),
-      expect.anything()
-    );
   });
 
   it("복호화 실패한 일정도 목록에서 fallback 제목과 빈 설명으로 제공한다", async () => {
@@ -200,11 +105,11 @@ describe("recurring items repository", () => {
         .fn()
         .mockRejectedValue(new Error("corrupted ciphertext")),
     };
-    const { from } = createRecurringItemsListClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     const items = await listRecurringItems({
-      client: { from } as never,
       contentCipher: brokenContentCipher,
+      persistence,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
@@ -229,12 +134,12 @@ describe("recurring items repository", () => {
         .fn()
         .mockRejectedValue(new Error(message)),
     };
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     const item = await getRecurringItemById({
-      client: { from } as never,
       contentCipher: brokenContentCipher,
       id: "item-1",
+      persistence,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
@@ -245,11 +150,7 @@ describe("recurring items repository", () => {
   });
 
   it("신규 일정 생성은 색상을 명시하지 않아도 기본 일정 색상 red를 저장한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({
-      data: "item-1",
-      error: null,
-    });
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     await createRecurringItem(
       {
@@ -267,24 +168,23 @@ describe("recurring items repository", () => {
         userId: "user-1",
         weekdayMask: null,
       },
-      { client: { from, rpc } as never, contentCipher }
+      { contentCipher, persistence }
     );
 
-    expect(rpc).toHaveBeenCalledWith(
-      "create_recurring_item_with_initial_version",
+    expect(persistence.createItemWithInitialVersion).toHaveBeenCalledWith(
       expect.objectContaining({
-        p_color_key: "red",
+        colorKey: "red",
       })
     );
   });
 
   it("일정 조회는 저장된 일정 색상 key를 도메인 값으로 제공한다", async () => {
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     const item = await getRecurringItemById({
-      client: { from } as never,
       contentCipher,
       id: "item-1",
+      persistence,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
@@ -293,11 +193,7 @@ describe("recurring items repository", () => {
   });
 
   it("일정 수정은 변경한 일정 색상 key를 저장 인자로 보존한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({
-      data: "item-1",
-      error: null,
-    });
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     await updateRecurringItem(
       {
@@ -306,23 +202,18 @@ describe("recurring items repository", () => {
         timezone: "Asia/Seoul",
         userId: "user-1",
       },
-      { client: { from, rpc } as never, contentCipher }
+      { contentCipher, persistence }
     );
 
-    expect(rpc).toHaveBeenCalledWith(
-      "update_recurring_item_with_edit_policy",
+    expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
       expect.objectContaining({
-        p_color_key: "purple",
+        colorKey: "purple",
       })
     );
   });
 
   it("일정 수정은 병합한 제목과 설명을 암호화해서 저장한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({
-      data: "item-1",
-      error: null,
-    });
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     await updateRecurringItem(
       {
@@ -334,7 +225,7 @@ describe("recurring items repository", () => {
         timezone: "Asia/Seoul",
         userId: "user-1",
       },
-      { client: { from, rpc } as never, contentCipher }
+      { contentCipher, persistence }
     );
 
     expect(contentCipher.encryptRecurringItemContent).toHaveBeenCalledWith({
@@ -342,28 +233,24 @@ describe("recurring items repository", () => {
       title: "영양제",
       userId: "user-1",
     });
-    expect(rpc).toHaveBeenCalledWith(
-      "update_recurring_item_with_edit_policy",
+    expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
       expect.objectContaining({
-        p_content_encryption_metadata: { algorithm: "test" },
-        p_content_key_version: 1,
-        p_description_ciphertext: "encrypted-description",
-        p_title_ciphertext: "encrypted-title",
+        contentEncryptionMetadata: { algorithm: "test" },
+        contentKeyVersion: 1,
+        descriptionCiphertext: "encrypted-description",
+        titleCiphertext: "encrypted-title",
       })
     );
-    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_title");
-    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_description");
   });
 
   it("복호화 실패한 일정은 fallback 내용을 다시 저장하지 않도록 수정할 수 없다", async () => {
-    const rpc = jest.fn();
+    const persistence = createRecurringItemsPersistenceDouble();
     const brokenContentCipher = {
       ...contentCipher,
       decryptRecurringItemContent: jest
         .fn()
         .mockRejectedValue(new Error("missing content key")),
     };
-    const { from } = createRecurringItemsSelectClient();
 
     await expect(
       updateRecurringItem(
@@ -373,19 +260,19 @@ describe("recurring items repository", () => {
           timezone: "Asia/Seoul",
           userId: "user-1",
         },
-        { client: { from, rpc } as never, contentCipher: brokenContentCipher }
+        { contentCipher: brokenContentCipher, persistence }
       )
     ).rejects.toThrow("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
-    expect(rpc).not.toHaveBeenCalled();
+    expect(persistence.updateItemWithEditPolicy).not.toHaveBeenCalled();
   });
 
   it("상세 조회는 암호문 row를 복호화한 제목과 설명으로 제공한다", async () => {
-    const { from } = createRecurringItemsSelectClient();
+    const persistence = createRecurringItemsPersistenceDouble();
 
     const item = await getRecurringItemById({
-      client: { from } as never,
       contentCipher,
       id: "item-1",
+      persistence,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
@@ -394,20 +281,17 @@ describe("recurring items repository", () => {
     expect(item.description).toBe("하루 8잔");
   });
 
-  it("일정 삭제는 archive와 pending job 취소를 묶은 RPC로 처리한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({
-      data: null,
-      error: null,
-    });
+  it("일정 삭제는 저장된 일정을 보관 처리한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble();
 
     await archiveRecurringItem({
-      client: { rpc } as never,
       id: "item-1",
+      persistence,
       userId: "user-1",
     });
 
-    expect(rpc).toHaveBeenCalledWith("archive_recurring_item", {
-      p_item_id: "item-1",
+    expect(persistence.archiveItem).toHaveBeenCalledWith({
+      id: "item-1",
     });
   });
 });

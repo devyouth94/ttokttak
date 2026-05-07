@@ -52,6 +52,10 @@ _Avoid_: form submit, detail delete, 저장 hook
 일정 수정 입력을 기존 일정과 병합해 규칙 변경 여부, 수정 적용 시각, 다음 future occurrence 시작일을 정하는 내부 규칙.
 _Avoid_: repository update policy, version helper, seed 계산
 
+**일정 persistence**:
+서버 저장소의 일정 row, schedule version, 일정 수정에 필요한 completion log를 읽고 쓰는 저장 Adapter Seam.
+_Avoid_: Supabase client, repository chain, RPC wrapper
+
 **상세 화면**:
 일정의 현재 상태, 설정 요약, 최근 히스토리, 관리 동작을 확인하는 화면.
 _Avoid_: 처리 화면
@@ -125,6 +129,8 @@ _Avoid_: 일정 색상, 레퍼런스 색상, 복사한 색상
 - **일정 변경 mutation 흐름**은 **기기 로컬 알림** 재동기화 뒤 **일정** 데이터를 다시 읽도록 만든다.
 - **일정 수정 정책**은 규칙 영향 필드가 바뀐 경우에만 새 schedule version 기준 값을 만든다.
 - **일정 수정 정책**은 기존 **일정**의 시작일을 수정 입력으로 바꾸지 않는다.
+- **일정 persistence**는 Supabase table, RPC, row column 이름을 repository의 저장 의미 Interface 뒤에 숨긴다.
+- **일정 persistence**는 repository가 암호화, 복호화, 수정 정책 같은 도메인 저장 흐름을 Supabase 호출 모양 없이 테스트할 수 있게 한다.
 - **상세 화면**은 occurrence 처리를 수행하지 않는다.
 - **상세 진입 맥락**은 **상세 화면**의 대표 상태를 정할 수 있지만, **완료** 또는 **건너뛰기** 대상을 만들지는 않는다.
 - **탭 루트**는 서로의 이전 화면이 아니라 동등한 하단 탭 목적지다.
