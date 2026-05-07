@@ -15,6 +15,16 @@ export type LocalDateUtcRange = {
   startUtc: string;
 };
 
+export type ItemOccurrenceProjectionEntry = {
+  item: RecurringItem;
+  occurrence: DerivedOccurrence;
+};
+
+export type ItemNextOccurrenceProjectionEntry = {
+  item: RecurringItem;
+  occurrence: DerivedOccurrence | null;
+};
+
 export type CreateItemOccurrenceProjectionParams = {
   completionLogs: CompletionLog[];
   item: RecurringItem;
@@ -50,6 +60,24 @@ export type ItemOccurrenceProjection = {
   ) => DerivedOccurrence[];
 };
 
+export type ProjectItemOccurrencesParams = {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  now: Date;
+  timezone: string;
+};
+
+export type GetItemOccurrenceEntriesInRangeParams =
+  ProjectItemOccurrencesParams & {
+    range: LocalDateUtcRange;
+  };
+
+export type GetLatestOverdueItemOccurrenceEntriesParams =
+  ProjectItemOccurrencesParams & {
+    lookbackStartLocalDate: string;
+    rangeEndUtc?: string;
+  };
+
 export function createLocalDateUtcRange(
   localDate: string,
   timezone: string
@@ -61,6 +89,82 @@ export function createLocalDateUtcRange(
       timezone
     ).toISOString(),
   };
+}
+
+export function getItemOccurrenceEntriesInRange({
+  completionLogs,
+  items,
+  now,
+  range,
+  timezone,
+}: GetItemOccurrenceEntriesInRangeParams): ItemOccurrenceProjectionEntry[] {
+  const completionLogsByItemId = groupCompletionLogsByItemId(completionLogs);
+
+  return items.flatMap((item) =>
+    createItemOccurrenceProjection({
+      completionLogs: completionLogsByItemId.get(item.id) ?? [],
+      item,
+      now,
+      timezone,
+    })
+      .getOccurrencesInRange(range)
+      .map((occurrence) => ({
+        item,
+        occurrence,
+      }))
+  );
+}
+
+export function getScheduledItemOccurrenceEntriesInRange(
+  params: GetItemOccurrenceEntriesInRangeParams
+): ItemOccurrenceProjectionEntry[] {
+  return getItemOccurrenceEntriesInRange(params).filter(
+    ({ occurrence }) => occurrence.status === "scheduled"
+  );
+}
+
+export function getLatestOverdueItemOccurrenceEntries({
+  completionLogs,
+  items,
+  lookbackStartLocalDate,
+  now,
+  rangeEndUtc,
+  timezone,
+}: GetLatestOverdueItemOccurrenceEntriesParams): ItemOccurrenceProjectionEntry[] {
+  const completionLogsByItemId = groupCompletionLogsByItemId(completionLogs);
+
+  return items.flatMap((item) => {
+    const occurrence = createItemOccurrenceProjection({
+      completionLogs: completionLogsByItemId.get(item.id) ?? [],
+      item,
+      now,
+      timezone,
+    }).getLatestOverdueOccurrence({
+      lookbackStartLocalDate,
+      rangeEndUtc,
+    });
+
+    return occurrence ? [{ item, occurrence }] : [];
+  });
+}
+
+export function getNextItemOccurrenceEntries({
+  completionLogs,
+  items,
+  now,
+  timezone,
+}: ProjectItemOccurrencesParams): ItemNextOccurrenceProjectionEntry[] {
+  const completionLogsByItemId = groupCompletionLogsByItemId(completionLogs);
+
+  return items.map((item) => ({
+    item,
+    occurrence: createItemOccurrenceProjection({
+      completionLogs: completionLogsByItemId.get(item.id) ?? [],
+      item,
+      now,
+      timezone,
+    }).getNextOccurrence(),
+  }));
 }
 
 export function createItemOccurrenceProjection({
@@ -171,4 +275,19 @@ function compareOccurrencesByScheduledAtUtcAsc(
   right: DerivedOccurrence
 ): number {
   return left.scheduledAtUtc.localeCompare(right.scheduledAtUtc);
+}
+
+function groupCompletionLogsByItemId(
+  completionLogs: CompletionLog[]
+): Map<string, CompletionLog[]> {
+  const completionLogsByItemId = new Map<string, CompletionLog[]>();
+
+  for (const log of completionLogs) {
+    const itemLogs = completionLogsByItemId.get(log.itemId) ?? [];
+
+    itemLogs.push(log);
+    completionLogsByItemId.set(log.itemId, itemLogs);
+  }
+
+  return completionLogsByItemId;
 }

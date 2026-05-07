@@ -3,8 +3,8 @@ import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import {
-  createItemOccurrenceProjection,
   createLocalDateUtcRange as createProjectionLocalDateUtcRange,
+  getItemOccurrenceEntriesInRange,
 } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
@@ -133,27 +133,24 @@ export function buildCalendarDaySummaries({
     { markerItems: CalendarMarkerItem[]; occurrenceCount: number }
   >();
 
-  items.forEach((item) => {
-    const occurrences = createItemOccurrenceProjection({
-      completionLogs,
-      item,
-      now,
-      timezone,
-    }).getOccurrencesInRange({ endUtc, startUtc });
+  getItemOccurrenceEntriesInRange({
+    completionLogs,
+    items,
+    now,
+    range: { endUtc, startUtc },
+    timezone,
+  }).forEach(({ item, occurrence }) => {
+    const summary = summaryMap.get(occurrence.localDate) ?? {
+      markerItems: [],
+      occurrenceCount: 0,
+    };
 
-    occurrences.forEach((occurrence) => {
-      const summary = summaryMap.get(occurrence.localDate) ?? {
-        markerItems: [],
-        occurrenceCount: 0,
-      };
-
-      summary.occurrenceCount += 1;
-      summary.markerItems.push({
-        colorKey: item.colorKey,
-        scheduledAtUtc: occurrence.scheduledAtUtc,
-      });
-      summaryMap.set(occurrence.localDate, summary);
+    summary.occurrenceCount += 1;
+    summary.markerItems.push({
+      colorKey: item.colorKey,
+      scheduledAtUtc: occurrence.scheduledAtUtc,
     });
+    summaryMap.set(occurrence.localDate, summary);
   });
 
   return Object.fromEntries(
@@ -191,29 +188,23 @@ export function buildCalendarDayEntries({
     timezone
   );
 
-  return items
-    .flatMap((item) =>
-      createItemOccurrenceProjection({
-        completionLogs,
-        item,
-        now,
-        timezone,
-      })
-        .getOccurrencesInRange({ endUtc, startUtc })
-        .filter((occurrence) => occurrence.localDate === selectedDate)
-        .map((occurrence) => ({
-          colorKey: item.colorKey,
-          itemId: item.id,
-          scheduledAtUtc: occurrence.scheduledAtUtc,
-          status: occurrence.status,
-          statusLabel: calendarStatusLabelByStatus[occurrence.status],
-          timeLabel: formatUtcTimeInTimezone(
-            occurrence.scheduledAtUtc,
-            timezone
-          ),
-          title: item.title,
-        }))
-    )
+  return getItemOccurrenceEntriesInRange({
+    completionLogs,
+    items,
+    now,
+    range: { endUtc, startUtc },
+    timezone,
+  })
+    .filter(({ occurrence }) => occurrence.localDate === selectedDate)
+    .map(({ item, occurrence }) => ({
+      colorKey: item.colorKey,
+      itemId: item.id,
+      scheduledAtUtc: occurrence.scheduledAtUtc,
+      status: occurrence.status,
+      statusLabel: calendarStatusLabelByStatus[occurrence.status],
+      timeLabel: formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone),
+      title: item.title,
+    }))
     .sort(compareCalendarEntries);
 }
 

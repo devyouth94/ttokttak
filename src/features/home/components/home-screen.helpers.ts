@@ -10,8 +10,9 @@ import { ko } from "date-fns/locale";
 
 import { getOccurrenceIdentity } from "~/features/recurring/domain/occurrence";
 import {
-  createItemOccurrenceProjection,
   createLocalDateUtcRange,
+  getLatestOverdueItemOccurrenceEntries,
+  getScheduledItemOccurrenceEntriesInRange,
   type LocalDateUtcRange,
 } from "~/features/recurring/domain/occurrence-projection";
 import type {
@@ -210,28 +211,16 @@ function buildOverdueCards({
     addDays(today, -OVERDUE_LOOKBACK_DAYS),
     "yyyy-MM-dd"
   );
-  return items
-    .flatMap((item) => {
-      const latestOverdueOccurrence = createItemOccurrenceProjection({
-        completionLogs,
-        item,
-        now,
-        timezone,
-      }).getLatestOverdueOccurrence({
-        lookbackStartLocalDate: overdueStartLocalDate,
-      });
-
-      return latestOverdueOccurrence
-        ? [
-            toHomeFeedCard(
-              item,
-              latestOverdueOccurrence,
-              "overdue",
-              todayLocalDate
-            ),
-          ]
-        : [];
-    })
+  return getLatestOverdueItemOccurrenceEntries({
+    completionLogs,
+    items,
+    lookbackStartLocalDate: overdueStartLocalDate,
+    now,
+    timezone,
+  })
+    .map(({ item, occurrence }) =>
+      toHomeFeedCard(item, occurrence, "overdue", todayLocalDate)
+    )
     .sort(compareByScheduledAtUtcDesc);
 }
 
@@ -273,18 +262,15 @@ function buildScheduledCards({
   timezone,
   todayLocalDate,
 }: BuildSectionCardsOptions): HomeFeedCard[] {
-  return items
-    .flatMap((item) =>
-      createItemOccurrenceProjection({
-        completionLogs,
-        item,
-        now,
-        timezone,
-      })
-        .getScheduledOccurrencesInRange(range)
-        .map((occurrence) =>
-          toHomeFeedCard(item, occurrence, sectionId, todayLocalDate)
-        )
+  return getScheduledItemOccurrenceEntriesInRange({
+    completionLogs,
+    items,
+    now,
+    range,
+    timezone,
+  })
+    .map(({ item, occurrence }) =>
+      toHomeFeedCard(item, occurrence, sectionId, todayLocalDate)
     )
     .sort(compareByScheduledAtUtcAsc);
 }

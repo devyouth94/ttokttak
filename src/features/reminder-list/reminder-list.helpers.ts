@@ -1,7 +1,7 @@
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { createItemOccurrenceProjection } from "~/features/recurring/domain/occurrence-projection";
+import { getNextItemOccurrenceEntries } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   RecurringItem,
@@ -36,30 +36,26 @@ export function buildReminderListEntries({
   sortMode?: ReminderListSortMode;
   timezone: string;
 }): ReminderListEntry[] {
-  return items
-    .map((item) => {
-      const nextOccurrence = createItemOccurrenceProjection({
-        completionLogs,
-        item,
-        now,
-        timezone,
-      }).getNextOccurrence();
-
-      return {
-        colorKey: item.colorKey,
-        id: item.id,
-        item,
-        nextOccurrenceTimeLabel: nextOccurrence
-          ? formatReminderListNextOccurrenceTimeLabel(
-              nextOccurrence.scheduledAtUtc,
-              timezone
-            )
-          : "예정 없음",
-        nextScheduledAtUtc: nextOccurrence?.scheduledAtUtc ?? null,
-        recurrenceLabel: getRecurrenceLabel(item),
-        title: item.title,
-      };
-    })
+  return getNextItemOccurrenceEntries({
+    completionLogs,
+    items,
+    now,
+    timezone,
+  })
+    .map(({ item, occurrence }) => ({
+      colorKey: item.colorKey,
+      id: item.id,
+      item,
+      nextOccurrenceTimeLabel: occurrence
+        ? formatReminderListNextOccurrenceTimeLabel(
+            occurrence.scheduledAtUtc,
+            timezone
+          )
+        : "예정 없음",
+      nextScheduledAtUtc: occurrence?.scheduledAtUtc ?? null,
+      recurrenceLabel: getRecurrenceLabel(item),
+      title: item.title,
+    }))
     .sort((left, right) => compareReminderListEntries(left, right, sortMode));
 }
 
