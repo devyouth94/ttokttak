@@ -1,28 +1,16 @@
 import { type ReactNode, useState } from "react";
-import {
-  Alert,
-  Animated,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Alert, Animated, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Bell,
-  BellOff,
-  EllipsisVertical,
-} from "lucide-react-native";
+import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { AppStateView } from "~/design-system/components/app-state";
 import { AppText } from "~/design-system/components/app-text";
+import { FocusScreenHeader } from "~/design-system/components/focus-screen-header";
 import { IconButton } from "~/design-system/components/icon-button";
-import { ScreenHeader } from "~/design-system/components/screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import {
   borderRadius,
@@ -571,24 +559,10 @@ export function RecurringItemDetailScreen({
     <AppScreen contentStyle={styles.screenContent}>
       <View style={styles.screenRoot}>
         <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-          <ScreenHeader
-            leftSlot={
-              <Pressable
-                accessibilityHint="이전 화면으로 돌아가요."
-                accessibilityLabel="뒤로 가기"
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => {
-                  router.back();
-                }}
-                style={({ pressed }) => [
-                  styles.headerBackButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
-                <ArrowLeft color={colors.primaryForeground} size={18} />
-              </Pressable>
-            }
+          <FocusScreenHeader
+            onBack={() => {
+              router.back();
+            }}
             onHeightChange={onHeaderHeightChange}
             rightSlot={
               item && !queryErrorMessage ? (
@@ -658,9 +632,7 @@ export function RecurringItemDetailScreen({
                     </DropdownMenu.Content>
                   </DropdownMenu.Portal>
                 </DropdownMenu.Root>
-              ) : (
-                <View style={styles.headerActionSpacer} />
-              )
+              ) : undefined
             }
             title="일정 상세"
           />
@@ -744,21 +716,6 @@ const styles = StyleSheet.create({
   },
   errorState: {
     minHeight: 120,
-  },
-  headerActionSpacer: {
-    height: 48,
-    width: 48,
-  },
-  headerBackButton: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.pill,
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-  headerButtonPressed: {
-    opacity: 0.88,
   },
   headerLayer: {
     left: 0,

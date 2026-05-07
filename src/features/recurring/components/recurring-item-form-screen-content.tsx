@@ -16,10 +16,10 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { ArrowLeft, CalendarDays, Clock3, Trash2 } from "lucide-react-native";
+import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
 import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
+import { FocusScreenHeader } from "~/design-system/components/focus-screen-header";
 import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
 import { colors } from "~/design-system/tokens";
 
@@ -197,24 +197,9 @@ export function RecurringItemFormScreenContent({
       >
         <View style={styles.screenRoot}>
           <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-            <ScreenHeader
-              leftSlot={
-                <Pressable
-                  accessibilityHint="이전 화면으로 돌아가요."
-                  accessibilityLabel="뒤로 가기"
-                  accessibilityRole="button"
-                  hitSlop={8}
-                  onPress={actions.screen.onBack}
-                  style={({ pressed }) => [
-                    styles.headerBackButton,
-                    pressed && styles.headerButtonPressed,
-                  ]}
-                >
-                  <ArrowLeft color={colors.primaryForeground} size={18} />
-                </Pressable>
-              }
+            <FocusScreenHeader
+              onBack={actions.screen.onBack}
               onHeightChange={onHeaderHeightChange}
-              rightSlot={<View style={styles.headerActionSpacer} />}
               title={screenTitle}
             />
           </Animated.View>

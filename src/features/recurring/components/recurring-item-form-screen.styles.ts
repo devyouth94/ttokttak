@@ -128,21 +128,6 @@ export const styles = StyleSheet.create({
   fieldLabel: {
     color: colors.text,
   },
-  headerActionSpacer: {
-    height: 48,
-    width: 48,
-  },
-  headerBackButton: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.pill,
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-  headerButtonPressed: {
-    opacity: 0.88,
-  },
   headerLayer: {
     left: 0,
     position: "absolute",
