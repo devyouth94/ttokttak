@@ -21,6 +21,7 @@ import {
   type NotificationSyncReason,
   type NotificationSyncScope,
 } from "~/features/notifications/notification-sync.types";
+import { createLocalNotificationSyncLifecycle } from "~/features/notifications/notification-sync-lifecycle";
 import { useSession } from "~/features/session/session-provider";
 import { Sentry } from "~/lib/sentry";
 
@@ -35,6 +36,7 @@ type NotificationBootstrapContextValue = {
     reason: NotificationSyncReason;
     scope: NotificationSyncScope;
   }) => Promise<void>;
+  syncAfterNotificationTap: () => Promise<void>;
 };
 
 const initialPermissionState: NotificationPermissionState = {
@@ -77,29 +79,22 @@ export function NotificationBootstrapProvider({
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const lastSessionSyncKeyRef = useRef<string | null>(null);
+  const notificationSyncLifecycleRef = useRef<ReturnType<
+    typeof createLocalNotificationSyncLifecycle
+  > | null>(null);
 
-  const syncAllLocalReminderNotifications = useCallback(
-    (params: { feature: string; reason: NotificationSyncReason }): void => {
-      if (!user?.id) {
-        return;
+  if (!notificationSyncLifecycleRef.current) {
+    notificationSyncLifecycleRef.current = createLocalNotificationSyncLifecycle(
+      {
+        captureException: (error, context) => {
+          Sentry.captureException(error, context);
+        },
+        syncLocalReminderNotifications,
       }
+    );
+  }
 
-      void syncLocalReminderNotifications({
-        reason: params.reason,
-        scope: { type: "all" },
-        timezone,
-        userId: user.id,
-      }).catch((error) => {
-        Sentry.captureException(error, {
-          tags: {
-            feature: params.feature,
-          },
-        });
-      });
-    },
-    [timezone, user?.id]
-  );
+  const notificationSyncLifecycle = notificationSyncLifecycleRef.current;
 
   useEffect(() => {
     void ensureAndroidReminderNotificationChannel().catch((error) => {
@@ -147,9 +142,9 @@ export function NotificationBootstrapProvider({
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         void refreshPermission();
-        syncAllLocalReminderNotifications({
-          feature: "local-notification-foreground-sync",
-          reason: "app-foregrounded",
+        void notificationSyncLifecycle.syncAfterAppForegrounded({
+          timezone,
+          userId: user?.id,
         });
       }
     });
@@ -157,27 +152,21 @@ export function NotificationBootstrapProvider({
     return () => {
       subscription.remove();
     };
-  }, [refreshPermission, syncAllLocalReminderNotifications]);
+  }, [notificationSyncLifecycle, refreshPermission, timezone, user?.id]);
 
   useEffect(() => {
-    if (!user?.id) {
-      lastSessionSyncKeyRef.current = null;
-      return;
-    }
-
-    const syncKey = `${user.id}:${timezone}`;
-
-    if (lastSessionSyncKeyRef.current === syncKey) {
-      return;
-    }
-
-    lastSessionSyncKeyRef.current = syncKey;
-
-    syncAllLocalReminderNotifications({
-      feature: "local-notification-session-sync",
-      reason: "session-restored",
+    void notificationSyncLifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: user?.id,
     });
-  }, [syncAllLocalReminderNotifications, timezone, user?.id]);
+  }, [notificationSyncLifecycle, timezone, user?.id]);
+
+  useEffect(() => {
+    void notificationSyncLifecycle.flushPendingNotificationTapSync({
+      timezone,
+      userId: user?.id,
+    });
+  }, [notificationSyncLifecycle, timezone, user?.id]);
 
   const syncAfterMutation = useCallback(
     async ({
@@ -187,19 +176,22 @@ export function NotificationBootstrapProvider({
       reason: NotificationSyncReason;
       scope: NotificationSyncScope;
     }): Promise<void> => {
-      if (!user?.id) {
-        return;
-      }
-
-      await syncLocalReminderNotifications({
+      await notificationSyncLifecycle.syncAfterMutation({
         reason,
         scope,
         timezone,
-        userId: user.id,
+        userId: user?.id,
       });
     },
-    [timezone, user?.id]
+    [notificationSyncLifecycle, timezone, user?.id]
   );
+
+  const syncAfterNotificationTap = useCallback(async (): Promise<void> => {
+    await notificationSyncLifecycle.syncAfterNotificationTapped({
+      timezone,
+      userId: user?.id,
+    });
+  }, [notificationSyncLifecycle, timezone, user?.id]);
 
   const value: NotificationBootstrapContextValue = {
     isPermissionLoading,
@@ -209,6 +201,7 @@ export function NotificationBootstrapProvider({
     refreshPermission,
     requestPermission,
     syncAfterMutation,
+    syncAfterNotificationTap,
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
 import { SplashScreen, Stack } from "expo-router";
@@ -6,8 +6,10 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-import { syncLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
-import { NotificationBootstrapProvider } from "~/features/notifications/notification-bootstrap";
+import {
+  NotificationBootstrapProvider,
+  useNotificationBootstrap,
+} from "~/features/notifications/notification-bootstrap";
 import {
   getNotificationNavigationKey,
   navigateFromNotificationResponse,
@@ -43,39 +45,8 @@ function SplashScreenController() {
 }
 
 function NotificationResponseController(): null {
-  const { profile, user } = useSession();
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const { syncAfterNotificationTap } = useNotificationBootstrap();
   const handledResponseKeysRef = useRef<Set<string>>(new Set());
-  const hasPendingTapSyncRef = useRef(false);
-
-  const syncAfterNotificationTap = useCallback((): void => {
-    if (!user?.id) {
-      hasPendingTapSyncRef.current = true;
-      return;
-    }
-
-    hasPendingTapSyncRef.current = false;
-
-    void syncLocalReminderNotifications({
-      reason: "notification-tapped",
-      scope: { type: "all" },
-      timezone,
-      userId: user.id,
-    }).catch((error) => {
-      Sentry.captureException(error, {
-        tags: {
-          feature: "local-notification-tap-sync",
-        },
-      });
-    });
-  }, [timezone, user?.id]);
-
-  useEffect(() => {
-    if (hasPendingTapSyncRef.current && user?.id) {
-      syncAfterNotificationTap();
-    }
-  }, [syncAfterNotificationTap, user?.id]);
 
   useEffect(() => {
     const handleResponse = (
@@ -98,7 +69,7 @@ function NotificationResponseController(): null {
       }
 
       handledResponseKeysRef.current.add(responseKey);
-      syncAfterNotificationTap();
+      void syncAfterNotificationTap();
     };
 
     void Notifications.getLastNotificationResponseAsync().then((response) => {
