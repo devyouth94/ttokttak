@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import { AppLogoIcon } from "~/design-system/components/app-logo-icon";
 import { AppScreen } from "~/design-system/components/app-screen";
@@ -14,6 +21,10 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import {
+  PRIVACY_POLICY_URL,
+  TERMS_OF_SERVICE_URL,
+} from "~/features/legal/legal-links";
 import { isAppleSignInAvailable } from "~/features/session/apple-sign-in";
 
 type LoginScreenProps = {
@@ -65,6 +76,25 @@ export function LoginScreen({
     }
   };
 
+  const handleOpenPrivacyPolicy = async () => {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert(
+        "개인정보처리방침 열기 실패",
+        "개인정보처리방침을 열 수 없습니다."
+      );
+    }
+  };
+
+  const handleOpenTermsOfService = async () => {
+    try {
+      await Linking.openURL(TERMS_OF_SERVICE_URL);
+    } catch {
+      Alert.alert("이용약관 열기 실패", "이용약관을 열 수 없습니다.");
+    }
+  };
+
   return (
     <AppScreen
       contentStyle={styles.screenContent}
@@ -77,40 +107,82 @@ export function LoginScreen({
             <AppText style={styles.brand}>똑딱</AppText>
           </View>
 
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityHint="Google 계정으로 로그인"
-              accessibilityRole="button"
-              disabled={!isConfigured}
-              onPress={handleGooglePress}
-              style={({ pressed }) => [
-                styles.socialButton,
-                styles.googleButton,
-                !isConfigured && styles.disabledButton,
-                pressed && isConfigured && styles.pressedButton,
-              ]}
-            >
-              <GoogleLogoIcon />
-              <AppText style={styles.googleButtonText}>Google로 로그인</AppText>
-            </Pressable>
-
-            {isAppleAvailable ? (
+          <View style={styles.loginArea}>
+            <View style={styles.actions}>
               <Pressable
-                accessibilityHint="Apple 계정으로 로그인"
+                accessibilityHint="Google 계정으로 로그인"
                 accessibilityRole="button"
                 disabled={!isConfigured}
-                onPress={handleApplePress}
+                onPress={handleGooglePress}
                 style={({ pressed }) => [
                   styles.socialButton,
-                  styles.appleButton,
+                  styles.googleButton,
                   !isConfigured && styles.disabledButton,
-                  pressed && isConfigured && styles.applePressedButton,
+                  pressed && isConfigured && styles.pressedButton,
                 ]}
               >
-                <AppleLogoIcon size={17} />
-                <AppText style={styles.appleButtonText}>Apple로 로그인</AppText>
+                <GoogleLogoIcon />
+                <AppText style={styles.googleButtonText}>
+                  Google로 로그인
+                </AppText>
               </Pressable>
-            ) : null}
+
+              {isAppleAvailable ? (
+                <Pressable
+                  accessibilityHint="Apple 계정으로 로그인"
+                  accessibilityRole="button"
+                  disabled={!isConfigured}
+                  onPress={handleApplePress}
+                  style={({ pressed }) => [
+                    styles.socialButton,
+                    styles.appleButton,
+                    !isConfigured && styles.disabledButton,
+                    pressed && isConfigured && styles.applePressedButton,
+                  ]}
+                >
+                  <AppleLogoIcon size={17} />
+                  <AppText style={styles.appleButtonText}>
+                    Apple로 로그인
+                  </AppText>
+                </Pressable>
+              ) : null}
+            </View>
+
+            <View style={styles.legalRow}>
+              <AppText style={styles.legalText}>로그인하면</AppText>
+              <Pressable
+                accessibilityRole="link"
+                hitSlop={8}
+                onPress={() => {
+                  void handleOpenTermsOfService();
+                }}
+                style={({ pressed }) => [
+                  styles.legalLinkButton,
+                  pressed ? styles.legalLinkPressed : undefined,
+                ]}
+              >
+                <AppText style={[styles.legalText, styles.legalLink]}>
+                  이용약관
+                </AppText>
+              </Pressable>
+              <AppText style={styles.legalText}>및</AppText>
+              <Pressable
+                accessibilityRole="link"
+                hitSlop={8}
+                onPress={() => {
+                  void handleOpenPrivacyPolicy();
+                }}
+                style={({ pressed }) => [
+                  styles.legalLinkButton,
+                  pressed ? styles.legalLinkPressed : undefined,
+                ]}
+              >
+                <AppText style={[styles.legalText, styles.legalLink]}>
+                  개인정보처리방침
+                </AppText>
+              </Pressable>
+              <AppText style={styles.legalText}>에 동의하게 됩니다.</AppText>
+            </View>
           </View>
 
           {!isConfigured ? (
@@ -171,11 +243,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
   },
-  legal: {
+  legalLink: {
+    color: colors.text,
+    fontWeight: typography.fontWeight.semibold,
+    textDecorationLine: "underline",
+  },
+  legalLinkButton: {
+    borderRadius: borderRadius.xs,
+  },
+  legalLinkPressed: {
+    opacity: 0.72,
+  },
+  legalRow: {
+    alignItems: "center",
+    columnGap: spacing.xxs,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    rowGap: spacing.xxs,
+  },
+  legalText: {
     color: colors.textSoft,
     fontSize: typography.label,
     lineHeight: 18,
     textAlign: "center",
+  },
+  loginArea: {
+    gap: spacing.sm,
   },
   notice: {
     color: colors.textMuted,

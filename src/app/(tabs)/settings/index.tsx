@@ -24,6 +24,10 @@ import {
   spacing,
   typography,
 } from "~/design-system/tokens";
+import {
+  PRIVACY_POLICY_URL,
+  TERMS_OF_SERVICE_URL,
+} from "~/features/legal/legal-links";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import { AccountDeletionSessionRequiredError } from "~/features/session/account-deletion";
@@ -32,9 +36,6 @@ import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
 } from "~/features/settings/settings.helpers";
-
-const PRIVACY_POLICY_URL =
-  "https://devyouth94.notion.site/35a5e680a724819d8575fa73b1836009";
 
 type SectionTitleProps = {
   title: string;
@@ -349,6 +350,14 @@ export default function SettingsTabPage(): React.JSX.Element {
     }
   }
 
+  async function handleOpenTermsOfService(): Promise<void> {
+    try {
+      await Linking.openURL(TERMS_OF_SERVICE_URL);
+    } catch {
+      Alert.alert("이용약관 열기 실패", "이용약관을 열 수 없습니다.");
+    }
+  }
+
   async function handleRequestNotificationPermission(): Promise<void> {
     try {
       await requestPermission();
@@ -434,6 +443,14 @@ export default function SettingsTabPage(): React.JSX.Element {
           <SettingsSectionCard title="앱 정보">
             <SettingsValueRow isFirst title="시간대" value={timezone} />
             <SettingsValueRow title="앱 버전" value={`v${appVersion}`} />
+            <SettingsRow
+              accessory={<ExternalLink color={colors.textSoft} size={16} />}
+              isPressable
+              onPress={() => {
+                void handleOpenTermsOfService();
+              }}
+              title="이용약관"
+            />
             <SettingsRow
               accessory={<ExternalLink color={colors.textSoft} size={16} />}
               isPressable
