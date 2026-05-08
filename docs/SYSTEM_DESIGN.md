@@ -104,6 +104,25 @@ Supabase Auth를 사용한다.
 profile이 없으면 현재 기기 timezone과 provider metadata 이름으로 생성한다.
 사용자가 설정에서 수정한 표시 이름은 provider metadata로 덮어쓰지 않는다.
 
+### Account Deletion
+
+로그인된 사용자의 계정 삭제는 JWT 검증이 켜진 `delete-account` Supabase Edge Function에서 처리한다.
+클라이언트는 service role key를 절대 보유하지 않는다.
+
+처리 흐름:
+
+1. 앱은 사용자 확인 UI를 거친 뒤 Edge Function을 호출한다.
+2. Edge Function은 현재 JWT로 사용자 id를 확인한다.
+3. Edge Function은 service role 권한으로 Supabase Auth user를 삭제한다.
+4. `auth.users` 삭제는 `profiles`와 사용자 데이터의 cascade 삭제를 발생시킨다.
+5. 앱은 로컬 세션과 현재 기기의 Ttokttak 로컬 알림을 정리한다.
+
+계정 삭제 실패 응답은 내부 삭제 단계나 service role key 경계를 노출하지 않는다.
+앱은 세션 없음 또는 만료만 별도 안내하고, 그 외 실패는 단순 실패 안내로 표시한다.
+
+공개 웹의 계정 삭제 요청은 로그인할 수 없는 사용자를 위한 접수 경로다.
+해당 요청은 자동 삭제가 아니라 운영 확인 뒤 처리한다.
+
 ## Recurring Item Flow
 
 ### Create

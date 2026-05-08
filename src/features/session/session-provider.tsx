@@ -2,6 +2,8 @@ import type { PropsWithChildren } from "react";
 import { createContext, use, useEffect, useState } from "react";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
+import { cancelAllTtokttakLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
+import { deleteAccount as deleteAccountWithCleanup } from "~/features/session/account-deletion";
 import { signInWithAppleIdToken } from "~/features/session/apple-sign-in";
 import {
   signInWithGoogleIdToken,
@@ -22,6 +24,7 @@ type SessionContextValue = {
   signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   updateDisplayName: (displayName: string) => Promise<void>;
   user: User | null;
 };
@@ -258,6 +261,16 @@ export function SessionProvider({
       }
 
       await signOutFromGoogle();
+    },
+    async deleteAccount() {
+      const client = supabase!;
+
+      await deleteAccountWithCleanup({
+        cancelAllTtokttakLocalReminderNotifications,
+        client,
+        currentUserId: session?.user.id,
+        signOutFromGoogle,
+      });
     },
     async updateDisplayName(displayName: string) {
       const client = supabase!;

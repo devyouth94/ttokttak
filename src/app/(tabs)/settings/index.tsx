@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -25,11 +26,15 @@ import {
 } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { AccountDeletionSessionRequiredError } from "~/features/session/account-deletion";
 import { useSession } from "~/features/session/session-provider";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
 } from "~/features/settings/settings.helpers";
+
+const PRIVACY_POLICY_URL =
+  "https://devyouth94.notion.site/35a5e680a724819d8575fa73b1836009";
 
 type SectionTitleProps = {
   title: string;
@@ -43,9 +48,11 @@ type SettingsSectionCardProps = {
 type SettingsRowProps = {
   accessory?: ReactNode;
   description?: string;
+  isDisabled?: boolean;
   isFirst?: boolean;
   isPressable?: boolean;
   onPress?: () => void;
+  tone?: "default" | "danger";
   title: string;
 };
 
@@ -81,24 +88,33 @@ function SettingsSectionCard({
 function SettingsRow({
   accessory,
   description,
+  isDisabled = false,
   isFirst = false,
   isPressable = false,
   onPress,
+  tone = "default",
   title,
 }: SettingsRowProps): React.JSX.Element {
   return (
     <Pressable
       accessibilityRole={isPressable ? "button" : undefined}
-      disabled={!isPressable}
+      disabled={!isPressable || isDisabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         !isFirst ? styles.rowDivider : undefined,
-        isPressable && pressed ? styles.rowPressed : undefined,
+        isDisabled ? styles.rowDisabled : undefined,
+        isPressable && !isDisabled && pressed ? styles.rowPressed : undefined,
       ]}
     >
       <View style={styles.rowContent}>
-        <AppText style={styles.rowTitle} variant="body3">
+        <AppText
+          style={[
+            styles.rowTitle,
+            tone === "danger" ? styles.dangerText : null,
+          ]}
+          variant="body3"
+        >
           {title}
         </AppText>
         {description ? (
@@ -167,7 +183,8 @@ export default function SettingsTabPage(): React.JSX.Element {
     onScroll,
     scrollEventThrottle,
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const { profile, signOut, updateDisplayName, user } = useSession();
+  const { deleteAccount, profile, signOut, updateDisplayName, user } =
+    useSession();
   const {
     isPermissionLoading,
     isRequestingPermission,
@@ -176,6 +193,7 @@ export default function SettingsTabPage(): React.JSX.Element {
     requestPermission,
   } = useNotificationBootstrap();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
   const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
@@ -267,11 +285,67 @@ export default function SettingsTabPage(): React.JSX.Element {
     }
   }
 
+  async function handleDeleteAccount(): Promise<void> {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteAccount();
+    } catch (error) {
+      const message =
+        error instanceof AccountDeletionSessionRequiredError
+          ? "다시 로그인한 뒤 시도해 주세요."
+          : "계정 삭제에 실패했어요. 잠시 뒤 다시 시도해 주세요.";
+
+      Alert.alert("계정 삭제 실패", message);
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  }
+
+  function requestDeleteAccount(): void {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    Alert.alert(
+      "계정 삭제",
+      "계정과 저장된 일정이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      [
+        {
+          style: "cancel",
+          text: "취소",
+        },
+        {
+          onPress: () => {
+            void handleDeleteAccount();
+          },
+          style: "destructive",
+          text: "계정 삭제",
+        },
+      ]
+    );
+  }
+
   async function handleOpenSystemSettings(): Promise<void> {
     try {
       await openSettings();
     } catch {
       Alert.alert("설정 열기 실패", "기기 설정을 열 수 없습니다.");
+    }
+  }
+
+  async function handleOpenPrivacyPolicy(): Promise<void> {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert(
+        "개인정보처리방침 열기 실패",
+        "개인정보처리방침을 열 수 없습니다."
+      );
     }
   }
 
@@ -360,30 +434,44 @@ export default function SettingsTabPage(): React.JSX.Element {
           <SettingsSectionCard title="앱 정보">
             <SettingsValueRow isFirst title="시간대" value={timezone} />
             <SettingsValueRow title="앱 버전" value={`v${appVersion}`} />
+            <SettingsRow
+              accessory={<ExternalLink color={colors.textSoft} size={16} />}
+              isPressable
+              onPress={() => {
+                void handleOpenPrivacyPolicy();
+              }}
+              title="개인정보처리방침"
+            />
           </SettingsSectionCard>
-        </View>
 
-        <View style={styles.logoutSlot}>
-          {isSigningOut ? (
-            <ActivityIndicator color={colors.textSoft} size="small" />
-          ) : (
-            <Pressable
-              accessibilityLabel="로그아웃"
-              accessibilityRole="button"
-              hitSlop={8}
+          <SettingsSectionCard title="계정 관리">
+            <SettingsRow
+              accessory={
+                isSigningOut ? (
+                  <ActivityIndicator color={colors.textSoft} size="small" />
+                ) : undefined
+              }
+              isDisabled={isSigningOut || isDeletingAccount}
+              isFirst
+              isPressable
               onPress={() => {
                 void handleSignOut();
               }}
-              style={({ pressed }) => [
-                styles.logoutButton,
-                pressed ? styles.rowPressed : undefined,
-              ]}
-            >
-              <AppText style={styles.logoutText} variant="body3">
-                로그아웃
-              </AppText>
-            </Pressable>
-          )}
+              title="로그아웃"
+            />
+            <SettingsRow
+              accessory={
+                isDeletingAccount ? (
+                  <ActivityIndicator color={colors.error} size="small" />
+                ) : undefined
+              }
+              isDisabled={isDeletingAccount || isSigningOut}
+              isPressable
+              onPress={requestDeleteAccount}
+              title="계정 삭제"
+              tone="danger"
+            />
+          </SettingsSectionCard>
         </View>
       </Animated.ScrollView>
 
@@ -461,25 +549,15 @@ export default function SettingsTabPage(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  dangerText: {
+    color: colors.error,
+  },
   headerLayer: {
     left: 0,
     position: "absolute",
     right: 0,
     top: 0,
     zIndex: 10,
-  },
-  logoutButton: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoutText: {
-    color: colors.textSoft,
-    textDecorationLine: "underline",
-  },
-  logoutSlot: {
-    alignItems: "center",
-    marginTop: "auto",
-    paddingTop: spacing.xl,
   },
   modalBackdrop: {
     alignItems: "center",
@@ -562,6 +640,9 @@ const styles = StyleSheet.create({
   },
   rowDescription: {
     color: colors.textSoft,
+  },
+  rowDisabled: {
+    opacity: 0.56,
   },
   rowPressed: {
     opacity: 0.72,
