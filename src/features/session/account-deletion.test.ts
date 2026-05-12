@@ -1,4 +1,5 @@
 import {
+  AccountDeletionAppleAuthorizationRequiredError,
   AccountDeletionSessionRequiredError,
   deleteAccount,
 } from "~/features/session/account-deletion";
@@ -27,6 +28,8 @@ describe("deleteAccount", () => {
           invoke,
         },
       },
+      currentAuthProvider: "google",
+      currentAuthProviders: ["google"],
       currentUserId: "user-1",
       signOutFromGoogle,
     });
@@ -66,6 +69,8 @@ describe("deleteAccount", () => {
             invoke,
           },
         },
+        currentAuthProvider: "google",
+        currentAuthProviders: ["google"],
         currentUserId: "user-1",
         signOutFromGoogle,
       })
@@ -98,6 +103,8 @@ describe("deleteAccount", () => {
             invoke,
           },
         },
+        currentAuthProvider: "google",
+        currentAuthProviders: ["google"],
         currentUserId: null,
         signOutFromGoogle: jest.fn(async () => undefined),
       })
@@ -105,5 +112,116 @@ describe("deleteAccount", () => {
 
     expect(invoke).not.toHaveBeenCalled();
     expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it("Apple 계정이면 삭제 호출 전에 Apple 인증 코드를 요청한다", async () => {
+    const invoke = jest.fn().mockResolvedValue({
+      data: { ok: true },
+      error: null,
+    });
+    const signOut = jest.fn().mockResolvedValue({
+      error: null,
+    });
+    const requestAppleAuthorizationCodeForAccountDeletion = jest.fn(
+      async () => "apple-code-1"
+    );
+
+    await deleteAccount({
+      cancelAllTtokttakLocalReminderNotifications: jest.fn(
+        async () => undefined
+      ),
+      client: {
+        auth: {
+          signOut,
+        },
+        functions: {
+          invoke,
+        },
+      },
+      currentAuthProvider: "apple",
+      currentAuthProviders: ["apple"],
+      currentUserId: "user-1",
+      requestAppleAuthorizationCodeForAccountDeletion,
+      signOutFromGoogle: jest.fn(async () => undefined),
+    });
+
+    expect(
+      requestAppleAuthorizationCodeForAccountDeletion
+    ).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith("delete-account", {
+      body: { appleAuthorizationCode: "apple-code-1", confirm: true },
+    });
+  });
+
+  it("Apple 계정인데 인증 코드 요청 함수가 없으면 삭제 요청을 보내지 않는다", async () => {
+    const invoke = jest.fn().mockResolvedValue({
+      data: { ok: true },
+      error: null,
+    });
+    const signOut = jest.fn().mockResolvedValue({
+      error: null,
+    });
+
+    await expect(
+      deleteAccount({
+        cancelAllTtokttakLocalReminderNotifications: jest.fn(
+          async () => undefined
+        ),
+        client: {
+          auth: {
+            signOut,
+          },
+          functions: {
+            invoke,
+          },
+        },
+        currentAuthProvider: null,
+        currentAuthProviders: ["apple"],
+        currentUserId: "user-1",
+        signOutFromGoogle: jest.fn(async () => undefined),
+      })
+    ).rejects.toBeInstanceOf(AccountDeletionAppleAuthorizationRequiredError);
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it("Google 계정이면 Apple 인증 코드를 요청하지 않는다", async () => {
+    const invoke = jest.fn().mockResolvedValue({
+      data: { ok: true },
+      error: null,
+    });
+    const signOut = jest.fn().mockResolvedValue({
+      error: null,
+    });
+    const requestAppleAuthorizationCodeForAccountDeletion = jest.fn(
+      async () => "apple-code-1"
+    );
+
+    await deleteAccount({
+      cancelAllTtokttakLocalReminderNotifications: jest.fn(
+        async () => undefined
+      ),
+      client: {
+        auth: {
+          signOut,
+        },
+        functions: {
+          invoke,
+        },
+      },
+      currentAuthProvider: "google",
+      currentAuthProviders: ["google"],
+      currentUserId: "user-1",
+      requestAppleAuthorizationCodeForAccountDeletion,
+      signOutFromGoogle: jest.fn(async () => undefined),
+    });
+
+    expect(
+      requestAppleAuthorizationCodeForAccountDeletion
+    ).not.toHaveBeenCalled();
+    expect(invoke).toHaveBeenCalledWith("delete-account", {
+      body: { confirm: true },
+    });
   });
 });

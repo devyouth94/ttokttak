@@ -112,13 +112,19 @@ profile이 없으면 현재 기기 timezone과 provider metadata 이름으로 �
 처리 흐름:
 
 1. 앱은 사용자 확인 UI를 거친 뒤 Edge Function을 호출한다.
-2. Edge Function은 현재 JWT로 사용자 id를 확인한다.
-3. Edge Function은 service role 권한으로 Supabase Auth user를 삭제한다.
-4. `auth.users` 삭제는 `profiles`와 사용자 데이터의 cascade 삭제를 발생시킨다.
-5. 앱은 로컬 세션과 현재 기기의 Ttokttak 로컬 알림을 정리한다.
+2. Apple 계정이면 앱은 삭제 직전에 Apple 재인증을 요청하고 authorization code를 Edge Function에 전달한다.
+3. Edge Function은 현재 JWT로 사용자 id와 provider를 확인한다.
+4. Edge Function은 Apple 계정인데 authorization code가 없으면 삭제를 거부한다.
+5. Apple authorization code가 있으면 Edge Function이 Apple token revoke를 먼저 처리하고 Apple identity 일치를 확인한다.
+6. Edge Function은 service role 권한으로 Supabase Auth user를 삭제한다.
+7. `auth.users` 삭제는 `profiles`와 사용자 데이터의 cascade 삭제를 발생시킨다.
+8. 앱은 로컬 세션과 현재 기기의 Ttokttak 로컬 알림을 정리한다.
 
 계정 삭제 실패 응답은 내부 삭제 단계나 service role key 경계를 노출하지 않는다.
 앱은 세션 없음 또는 만료만 별도 안내하고, 그 외 실패는 단순 실패 안내로 표시한다.
+
+Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge Function secret으로만 관리한다.
+클라이언트는 Apple private key나 service role key를 절대 보유하지 않는다.
 
 공개 웹의 계정 삭제 요청은 로그인할 수 없는 사용자를 위한 접수 경로다.
 해당 요청은 자동 삭제가 아니라 운영 확인 뒤 처리한다.

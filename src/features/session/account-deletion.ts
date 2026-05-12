@@ -5,7 +5,9 @@ type DeleteAccountClient = {
   functions: {
     invoke: (
       functionName: "delete-account",
-      options: { body: { confirm: true } }
+      options: {
+        body: { appleAuthorizationCode?: string; confirm: true };
+      }
     ) => Promise<{ error: Error | null }>;
   };
 };
@@ -13,7 +15,10 @@ type DeleteAccountClient = {
 type DeleteAccountParams = {
   cancelAllTtokttakLocalReminderNotifications: () => Promise<unknown>;
   client: DeleteAccountClient;
+  currentAuthProvider: string | null | undefined;
+  currentAuthProviders: string[] | null | undefined;
   currentUserId: string | null | undefined;
+  requestAppleAuthorizationCodeForAccountDeletion?: () => Promise<string>;
   signOutFromGoogle: () => Promise<void>;
 };
 
@@ -24,20 +29,64 @@ export class AccountDeletionSessionRequiredError extends Error {
   }
 }
 
+export class AccountDeletionAppleAuthorizationRequiredError extends Error {
+  constructor() {
+    super("Apple 계정 삭제를 진행하려면 Apple 인증이 필요합니다.");
+    this.name = "AccountDeletionAppleAuthorizationRequiredError";
+  }
+}
+
+function isAppleAccount({
+  currentAuthProvider,
+  currentAuthProviders,
+}: Pick<
+  DeleteAccountParams,
+  "currentAuthProvider" | "currentAuthProviders"
+>): boolean {
+  return (
+    currentAuthProvider === "apple" ||
+    Boolean(currentAuthProviders?.includes("apple"))
+  );
+}
+
 export async function deleteAccount({
   cancelAllTtokttakLocalReminderNotifications,
   client,
+  currentAuthProvider,
+  currentAuthProviders,
   currentUserId,
+  requestAppleAuthorizationCodeForAccountDeletion,
   signOutFromGoogle,
 }: DeleteAccountParams): Promise<void> {
   if (!currentUserId) {
     throw new AccountDeletionSessionRequiredError();
   }
 
+  const shouldRevokeAppleToken = isAppleAccount({
+    currentAuthProvider,
+    currentAuthProviders,
+  });
+
+  let appleAuthorizationCode: string | undefined;
+
+  if (shouldRevokeAppleToken) {
+    const requestAppleAuthorizationCode =
+      requestAppleAuthorizationCodeForAccountDeletion;
+
+    if (!requestAppleAuthorizationCode) {
+      throw new AccountDeletionAppleAuthorizationRequiredError();
+    }
+
+    appleAuthorizationCode = await requestAppleAuthorizationCode();
+  }
+
   const { error: deleteError } = await client.functions.invoke(
     "delete-account",
     {
-      body: { confirm: true },
+      body: {
+        ...(appleAuthorizationCode ? { appleAuthorizationCode } : {}),
+        confirm: true,
+      },
     }
   );
 

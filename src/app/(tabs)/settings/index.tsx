@@ -30,7 +30,10 @@ import {
 } from "~/features/legal/legal-links";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import { AccountDeletionSessionRequiredError } from "~/features/session/account-deletion";
+import {
+  AccountDeletionAppleAuthorizationRequiredError,
+  AccountDeletionSessionRequiredError,
+} from "~/features/session/account-deletion";
 import { useSession } from "~/features/session/session-provider";
 import {
   getEditableProfileDisplayName,
@@ -297,9 +300,11 @@ export default function SettingsTabPage(): React.JSX.Element {
       await deleteAccount();
     } catch (error) {
       const message =
-        error instanceof AccountDeletionSessionRequiredError
-          ? "다시 로그인한 뒤 시도해 주세요."
-          : "계정 삭제에 실패했어요. 잠시 뒤 다시 시도해 주세요.";
+        error instanceof AccountDeletionAppleAuthorizationRequiredError
+          ? "Apple 인증을 완료한 뒤 다시 시도해 주세요."
+          : error instanceof AccountDeletionSessionRequiredError
+            ? "다시 로그인한 뒤 시도해 주세요."
+            : "계정 삭제에 실패했어요. 잠시 뒤 다시 시도해 주세요.";
 
       Alert.alert("계정 삭제 실패", message);
     } finally {

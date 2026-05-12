@@ -4,7 +4,10 @@ import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 import { cancelAllTtokttakLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
 import { deleteAccount as deleteAccountWithCleanup } from "~/features/session/account-deletion";
-import { signInWithAppleIdToken } from "~/features/session/apple-sign-in";
+import {
+  requestAppleAuthorizationCodeForAccountDeletion,
+  signInWithAppleIdToken,
+} from "~/features/session/apple-sign-in";
 import {
   signInWithGoogleIdToken,
   signOutFromGoogle,
@@ -30,6 +33,22 @@ type SessionContextValue = {
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
+
+function getAuthProviders(user: User | null | undefined): string[] {
+  const providers = user?.app_metadata.providers;
+
+  return Array.isArray(providers)
+    ? providers.filter(
+        (provider): provider is string => typeof provider === "string"
+      )
+    : [];
+}
+
+function getAuthProvider(user: User | null | undefined): string | null {
+  const provider = user?.app_metadata.provider;
+
+  return typeof provider === "string" ? provider : null;
+}
 
 function getDeviceTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -268,7 +287,10 @@ export function SessionProvider({
       await deleteAccountWithCleanup({
         cancelAllTtokttakLocalReminderNotifications,
         client,
+        currentAuthProvider: getAuthProvider(session?.user),
+        currentAuthProviders: getAuthProviders(session?.user),
         currentUserId: session?.user.id,
+        requestAppleAuthorizationCodeForAccountDeletion,
         signOutFromGoogle,
       });
     },
