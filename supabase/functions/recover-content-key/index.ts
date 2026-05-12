@@ -1,6 +1,39 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 type JsonRecord = Record<string, unknown>;
+type Database = {
+  public: {
+    Functions: Record<string, never>;
+    Tables: {
+      content_key_recovery_audit_events: {
+        Insert: {
+          action: RecoveryAuditAction;
+          key_version: number | null;
+          result: RecoveryAuditResult;
+          user_id: string;
+        };
+        Relationships: [];
+        Row: {
+          action: RecoveryAuditAction;
+          key_version: number | null;
+          result: RecoveryAuditResult;
+          user_id: string;
+        };
+        Update: never;
+      };
+      user_content_encryption_keys: {
+        Insert: never;
+        Relationships: [];
+        Row: UserContentEncryptionKeyRow & {
+          key_version: number;
+          user_id: string;
+        };
+        Update: never;
+      };
+    };
+    Views: Record<string, never>;
+  };
+};
 
 type RequestBody =
   | {
@@ -25,7 +58,7 @@ type RecoveryAuditResult =
   | "rate_limited"
   | "server_error"
   | "success";
-type SupabaseClient = ReturnType<typeof createClient>;
+type TtokttakSupabaseClient = SupabaseClient<Database>;
 
 const wrapAlgorithm = "AES-GCM";
 const wrapMetadata = {
@@ -44,9 +77,9 @@ function jsonResponse(body: JsonRecord, status = 200): Response {
   });
 }
 
-function decodeBase64(value: string): Uint8Array {
+function decodeBase64(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
 
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
@@ -55,7 +88,7 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
-function encodeBase64(bytes: Uint8Array): string {
+function encodeBase64(bytes: Uint8Array<ArrayBuffer>): string {
   let binary = "";
 
   for (const byte of bytes) {
@@ -76,7 +109,7 @@ async function getWrappingKey(): Promise<CryptoKey> {
 
   return crypto.subtle.importKey(
     "raw",
-    decodeBase64(encodedSecret),
+    decodeBase64(encodedSecret).buffer,
     "AES-GCM",
     false,
     ["decrypt", "encrypt"]
@@ -95,7 +128,9 @@ async function encryptContentKey(encodedKey: string): Promise<string> {
       new TextEncoder().encode(encodedKey)
     )
   );
-  const combined = new Uint8Array(iv.length + encrypted.length);
+  const combined = new Uint8Array(
+    new ArrayBuffer(iv.length + encrypted.length)
+  );
 
   combined.set(iv, 0);
   combined.set(encrypted, iv.length);
@@ -179,7 +214,7 @@ function getAuditKeyVersion(value: unknown): number | null {
 
 async function recordRecoveryAuditEvent(params: {
   action: RecoveryAuditAction;
-  auditClient: SupabaseClient;
+  auditClient: TtokttakSupabaseClient;
   keyVersion: number | null;
   result: RecoveryAuditResult;
   userId: string;
@@ -239,7 +274,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "server_not_configured" }, 500);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         Authorization: authorization,
@@ -255,7 +290,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 
-  const auditClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+  const auditClient = createClient<Database>(
+    supabaseUrl,
+    supabaseServiceRoleKey
+  );
+  const userId = user.id;
 
   const body = await req.json().catch(() => null);
   const auditAction = getAuditAction(body);
@@ -272,7 +311,7 @@ Deno.serve(async (req) => {
         auditClient,
         keyVersion: auditKeyVersion,
         result,
-        userId: user.id,
+        userId,
       });
     } catch {
       return jsonResponse({ error: "server_error" }, 500);
@@ -281,7 +320,7 @@ Deno.serve(async (req) => {
     return jsonResponse(responseBody, status);
   }
 
-  if (!checkRateLimit(user.id)) {
+  if (!checkRateLimit(userId)) {
     return recordAndRespond("rate_limited", { error: "rate_limited" }, 429);
   }
 
@@ -296,7 +335,7 @@ Deno.serve(async (req) => {
   console.info("content_key_recovery", {
     action: body.action,
     keyVersion: body.keyVersion,
-    userId: user.id,
+    userId,
   });
 
   try {
@@ -311,7 +350,7 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase
       .from("user_content_encryption_keys")
       .select("wrap_algorithm, wrap_metadata, wrapped_key")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("key_version", body.keyVersion)
       .maybeSingle<UserContentEncryptionKeyRow>();
 

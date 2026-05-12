@@ -10,7 +10,8 @@
     "ios:compact": "expo run:ios --device \"iPhone SE (2nd generation)\"",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "supabase:functions:check": "deno check supabase/functions/delete-account/index.ts supabase/functions/recover-content-key/index.ts"
   },
   "jest": {
     "preset": "jest-expo",
