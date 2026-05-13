@@ -1,9 +1,25 @@
 import type { ExpoConfig } from "expo/config";
 
 const iconBackgroundColor = "#FFFFFF";
+const missingGoogleIosUrlScheme =
+  "com.googleusercontent.apps.missing-google-ios-url-scheme";
+
+function getGoogleIosUrlScheme(): string {
+  const googleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
+
+  if (googleIosUrlScheme) {
+    return googleIosUrlScheme;
+  }
+
+  if (process.env.EAS_BUILD === "true") {
+    throw new Error("GOOGLE_AUTH_IOS_URL_SCHEME 환경 변수가 필요합니다.");
+  }
+
+  return missingGoogleIosUrlScheme;
+}
 
 export default function getAppConfig(): ExpoConfig {
-  const googleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME!;
+  const googleIosUrlScheme = getGoogleIosUrlScheme();
 
   return {
     name: "똑딱",
@@ -28,6 +44,11 @@ export default function getAppConfig(): ExpoConfig {
     },
     web: {
       output: "static",
+    },
+    extra: {
+      eas: {
+        projectId: "7b6d8011-8d4c-4110-967f-160aea1db801",
+      },
     },
     plugins: [
       "expo-router",

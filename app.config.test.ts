@@ -1,38 +1,58 @@
 import type { ExpoConfig } from "expo/config";
 
-function loadAppConfig(): () => ExpoConfig {
-  const appConfigModule = require("./app.config") as {
-    default: () => ExpoConfig;
-  };
+import getAppConfig from "./app.config";
 
-  return appConfigModule.default;
-}
+const loadAppConfig = (): (() => ExpoConfig) => getAppConfig;
 
 describe("app config", () => {
-  const envKey = "GOOGLE_AUTH_IOS_URL_SCHEME";
-  const originalGoogleIosUrlScheme = process.env[envKey];
+  const originalGoogleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
+  const originalEasBuild = process.env.EAS_BUILD;
 
   afterEach(() => {
-    jest.resetModules();
-
     if (originalGoogleIosUrlScheme === undefined) {
-      delete process.env[envKey];
-      return;
+      delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
+    } else {
+      process.env.GOOGLE_AUTH_IOS_URL_SCHEME = originalGoogleIosUrlScheme;
     }
 
-    process.env[envKey] = originalGoogleIosUrlScheme;
+    if (originalEasBuild === undefined) {
+      delete process.env.EAS_BUILD;
+    } else {
+      process.env.EAS_BUILD = originalEasBuild;
+    }
   });
 
   it("Google iOS URL scheme은 config 함수 호출 시점의 환경 변수를 사용한다", () => {
-    delete process.env[envKey];
-    jest.resetModules();
+    delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
 
     const getAppConfig = loadAppConfig();
-    process.env[envKey] =
+    process.env.GOOGLE_AUTH_IOS_URL_SCHEME =
       "com.googleusercontent.apps.test-ios-url-scheme";
 
     expect(JSON.stringify(getAppConfig().plugins)).toContain(
-      process.env[envKey]
+      process.env.GOOGLE_AUTH_IOS_URL_SCHEME
+    );
+  });
+
+  it("일반 config 조회에서는 Google iOS URL scheme placeholder를 사용한다", () => {
+    delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
+    delete process.env.EAS_BUILD;
+
+    const getAppConfig = loadAppConfig();
+
+    expect(JSON.stringify(getAppConfig().plugins)).toContain(
+      "com.googleusercontent.apps.missing-google-ios-url-scheme"
+    );
+  });
+
+  it("EAS build에서는 Google iOS URL scheme 누락을 실패로 처리한다", () => {
+    delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
+    process.env.EAS_BUILD = "true";
+
+    const getAppConfig = loadAppConfig();
+
+    expect(() => getAppConfig()).toThrow(
+      "GOOGLE_AUTH_IOS_URL_SCHEME 환경 변수가 필요합니다."
     );
   });
 });
