@@ -32,6 +32,9 @@ export default function getAppConfig(): ExpoConfig {
     ios: {
       bundleIdentifier: "com.youngzin.ttokttak",
       usesAppleSignIn: true,
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
       adaptiveIcon: {
