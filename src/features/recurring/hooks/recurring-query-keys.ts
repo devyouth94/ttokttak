@@ -1,12 +1,21 @@
 export const recurringQueryKeys = {
   all: ["recurring"] as const,
-  completionLogs: (userId: string, itemIds: string[]) =>
+  completionLogs: (
+    userId: string,
+    itemIds: string[],
+    anchorItemIds?: string[],
+    rangeStartUtc?: string,
+    rangeEndUtc?: string
+  ) =>
     [
       "recurring",
       "user",
       userId,
       "completion-logs",
       [...itemIds].sort(),
+      [...(anchorItemIds ?? [])].sort(),
+      rangeStartUtc ?? "all-start",
+      rangeEndUtc ?? "all-end",
     ] as const,
   completionLogsForItem: (userId: string, itemId: string) =>
     ["recurring", "user", userId, "completion-logs", "item", itemId] as const,

@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
-import { format, startOfDay } from "date-fns";
+import { addDays, format, startOfDay } from "date-fns";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { createLocalDateUtcRange } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionAction,
   CompletionLog,
   RecurringItem,
+} from "~/features/recurring/domain/types";
+import {
+  completionBasedRecurrenceTypes,
+  getCurrentScheduleVersion,
 } from "~/features/recurring/domain/types";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
@@ -26,6 +31,8 @@ import {
 let hasShownNotificationPermissionPrompt = false;
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
 const EMPTY_ITEMS: RecurringItem[] = [];
+const HOME_OVERDUE_LOOKBACK_DAYS = 730;
+const HOME_UPCOMING_RANGE_DAYS = 14;
 
 type HomeScreenController = {
   errorMessage: string | null;
@@ -103,10 +110,49 @@ export function useHomeScreenController(): HomeScreenController {
     userId,
   });
   const items = itemsQuery.data ?? EMPTY_ITEMS;
+  const completionLogsRange = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayLocalDate = format(today, "yyyy-MM-dd");
+    const rangeStartLocalDate =
+      selectedDateId === todayLocalDate
+        ? format(addDays(today, -HOME_OVERDUE_LOOKBACK_DAYS), "yyyy-MM-dd")
+        : selectedDateId;
+    const rangeEndLocalDate =
+      selectedDateId === todayLocalDate
+        ? format(addDays(today, HOME_UPCOMING_RANGE_DAYS), "yyyy-MM-dd")
+        : selectedDateId;
+
+    return {
+      endUtc: createLocalDateUtcRange(rangeEndLocalDate, timezone).endUtc,
+      startUtc: createLocalDateUtcRange(rangeStartLocalDate, timezone).startUtc,
+    };
+  }, [selectedDateId, timezone]);
+  const completionBasedItemIds = useMemo(
+    () =>
+      items
+        .filter((item) => {
+          const schedule = getCurrentScheduleVersion(item);
+          const anchorType = schedule?.anchorType ?? item.anchorType;
+          const recurrenceType =
+            schedule?.recurrenceType ?? item.recurrenceType;
+
+          return (
+            anchorType === "completion_based" &&
+            completionBasedRecurrenceTypes.includes(
+              recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
+            )
+          );
+        })
+        .map((item) => item.id),
+    [items]
+  );
 
   const completionLogsQuery = useCompletionLogsQuery({
+    anchorItemIds: completionBasedItemIds,
     enabled: isReady,
     itemIds: items.map((item) => item.id),
+    rangeEndUtc: completionLogsRange.endUtc,
+    rangeStartUtc: completionLogsRange.startUtc,
     userId,
   });
   const completionLogs = completionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;

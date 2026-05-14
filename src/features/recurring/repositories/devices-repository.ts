@@ -45,6 +45,9 @@ export type DeactivateDeviceOptions = {
   userId: string;
 };
 
+const activeDeviceListLimit = 50;
+const inactiveIncludedDeviceListLimit = 100;
+
 /**
  * DB row를 도메인에서 사용하는 device 형태로 변환한다.
  */
@@ -120,7 +123,9 @@ export async function listDevices({
     query = query.eq("is_active", true);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(
+    includeInactive ? inactiveIncludedDeviceListLimit : activeDeviceListLimit
+  );
 
   if (error) {
     throw error;

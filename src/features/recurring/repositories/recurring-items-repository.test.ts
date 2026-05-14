@@ -93,6 +93,7 @@ describe("recurring items repository", () => {
 
     expect(persistence.listItems).toHaveBeenCalledWith({
       includeArchived: false,
+      limit: 500,
       userId: "user-1",
     });
   });

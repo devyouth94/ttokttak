@@ -40,7 +40,7 @@ describe("recurring items persistence", () => {
         data: [recurringItemRow],
         error: null,
       },
-      ["eq", "order"]
+      ["eq", "limit", "order"]
     );
     const from = jest.fn(() => ({
       select: jest.fn(() => query),
@@ -51,11 +51,13 @@ describe("recurring items persistence", () => {
 
     const items = await persistence.listItems({
       includeArchived: false,
+      limit: 500,
       userId: "user-1",
     });
 
     expect(query.eq).toHaveBeenCalledWith("user_id", "user-1");
     expect(query.eq).toHaveBeenCalledWith("is_archived", false);
+    expect(query.limit).toHaveBeenCalledWith(500);
     expect(items[0]).toMatchObject({
       colorKey: "blue",
       contentKeyVersion: 1,
@@ -78,7 +80,7 @@ describe("recurring items persistence", () => {
         data: [recurringItemRow],
         error: null,
       },
-      ["eq", "order"]
+      ["eq", "limit", "order"]
     );
     const from = jest.fn(() => ({
       select: jest.fn(() => query),
@@ -89,6 +91,7 @@ describe("recurring items persistence", () => {
 
     await persistence.listItems({
       includeArchived: false,
+      limit: 500,
       userId: "user-1",
     });
 

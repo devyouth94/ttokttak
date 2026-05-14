@@ -78,6 +78,7 @@ export function createRecurringItemsPersistenceDouble(
     createItemWithInitialVersion: jest.fn().mockResolvedValue(item.id),
     getItemById: jest.fn().mockResolvedValue(item),
     listCompletionLogsForItem: jest.fn().mockResolvedValue([]),
+    listCompletionLogsForItemHistory: jest.fn().mockResolvedValue([]),
     listItems: jest.fn().mockResolvedValue([item]),
     updateItemWithEditPolicy: jest.fn().mockResolvedValue(undefined),
   };

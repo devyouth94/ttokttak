@@ -1,6 +1,8 @@
 import {
   createCompletionLog,
+  getCompletionLogAnchorBeforeRange,
   listCompletionLogs,
+  listCompletionLogsForItemHistory,
   listCompletionLogsInRange,
 } from "~/features/recurring/repositories/completion-logs-repository";
 import { createAwaitableQuery } from "~/features/recurring/repositories/repository-test-helpers";
@@ -37,6 +39,84 @@ describe("completion logs repository", () => {
     expect(query.eq).toHaveBeenCalledWith("user_id", "user-1");
     expect(query.in).toHaveBeenCalledWith("item_id", ["item-1"]);
     expect(logs[0]?.scheduledAtUtc).toBe("2026-04-03T00:00:00.000Z");
+  });
+
+  it("상세 히스토리는 최신 예정 시각 5건만 조회한다", async () => {
+    const row = {
+      acted_at_utc: "2026-04-03T01:00:00.000Z",
+      action: "completed",
+      created_at: "2026-04-03T01:00:00.000Z",
+      device_id: "device-1",
+      id: "log-1",
+      item_id: "item-1",
+      scheduled_at_utc: "2026-04-03T00:00:00.000Z",
+      user_id: "user-1",
+    };
+    const query = createAwaitableQuery(
+      {
+        data: [row],
+        error: null,
+      },
+      ["eq", "limit", "order"]
+    );
+    const from = jest.fn(() => ({
+      select: jest.fn(() => query),
+    }));
+
+    await listCompletionLogsForItemHistory({
+      client: { from } as never,
+      itemId: "item-1",
+      userId: "user-1",
+    });
+
+    expect(query.eq).toHaveBeenNthCalledWith(1, "item_id", "item-1");
+    expect(query.eq).toHaveBeenNthCalledWith(2, "user_id", "user-1");
+    expect(query.order).toHaveBeenCalledWith("scheduled_at_utc", {
+      ascending: false,
+    });
+    expect(query.limit).toHaveBeenCalledWith(5);
+  });
+
+  it("completion_based anchor는 item별로 범위 시작 전 최신 완료 1건만 조회한다", async () => {
+    const row = {
+      acted_at_utc: "2026-04-02T01:00:00.000Z",
+      action: "completed",
+      created_at: "2026-04-02T01:00:00.000Z",
+      device_id: null,
+      id: "log-1",
+      item_id: "item-1",
+      scheduled_at_utc: "2026-04-02T00:00:00.000Z",
+      user_id: "user-1",
+    };
+    const query = createAwaitableQuery(
+      {
+        data: [row],
+        error: null,
+      },
+      ["eq", "limit", "lt", "order"]
+    );
+    const from = jest.fn(() => ({
+      select: jest.fn(() => query),
+    }));
+
+    await getCompletionLogAnchorBeforeRange({
+      client: { from } as never,
+      itemId: "item-1",
+      rangeStartUtc: "2026-04-03T00:00:00.000Z",
+      userId: "user-1",
+    });
+
+    expect(query.eq).toHaveBeenNthCalledWith(1, "user_id", "user-1");
+    expect(query.eq).toHaveBeenNthCalledWith(2, "item_id", "item-1");
+    expect(query.eq).toHaveBeenNthCalledWith(3, "action", "completed");
+    expect(query.lt).toHaveBeenCalledWith(
+      "acted_at_utc",
+      "2026-04-03T00:00:00.000Z"
+    );
+    expect(query.order).toHaveBeenCalledWith("acted_at_utc", {
+      ascending: false,
+    });
+    expect(query.limit).toHaveBeenCalledWith(1);
   });
 
   it("범위 안의 completion log를 조회한다", async () => {

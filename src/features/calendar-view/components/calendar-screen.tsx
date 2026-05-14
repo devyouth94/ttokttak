@@ -9,6 +9,7 @@ import {
 import { Calendar, type DateData, LocaleConfig } from "react-native-calendars";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
@@ -30,6 +31,7 @@ import {
   buildCalendarDaySummaries,
   clampVisibleMonth,
   createCalendarScreenState,
+  createVisibleMonthDate,
   formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
@@ -42,6 +44,11 @@ import {
 } from "~/features/calendar-view/components/calendar-day-cell";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
+import { createLocalDateUtcRange } from "~/features/recurring/domain/occurrence-projection";
+import {
+  completionBasedRecurrenceTypes,
+  getCurrentScheduleVersion,
+} from "~/features/recurring/domain/types";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
@@ -163,9 +170,41 @@ export function CalendarScreen(): React.JSX.Element {
     userId,
   });
   const items = itemsQuery.data;
+  const completionLogsRange = useMemo(() => {
+    const visibleMonthDate = createVisibleMonthDate(screenState.visibleMonth);
+    const startLocalDate = format(startOfMonth(visibleMonthDate), "yyyy-MM-dd");
+    const endLocalDate = format(endOfMonth(visibleMonthDate), "yyyy-MM-dd");
+
+    return {
+      endUtc: createLocalDateUtcRange(endLocalDate, timezone).endUtc,
+      startUtc: createLocalDateUtcRange(startLocalDate, timezone).startUtc,
+    };
+  }, [screenState.visibleMonth, timezone]);
+  const completionBasedItemIds = useMemo(
+    () =>
+      (items ?? [])
+        .filter((item) => {
+          const schedule = getCurrentScheduleVersion(item);
+          const anchorType = schedule?.anchorType ?? item.anchorType;
+          const recurrenceType =
+            schedule?.recurrenceType ?? item.recurrenceType;
+
+          return (
+            anchorType === "completion_based" &&
+            completionBasedRecurrenceTypes.includes(
+              recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
+            )
+          );
+        })
+        .map((item) => item.id),
+    [items]
+  );
   const completionLogsQuery = useCompletionLogsQuery({
+    anchorItemIds: completionBasedItemIds,
     enabled: isReady && (items?.length ?? 0) > 0,
     itemIds: items?.map((item) => item.id) ?? [],
+    rangeEndUtc: completionLogsRange.endUtc,
+    rangeStartUtc: completionLogsRange.startUtc,
     userId,
   });
   const completionLogs = completionLogsQuery.data;

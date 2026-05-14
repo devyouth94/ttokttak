@@ -107,7 +107,9 @@ create table if not exists public.devices (
 );
 
 create index if not exists idx_devices_user_id on public.devices(user_id);
-create index if not exists idx_devices_user_active on public.devices(user_id, is_active);
+
+create index if not exists idx_devices_user_active_created_at
+  on public.devices(user_id, is_active, created_at desc);
 
 -- =========================================================
 -- recurring_items
@@ -143,8 +145,8 @@ create table if not exists public.recurring_items (
 create index if not exists idx_recurring_items_user_id
   on public.recurring_items(user_id);
 
-create index if not exists idx_recurring_items_user_archived
-  on public.recurring_items(user_id, is_archived);
+create index if not exists idx_recurring_items_user_archived_created_at
+  on public.recurring_items(user_id, is_archived, created_at desc);
 
 -- =========================================================
 -- recurring_item_schedule_versions
@@ -221,11 +223,14 @@ create index if not exists idx_completion_logs_user_id
 create index if not exists idx_completion_logs_item_id
   on public.completion_logs(item_id);
 
-create index if not exists idx_completion_logs_item_scheduled_at
-  on public.completion_logs(item_id, scheduled_at_utc);
-
 create index if not exists idx_completion_logs_user_created_at
   on public.completion_logs(user_id, created_at desc);
+
+create index if not exists idx_completion_logs_user_item_scheduled_at
+  on public.completion_logs(user_id, item_id, scheduled_at_utc desc);
+
+create index if not exists idx_completion_logs_user_item_action_acted_at
+  on public.completion_logs(user_id, item_id, action, acted_at_utc desc);
 
 -- =========================================================
 -- updated_at trigger helper

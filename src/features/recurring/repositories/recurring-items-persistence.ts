@@ -5,7 +5,10 @@ import type {
   RecurrenceType,
   RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
-import { listCompletionLogsForItem } from "~/features/recurring/repositories/completion-logs-repository";
+import {
+  listCompletionLogsForItem,
+  listCompletionLogsForItemHistory,
+} from "~/features/recurring/repositories/completion-logs-repository";
 import {
   getRepositoryClient,
   type RepositoryClient,
@@ -97,8 +100,13 @@ export type RecurringItemsPersistence = {
     itemId: string;
     userId: string;
   }) => Promise<CompletionLog[]>;
+  listCompletionLogsForItemHistory: (input: {
+    itemId: string;
+    userId: string;
+  }) => Promise<CompletionLog[]>;
   listItems: (input: {
     includeArchived: boolean;
+    limit: number;
     userId: string;
   }) => Promise<StoredRecurringItem[]>;
   updateItemWithEditPolicy: (
@@ -225,7 +233,15 @@ export function createSupabaseRecurringItemsPersistence(
       });
     },
 
-    async listItems({ includeArchived, userId }) {
+    listCompletionLogsForItemHistory(input) {
+      return listCompletionLogsForItemHistory({
+        client,
+        itemId: input.itemId,
+        userId: input.userId,
+      });
+    },
+
+    async listItems({ includeArchived, limit, userId }) {
       let query = supabase
         .from("recurring_items")
         .select(recurringItemSelect)
@@ -236,7 +252,7 @@ export function createSupabaseRecurringItemsPersistence(
         query = query.eq("is_archived", false);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.limit(limit);
 
       if (error) {
         throw error;

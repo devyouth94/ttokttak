@@ -23,6 +23,14 @@ export type ListCompletionLogsForItemOptions = {
   userId: string;
 };
 
+export type ListCompletionLogsForItemHistoryOptions =
+  ListCompletionLogsForItemOptions;
+
+export type GetCompletionLogAnchorBeforeRangeOptions =
+  ListCompletionLogsForItemOptions & {
+    rangeStartUtc: string;
+  };
+
 export type ListCompletionLogsOptions = {
   client?: RepositoryClient;
   itemIds?: string[];
@@ -108,6 +116,57 @@ export async function listCompletionLogsForItem({
   }
 
   return data.map(toCompletionLog);
+}
+
+/**
+ * 상세 화면의 최근 히스토리용 completion log만 조회한다.
+ */
+export async function listCompletionLogsForItemHistory({
+  client,
+  itemId,
+  userId,
+}: ListCompletionLogsForItemHistoryOptions): Promise<CompletionLog[]> {
+  const supabase = getRepositoryClient(client);
+  const { data, error } = await supabase
+    .from("completion_logs")
+    .select("*")
+    .eq("item_id", itemId)
+    .eq("user_id", userId)
+    .order("scheduled_at_utc", { ascending: false })
+    .limit(5);
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map(toCompletionLog);
+}
+
+/**
+ * completion_based 계산에서 표시 범위 이전 anchor로 쓸 최신 완료 기록을 조회한다.
+ */
+export async function getCompletionLogAnchorBeforeRange({
+  client,
+  itemId,
+  rangeStartUtc,
+  userId,
+}: GetCompletionLogAnchorBeforeRangeOptions): Promise<CompletionLog | null> {
+  const supabase = getRepositoryClient(client);
+  const { data, error } = await supabase
+    .from("completion_logs")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("item_id", itemId)
+    .eq("action", "completed")
+    .lt("acted_at_utc", rangeStartUtc)
+    .order("acted_at_utc", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  return data[0] ? toCompletionLog(data[0]) : null;
 }
 
 /**

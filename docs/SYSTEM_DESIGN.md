@@ -160,6 +160,24 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
 
+completion log 조회는 화면이나 후속 계산에 필요한 범위로 제한한다.
+상세 화면의 최근 히스토리는 최신 5건만 표시한다.
+MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
+`completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
+anchor 조회는 화면 히스토리 조회와 섞지 않는다.
+
+일정 목록은 MVP에서 active 일정 최대 500개를 조회한다.
+500개를 넘는 사용자를 위한 검색과 페이지네이션은 후속 범위로 둔다.
+
+기기 목록은 기본적으로 active device 최대 50개를 조회한다.
+inactive device를 포함하는 조회는 명시적으로 요청할 때만 사용하고 최대 100개로 제한한다.
+
+조회 인덱스는 필터, 정렬, limit 패턴을 함께 기준으로 둔다.
+일정 목록은 `user_id`, `is_archived`, `created_at desc` 순서를 기준으로 조회한다.
+기기 목록은 `user_id`, `is_active`, `created_at desc` 순서를 기준으로 조회한다.
+completion log 최신 히스토리는 `user_id`, `item_id`, `scheduled_at_utc desc` 순서를 기준으로 조회한다.
+`completion_based` anchor 조회는 `user_id`, `item_id`, `action`, `acted_at_utc desc` 순서를 기준으로 조회한다.
+
 ## Content Privacy
 
 일정 제목과 설명은 앱에서 AES-GCM으로 암호화한다.
@@ -268,7 +286,35 @@ Sentry event는 민감한 field를 마스킹한다.
 제목, 설명, token, secret, authorization, email, payload 계열 값은 기록 전에 필터링한다.
 
 Edge Function secret은 Supabase 서버 실행 환경에만 둔다.
-`recover-content-key`는 JWT 검증을 켠 상태로 배포한다.
+`recover-content-key`와 `delete-account`는 JWT 검증을 켠 상태로 배포한다.
+두 함수는 인증된 `POST` 호출만 처리하고 응답에는 `Cache-Control: no-store`를 둔다.
+
+민감 Edge Function에는 공개 health check endpoint를 만들지 않는다.
+native 앱 호출 기준이므로 CORS `OPTIONS` 응답과 origin allowlist는 MVP에서 구현하지 않는다.
+Expo web 또는 공개 웹 자동 처리 요구가 생기면 CORS를 별도 범위로 추가한다.
+
+`recover-content-key`는 persistent 감사 이벤트와 사용자별 best-effort rate limit을 가진다.
+`delete-account`는 사용자별 best-effort rate limit을 가진다.
+두 rate limit은 Edge Function instance 메모리 기준이며 분산 전역 제한은 아니다.
+분산 제한이 필요하면 Redis 같은 외부 저장소 기반 제한을 별도 강화 범위로 둔다.
+
+## Operational Data Protection
+
+Supabase Postgres 백업은 출시 전 운영 확인 대상이다.
+운영 프로젝트는 자동 백업이 켜져 있어야 한다.
+
+PITR(Point-in-Time Recovery, 특정 시점 복구)은 권장 설정이다.
+PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이 진행할 수 있다.
+이 경우 Supabase Dashboard에서 최신 자동 백업 상태와 보존 기간을 확인한다.
+
+출시 전 확인 기록에는 다음을 남긴다.
+
+- 확인 일시.
+- Supabase project ref.
+- 자동 백업 상태.
+- 백업 보존 기간.
+- PITR 사용 여부.
+- PITR 미사용 사유.
 
 ## Testing Guardrails
 

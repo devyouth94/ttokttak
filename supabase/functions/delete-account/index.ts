@@ -1,7 +1,12 @@
-// @ts-nocheck
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type User } from "npm:@supabase/supabase-js@2";
 
 type JsonRecord = Record<string, unknown>;
+type AppleIdentity = {
+  id?: string;
+  identity_data?: JsonRecord | null;
+  provider?: string;
+  provider_id?: string;
+};
 type AppleTokenResponse = {
   access_token?: string;
   error?: string;
@@ -12,6 +17,12 @@ type AppleTokenRevokeResult = {
   appleSubject: string | null;
   ok: boolean;
 };
+
+const deleteAccountRequestBuckets = new Map<
+  string,
+  { count: number; resetAt: number }
+>();
+const maxDeleteAccountRequestsPerMinute = 3;
 
 function jsonResponse(body: JsonRecord, status = 200): Response {
   return Response.json(body, {
@@ -117,11 +128,8 @@ function isAppleProvider(value: unknown): boolean {
   return value === "apple";
 }
 
-function isAppleAccount(user: JsonRecord): boolean {
-  const appMetadata =
-    user.app_metadata && typeof user.app_metadata === "object"
-      ? (user.app_metadata as JsonRecord)
-      : null;
+function isAppleAccount(user: User): boolean {
+  const appMetadata = user.app_metadata;
   const provider = appMetadata?.provider;
   const providers = appMetadata?.providers;
   const identities = user.identities;
@@ -135,12 +143,12 @@ function isAppleAccount(user: JsonRecord): boolean {
           return false;
         }
 
-        return isAppleProvider((identity as JsonRecord).provider);
+        return isAppleProvider(identity.provider);
       }))
   );
 }
 
-function getAppleIdentitySubjects(user: JsonRecord): string[] {
+function getAppleIdentitySubjects(user: User): string[] {
   const identities = user.identities;
 
   if (!Array.isArray(identities)) {
@@ -152,7 +160,7 @@ function getAppleIdentitySubjects(user: JsonRecord): string[] {
       return [];
     }
 
-    const identityRecord = identity as JsonRecord;
+    const identityRecord: AppleIdentity = identity;
 
     if (!isAppleProvider(identityRecord.provider)) {
       return [];
@@ -181,7 +189,7 @@ function isMatchingAppleSubject({
   user,
 }: {
   appleSubject: string | null;
-  user: JsonRecord;
+  user: User;
 }): boolean {
   if (!appleSubject) {
     return false;
@@ -190,6 +198,26 @@ function isMatchingAppleSubject({
   const appleIdentitySubjects = getAppleIdentitySubjects(user);
 
   return appleIdentitySubjects.includes(appleSubject);
+}
+
+function checkDeleteAccountRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const bucket = deleteAccountRequestBuckets.get(userId);
+
+  if (!bucket || bucket.resetAt <= now) {
+    deleteAccountRequestBuckets.set(userId, {
+      count: 1,
+      resetAt: now + 60_000,
+    });
+    return true;
+  }
+
+  if (bucket.count >= maxDeleteAccountRequestsPerMinute) {
+    return false;
+  }
+
+  bucket.count += 1;
+  return true;
 }
 
 function pemToArrayBuffer(pem: string): ArrayBuffer {
@@ -363,8 +391,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 
-  const userRecord = user as JsonRecord;
-  const shouldRevokeAppleToken = isAppleAccount(userRecord);
+  if (!checkDeleteAccountRateLimit(user.id)) {
+    return jsonResponse({ error: "rate_limited" }, 429);
+  }
+
+  const shouldRevokeAppleToken = isAppleAccount(user);
 
   if (shouldRevokeAppleToken && !body.appleAuthorizationCode) {
     return jsonResponse({ error: "apple_authorization_required" }, 400);
@@ -382,7 +413,7 @@ Deno.serve(async (req) => {
     if (
       !isMatchingAppleSubject({
         appleSubject: revokeResult.appleSubject,
-        user: userRecord,
+        user,
       })
     ) {
       return jsonResponse({ error: "apple_identity_mismatch" }, 403);

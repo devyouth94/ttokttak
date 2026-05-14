@@ -1,29 +1,93 @@
 import { useQuery } from "@tanstack/react-query";
 
+import type { CompletionLog } from "~/features/recurring/domain/types";
 import {
+  getCompletionLogAnchorBeforeRange,
   listCompletionLogs,
-  listCompletionLogsForItem,
+  listCompletionLogsForItemHistory,
+  listCompletionLogsInRange,
 } from "~/features/recurring/repositories/completion-logs-repository";
 
 import { recurringQueryKeys } from "./recurring-query-keys";
 
-export function useCompletionLogsQuery({
-  enabled,
+async function listCompletionLogsForProjection({
+  anchorItemIds = [],
   itemIds,
+  rangeEndUtc,
+  rangeStartUtc,
   userId,
 }: {
+  anchorItemIds?: string[];
+  itemIds: string[];
+  rangeEndUtc?: string;
+  rangeStartUtc?: string;
+  userId: string;
+}) {
+  const rangeLogs =
+    rangeStartUtc && rangeEndUtc
+      ? await listCompletionLogsInRange({
+          itemIds,
+          rangeEndUtc,
+          rangeStartUtc,
+          userId,
+        })
+      : await listCompletionLogs({
+          itemIds,
+          userId,
+        });
+
+  if (!rangeStartUtc || anchorItemIds.length === 0) {
+    return rangeLogs;
+  }
+
+  const anchors = await Promise.all(
+    anchorItemIds.map((itemId) =>
+      getCompletionLogAnchorBeforeRange({
+        itemId,
+        rangeStartUtc,
+        userId,
+      })
+    )
+  );
+
+  return [
+    ...rangeLogs,
+    ...anchors.filter((log): log is CompletionLog => log !== null),
+  ];
+}
+
+export function useCompletionLogsQuery({
+  anchorItemIds,
+  enabled,
+  itemIds,
+  rangeEndUtc,
+  rangeStartUtc,
+  userId,
+}: {
+  anchorItemIds?: string[];
   enabled: boolean;
   itemIds: string[];
+  rangeEndUtc?: string;
+  rangeStartUtc?: string;
   userId: string | null;
 }) {
   return useQuery({
     enabled: enabled && Boolean(userId) && itemIds.length > 0,
     queryFn: async () =>
-      listCompletionLogs({
+      listCompletionLogsForProjection({
+        anchorItemIds,
         itemIds,
+        rangeEndUtc,
+        rangeStartUtc,
         userId: userId!,
       }),
-    queryKey: recurringQueryKeys.completionLogs(userId ?? "anonymous", itemIds),
+    queryKey: recurringQueryKeys.completionLogs(
+      userId ?? "anonymous",
+      itemIds,
+      anchorItemIds,
+      rangeStartUtc,
+      rangeEndUtc
+    ),
   });
 }
 
@@ -39,7 +103,7 @@ export function useCompletionLogsForItemQuery({
   return useQuery({
     enabled: enabled && Boolean(userId) && Boolean(itemId),
     queryFn: async () =>
-      listCompletionLogsForItem({
+      listCompletionLogsForItemHistory({
         itemId: itemId!,
         userId: userId!,
       }),

@@ -33,6 +33,7 @@ type RecurringItemRepositoryOptions = {
 };
 
 const unrecoverableRecurringItemTitle = "일정 내용을 복구할 수 없어요";
+const recurringItemsListLimit = 500;
 
 export type CreateRecurringItemInput = Omit<RecurringItemDraft, "colorKey"> & {
   colorKey?: RecurringItemColorKey;
@@ -251,6 +252,7 @@ export async function listRecurringItems({
   });
   const items = await persistence.listItems({
     includeArchived,
+    limit: recurringItemsListLimit,
     userId,
   });
 

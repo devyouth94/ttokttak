@@ -22,7 +22,7 @@ describe("devices repository", () => {
         data: [row],
         error: null,
       },
-      ["eq", "order"]
+      ["eq", "limit", "order"]
     );
     const from = jest.fn(() => ({
       select: jest.fn(() => query),
@@ -39,6 +39,7 @@ describe("devices repository", () => {
     expect(query.order).toHaveBeenCalledWith("created_at", {
       ascending: false,
     });
+    expect(query.limit).toHaveBeenCalledWith(50);
     expect(devices).toEqual([
       {
         id: "device-1",
@@ -51,6 +52,29 @@ describe("devices repository", () => {
         updatedAt: "2026-04-02T01:00:00.000Z",
       },
     ]);
+  });
+
+  it("비활성 기기를 포함하면 최대 100개를 조회한다", async () => {
+    const query = createAwaitableQuery(
+      {
+        data: [],
+        error: null,
+      },
+      ["eq", "limit", "order"]
+    );
+    const from = jest.fn(() => ({
+      select: jest.fn(() => query),
+    }));
+
+    await listDevices({
+      client: { from } as never,
+      includeInactive: true,
+      userId: "user-1",
+    });
+
+    expect(query.eq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(query.eq).not.toHaveBeenCalledWith("is_active", true);
+    expect(query.limit).toHaveBeenCalledWith(100);
   });
 
   it("device id 기준으로 upsert 한다", async () => {
