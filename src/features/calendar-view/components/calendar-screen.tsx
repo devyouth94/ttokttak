@@ -257,16 +257,6 @@ export function CalendarScreen(): React.JSX.Element {
     }));
   };
 
-  const handleMonthChange = (date: DateData) => {
-    setScreenState((prevState) => ({
-      ...prevState,
-      visibleMonth: clampVisibleMonth(
-        `${date.year}-${String(date.month).padStart(2, "0")}`,
-        minimumVisibleMonth
-      ),
-    }));
-  };
-
   const handleRetry = () => {
     void itemsQuery.refetch();
     if ((items?.length ?? 0) > 0) {
@@ -345,12 +335,10 @@ export function CalendarScreen(): React.JSX.Element {
                 <View style={styles.emptyDayCell} />
               )
             }
-            enableSwipeMonths
             firstDay={0}
             hideArrows
             hideExtraDays
             onDayPress={handleDayPress}
-            onMonthChange={handleMonthChange}
             style={styles.calendar}
             theme={calendarTheme}
           />
