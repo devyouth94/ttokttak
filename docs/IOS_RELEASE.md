@@ -48,6 +48,33 @@ pnpm exec eas build \
 pnpm exec eas build:view <build-id> --json
 ```
 
+## GitHub Release
+
+출시 대상 변경을 커밋하고 `main`에 푸시한 뒤 GitHub Release를 만든다.
+릴리즈 태그는 제출할 앱 버전과 맞춘다.
+
+```bash
+git push origin main
+gh release create v<app-version> \
+  --target <commit-sha> \
+  --title "v<app-version>" \
+  --notes "<릴리즈 노트>"
+```
+
+이미 만든 릴리즈가 있고 제출 빌드의 commit hash가 바뀌면 target을 최신 커밋으로 맞춘다.
+
+```bash
+gh release edit v<app-version> \
+  --target <commit-sha> \
+  --notes "<수정된 릴리즈 노트>"
+```
+
+확인한다.
+
+```bash
+gh release view v<app-version> --json tagName,targetCommitish,url
+```
+
 ## 제출
 
 빌드가 완료된 build id로 iOS 제출을 시작한다.
