@@ -33,6 +33,8 @@ export default function getAppConfig(): ExpoConfig {
       bundleIdentifier: "com.youngzin.ttokttak",
       usesAppleSignIn: true,
       infoPlist: {
+        CFBundleDevelopmentRegion: "ko",
+        CFBundleLocalizations: ["ko"],
         ITSAppUsesNonExemptEncryption: false,
       },
     },
