@@ -2,9 +2,7 @@ import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 
 type ReminderNotificationPayload = {
-  itemId: string;
   notificationKind: "reminder";
-  scheduledAtUtc: string;
   source: "recurring-item";
 };
 
@@ -19,9 +17,7 @@ function isReminderNotificationPayload(
 
   return (
     candidate.notificationKind === "reminder" &&
-    candidate.source === "recurring-item" &&
-    typeof candidate.itemId === "string" &&
-    typeof candidate.scheduledAtUtc === "string"
+    candidate.source === "recurring-item"
   );
 }
 
@@ -62,20 +58,6 @@ function resolveReminderNotificationPayload(
   return null;
 }
 
-function navigateToReminderDetail(
-  payload: ReminderNotificationPayload,
-  returnTo: string
-): void {
-  router.push({
-    params: {
-      itemId: payload.itemId,
-      returnTo,
-      scheduledAtUtc: payload.scheduledAtUtc,
-    },
-    pathname: "/items/[itemId]",
-  });
-}
-
 export function getNotificationNavigationKey(
   response: Notifications.NotificationResponse
 ): string {
@@ -95,7 +77,7 @@ export function navigateFromNotificationResponse(
     return false;
   }
 
-  navigateToReminderDetail(payload, "/home");
+  router.replace("/home");
 
   return true;
 }

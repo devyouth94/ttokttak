@@ -104,9 +104,7 @@ describe("syncLocalReminderNotifications", () => {
       content: {
         body: "오후 9:00",
         data: {
-          itemId: "item-1",
           notificationKind: "reminder",
-          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
           source: "recurring-item",
         },
         priority: "high",
@@ -473,9 +471,7 @@ describe("createLocalReminderNotificationCandidates", () => {
         identifier: "ttokttak:reminder:user-1:item-1:2026-04-21T12:00:00.000Z",
         itemId: "item-1",
         payload: {
-          itemId: "item-1",
           notificationKind: "reminder",
-          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
           source: "recurring-item",
         },
         scheduledAtUtc: "2026-04-21T12:00:00.000Z",
@@ -541,9 +537,7 @@ function createScheduledNotificationRequest(params: {
       body: null,
       categoryIdentifier: null,
       data: {
-        itemId: params.itemId,
         notificationKind: "reminder",
-        scheduledAtUtc: params.scheduledAtUtc,
         source: "recurring-item",
       },
       sound: null,
@@ -575,9 +569,7 @@ function createDesiredNotification(params: {
     identifier: `ttokttak:reminder:user-1:${params.itemId}:${params.scheduledAtUtc}`,
     itemId: params.itemId,
     payload: {
-      itemId: params.itemId,
       notificationKind: "reminder" as const,
-      scheduledAtUtc: params.scheduledAtUtc,
       source: "recurring-item" as const,
     },
     scheduledAtUtc: params.scheduledAtUtc,

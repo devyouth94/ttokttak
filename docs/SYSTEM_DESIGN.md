@@ -242,8 +242,6 @@ payload:
 
 - `notificationKind = "reminder"`.
 - `source = "recurring-item"`.
-- `itemId`.
-- `scheduledAtUtc`.
 
 표시 content:
 
@@ -273,8 +271,7 @@ payload:
 
 ## Notification Tap Routing
 
-알림 tap은 payload를 검증한 뒤 `/items/[itemId]`로 이동한다.
-`scheduledAtUtc`는 상세 화면의 기준 occurrence 선택에 사용한다.
+알림 tap은 payload를 검증한 뒤 `/home`으로 이동한다.
 지원하지 않는 payload는 navigation을 수행하지 않는다.
 
 ## Security And Observability

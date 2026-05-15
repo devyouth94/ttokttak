@@ -47,9 +47,7 @@ type LocalReminderNotificationCancellationResult = {
 };
 
 type LocalReminderNotificationPayload = {
-  itemId: string;
   notificationKind: "reminder";
-  scheduledAtUtc: string;
   source: "recurring-item";
 };
 
@@ -84,14 +82,9 @@ function createLocalReminderIdentifier(params: {
   return `${LOCAL_REMINDER_IDENTIFIER_PREFIX}:${userId}:${itemId}:${scheduledAtUtc}`;
 }
 
-function createLocalReminderPayload(params: {
-  itemId: string;
-  scheduledAtUtc: string;
-}): LocalReminderNotificationPayload {
+function createLocalReminderPayload(): LocalReminderNotificationPayload {
   return {
-    itemId: params.itemId,
     notificationKind: "reminder",
-    scheduledAtUtc: params.scheduledAtUtc,
     source: "recurring-item",
   };
 }
@@ -212,10 +205,7 @@ function toDesiredLocalReminderNotification(params: {
       userId,
     }),
     itemId: item.id,
-    payload: createLocalReminderPayload({
-      itemId: item.id,
-      scheduledAtUtc: occurrence.scheduledAtUtc,
-    }),
+    payload: createLocalReminderPayload(),
     scheduledAtUtc: occurrence.scheduledAtUtc,
     title: item.title,
   };

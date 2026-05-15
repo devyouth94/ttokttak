@@ -209,7 +209,6 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 
 상세는 지난 일정이 있으면 최신 overdue occurrence를 대표 상태로 사용한다.
 지난 일정이 없으면 다음 occurrence를 사용한다.
-알림에서 전달된 `scheduledAtUtc`는 상세의 기준 occurrence를 찾는 데만 사용한다.
 
 ## Occurrence Actions
 

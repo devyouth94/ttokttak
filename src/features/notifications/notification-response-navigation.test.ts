@@ -8,7 +8,7 @@ jest.mock("expo-notifications", () => ({
 
 jest.mock("expo-router", () => ({
   router: {
-    push: jest.fn(),
+    replace: jest.fn(),
   },
 }));
 
@@ -27,7 +27,7 @@ describe("notification response navigation", () => {
     );
   });
 
-  it("로컬 reminder 알림 tap은 payload 기반으로 반복 항목 상세로 이동한다", () => {
+  it("로컬 reminder 알림 tap은 홈 피드로 이동한다", () => {
     const didNavigate = navigateFromNotificationResponse({
       actionIdentifier: "default",
       notification: {
@@ -37,9 +37,7 @@ describe("notification response navigation", () => {
             body: null,
             categoryIdentifier: null,
             data: {
-              itemId: "item-1",
               notificationKind: "reminder",
-              scheduledAtUtc: "2026-04-23T09:00:00.000Z",
               source: "recurring-item",
             },
             sound: null,
@@ -54,13 +52,6 @@ describe("notification response navigation", () => {
     });
 
     expect(didNavigate).toBe(true);
-    expect(router.push).toHaveBeenCalledWith({
-      params: {
-        itemId: "item-1",
-        returnTo: "/home",
-        scheduledAtUtc: "2026-04-23T09:00:00.000Z",
-      },
-      pathname: "/items/[itemId]",
-    });
+    expect(router.replace).toHaveBeenCalledWith("/home");
   });
 });
