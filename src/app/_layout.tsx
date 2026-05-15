@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
+import { mainTabsRootScreenOptions } from "~/features/navigation/main-navigation-options";
 import {
   NotificationBootstrapProvider,
   useNotificationBootstrap,
@@ -101,7 +102,7 @@ function RootLayout() {
             <SplashScreenController />
             <NotificationResponseController />
             <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(tabs)" options={mainTabsRootScreenOptions} />
             </Stack>
             <PortalHost />
           </NotificationBootstrapProvider>
