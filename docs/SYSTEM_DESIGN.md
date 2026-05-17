@@ -164,6 +164,9 @@ completion log 조회는 화면이나 후속 계산에 필요한 범위로 제�
 상세 화면의 최근 히스토리는 최신 5건만 표시한다.
 MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
 `completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
+종료일은 schedule version의 `endDateLocal`로 저장한다.
+종료일이 있으면 occurrence local date가 종료일보다 늦은 occurrence는 만들지 않는다.
+종료일 변경은 규칙 변경으로 처리한다.
 anchor 조회는 화면 히스토리 조회와 섞지 않는다.
 
 일정 목록은 MVP에서 active 일정 최대 500개를 조회한다.
@@ -224,6 +227,7 @@ content key 흐름:
 - 일정의 `notificationsEnabled`가 true.
 - 일정 내용이 복구 불가 상태가 아님.
 - occurrence 상태가 `scheduled`.
+- occurrence local date가 종료일 이하이거나 종료일이 없음.
 
 예약 범위:
 
