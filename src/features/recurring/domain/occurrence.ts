@@ -12,6 +12,7 @@ import type {
   CompletionLog,
   DerivedOccurrence,
   OccurrenceStatus,
+  RecurrenceType,
   RecurringItem,
   RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
@@ -246,6 +247,75 @@ function isPastScheduleEndDate(schedule: ScheduleContext, localDate: string) {
     schedule.endDateLocal != null &&
     compareLocalDate(localDate, schedule.endDateLocal) > 0
   );
+}
+
+export function hasOccurrenceBetweenLocalDates(params: {
+  endDateLocal: string;
+  intervalValue: number | null | undefined;
+  recurrenceType: RecurrenceType;
+  startDateLocal: string;
+  weekdayMask: number[] | null | undefined;
+}): boolean {
+  if (compareLocalDate(params.startDateLocal, params.endDateLocal) > 0) {
+    return false;
+  }
+
+  if (
+    params.recurrenceType !== "weekly" &&
+    params.recurrenceType !== "interval_weeks"
+  ) {
+    return true;
+  }
+
+  return hasWeeklyOccurrenceBetweenLocalDates(
+    {
+      intervalValue: params.intervalValue,
+      recurrenceType: params.recurrenceType,
+      seedStartDateLocal: params.startDateLocal,
+      weekdayMask: params.weekdayMask,
+    },
+    params.endDateLocal
+  );
+}
+
+function hasWeeklyOccurrenceBetweenLocalDates(
+  schedule: Pick<
+    ScheduleContext,
+    "intervalValue" | "recurrenceType" | "seedStartDateLocal" | "weekdayMask"
+  >,
+  endDateLocal: string
+): boolean {
+  if (!schedule.weekdayMask?.length) {
+    return false;
+  }
+
+  const startDate = parseLocalDate(schedule.seedStartDateLocal);
+  const startWeek = startOfWeek(startDate, { weekStartsOn: 0 });
+  const weekInterval =
+    schedule.recurrenceType === "interval_weeks"
+      ? (schedule.intervalValue ?? 1)
+      : 1;
+
+  if (weekInterval < 1) {
+    return false;
+  }
+
+  return schedule.weekdayMask.some((weekday) => {
+    const daysUntilWeekday = (weekday - startDate.getUTCDay() + 7) % 7;
+    let candidate = addDays(startDate, daysUntilWeekday);
+    const candidateWeek = startOfWeek(candidate, { weekStartsOn: 0 });
+    const weeksFromStart =
+      differenceInCalendarDays(candidateWeek, startWeek) / 7;
+    const weekRemainder = weeksFromStart % weekInterval;
+
+    if (weekRemainder !== 0) {
+      candidate = addDays(candidate, (weekInterval - weekRemainder) * 7);
+    }
+
+    const candidateLocalDate = formatInTimeZone(candidate, "UTC", "yyyy-MM-dd");
+
+    return compareLocalDate(candidateLocalDate, endDateLocal) <= 0;
+  });
 }
 
 function getNextWeeklyCandidateLocalDate(

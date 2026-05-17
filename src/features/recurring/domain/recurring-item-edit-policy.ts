@@ -65,7 +65,7 @@ function hasRuleChanges(
     item.recurrenceType !== draft.recurrenceType ||
     item.intervalValue !== draft.intervalValue ||
     item.reminderTimeLocal !== draft.reminderTimeLocal ||
-    item.endDateLocal !== draft.endDateLocal ||
+    (item.endDateLocal ?? null) !== (draft.endDateLocal ?? null) ||
     item.notificationsEnabled !== draft.notificationsEnabled ||
     item.anchorType !== draft.anchorType ||
     JSON.stringify(item.weekdayMask ?? null) !==
@@ -98,18 +98,25 @@ export function resolveRecurringItemEditPolicy({
     startDateLocal: item.startDateLocal,
     timezone,
   };
+  const normalizedDraft: RecurringItemDraft = {
+    ...mergedDraft,
+    endDateLocal:
+      mergedDraft.recurrenceType === "once"
+        ? null
+        : (mergedDraft.endDateLocal ?? null),
+  };
 
-  assertValidDraft(mergedDraft);
+  assertValidDraft(normalizedDraft);
 
-  const metaChanged = hasMetaChanges(item, mergedDraft);
-  const ruleChanged = hasRuleChanges(item, mergedDraft);
+  const metaChanged = hasMetaChanges(item, normalizedDraft);
+  const ruleChanged = hasRuleChanges(item, normalizedDraft);
   const hasAnyChanges = metaChanged || ruleChanged;
 
   if (!ruleChanged) {
     return {
       effectiveFromUtc: null,
       hasAnyChanges,
-      mergedDraft,
+      mergedDraft: normalizedDraft,
       metaChanged,
       ruleChanged,
       seedStartDateLocal: null,
@@ -123,11 +130,11 @@ export function resolveRecurringItemEditPolicy({
         effectiveFromUtc,
         item,
         nextSchedule: {
-          anchorType: mergedDraft.anchorType,
-          intervalValue: mergedDraft.intervalValue,
-          recurrenceType: mergedDraft.recurrenceType,
-          reminderTimeLocal: mergedDraft.reminderTimeLocal,
-          weekdayMask: mergedDraft.weekdayMask,
+          anchorType: normalizedDraft.anchorType,
+          intervalValue: normalizedDraft.intervalValue,
+          recurrenceType: normalizedDraft.recurrenceType,
+          reminderTimeLocal: normalizedDraft.reminderTimeLocal,
+          weekdayMask: normalizedDraft.weekdayMask,
         },
         timezone,
       }) ?? item.startDateLocal)
@@ -136,7 +143,7 @@ export function resolveRecurringItemEditPolicy({
   return {
     effectiveFromUtc,
     hasAnyChanges,
-    mergedDraft,
+    mergedDraft: normalizedDraft,
     metaChanged,
     ruleChanged,
     seedStartDateLocal,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
@@ -27,10 +27,14 @@ import { Sentry } from "~/lib/sentry";
 import { type RecurringItemFormScreenModel } from "./recurring-item-form-screen.contracts";
 import {
   createDefaultFormState,
+  createRecurringItemFormSchema,
   formatDateToLocalDate,
   formatDateToLocalTime,
   getCustomRecurrenceType,
+  getMinimumEndDateLocal,
   getMinimumStartDateLocal,
+  getNextEndDateDisabledFormState,
+  getNextEndDateEnabledFormState,
   getNextRecurrenceFormState,
   getNextStartDateFormState,
   getTodayLocalDate,
@@ -38,7 +42,6 @@ import {
   parseLocalDateToDate,
   parseLocalTimeToDate,
   type PickerMode,
-  recurringItemFormSchema,
   type RecurringItemFormValues,
   toDraft,
   toFormState,
@@ -88,6 +91,14 @@ export function useRecurringItemFormScreenController({
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const defaultValues = createDefaultFormState();
+  const formSchema = useMemo(
+    () =>
+      createRecurringItemFormSchema({
+        isEditMode,
+        todayLocalDate,
+      }),
+    [isEditMode, todayLocalDate]
+  );
 
   const {
     control,
@@ -100,7 +111,7 @@ export function useRecurringItemFormScreenController({
     defaultValues,
     mode: "onSubmit",
     reValidateMode: "onChange",
-    resolver: standardSchemaResolver(recurringItemFormSchema),
+    resolver: standardSchemaResolver(formSchema),
   });
 
   const formValues = useWatch({
@@ -110,6 +121,7 @@ export function useRecurringItemFormScreenController({
   const {
     anchorType = defaultValues.anchorType,
     colorKey = defaultValues.colorKey,
+    endDateLocal = defaultValues.endDateLocal,
     intervalValue = defaultValues.intervalValue,
     notificationsEnabled = defaultValues.notificationsEnabled,
     recurrenceType = defaultValues.recurrenceType,
@@ -185,6 +197,19 @@ export function useRecurringItemFormScreenController({
 
   function handleCloseCustom(): void {
     setFields(getNextRecurrenceFormState(getValues(), "daily"));
+  }
+
+  function handleEnableEndDate(): void {
+    setFields(
+      getNextEndDateEnabledFormState(getValues(), {
+        isEditMode,
+        todayLocalDate,
+      })
+    );
+  }
+
+  function handleDisableEndDate(): void {
+    setFields(getNextEndDateDisabledFormState(getValues()));
   }
 
   function handleToggleWeekday(weekdayValue: number): void {
@@ -411,6 +436,7 @@ export function useRecurringItemFormScreenController({
             anchorType: draft.anchorType,
             colorKey: draft.colorKey,
             description: draft.description,
+            endDateLocal: draft.endDateLocal,
             intervalValue: draft.intervalValue,
             isArchived: draft.isArchived,
             notificationsEnabled: draft.notificationsEnabled,
@@ -573,6 +599,7 @@ export function useRecurringItemFormScreenController({
 
   const fieldErrors = {
     anchor: getErrorMessage("anchorType"),
+    endDate: getErrorMessage("endDateLocal"),
     interval: getErrorMessage("intervalValue"),
     reminderTime: getErrorMessage("reminderTimeLocal"),
     startDate: getErrorMessage("startDateLocal"),
@@ -583,6 +610,7 @@ export function useRecurringItemFormScreenController({
   const displayValues = {
     anchorType,
     colorKey,
+    endDateLocal,
     intervalValue,
     notificationsEnabled,
     recurrenceType,
@@ -594,6 +622,7 @@ export function useRecurringItemFormScreenController({
   const pickerDisplayState = {
     iosMode: iosPickerMode,
     iosValue: iosPickerValue,
+    isEndDateVisible: false,
     isStartDateVisible: isStartDatePickerVisible,
     isTimeVisible: isTimePickerVisible,
   };
@@ -604,6 +633,11 @@ export function useRecurringItemFormScreenController({
     isEditMode,
     isSaving,
     isStartDateEditable: !isEditMode,
+    minimumEndDateLocal: getMinimumEndDateLocal({
+      isEditMode,
+      startDateLocal,
+      todayLocalDate,
+    }),
     minimumStartDateLocal,
     screenError,
     submitCount,
@@ -627,6 +661,8 @@ export function useRecurringItemFormScreenController({
     recurrence: {
       onChangeIntervalValue: handleChangeIntervalValue,
       onCloseCustom: handleCloseCustom,
+      onDisableEndDate: handleDisableEndDate,
+      onEnableEndDate: handleEnableEndDate,
       onOpenCustom: handleOpenCustom,
       onSelectAnchorType: handleSelectAnchorType,
       onSelectRecurrence: handleSelectRecurrence,

@@ -16,6 +16,7 @@ import {
 
 type RecurringItemFormErrors = {
   anchor?: string;
+  endDate?: string;
   interval?: string;
   reminderTime?: string;
   startDate?: string;
@@ -26,6 +27,7 @@ type RecurringItemFormErrors = {
 type RecurringItemFormDisplayValues = {
   anchorType: AnchorType;
   colorKey: RecurringItemColorKey;
+  endDateLocal: string | null;
   intervalValue: string;
   notificationsEnabled: boolean;
   recurrenceType: RecurrenceType;
@@ -37,6 +39,7 @@ type RecurringItemFormDisplayValues = {
 type RecurringItemFormPickerState = {
   iosMode: PickerMode | null;
   iosValue: Date;
+  isEndDateVisible: boolean;
   isStartDateVisible: boolean;
   isTimeVisible: boolean;
 };
@@ -47,6 +50,7 @@ type RecurringItemFormViewState = {
   isEditMode: boolean;
   isSaving: boolean;
   isStartDateEditable: boolean;
+  minimumEndDateLocal: string;
   minimumStartDateLocal: string;
   screenError: string | null;
   submitCount: number;
@@ -68,6 +72,8 @@ type RecurringItemFormFieldActions = {
 type RecurringItemFormRecurrenceActions = {
   onChangeIntervalValue: (value: string) => void;
   onCloseCustom: () => void;
+  onDisableEndDate: () => void;
+  onEnableEndDate: () => void;
   onOpenCustom: () => void;
   onSelectAnchorType: (anchorType: AnchorType) => void;
   onSelectRecurrence: (recurrenceType: RecurrenceType) => void;

@@ -315,6 +315,8 @@ export async function createRecurringItem(
   const draft = {
     ...input,
     colorKey,
+    endDateLocal:
+      input.recurrenceType === "once" ? null : (input.endDateLocal ?? null),
   };
 
   assertValidDraft(draft);
@@ -336,16 +338,16 @@ export async function createRecurringItem(
     descriptionCiphertext: encryptedContent.descriptionCiphertext,
     effectiveFromUtc,
     endDateLocal: resolveStoredEndDateLocal(draft, true),
-    intervalValue: input.intervalValue ?? null,
-    isArchived: input.isArchived,
-    notificationsEnabled: input.notificationsEnabled,
-    recurrenceType: input.recurrenceType,
-    reminderTimeLocal: input.reminderTimeLocal,
+    intervalValue: draft.intervalValue ?? null,
+    isArchived: draft.isArchived,
+    notificationsEnabled: draft.notificationsEnabled,
+    recurrenceType: draft.recurrenceType,
+    reminderTimeLocal: draft.reminderTimeLocal,
     seedStartDateLocal: input.startDateLocal,
-    startDateLocal: input.startDateLocal,
+    startDateLocal: draft.startDateLocal,
     titleCiphertext: encryptedContent.titleCiphertext,
     userId: input.userId,
-    weekdayMask: input.weekdayMask ?? null,
+    weekdayMask: draft.weekdayMask ?? null,
   });
 
   return getRecurringItemById({

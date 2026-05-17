@@ -1,6 +1,7 @@
 import {
   getNextOccurrence,
   getOccurrencesInRange,
+  hasOccurrenceBetweenLocalDates,
   resolveOccurrenceStatus,
 } from "~/features/recurring/domain/occurrence";
 import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
@@ -388,6 +389,32 @@ describe("getOccurrencesInRange", () => {
     expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
       "2026-04-01",
     ]);
+  });
+});
+
+describe("hasOccurrenceBetweenLocalDates", () => {
+  it("긴 주 단위 간격의 첫 occurrence가 1000일 뒤여도 종료일 안에 있으면 true를 반환한다", () => {
+    expect(
+      hasOccurrenceBetweenLocalDates({
+        endDateLocal: "2029-11-05",
+        intervalValue: 200,
+        recurrenceType: "interval_weeks",
+        startDateLocal: "2026-01-07",
+        weekdayMask: [1],
+      })
+    ).toBe(true);
+  });
+
+  it("주 단위 간격이 유효하지 않으면 false를 반환한다", () => {
+    expect(
+      hasOccurrenceBetweenLocalDates({
+        endDateLocal: "2026-05-07",
+        intervalValue: 0,
+        recurrenceType: "interval_weeks",
+        startDateLocal: "2026-05-06",
+        weekdayMask: [5],
+      })
+    ).toBe(false);
   });
 });
 
