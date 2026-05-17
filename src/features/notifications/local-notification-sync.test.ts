@@ -479,6 +479,47 @@ describe("createLocalReminderNotificationCandidates", () => {
       }),
     ]);
   });
+
+  it("종료일 이후 occurrence는 기기 로컬 알림 후보에서 제외한다", () => {
+    const result = createLocalReminderNotificationCandidates({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          endDateLocal: "2026-04-22",
+          id: "item-1",
+          recurrenceType: "daily",
+          reminderTimeLocal: "21:00",
+          scheduleVersions: [
+            {
+              anchorType: "fixed",
+              createdAt: "2026-04-20T00:00:00.000Z",
+              effectiveFromUtc: "2026-04-20T15:00:00.000Z",
+              endDateLocal: "2026-04-22",
+              id: "version-1",
+              intervalValue: null,
+              itemId: "item-1",
+              notificationsEnabled: true,
+              recurrenceType: "daily",
+              reminderTimeLocal: "21:00",
+              seedStartDateLocal: "2026-04-21",
+              userId: "user-1",
+              weekdayMask: null,
+            },
+          ],
+          title: "약 먹기",
+        }),
+      ],
+      rangeEndUtc: "2026-04-24T00:00:00.000Z",
+      rangeStartUtc: "2026-04-21T00:00:00.000Z",
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.map((candidate) => candidate.scheduledAtUtc)).toEqual([
+      "2026-04-21T12:00:00.000Z",
+      "2026-04-22T12:00:00.000Z",
+    ]);
+  });
 });
 
 describe("cancelAllTtokttakLocalReminderNotifications", () => {

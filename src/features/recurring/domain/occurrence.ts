@@ -23,6 +23,7 @@ const CALENDAR_HOUR = 12;
 type ScheduleContext = {
   anchorType: RecurringItemScheduleVersion["anchorType"];
   effectiveFromUtc: string;
+  endDateLocal: RecurringItemScheduleVersion["endDateLocal"];
   itemId: string;
   intervalValue: RecurringItemScheduleVersion["intervalValue"];
   recurrenceType: RecurringItemScheduleVersion["recurrenceType"];
@@ -155,6 +156,7 @@ function toScheduleContext(
   return {
     anchorType: version.anchorType,
     effectiveFromUtc: version.effectiveFromUtc,
+    endDateLocal: version.endDateLocal ?? null,
     itemId: item.id,
     intervalValue: version.intervalValue,
     recurrenceType: version.recurrenceType,
@@ -184,6 +186,7 @@ function getScheduleVersions(
         `${item.startDateLocal}T00:00:00.000`,
         item.timezone
       ).toISOString(),
+      endDateLocal: item.endDateLocal ?? null,
       recurrenceType: item.recurrenceType,
       intervalValue: item.intervalValue,
       weekdayMask: item.weekdayMask,
@@ -236,6 +239,13 @@ function getNextLocalDate(
 
 function getMaxLocalDate(left: string, right: string): string {
   return compareLocalDate(left, right) >= 0 ? left : right;
+}
+
+function isPastScheduleEndDate(schedule: ScheduleContext, localDate: string) {
+  return (
+    schedule.endDateLocal != null &&
+    compareLocalDate(localDate, schedule.endDateLocal) > 0
+  );
 }
 
 function getNextWeeklyCandidateLocalDate(
@@ -407,6 +417,10 @@ function collectOccurrencesForVersion(params: {
   let occurrenceCount = 0;
 
   while (currentLocalDate) {
+    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
+      break;
+    }
+
     const scheduledAtUtc = getScheduledAtUtc(
       currentLocalDate,
       schedule.reminderTimeLocal,
@@ -506,6 +520,10 @@ function findNextOccurrenceForVersion(params: {
   let occurrenceCount = 0;
 
   while (currentLocalDate) {
+    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
+      return null;
+    }
+
     const scheduledAtUtc = getScheduledAtUtc(
       currentLocalDate,
       schedule.reminderTimeLocal,
@@ -617,6 +635,10 @@ function findFirstFutureLocalDate(params: {
   let occurrenceCount = 0;
 
   while (currentLocalDate) {
+    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
+      return null;
+    }
+
     const scheduledAtUtc = getScheduledAtUtc(
       currentLocalDate,
       schedule.reminderTimeLocal,
@@ -801,6 +823,7 @@ export function getFirstFutureOccurrenceLocalDateAfterEdit(params: {
     initialAnchorLocalDate,
     schedule: {
       anchorType: nextSchedule.anchorType,
+      endDateLocal: null,
       effectiveFromUtc,
       itemId: item.id,
       intervalValue: nextSchedule.intervalValue,

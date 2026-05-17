@@ -105,6 +105,17 @@ function normalizeTimeLocal(value: string): string {
   return value.slice(0, 5);
 }
 
+function resolveStoredEndDateLocal(
+  draft: RecurringItemDraft,
+  ruleChanged: boolean
+): string | null {
+  if (!ruleChanged || draft.recurrenceType === "once") {
+    return null;
+  }
+
+  return draft.endDateLocal ?? null;
+}
+
 function toScheduleVersion(
   row: StoredRecurringItemScheduleVersion
 ): RecurringItemScheduleVersion {
@@ -113,6 +124,7 @@ function toScheduleVersion(
     itemId: row.itemId,
     userId: row.userId,
     effectiveFromUtc: new Date(row.effectiveFromUtc).toISOString(),
+    endDateLocal: row.endDateLocal ?? null,
     recurrenceType: row.recurrenceType,
     intervalValue: row.intervalValue,
     weekdayMask: row.weekdayMask,
@@ -170,6 +182,7 @@ async function toRecurringItem(
     description: content.description,
     contentStatus: content.contentStatus,
     colorKey: row.colorKey,
+    endDateLocal: latestVersion.endDateLocal ?? null,
     recurrenceType: latestVersion.recurrenceType,
     intervalValue: latestVersion.intervalValue,
     weekdayMask: latestVersion.weekdayMask,
@@ -322,6 +335,7 @@ export async function createRecurringItem(
     contentKeyVersion: encryptedContent.keyVersion,
     descriptionCiphertext: encryptedContent.descriptionCiphertext,
     effectiveFromUtc,
+    endDateLocal: resolveStoredEndDateLocal(draft, true),
     intervalValue: input.intervalValue ?? null,
     isArchived: input.isArchived,
     notificationsEnabled: input.notificationsEnabled,
@@ -404,6 +418,7 @@ export async function updateRecurringItem(
       effectiveFromUtc: policy.effectiveFromUtc,
       hasRuleChanges: ruleChanged,
       intervalValue: ruleChanged ? (mergedDraft.intervalValue ?? null) : null,
+      endDateLocal: resolveStoredEndDateLocal(mergedDraft, ruleChanged),
       isArchived: mergedDraft.isArchived,
       itemId: input.id,
       notificationsEnabled: ruleChanged

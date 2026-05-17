@@ -165,6 +165,7 @@ create table if not exists public.recurring_item_schedule_versions (
   anchor_type text not null default 'fixed',
   seed_start_date_local date not null,
   notifications_enabled boolean not null default true,
+  end_date_local date,
 
   created_at timestamptz not null default now(),
 
@@ -184,6 +185,9 @@ create table if not exists public.recurring_item_schedule_versions (
   ),
   constraint recurring_item_schedule_versions_interval_positive_check check (
     interval_value is null or interval_value >= 1
+  ),
+  constraint recurring_item_schedule_versions_once_end_date_check check (
+    recurrence_type <> 'once' or end_date_local is null
   )
 );
 
@@ -261,7 +265,8 @@ create or replace function public.create_recurring_item_with_initial_version(
   p_anchor_type text,
   p_seed_start_date_local date,
   p_notifications_enabled boolean,
-  p_color_key text default 'red'
+  p_color_key text default 'red',
+  p_end_date_local date default null
 )
 returns uuid
 language plpgsql
@@ -303,7 +308,8 @@ begin
     reminder_time_local,
     anchor_type,
     seed_start_date_local,
-    notifications_enabled
+    notifications_enabled,
+    end_date_local
   )
   values (
     v_item_id,
@@ -315,7 +321,8 @@ begin
     p_reminder_time_local,
     p_anchor_type,
     p_seed_start_date_local,
-    p_notifications_enabled
+    p_notifications_enabled,
+    p_end_date_local
   );
 
   return v_item_id;
@@ -339,7 +346,8 @@ create or replace function public.update_recurring_item_with_edit_policy(
   p_anchor_type text default null,
   p_seed_start_date_local date default null,
   p_notifications_enabled boolean default null,
-  p_color_key text default 'red'
+  p_color_key text default 'red',
+  p_end_date_local date default null
 )
 returns uuid
 language plpgsql
@@ -388,7 +396,8 @@ begin
       reminder_time_local,
       anchor_type,
       seed_start_date_local,
-      notifications_enabled
+      notifications_enabled,
+      end_date_local
     )
     values (
       p_item_id,
@@ -400,7 +409,8 @@ begin
       p_reminder_time_local,
       p_anchor_type,
       p_seed_start_date_local,
-      p_notifications_enabled
+      p_notifications_enabled,
+      p_end_date_local
     );
   end if;
 
@@ -424,7 +434,8 @@ revoke all on function public.create_recurring_item_with_initial_version(
   text,
   date,
   boolean,
-  text
+  text,
+  date
 ) from public, anon;
 
 revoke all on function public.update_recurring_item_with_edit_policy(
@@ -444,7 +455,8 @@ revoke all on function public.update_recurring_item_with_edit_policy(
   text,
   date,
   boolean,
-  text
+  text,
+  date
 ) from public, anon;
 
 grant execute on function public.create_recurring_item_with_initial_version(
@@ -463,7 +475,8 @@ grant execute on function public.create_recurring_item_with_initial_version(
   text,
   date,
   boolean,
-  text
+  text,
+  date
 ) to authenticated;
 
 grant execute on function public.update_recurring_item_with_edit_policy(
@@ -483,7 +496,8 @@ grant execute on function public.update_recurring_item_with_edit_policy(
   text,
   date,
   boolean,
-  text
+  text,
+  date
 ) to authenticated;
 
 create or replace function public.archive_recurring_item(p_item_id uuid)

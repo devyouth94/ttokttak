@@ -34,6 +34,7 @@ function toRecurringItemDraftFromEntity(
     anchorType: item.anchorType,
     colorKey: item.colorKey,
     description: item.description,
+    endDateLocal: item.endDateLocal,
     intervalValue: item.intervalValue,
     isArchived: item.isArchived,
     notificationsEnabled: item.notificationsEnabled,
@@ -64,6 +65,7 @@ function hasRuleChanges(
     item.recurrenceType !== draft.recurrenceType ||
     item.intervalValue !== draft.intervalValue ||
     item.reminderTimeLocal !== draft.reminderTimeLocal ||
+    item.endDateLocal !== draft.endDateLocal ||
     item.notificationsEnabled !== draft.notificationsEnabled ||
     item.anchorType !== draft.anchorType ||
     JSON.stringify(item.weekdayMask ?? null) !==

@@ -5,7 +5,10 @@ import {
   listRecurringItems,
   updateRecurringItem,
 } from "~/features/recurring/repositories/recurring-items-repository";
-import { createRecurringItemsPersistenceDouble } from "~/features/recurring/repositories/repository-test-helpers";
+import {
+  createRecurringItemsPersistenceDouble,
+  createStoredRecurringItemFixture,
+} from "~/features/recurring/repositories/repository-test-helpers";
 
 const contentCipher = {
   decryptRecurringItemContent: jest.fn().mockResolvedValue({
@@ -177,6 +180,86 @@ describe("recurring items repository", () => {
     );
   });
 
+  it("신규 일정 생성은 종료일을 초기 schedule version에 저장하고 조회 값으로 제공한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble(
+      createStoredRecurringItemFixture({
+        scheduleVersions: [
+          {
+            anchorType: "fixed",
+            createdAt: "2026-05-06T00:00:00.000Z",
+            effectiveFromUtc: "2026-05-05T15:00:00.000Z",
+            endDateLocal: "2026-05-09",
+            id: "version-1",
+            intervalValue: null,
+            itemId: "item-1",
+            notificationsEnabled: true,
+            recurrenceType: "daily",
+            reminderTimeLocal: "09:00:00",
+            seedStartDateLocal: "2026-05-06",
+            userId: "user-1",
+            weekdayMask: null,
+          },
+        ],
+      })
+    );
+
+    const item = await createRecurringItem(
+      {
+        anchorType: "fixed",
+        description: null,
+        endDateLocal: "2026-05-09",
+        intervalValue: null,
+        isArchived: false,
+        notificationsEnabled: true,
+        recurrenceType: "daily",
+        reminderTimeLocal: "09:00",
+        startDateLocal: "2026-05-06",
+        timezone: "Asia/Seoul",
+        title: "물 마시기",
+        userId: "user-1",
+        weekdayMask: null,
+      },
+      { contentCipher, persistence }
+    );
+
+    expect(persistence.createItemWithInitialVersion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endDateLocal: "2026-05-09",
+      })
+    );
+    expect(item.scheduleVersions?.[0]?.endDateLocal).toBe("2026-05-09");
+  });
+
+  it("한 번 일정 생성은 종료일 입력이 들어와도 null로 저장한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble();
+
+    await createRecurringItem(
+      {
+        anchorType: "fixed",
+        description: null,
+        endDateLocal: "2026-05-09",
+        intervalValue: null,
+        isArchived: false,
+        notificationsEnabled: true,
+        recurrenceType: "once",
+        reminderTimeLocal: "09:00",
+        startDateLocal: "2026-05-06",
+        timezone: "Asia/Seoul",
+        title: "물 마시기",
+        userId: "user-1",
+        weekdayMask: null,
+      },
+      { contentCipher, persistence }
+    );
+
+    expect(persistence.createItemWithInitialVersion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endDateLocal: null,
+        recurrenceType: "once",
+      })
+    );
+  });
+
   it("일정 조회는 저장된 일정 색상 key를 도메인 값으로 제공한다", async () => {
     const persistence = createRecurringItemsPersistenceDouble();
 
@@ -207,6 +290,109 @@ describe("recurring items repository", () => {
     expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
       expect.objectContaining({
         colorKey: "purple",
+      })
+    );
+  });
+
+  it("종료일 수정은 새 schedule version 저장 인자로 전달한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble();
+
+    await updateRecurringItem(
+      {
+        id: "item-1",
+        patch: { endDateLocal: "2026-05-09" },
+        timezone: "Asia/Seoul",
+        userId: "user-1",
+      },
+      { contentCipher, persistence }
+    );
+
+    expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endDateLocal: "2026-05-09",
+        hasRuleChanges: true,
+      })
+    );
+  });
+
+  it("종료일 제거도 새 schedule version 저장 인자로 null을 전달한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble(
+      createStoredRecurringItemFixture({
+        scheduleVersions: [
+          {
+            anchorType: "fixed",
+            createdAt: "2026-05-06T00:00:00.000Z",
+            effectiveFromUtc: "2026-05-05T15:00:00.000Z",
+            endDateLocal: "2026-05-09",
+            id: "version-1",
+            intervalValue: null,
+            itemId: "item-1",
+            notificationsEnabled: true,
+            recurrenceType: "daily",
+            reminderTimeLocal: "09:00:00",
+            seedStartDateLocal: "2026-05-06",
+            userId: "user-1",
+            weekdayMask: null,
+          },
+        ],
+      })
+    );
+
+    await updateRecurringItem(
+      {
+        id: "item-1",
+        patch: { endDateLocal: null },
+        timezone: "Asia/Seoul",
+        userId: "user-1",
+      },
+      { contentCipher, persistence }
+    );
+
+    expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endDateLocal: null,
+        hasRuleChanges: true,
+      })
+    );
+  });
+
+  it("종료일이 있는 반복 일정을 한 번 일정으로 바꾸면 종료일을 null로 저장한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble(
+      createStoredRecurringItemFixture({
+        scheduleVersions: [
+          {
+            anchorType: "fixed",
+            createdAt: "2026-05-06T00:00:00.000Z",
+            effectiveFromUtc: "2026-05-05T15:00:00.000Z",
+            endDateLocal: "2026-05-09",
+            id: "version-1",
+            intervalValue: null,
+            itemId: "item-1",
+            notificationsEnabled: true,
+            recurrenceType: "daily",
+            reminderTimeLocal: "09:00:00",
+            seedStartDateLocal: "2026-05-06",
+            userId: "user-1",
+            weekdayMask: null,
+          },
+        ],
+      })
+    );
+
+    await updateRecurringItem(
+      {
+        id: "item-1",
+        patch: { recurrenceType: "once" },
+        timezone: "Asia/Seoul",
+        userId: "user-1",
+      },
+      { contentCipher, persistence }
+    );
+
+    expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endDateLocal: null,
+        recurrenceType: "once",
       })
     );
   });

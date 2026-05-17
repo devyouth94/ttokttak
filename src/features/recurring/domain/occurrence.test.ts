@@ -309,6 +309,86 @@ describe("getOccurrencesInRange", () => {
     ]);
     expect(occurrences[0]?.status).toBe("scheduled");
   });
+
+  it("종료일이 있으면 종료일 local date까지만 occurrence를 계산한다", () => {
+    const item = createItem({
+      scheduleVersions: [
+        createVersion({
+          endDateLocal: "2026-04-03",
+          recurrenceType: "daily",
+          seedStartDateLocal: "2026-04-01",
+        }),
+      ],
+    });
+
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-03-31T15:00:00.000Z",
+      "2026-04-04T14:59:59.999Z",
+      timezone,
+      [],
+      "2026-04-01T00:00:00.000Z"
+    );
+
+    expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
+      "2026-04-01",
+      "2026-04-02",
+      "2026-04-03",
+    ]);
+  });
+
+  it("종료일이 지난 일정은 다음 occurrence를 만들지 않는다", () => {
+    const item = createItem({
+      scheduleVersions: [
+        createVersion({
+          endDateLocal: "2026-04-03",
+          recurrenceType: "daily",
+          seedStartDateLocal: "2026-04-01",
+        }),
+      ],
+    });
+
+    const nextOccurrence = getNextOccurrence(
+      item,
+      "2026-04-03T15:00:00.000Z",
+      timezone,
+      []
+    );
+
+    expect(nextOccurrence).toBeNull();
+  });
+
+  it("completion_based 종료일도 완료한 날짜가 아니라 occurrence local date로 자른다", () => {
+    const item = createItem({
+      anchorType: "completion_based",
+      recurrenceType: "daily",
+      scheduleVersions: [
+        createVersion({
+          anchorType: "completion_based",
+          endDateLocal: "2026-04-02",
+          recurrenceType: "daily",
+          seedStartDateLocal: "2026-04-01",
+        }),
+      ],
+    });
+    const completedAfterEndDate = createLog({
+      actedAtUtc: "2026-04-05T03:00:00.000Z",
+      scheduledAtUtc: "2026-04-01T00:00:00.000Z",
+    });
+
+    const occurrences = getOccurrencesInRange(
+      item,
+      "2026-03-31T15:00:00.000Z",
+      "2026-04-06T14:59:59.999Z",
+      timezone,
+      [completedAfterEndDate],
+      "2026-04-01T00:00:00.000Z"
+    );
+
+    expect(occurrences.map((occurrence) => occurrence.localDate)).toEqual([
+      "2026-04-01",
+    ]);
+  });
 });
 
 describe("resolveOccurrenceStatus", () => {

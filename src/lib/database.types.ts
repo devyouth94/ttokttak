@@ -249,6 +249,7 @@ export type Database = {
           anchor_type: string;
           created_at: string;
           effective_from_utc: string;
+          end_date_local: string | null;
           id: string;
           interval_value: number | null;
           item_id: string;
@@ -263,6 +264,7 @@ export type Database = {
           anchor_type?: string;
           created_at?: string;
           effective_from_utc: string;
+          end_date_local?: string | null;
           id?: string;
           interval_value?: number | null;
           item_id: string;
@@ -277,6 +279,7 @@ export type Database = {
           anchor_type?: string;
           created_at?: string;
           effective_from_utc?: string;
+          end_date_local?: string | null;
           id?: string;
           interval_value?: number | null;
           item_id?: string;
@@ -321,6 +324,7 @@ export type Database = {
           p_content_key_version: number;
           p_description_ciphertext: string | null;
           p_effective_from_utc: string;
+          p_end_date_local?: string | null;
           p_interval_value: number | null;
           p_is_archived: boolean;
           p_notifications_enabled: boolean;
@@ -342,6 +346,7 @@ export type Database = {
           p_content_key_version: number;
           p_description_ciphertext: string | null;
           p_effective_from_utc?: string | null;
+          p_end_date_local?: string | null;
           p_has_rule_changes: boolean;
           p_interval_value?: number | null;
           p_is_archived: boolean;
