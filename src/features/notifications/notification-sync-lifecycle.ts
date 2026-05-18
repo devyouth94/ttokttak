@@ -59,6 +59,7 @@ export function createLocalNotificationSyncLifecycle({
   syncLocalReminderNotifications,
 }: LocalNotificationSyncLifecycleDeps): LocalNotificationSyncLifecycle {
   let hasPendingNotificationTapSync = false;
+  let hasCheckedSignedOutSessionCleanup = false;
   let lastSessionSyncKey: string | null = null;
   let lastObservedUserId: string | null = null;
 
@@ -106,6 +107,18 @@ export function createLocalNotificationSyncLifecycle({
     });
   }
 
+  async function cleanupSessionEndedNotifications(): Promise<void> {
+    try {
+      await cancelAllTtokttakLocalReminderNotifications();
+    } catch (error) {
+      captureException(error, {
+        tags: {
+          feature: "local-notification-session-ended-cleanup",
+        },
+      });
+    }
+  }
+
   return {
     async flushPendingNotificationTapSync(context) {
       if (!hasPendingNotificationTapSync || !context.userId) {
@@ -140,22 +153,19 @@ export function createLocalNotificationSyncLifecycle({
 
     async syncAfterSessionRestored({ timezone, userId }) {
       if (!userId) {
-        if (lastObservedUserId) {
+        if (lastObservedUserId || !hasCheckedSignedOutSessionCleanup) {
+          hasCheckedSignedOutSessionCleanup = true;
           lastObservedUserId = null;
 
-          try {
-            await cancelAllTtokttakLocalReminderNotifications();
-          } catch (error) {
-            captureException(error, {
-              tags: {
-                feature: "local-notification-session-ended-cleanup",
-              },
-            });
-          }
+          await cleanupSessionEndedNotifications();
         }
 
         lastSessionSyncKey = null;
         return;
+      }
+
+      if (lastObservedUserId && lastObservedUserId !== userId) {
+        await cleanupSessionEndedNotifications();
       }
 
       lastObservedUserId = userId;

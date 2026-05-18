@@ -190,6 +190,69 @@ describe("createLocalNotificationSyncLifecycle", () => {
     );
   });
 
+  it("앱이 세션 없이 시작해도 현재 기기의 Ttokttak 로컬 알림을 정리한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: null,
+    });
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: null,
+    });
+
+    expect(cancelAllTtokttakLocalReminderNotifications).toHaveBeenCalledTimes(
+      1
+    );
+    expect(syncLocalReminderNotifications).not.toHaveBeenCalled();
+  });
+
+  it("세션 사용자가 직접 바뀌면 기존 Ttokttak 로컬 알림을 정리한 뒤 새 사용자 알림을 동기화한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: "user-1",
+    });
+    await lifecycle.syncAfterSessionRestored({
+      timezone,
+      userId: "user-2",
+    });
+
+    expect(cancelAllTtokttakLocalReminderNotifications).toHaveBeenCalledTimes(
+      1
+    );
+    expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
+    expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(2, {
+      reason: "session-restored",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-2",
+    });
+    expect(
+      cancelAllTtokttakLocalReminderNotifications.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      syncLocalReminderNotifications.mock.invocationCallOrder[1] ?? 0
+    );
+  });
+
   it("세션 종료 알림 정리 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
     const cleanupError = new Error("cleanup failed");
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(async () => {
