@@ -1,18 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
-import { addDays, format, startOfDay } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import { createLocalDateUtcRange } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionAction,
   CompletionLog,
   RecurringItem,
-} from "~/features/recurring/domain/types";
-import {
-  completionBasedRecurrenceTypes,
-  getCurrentScheduleVersion,
 } from "~/features/recurring/domain/types";
 import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
@@ -27,12 +22,11 @@ import {
   type HomeFeedCard,
   type HomeFeedSection,
 } from "../components/home-screen.helpers";
+import { getHomeFeedOccurrenceProjectionRequirement } from "../domain/home-feed-occurrence-projection";
 
 let hasShownNotificationPermissionPrompt = false;
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
 const EMPTY_ITEMS: RecurringItem[] = [];
-const HOME_OVERDUE_LOOKBACK_DAYS = 730;
-const HOME_UPCOMING_RANGE_DAYS = 14;
 
 type HomeScreenController = {
   errorMessage: string | null;
@@ -100,9 +94,10 @@ export function useHomeScreenController(): HomeScreenController {
   const isFocused = useIsFocused();
 
   const [selectedDateId, setSelectedDateId] = useState(() =>
-    format(startOfDay(new Date()), "yyyy-MM-dd")
+    formatInTimeZone(new Date(), timezone, "yyyy-MM-dd")
   );
   const hasFocusedOnceRef = useRef(false);
+  const previousTimezoneRef = useRef(timezone);
 
   const itemsQuery = useRecurringItemsQuery({
     enabled: isReady,
@@ -110,49 +105,20 @@ export function useHomeScreenController(): HomeScreenController {
     userId,
   });
   const items = itemsQuery.data ?? EMPTY_ITEMS;
-  const completionLogsRange = useMemo(() => {
-    const today = startOfDay(new Date());
-    const todayLocalDate = format(today, "yyyy-MM-dd");
-    const rangeStartLocalDate =
-      selectedDateId === todayLocalDate
-        ? format(addDays(today, -HOME_OVERDUE_LOOKBACK_DAYS), "yyyy-MM-dd")
-        : selectedDateId;
-    const rangeEndLocalDate =
-      selectedDateId === todayLocalDate
-        ? format(addDays(today, HOME_UPCOMING_RANGE_DAYS), "yyyy-MM-dd")
-        : selectedDateId;
-
-    return {
-      endUtc: createLocalDateUtcRange(rangeEndLocalDate, timezone).endUtc,
-      startUtc: createLocalDateUtcRange(rangeStartLocalDate, timezone).startUtc,
-    };
-  }, [selectedDateId, timezone]);
-  const completionBasedItemIds = useMemo(
-    () =>
-      items
-        .filter((item) => {
-          const schedule = getCurrentScheduleVersion(item);
-          const anchorType = schedule?.anchorType ?? item.anchorType;
-          const recurrenceType =
-            schedule?.recurrenceType ?? item.recurrenceType;
-
-          return (
-            anchorType === "completion_based" &&
-            completionBasedRecurrenceTypes.includes(
-              recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
-            )
-          );
-        })
-        .map((item) => item.id),
-    [items]
-  );
+  const now = new Date();
+  const projectionRequirement = getHomeFeedOccurrenceProjectionRequirement({
+    items,
+    now,
+    selectedDateId,
+    timezone,
+  });
 
   const completionLogsQuery = useCompletionLogsQuery({
-    anchorItemIds: completionBasedItemIds,
+    anchorItemIds: projectionRequirement.completionLogQuery.anchorItemIds,
     enabled: isReady,
     itemIds: items.map((item) => item.id),
-    rangeEndUtc: completionLogsRange.endUtc,
-    rangeStartUtc: completionLogsRange.startUtc,
+    rangeEndUtc: projectionRequirement.completionLogQuery.rangeEndUtc,
+    rangeStartUtc: projectionRequirement.completionLogQuery.rangeStartUtc,
     userId,
   });
   const completionLogs = completionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;
@@ -182,11 +148,11 @@ export function useHomeScreenController(): HomeScreenController {
   const errorMessage =
     actionErrorMessage ??
     getHomeFeedErrorMessage(itemsQuery.error, completionLogsQuery.error);
-  const now = new Date();
   const feedSections = buildHomeFeedSections({
     completionLogs,
     items,
     now,
+    projection: projectionRequirement.projection,
     selectedDateId,
     timezone,
   }).map((section) => ({
@@ -200,6 +166,33 @@ export function useHomeScreenController(): HomeScreenController {
     clearActionError();
     await refetchFeed();
   }, [clearActionError, refetchFeed]);
+
+  useEffect(() => {
+    const previousTimezone = previousTimezoneRef.current;
+
+    if (previousTimezone === timezone) {
+      return;
+    }
+
+    const currentNow = new Date();
+    const previousTodayLocalDate = formatInTimeZone(
+      currentNow,
+      previousTimezone,
+      "yyyy-MM-dd"
+    );
+    const nextTodayLocalDate = formatInTimeZone(
+      currentNow,
+      timezone,
+      "yyyy-MM-dd"
+    );
+
+    previousTimezoneRef.current = timezone;
+    setSelectedDateId((currentSelectedDateId) =>
+      currentSelectedDateId === previousTodayLocalDate
+        ? nextTodayLocalDate
+        : currentSelectedDateId
+    );
+  }, [timezone]);
 
   useEffect(() => {
     if (!isFocused || !isReady || !userId) {
@@ -250,6 +243,6 @@ export function useHomeScreenController(): HomeScreenController {
     profileName: getProfileName(profile),
     selectedDateId,
     selectedDateIsToday:
-      selectedDateId === format(startOfDay(now), "yyyy-MM-dd"),
+      selectedDateId === formatInTimeZone(now, timezone, "yyyy-MM-dd"),
   };
 }

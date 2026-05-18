@@ -4,13 +4,12 @@ import {
   format,
   isSameDay,
   parse,
-  startOfDay,
 } from "date-fns";
 import { ko } from "date-fns/locale";
+import { formatInTimeZone } from "date-fns-tz";
 
 import { getOccurrenceIdentity } from "~/features/recurring/domain/occurrence";
 import {
-  createLocalDateUtcRange,
   getLatestOverdueItemOccurrenceEntries,
   getScheduledItemOccurrenceEntriesInRange,
   type LocalDateUtcRange,
@@ -28,10 +27,12 @@ import {
 } from "~/features/recurring/utils/recurring-display";
 import type { ProfileRow } from "~/lib/database.types";
 
-export const HOME_DATE_RANGE_DAYS = 15;
+import {
+  getHomeFeedOccurrenceProjectionRequirement,
+  type HomeFeedOccurrenceProjectionRequirement,
+} from "../domain/home-feed-occurrence-projection";
 
-const OVERDUE_LOOKBACK_DAYS = 730;
-const UPCOMING_RANGE_DAYS = 14;
+export const HOME_DATE_RANGE_DAYS = 15;
 
 export type HomeDateOption = {
   dayLabel: string;
@@ -64,6 +65,7 @@ type BuildHomeFeedSectionsOptions = {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
   now: Date;
+  projection?: HomeFeedOccurrenceProjectionRequirement["projection"];
   selectedDateId: string;
   timezone: string;
 };
@@ -90,7 +92,8 @@ type BuildRelativeCardsOptions = Omit<
   BuildSectionCardsOptions,
   "range" | "sectionId"
 > & {
-  today: Date;
+  overdueLookbackStartLocalDate?: string;
+  upcomingRange?: LocalDateUtcRange;
 };
 
 export function getProfileName(profile: ProfileRow | null): string {
@@ -118,19 +121,29 @@ export function buildHomeFeedSections({
   completionLogs,
   items,
   now,
+  projection,
   selectedDateId,
   timezone,
 }: BuildHomeFeedSectionsOptions): HomeFeedSection[] {
-  const today = startOfDay(now);
-  const todayLocalDate = format(today, "yyyy-MM-dd");
-  const selectedDateTitle = getSelectedDateTitle(selectedDateId, today);
-  const selectedRange = createLocalDateUtcRange(selectedDateId, timezone);
+  const todayLocalDate = formatInTimeZone(now, timezone, "yyyy-MM-dd");
+  const selectedDateTitle = getSelectedDateTitle(
+    selectedDateId,
+    todayLocalDate
+  );
+  const projectionRequirement =
+    projection ??
+    getHomeFeedOccurrenceProjectionRequirement({
+      items,
+      now,
+      selectedDateId,
+      timezone,
+    }).projection;
   const selectedSection = buildSelectedDateSection({
     completionLogs,
     items,
     now,
     selectedDateTitle,
-    selectedRange,
+    selectedRange: projectionRequirement.selectedDateRange,
     timezone,
     todayLocalDate,
   });
@@ -147,7 +160,8 @@ export function buildHomeFeedSections({
         completionLogs,
         items,
         now,
-        today,
+        overdueLookbackStartLocalDate:
+          projectionRequirement.overdueLookbackStartLocalDate,
         timezone,
         todayLocalDate,
       }),
@@ -162,7 +176,7 @@ export function buildHomeFeedSections({
         completionLogs,
         items,
         now,
-        today,
+        upcomingRange: projectionRequirement.upcomingRange ?? undefined,
         timezone,
         todayLocalDate,
       }),
@@ -203,18 +217,14 @@ function buildOverdueCards({
   completionLogs,
   items,
   now,
-  today,
+  overdueLookbackStartLocalDate,
   timezone,
   todayLocalDate,
 }: BuildRelativeCardsOptions): HomeFeedCard[] {
-  const overdueStartLocalDate = format(
-    addDays(today, -OVERDUE_LOOKBACK_DAYS),
-    "yyyy-MM-dd"
-  );
   return getLatestOverdueItemOccurrenceEntries({
     completionLogs,
     items,
-    lookbackStartLocalDate: overdueStartLocalDate,
+    lookbackStartLocalDate: overdueLookbackStartLocalDate ?? todayLocalDate,
     now,
     timezone,
   })
@@ -228,25 +238,19 @@ function buildUpcomingCards({
   completionLogs,
   items,
   now,
-  today,
+  upcomingRange,
   timezone,
   todayLocalDate,
 }: BuildRelativeCardsOptions): HomeFeedCard[] {
-  const upcomingStartLocalDate = format(addDays(today, 1), "yyyy-MM-dd");
-  const upcomingEndLocalDate = format(
-    addDays(today, UPCOMING_RANGE_DAYS),
-    "yyyy-MM-dd"
-  );
+  if (!upcomingRange) {
+    return [];
+  }
 
   return buildScheduledCards({
     completionLogs,
     items,
     now,
-    range: {
-      endUtc: createLocalDateUtcRange(upcomingEndLocalDate, timezone).endUtc,
-      startUtc: createLocalDateUtcRange(upcomingStartLocalDate, timezone)
-        .startUtc,
-    },
+    range: upcomingRange,
     sectionId: "upcoming",
     timezone,
     todayLocalDate,
@@ -275,10 +279,11 @@ function buildScheduledCards({
     .sort(compareByScheduledAtUtcAsc);
 }
 
-function getSelectedDateTitle(selectedDateId: string, today: Date): string {
-  const selectedDate = parse(selectedDateId, "yyyy-MM-dd", new Date());
-
-  if (isSameDay(selectedDate, today)) {
+function getSelectedDateTitle(
+  selectedDateId: string,
+  todayLocalDate: string
+): string {
+  if (selectedDateId === todayLocalDate) {
     return "오늘";
   }
 
