@@ -251,6 +251,80 @@ describe("recurring item detail helpers", () => {
     ]);
   });
 
+  it("종료일이 있는 일정은 요약 설정에 종료일을 표시한다", () => {
+    const entries = buildSummarySettingBadges(
+      createItem({
+        endDateLocal: "2026-05-10",
+      })
+    );
+
+    expect(entries).toContainEqual({
+      id: "end-date",
+      label: "종료",
+      value: "2026년 5월 10일",
+    });
+  });
+
+  it("종료일이 없는 일정은 요약 설정에 종료일을 표시하지 않는다", () => {
+    const entries = buildSummarySettingBadges(createItem());
+
+    expect(entries.some((entry) => entry.id === "end-date")).toBe(false);
+  });
+
+  it("latest schedule version에서 종료일이 제거되면 이전 루트 종료일을 표시하지 않는다", () => {
+    const entries = buildSummarySettingBadges(
+      createItem({
+        endDateLocal: "2026-05-10",
+        scheduleVersions: [
+          createVersion({
+            effectiveFromUtc: "2026-04-01T00:00:00.000Z",
+            endDateLocal: "2026-05-10",
+            id: "version-1",
+          }),
+          createVersion({
+            effectiveFromUtc: "2026-04-15T00:00:00.000Z",
+            endDateLocal: null,
+            id: "version-2",
+          }),
+        ],
+      })
+    );
+
+    expect(entries.some((entry) => entry.id === "end-date")).toBe(false);
+  });
+
+  it("종료일이 지나 다음 occurrence가 없어도 상세 요약과 다음 일정 없음 상태를 함께 제공한다", () => {
+    const viewModel = buildRecurringItemDetailViewModel({
+      completionLogs: [
+        createLog({
+          id: "log-1",
+          scheduledAtUtc: "2026-04-08T00:00:00.000Z",
+        }),
+        createLog({
+          id: "log-2",
+          scheduledAtUtc: "2026-04-09T00:00:00.000Z",
+        }),
+        createLog({
+          id: "log-3",
+          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
+        }),
+      ],
+      item: createItem({
+        endDateLocal: "2026-04-10",
+      }),
+      now: new Date("2026-04-11T03:00:00.000Z"),
+      timezone,
+    });
+
+    expect(viewModel.nextOccurrence).toBeNull();
+    expect(viewModel.statusCard.title).toBe("다음 일정 없음");
+    expect(viewModel.summary.settingBadges).toContainEqual({
+      id: "end-date",
+      label: "종료",
+      value: "2026년 4월 10일",
+    });
+  });
+
   it("시작일 기준 일정은 계산 뱃지를 숨긴다", () => {
     const entries = buildSummarySettingBadges(
       createItem({
@@ -311,11 +385,13 @@ describe("recurring item detail helpers", () => {
       scheduleVersions: [
         createVersion({
           id: "version-1",
+          endDateLocal: "2026-04-20",
           intervalValue: 3,
           recurrenceType: "interval_days",
           seedStartDateLocal: "2026-04-08",
         }),
         createVersion({
+          endDateLocal: "2026-05-01",
           effectiveFromUtc: "2026-04-14T01:00:00.000Z",
           id: "version-2",
           intervalValue: 4,
@@ -338,5 +414,10 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.summary.notificationLabel).toBe("오후 9:30");
     expect(viewModel.summary.recurrenceLabel).toBe("4일마다");
     expect(viewModel.summary.notificationsEnabled).toBe(true);
+    expect(viewModel.summary.settingBadges).toContainEqual({
+      id: "end-date",
+      label: "종료",
+      value: "2026년 5월 1일",
+    });
   });
 });

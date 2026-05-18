@@ -99,6 +99,27 @@ describe("reminder-list helpers", () => {
     ).toBe("예정 없음");
   });
 
+  it("종료일이 지나 다음 예정이 없는 반복 일정도 목록 row에서는 예정 없음으로 표시한다", () => {
+    const entries = buildReminderListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          endDateLocal: "2026-04-21",
+          id: "ended-daily",
+          recurrenceType: "daily",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-20",
+          title: "종료된 매일 일정",
+        }),
+      ],
+      now: new Date("2026-04-22T03:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries[0]?.nextOccurrenceTimeLabel).toBe("예정 없음");
+    expect(entries[0]?.recurrenceLabel).toBe("매일");
+  });
+
   it("일정 목록 entry는 일정 색상 key를 함께 제공한다", () => {
     const entries = buildReminderListEntries({
       completionLogs: [],

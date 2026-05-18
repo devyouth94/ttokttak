@@ -89,10 +89,12 @@ function DetailSummarySection({
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
   const colorOption = recurringItemColorOptionByKey[colorKey];
   const notificationStatusLabel = notificationsEnabled ? "사용" : "중지";
-  const anchorBadges = settingBadges.filter(
-    (badge) => badge.id !== "start-date"
+  const scheduleBadges = settingBadges.filter((badge) =>
+    ["end-date", "start-date"].includes(badge.id)
   );
-  const startBadge = settingBadges.find((badge) => badge.id === "start-date");
+  const extraBadges = settingBadges.filter(
+    (badge) => !["end-date", "start-date"].includes(badge.id)
+  );
 
   return (
     <View style={styles.summarySection}>
@@ -122,21 +124,22 @@ function DetailSummarySection({
         </View>
 
         <View style={styles.summaryOutlineGroup}>
-          {startBadge ? (
+          {scheduleBadges.map((badge) => (
             <DetailSummaryOutlineRow
-              label={startBadge.label}
-              value={startBadge.value}
+              key={badge.id}
+              label={badge.label}
+              value={badge.value}
             />
-          ) : null}
+          ))}
           <DetailSummaryColorRow
             colorLabel={colorOption.label}
             swatchColor={colorOption.swatchColor}
           />
         </View>
 
-        {anchorBadges.length > 0 ? (
+        {extraBadges.length > 0 ? (
           <View style={styles.summaryOutlineGroup}>
-            {anchorBadges.map((badge) => (
+            {extraBadges.map((badge) => (
               <DetailSummaryOutlineRow
                 key={badge.id}
                 label={badge.label}
