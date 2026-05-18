@@ -8,6 +8,7 @@
 - Expo.
 - React Native.
 - Expo Router.
+- Expo Updates.
 - TypeScript.
 - React Hook Form.
 - Zod.
@@ -80,6 +81,16 @@ Supabase Postgres가 서버 데이터의 최종 기준이다.
 
 기기 로컬 알림은 현재 기기 OS에 예약된 파생 상태다.
 알림 예약은 source of truth가 아니다.
+
+## Update Delivery
+
+앱은 `expo-updates`와 EAS Update를 사용한다.
+production 빌드는 `production` channel을 사용한다.
+preview 빌드는 `preview` channel을 사용한다.
+`runtimeVersion`은 `appVersion` 정책을 사용한다.
+
+같은 앱 버전과 runtime 안에서는 JS와 asset 변경을 OTA로 받을 수 있다.
+네이티브 코드, 권한, entitlements, native dependency 변경은 새 스토어 빌드가 필요하다.
 
 ## Data Model
 

@@ -1,7 +1,7 @@
 # iOS Release
 
 이 문서는 iOS production 빌드와 App Store Connect 제출 절차를 기록한다.
-Android 배포 절차는 포함하지 않는다.
+Android 배포 절차는 `docs/ANDROID_RELEASE.md`를 따른다.
 
 ## 기준 설정
 
@@ -10,9 +10,14 @@ Android 배포 절차는 포함하지 않는다.
 - App Store Connect App ID: `6762104906`.
 - EAS submit profile: `production`.
 - EAS build profile: `production`.
+- EAS Update production channel: `production`.
+- EAS Update preview channel: `preview`.
+- EAS Update URL: `https://u.expo.dev/7b6d8011-8d4c-4110-967f-160aea1db801`.
 
 `eas.json`의 iOS 제출 설정은 `submit.production.ios.ascAppId`를 사용한다.
 production 빌드는 `autoIncrement: true`와 remote app version source를 사용한다.
+production 빌드는 EAS Update `production` channel을 사용한다.
+preview 빌드는 EAS Update `preview` channel을 사용한다.
 
 ## 사전 조건
 
@@ -28,6 +33,36 @@ production 빌드는 `autoIncrement: true`와 remote app version source를 사�
 - key file: `/Users/youngzin/Downloads/AuthKey_B53DKVHW7T.p8`.
 
 `.p8` 파일 내용은 git, 문서, 로그, 이슈에 남기지 않는다.
+
+## OTA 업데이트
+
+앱은 `expo-updates`와 EAS Update를 사용한다.
+`runtimeVersion`은 `appVersion` 정책을 사용한다.
+같은 앱 버전 안에서는 JS와 asset 변경을 OTA로 배포할 수 있다.
+네이티브 코드, config plugin, 권한, entitlements, native dependency 변경은 새 App Store 빌드가 필요하다.
+
+production OTA는 `production` channel에 배포한다.
+preview OTA는 `preview` channel에 배포한다.
+
+현재 설정 기준:
+
+- `app.config.ts`: `runtimeVersion.policy = "appVersion"`.
+- `app.config.ts`: `updates.url = "https://u.expo.dev/7b6d8011-8d4c-4110-967f-160aea1db801"`.
+- `eas.json`: `build.production.channel = "production"`.
+- `eas.json`: `build.preview.channel = "preview"`.
+
+출시 빌드가 OTA를 포함했는지 확인한다.
+
+```bash
+pnpm exec eas build:view <build-id> --json
+```
+
+확인값:
+
+- `channel`이 `production`이다.
+- `runtimeVersion`이 제출할 앱 버전과 같다.
+- `appVersion`이 제출할 앱 버전과 같다.
+- `gitCommitHash`가 출시 대상 커밋과 같다.
 
 ## 빌드
 
