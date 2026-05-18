@@ -1,4 +1,4 @@
-import { getOccurrencesToResolve } from "~/features/recurring/domain/occurrence-actions";
+import { createItemOccurrenceProjection } from "~/features/recurring/domain/occurrence-projection";
 import {
   type CaptureRecurringMutationPostprocessException,
   completeRecurringMutationPostprocessFlow,
@@ -62,7 +62,7 @@ export async function processHomeFeedOccurrenceAction({
     return;
   }
 
-  const occurrencesToResolve = getOccurrencesToResolve({
+  const occurrencesToResolve = getHomeFeedOccurrencesToResolve({
     completionLogs,
     item: target.item,
     now,
@@ -104,5 +104,33 @@ export async function processHomeFeedOccurrenceAction({
     },
     syncAfterMutation,
     userId,
+  });
+}
+
+function getHomeFeedOccurrencesToResolve({
+  completionLogs,
+  item,
+  now,
+  primaryOccurrence,
+  timezone,
+}: {
+  completionLogs: CompletionLog[];
+  item: RecurringItem;
+  now: Date;
+  primaryOccurrence: DerivedOccurrence;
+  timezone: string;
+}): DerivedOccurrence[] {
+  if (primaryOccurrence.status !== "overdue") {
+    return [primaryOccurrence];
+  }
+
+  return createItemOccurrenceProjection({
+    completionLogs,
+    item,
+    now,
+    timezone,
+  }).getOverdueOccurrences({
+    lookbackStartLocalDate: item.startDateLocal,
+    rangeEndUtc: primaryOccurrence.scheduledAtUtc,
   });
 }
