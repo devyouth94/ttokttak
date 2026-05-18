@@ -9,6 +9,7 @@ import {
 
 import {
   type CustomRecurrenceUnit,
+  type DatePickerTarget,
   type PickerChangeHandler,
   type PickerMode,
   type RecurringItemFormValues,
@@ -37,6 +38,7 @@ type RecurringItemFormDisplayValues = {
 };
 
 type RecurringItemFormPickerState = {
+  iosDateTarget: DatePickerTarget | null;
   iosMode: PickerMode | null;
   iosValue: Date;
   isEndDateVisible: boolean;
@@ -85,7 +87,12 @@ type RecurringItemFormPickerActions = {
   onCloseIosPicker: () => void;
   onConfirmIosPicker: () => void;
   onOpenDatePicker: () => void;
+  onOpenEndDatePicker: () => void;
   onOpenTimePicker: () => void;
+  onEndDatePickerChange: (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => void;
   onStartDatePickerChange: (
     event: DateTimePickerEvent,
     selectedDate?: Date

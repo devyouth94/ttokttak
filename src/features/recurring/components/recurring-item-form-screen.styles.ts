@@ -104,6 +104,12 @@ export const styles = StyleSheet.create({
   editSaveButton: {
     flex: 1,
   },
+  endDateControl: {
+    gap: spacing.xs,
+  },
+  endDateField: {
+    width: "100%",
+  },
   errorCard: {
     gap: spacing.xs,
     borderRadius: borderRadius.lg,

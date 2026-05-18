@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   TextInput,
   View,
 } from "react-native";
@@ -25,7 +26,10 @@ import { colors } from "~/design-system/tokens";
 
 import { type RecurringItemFormScreenContentProps } from "./recurring-item-form-screen.contracts";
 import {
+  type FormErrorTarget,
   getRecurringItemFormDisplayValues,
+  getRecurringItemFormEndDateControlState,
+  getRecurringItemFormFirstErrorTarget,
   getRecurringItemFormScreenTitle,
   parseLocalDateToDate,
   parseLocalTimeToDate,
@@ -73,36 +77,14 @@ type PickerFieldProps = {
   error?: string;
   icon: React.JSX.Element;
   label: string;
+  accessibilityHint: string;
+  accessibilityLabel: string;
   onPress: () => void;
   value: string;
   variantStyle: object;
 };
 
-type FormErrorTarget = "options" | "recurrence" | "schedule" | "title";
-
 type FormSectionOffsets = Partial<Record<FormErrorTarget, number>>;
-
-function getFirstErrorTarget(
-  errors: RecurringItemFormScreenContentProps["errors"]
-): FormErrorTarget | null {
-  if (errors.title) {
-    return "title";
-  }
-
-  if (errors.interval || errors.weekday) {
-    return "recurrence";
-  }
-
-  if (errors.startDate || errors.reminderTime) {
-    return "schedule";
-  }
-
-  if (errors.anchor) {
-    return "options";
-  }
-
-  return null;
-}
 
 export function RecurringItemFormScreenContent({
   actions,
@@ -131,19 +113,35 @@ export function RecurringItemFormScreenContent({
 
   const screenTitle = getRecurringItemFormScreenTitle(view.isEditMode);
   const {
+    endDateDisplayValue,
     firstReminderHelperText,
     reminderTimeDisplayValue,
     startDateDisplayValue,
   } = getRecurringItemFormDisplayValues(values);
+  const endDateControlState = getRecurringItemFormEndDateControlState(values);
   const firstReminderHelperMessage = view.isStartDateEditable
     ? firstReminderHelperText
     : null;
+  const minimumEndDate = parseLocalDateToDate(view.minimumEndDateLocal);
   const minimumStartDate = parseLocalDateToDate(view.minimumStartDateLocal);
+  const selectedEndDate = parseLocalDateToDate(
+    values.endDateLocal && values.endDateLocal >= view.minimumEndDateLocal
+      ? values.endDateLocal
+      : view.minimumEndDateLocal
+  );
   const selectedStartDate = parseLocalDateToDate(
     values.startDateLocal < view.minimumStartDateLocal
       ? view.minimumStartDateLocal
       : values.startDateLocal
   );
+  const iosPickerMinimumDate =
+    picker.iosDateTarget === "endDate" ? minimumEndDate : minimumStartDate;
+  const iosPickerTitle =
+    picker.iosMode === "time"
+      ? "알림 시간 선택"
+      : picker.iosDateTarget === "endDate"
+        ? "종료일 선택"
+        : "시작일 선택";
 
   function handleSectionLayout(
     target: FormErrorTarget,
@@ -160,7 +158,7 @@ export function RecurringItemFormScreenContent({
       return;
     }
 
-    const firstErrorTarget = getFirstErrorTarget(errors);
+    const firstErrorTarget = getRecurringItemFormFirstErrorTarget(errors);
 
     if (!firstErrorTarget) {
       return;
@@ -337,6 +335,8 @@ export function RecurringItemFormScreenContent({
                     />
                   }
                   label="시작일"
+                  accessibilityHint="일정의 시작일을 선택해요."
+                  accessibilityLabel="시작일 선택"
                   onPress={actions.picker.onOpenDatePicker}
                   value={startDateDisplayValue}
                   variantStyle={styles.dateField}
@@ -353,11 +353,24 @@ export function RecurringItemFormScreenContent({
                     />
                   }
                   label="알림 시간"
+                  accessibilityHint="알림 시간을 선택해요."
+                  accessibilityLabel="알림 시간 선택"
                   onPress={actions.picker.onOpenTimePicker}
                   value={reminderTimeDisplayValue}
                   variantStyle={styles.timeField}
                 />
               </View>
+
+              {endDateControlState.isVisible ? (
+                <EndDateControl
+                  displayValue={endDateDisplayValue}
+                  error={errors.endDate}
+                  isEnabled={endDateControlState.isEnabled}
+                  onDisable={actions.recurrence.onDisableEndDate}
+                  onEnable={actions.recurrence.onEnableEndDate}
+                  onOpenPicker={actions.picker.onOpenEndDatePicker}
+                />
+              ) : null}
 
               {firstReminderHelperMessage ? (
                 <AppText style={styles.fieldHelper} variant="caption">
@@ -375,6 +388,16 @@ export function RecurringItemFormScreenContent({
                 />
               ) : null}
 
+              {endDateControlState.isEnabled && picker.isEndDateVisible ? (
+                <DateTimePicker
+                  initialInputMode="default"
+                  minimumDate={minimumEndDate}
+                  mode="date"
+                  onChange={actions.picker.onEndDatePickerChange}
+                  value={selectedEndDate}
+                />
+              ) : null}
+
               {picker.isTimeVisible ? (
                 <DateTimePicker
                   mode="time"
@@ -384,8 +407,9 @@ export function RecurringItemFormScreenContent({
               ) : null}
 
               <IosPickerModal
-                minimumDate={minimumStartDate}
+                minimumDate={iosPickerMinimumDate}
                 mode={picker.iosMode}
+                title={iosPickerTitle}
                 value={picker.iosValue}
                 onChange={iosPickerChangeHandler}
                 onClose={actions.picker.onCloseIosPicker}
@@ -495,6 +519,8 @@ function SaveButtonContent({
 }
 
 function PickerField({
+  accessibilityHint,
+  accessibilityLabel,
   description,
   disabled = false,
   error,
@@ -510,6 +536,8 @@ function PickerField({
         {label}
       </AppText>
       <Pressable
+        accessibilityHint={accessibilityHint}
+        accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
         disabled={disabled}
         onPress={onPress}
@@ -535,6 +563,71 @@ function PickerField({
         <AppText style={styles.fieldError} variant="caption">
           {error}
         </AppText>
+      ) : null}
+    </View>
+  );
+}
+
+type EndDateControlProps = {
+  displayValue: string | null;
+  error?: string;
+  isEnabled: boolean;
+  onDisable: () => void;
+  onEnable: () => void;
+  onOpenPicker: () => void;
+};
+
+function EndDateControl({
+  displayValue,
+  error,
+  isEnabled,
+  onDisable,
+  onEnable,
+  onOpenPicker,
+}: EndDateControlProps): React.JSX.Element {
+  const handleToggle = (nextValue: boolean): void => {
+    if (nextValue) {
+      onEnable();
+      return;
+    }
+
+    onDisable();
+  };
+
+  return (
+    <View style={styles.endDateControl}>
+      <View style={styles.optionToggleRow}>
+        <AppText style={styles.optionToggleLabel} variant="body2">
+          종료일
+        </AppText>
+        <Switch
+          accessibilityHint="반복 일정의 종료일 설정을 켜거나 꺼요."
+          accessibilityLabel="종료일 사용"
+          onValueChange={handleToggle}
+          thumbColor={colors.primaryForeground}
+          trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
+          value={isEnabled}
+        />
+      </View>
+
+      {isEnabled && displayValue ? (
+        <PickerField
+          accessibilityHint="반복 일정의 종료일을 선택해요."
+          accessibilityLabel="종료일 선택"
+          error={error}
+          icon={
+            <CalendarDays
+              absoluteStrokeWidth
+              color={colors.text}
+              size={18}
+              strokeWidth={1.2}
+            />
+          }
+          label="종료일 날짜"
+          onPress={onOpenPicker}
+          value={displayValue}
+          variantStyle={styles.endDateField}
+        />
       ) : null}
     </View>
   );

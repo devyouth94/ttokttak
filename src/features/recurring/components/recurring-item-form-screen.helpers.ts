@@ -31,11 +31,22 @@ import {
 export { recurringItemColorOptions } from "~/features/recurring/domain/color-palette";
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
+export type DatePickerTarget = "endDate" | "startDate";
+export type FormErrorTarget = "options" | "recurrence" | "schedule" | "title";
 export type PickerMode = "date" | "time";
 export type PickerChangeHandler = (
   event: DateTimePickerEvent,
   selectedDate?: Date
 ) => void;
+export type RecurringItemFormErrorState = {
+  anchor?: string;
+  endDate?: string;
+  interval?: string;
+  reminderTime?: string;
+  startDate?: string;
+  title?: string;
+  weekday?: string;
+};
 export type RecurrenceSectionState = {
   customUnit: CustomRecurrenceUnit | null;
   isCustomSelected: boolean;
@@ -134,22 +145,49 @@ export function getRecurringItemFormScreenTitle(isEditMode: boolean): string {
 }
 
 export function getRecurringItemFormDisplayValues(formState: {
+  endDateLocal: string | null;
   intervalValue: string;
   reminderTimeLocal: string;
   recurrenceType: RecurrenceType;
   startDateLocal: string;
   weekdayMask: number[];
 }): {
+  endDateDisplayValue: string | null;
   firstReminderHelperText: string | null;
   reminderTimeDisplayValue: string;
   startDateDisplayValue: string;
 } {
   return {
+    endDateDisplayValue:
+      formState.endDateLocal == null
+        ? null
+        : formatLocalDateForDisplay(formState.endDateLocal),
     firstReminderHelperText: getFirstReminderHelperText(formState),
     reminderTimeDisplayValue: formatLocalTimeForDisplay(
       formState.reminderTimeLocal
     ),
     startDateDisplayValue: formatLocalDateForDisplay(formState.startDateLocal),
+  };
+}
+
+export function getRecurringItemFormEndDateControlState(params: {
+  endDateLocal: string | null;
+  recurrenceType: RecurrenceType;
+}): {
+  displayValue: string | null;
+  isEnabled: boolean;
+  isVisible: boolean;
+} {
+  const isVisible = params.recurrenceType !== "once";
+  const isEnabled = isVisible && params.endDateLocal != null;
+
+  return {
+    displayValue:
+      params.endDateLocal != null && isEnabled
+        ? formatLocalDateForDisplay(params.endDateLocal)
+        : null,
+    isEnabled,
+    isVisible,
   };
 }
 
@@ -459,12 +497,42 @@ function getFirstWeeklyOccurrenceLocalDate(formState: {
 
 export function getIosPickerChangeHandler(
   pickerMode: PickerMode | null,
+  datePickerTarget: DatePickerTarget | null,
   handlers: {
-    onDateChange: PickerChangeHandler;
+    onEndDateChange: PickerChangeHandler;
+    onStartDateChange: PickerChangeHandler;
     onTimeChange: PickerChangeHandler;
   }
 ): PickerChangeHandler {
-  return pickerMode === "date" ? handlers.onDateChange : handlers.onTimeChange;
+  if (pickerMode === "time") {
+    return handlers.onTimeChange;
+  }
+
+  return datePickerTarget === "endDate"
+    ? handlers.onEndDateChange
+    : handlers.onStartDateChange;
+}
+
+export function getRecurringItemFormFirstErrorTarget(
+  errors: RecurringItemFormErrorState
+): FormErrorTarget | null {
+  if (errors.title) {
+    return "title";
+  }
+
+  if (errors.interval || errors.weekday) {
+    return "recurrence";
+  }
+
+  if (errors.startDate || errors.reminderTime || errors.endDate) {
+    return "schedule";
+  }
+
+  if (errors.anchor) {
+    return "options";
+  }
+
+  return null;
 }
 
 export function getWeekdayMaskFromDate(dateText: string): number[] {
