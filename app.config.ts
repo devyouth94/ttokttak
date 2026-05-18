@@ -25,6 +25,12 @@ export default function getAppConfig(): ExpoConfig {
     name: "똑딱",
     slug: "ttokttak",
     version: "1.0.1",
+    runtimeVersion: {
+      policy: "appVersion",
+    },
+    updates: {
+      url: "https://u.expo.dev/7b6d8011-8d4c-4110-967f-160aea1db801",
+    },
     orientation: "portrait",
     icon: "./assets/icon.png",
     scheme: "ttokttak",
