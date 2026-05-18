@@ -50,6 +50,70 @@ describe("resolveRecurringItemEditPolicy", () => {
     );
     expect(policy.mergedDraft.title).toBe("아침 물 마시기");
   });
+
+  it("이미 종료일이 지난 일정도 메타만 수정할 수 있다", () => {
+    const policy = resolveRecurringItemEditPolicy({
+      completionLogs: [],
+      item: createItem({
+        endDateLocal: "2026-05-06",
+      }),
+      now: () => now,
+      patch: {
+        title: "종료된 물 마시기",
+      },
+      timezone,
+    });
+
+    expect(policy).toEqual(
+      expect.objectContaining({
+        effectiveFromUtc: null,
+        hasAnyChanges: true,
+        metaChanged: true,
+        ruleChanged: false,
+        seedStartDateLocal: null,
+      })
+    );
+    expect(policy.mergedDraft.endDateLocal).toBe("2026-05-06");
+  });
+
+  it("수정 시 종료일은 수정하는 날보다 빠를 수 없다", () => {
+    expect(() =>
+      resolveRecurringItemEditPolicy({
+        completionLogs: [],
+        item: createItem(),
+        now: () => now,
+        patch: {
+          endDateLocal: "2026-05-06",
+        },
+        timezone,
+      })
+    ).toThrow("종료일은 수정하는 날보다 빠를 수 없습니다.");
+  });
+
+  it("과거 종료일을 제거하는 수정은 허용한다", () => {
+    const policy = resolveRecurringItemEditPolicy({
+      completionLogs: [],
+      item: createItem({
+        endDateLocal: "2026-05-06",
+      }),
+      now: () => now,
+      patch: {
+        endDateLocal: null,
+      },
+      timezone,
+    });
+
+    expect(policy).toEqual(
+      expect.objectContaining({
+        effectiveFromUtc: now.toISOString(),
+        hasAnyChanges: true,
+        metaChanged: false,
+        ruleChanged: true,
+        seedStartDateLocal: "2026-05-08",
+      })
+    );
+    expect(policy.mergedDraft.endDateLocal).toBeNull();
+  });
 });
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {

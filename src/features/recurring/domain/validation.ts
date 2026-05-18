@@ -13,6 +13,7 @@ export const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 type ValidationIssueCode =
   | "anchor_type_not_allowed"
   | "color_key_invalid"
+  | "end_date_before_minimum_date"
   | "end_date_before_start_date"
   | "end_date_invalid"
   | "end_date_not_allowed"
@@ -33,6 +34,10 @@ export type ValidationIssue = {
   code: ValidationIssueCode;
   field: keyof RecurringItemDraft;
   message: string;
+};
+
+type RecurringItemDraftValidationOptions = {
+  minimumEndDateLocal?: string;
 };
 
 export function requiresIntervalValue(recurrenceType: RecurrenceType): boolean {
@@ -79,7 +84,8 @@ function hasValidIntervalValue(intervalValue: number | null | undefined) {
 }
 
 export function validateRecurringItemDraft(
-  draft: RecurringItemDraft
+  draft: RecurringItemDraft,
+  options: RecurringItemDraftValidationOptions = {}
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
@@ -120,6 +126,16 @@ export function validateRecurringItemDraft(
         code: "end_date_before_start_date",
         field: "endDateLocal",
         message: "종료일은 시작일보다 빠를 수 없습니다.",
+      });
+    } else if (
+      options.minimumEndDateLocal != null &&
+      localDatePattern.test(options.minimumEndDateLocal) &&
+      draft.endDateLocal < options.minimumEndDateLocal
+    ) {
+      issues.push({
+        code: "end_date_before_minimum_date",
+        field: "endDateLocal",
+        message: "종료일은 수정하는 날보다 빠를 수 없습니다.",
       });
     }
   }

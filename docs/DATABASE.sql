@@ -151,6 +151,13 @@ create index if not exists idx_recurring_items_user_archived_created_at
 -- =========================================================
 -- recurring_item_schedule_versions
 -- recurring rule source of truth
+-- 종료일 정책:
+-- - end_date_local은 occurrence local date 기준 inclusive cutoff다.
+-- - 한 번 일정은 종료일을 갖지 않는다.
+-- - end_date_local은 nullable이므로 기존 일정과 종료일이 없는 반복 일정은 유지된다.
+-- - 종료일 변경은 새 schedule version으로 저장되어 future-only로 적용된다.
+-- - completion_based도 완료한 날짜가 아니라 occurrence local date 기준으로 자른다.
+-- - 기기 로컬 알림은 종료일 이후 occurrence를 예약하지 않는다.
 -- =========================================================
 create table if not exists public.recurring_item_schedule_versions (
   id uuid primary key default gen_random_uuid(),
@@ -182,6 +189,10 @@ create table if not exists public.recurring_item_schedule_versions (
   ),
   constraint recurring_item_schedule_versions_anchor_type_check check (
     anchor_type in ('fixed', 'completion_based')
+  ),
+  constraint recurring_item_schedule_versions_completion_based_recurrence_check check (
+    anchor_type <> 'completion_based'
+    or recurrence_type in ('daily', 'interval_days', 'monthly', 'interval_months')
   ),
   constraint recurring_item_schedule_versions_interval_positive_check check (
     interval_value is null or interval_value >= 1

@@ -88,6 +88,16 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - 종료일이 있으면 시작일보다 빠를 수 없다.
 - 종료일이 있으면 시작일과 종료일 사이에 최소 1개 occurrence가 있어야 한다.
 - 생성 중 시작일을 종료일보다 뒤로 바꾸면 종료일을 새 시작일로 보정한다.
+- 수정 중 종료일은 수정하는 날보다 빠를 수 없다.
+
+## 종료일 정책
+
+- 종료일은 occurrence local date 기준의 inclusive cutoff다.
+- 한 번 일정은 종료일을 갖지 않는다.
+- 종료일은 nullable이며, 기존 일정과 종료일이 없는 반복 일정은 null을 유지한다.
+- 종료일 변경은 future-only 규칙 변경으로 처리하고 과거 occurrence와 completion log를 다시 쓰지 않는다.
+- completion_based 일정도 종료일을 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
+- 기기 로컬 알림은 종료일 이후 occurrence를 후보로 만들지 않는다.
 
 ## Schedule Version Policy
 

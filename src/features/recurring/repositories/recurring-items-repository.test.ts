@@ -300,7 +300,7 @@ describe("recurring items repository", () => {
     await updateRecurringItem(
       {
         id: "item-1",
-        patch: { endDateLocal: "2026-05-09" },
+        patch: { endDateLocal: "2026-05-19" },
         timezone: "Asia/Seoul",
         userId: "user-1",
       },
@@ -309,7 +309,7 @@ describe("recurring items repository", () => {
 
     expect(persistence.updateItemWithEditPolicy).toHaveBeenCalledWith(
       expect.objectContaining({
-        endDateLocal: "2026-05-09",
+        endDateLocal: "2026-05-19",
         hasRuleChanges: true,
       })
     );
