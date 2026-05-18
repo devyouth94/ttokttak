@@ -224,7 +224,13 @@ export function getMinimumEndDateLocal(params: {
   startDateLocal: string;
   todayLocalDate: string;
 }): string {
-  return params.isEditMode ? params.todayLocalDate : params.startDateLocal;
+  if (!params.isEditMode) {
+    return params.startDateLocal;
+  }
+
+  return params.startDateLocal > params.todayLocalDate
+    ? params.startDateLocal
+    : params.todayLocalDate;
 }
 
 export function normalizeStartDateSelection(
@@ -243,9 +249,11 @@ export function getNextEndDateEnabledFormState(
 ): RecurringItemFormValues {
   return {
     ...current,
-    endDateLocal: params.isEditMode
-      ? params.todayLocalDate
-      : current.startDateLocal,
+    endDateLocal: getMinimumEndDateLocal({
+      isEditMode: params.isEditMode,
+      startDateLocal: current.startDateLocal,
+      todayLocalDate: params.todayLocalDate,
+    }),
   };
 }
 

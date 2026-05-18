@@ -404,7 +404,7 @@ describe("recurring item form end date state", () => {
     ).toBe("2026-05-06");
   });
 
-  it("수정 화면의 종료일 하한선은 오늘이다", () => {
+  it("수정 화면의 종료일 하한선은 오늘이 시작일보다 늦으면 오늘이다", () => {
     expect(
       getMinimumEndDateLocal({
         isEditMode: true,
@@ -412,6 +412,16 @@ describe("recurring item form end date state", () => {
         todayLocalDate: "2026-05-10",
       })
     ).toBe("2026-05-10");
+  });
+
+  it("수정 화면의 종료일 하한선은 미래 시작일보다 빠를 수 없다", () => {
+    expect(
+      getMinimumEndDateLocal({
+        isEditMode: true,
+        startDateLocal: "2026-06-01",
+        todayLocalDate: "2026-05-10",
+      })
+    ).toBe("2026-06-01");
   });
 
   it("생성 화면에서 종료일 switch를 켜면 시작일을 기본값으로 사용한다", () => {
@@ -429,7 +439,7 @@ describe("recurring item form end date state", () => {
     ).toBe("2026-05-06");
   });
 
-  it("수정 화면에서 종료일 switch를 켜면 오늘을 기본값으로 사용한다", () => {
+  it("수정 화면에서 오늘이 시작일보다 늦으면 종료일 switch 기본값은 오늘이다", () => {
     expect(
       getNextEndDateEnabledFormState(
         {
@@ -442,6 +452,21 @@ describe("recurring item form end date state", () => {
         }
       ).endDateLocal
     ).toBe("2026-05-10");
+  });
+
+  it("수정 화면에서 미래 시작 일정의 종료일 switch를 켜면 시작일을 기본값으로 사용한다", () => {
+    expect(
+      getNextEndDateEnabledFormState(
+        {
+          ...createDefaultFormState(),
+          startDateLocal: "2026-06-01",
+        },
+        {
+          isEditMode: true,
+          todayLocalDate: "2026-05-10",
+        }
+      ).endDateLocal
+    ).toBe("2026-06-01");
   });
 
   it("종료일 switch를 끄면 종료일 값을 즉시 제거한다", () => {
