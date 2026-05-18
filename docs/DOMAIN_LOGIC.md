@@ -26,6 +26,7 @@ schedule version은 다음 값을 가진다.
 - `reminderTimeLocal`.
 - `anchorType`.
 - `seedStartDateLocal`.
+- `endDateLocal`.
 - `notificationsEnabled`.
 
 ### Occurrence
@@ -76,18 +77,34 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 
 - 제목은 빈 문자열일 수 없다.
 - 시작일은 `YYYY-MM-DD` 형식이다.
+- 종료일이 있으면 `YYYY-MM-DD` 형식이다.
 - 알림 시간은 필수이며 `HH:mm` 형식이다.
 - 시간대는 비어 있을 수 없다.
 - `interval_days`, `interval_weeks`, `interval_months`는 1 이상의 `intervalValue`가 필요하다.
 - interval 규칙이 아니면 `intervalValue`를 저장하지 않는다.
 - `weekly`, `interval_weeks`는 중복 없는 0~6 범위의 `weekdayMask`가 필요하다.
 - weekly 규칙이 아니면 `weekdayMask`를 저장하지 않는다.
+- `once`는 종료일을 저장하지 않는다.
+- 종료일이 있으면 시작일보다 빠를 수 없다.
+- 종료일이 있으면 시작일과 종료일 사이에 최소 1개 occurrence가 있어야 한다.
+- 생성 중 시작일을 종료일보다 뒤로 바꾸면 종료일을 새 시작일로 보정한다.
+- 수정 중 종료일은 수정하는 날보다 빠를 수 없다.
+
+## 종료일 정책
+
+- 종료일은 occurrence local date 기준의 inclusive cutoff다.
+- 한 번 일정은 종료일을 갖지 않는다.
+- 종료일은 nullable이며, 기존 일정과 종료일이 없는 반복 일정은 null을 유지한다.
+- 종료일 변경은 future-only 규칙 변경으로 처리하고 과거 occurrence와 completion log를 다시 쓰지 않는다.
+- completion_based 일정도 종료일을 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
+- 기기 로컬 알림은 종료일 이후 occurrence를 후보로 만들지 않는다.
 
 ## Schedule Version Policy
 
 - 각 version의 활성 시작은 자신의 `effectiveFromUtc`다.
 - 활성 끝은 다음 version의 `effectiveFromUtc` 직전이다.
 - version은 자신의 `seedStartDateLocal`부터 occurrence를 만든다.
+- version은 종료일이 있으면 자신의 `endDateLocal`까지 occurrence를 만든다.
 - 계산 결과 중 `scheduledAtUtc < effectiveFromUtc`인 occurrence는 버린다.
 - 일정 수정은 과거 occurrence를 다시 쓰지 않고 future occurrence에만 반영한다.
 - 시작일은 생성 후 수정하지 않는다.
@@ -101,6 +118,7 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - 알림 시간.
 - 알림 켜기/끄기.
 - anchor type.
+- 종료일.
 
 ## Recurrence Rules
 
@@ -166,6 +184,7 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 마지막 `completed` log의 실제 처리일을 다음 계산 기준으로 사용한다.
 `skipped`는 기준을 이동시키지 않는다.
 새 schedule version 시작 시에는 `effectiveFromUtc` 이전 마지막 완료일을 초기 기준으로 사용할 수 있다.
+종료일은 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
 
 미해결 occurrence가 남아 있는 완료일 기준 일정은 다음 알림 후보를 만들지 않는다.
 사용자가 완료 또는 건너뛰기 처리한 뒤 다음 occurrence가 다시 계산된다.
@@ -198,6 +217,7 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 
 목록은 각 일정의 다음 `scheduled` occurrence를 계산한다.
 다음 occurrence가 없으면 `예정 없음`으로 표시한다.
+종료일이 지난 일정도 보관되지 않았으면 목록에 남긴다.
 
 ### Calendar
 
@@ -233,6 +253,8 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - 제목, 설명, 색상, 보관 여부만 바뀌면 item 메타만 갱신한다.
 - 규칙 영향 필드가 바뀌면 새 schedule version을 추가한다.
 - 새 version의 `seedStartDateLocal`은 수정 시점 이후 첫 future occurrence local date다.
+- 종료일 변경은 새 schedule version을 추가한다.
+- 종료일 제거는 수정 시점 이전의 occurrence를 새로 만들지 않는다.
 - 과거 completion log는 유지한다.
 
 삭제는 물리 삭제가 아니라 `isArchived = true`로 저장한다.

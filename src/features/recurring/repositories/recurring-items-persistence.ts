@@ -22,6 +22,7 @@ export type StoredRecurringItemScheduleVersion = {
   anchorType: AnchorType;
   createdAt: string;
   effectiveFromUtc: string;
+  endDateLocal: string | null;
   id: string;
   intervalValue: number | null;
   itemId: string;
@@ -55,6 +56,7 @@ export type CreateStoredRecurringItemInput = {
   contentKeyVersion: number;
   descriptionCiphertext: string | null;
   effectiveFromUtc: string;
+  endDateLocal: string | null;
   intervalValue: number | null;
   isArchived: boolean;
   notificationsEnabled: boolean;
@@ -74,6 +76,7 @@ export type UpdateStoredRecurringItemInput = {
   contentKeyVersion: number;
   descriptionCiphertext: string | null;
   effectiveFromUtc: string | null;
+  endDateLocal: string | null;
   hasRuleChanges: boolean;
   intervalValue: number | null;
   isArchived: boolean;
@@ -127,6 +130,7 @@ function toStoredScheduleVersion(
     anchorType: row.anchor_type as AnchorType,
     createdAt: row.created_at,
     effectiveFromUtc: row.effective_from_utc,
+    endDateLocal: row.end_date_local ?? null,
     id: row.id,
     intervalValue: row.interval_value,
     itemId: row.item_id,
@@ -186,6 +190,7 @@ export function createSupabaseRecurringItemsPersistence(
           p_content_key_version: input.contentKeyVersion,
           p_description_ciphertext: input.descriptionCiphertext,
           p_effective_from_utc: input.effectiveFromUtc,
+          p_end_date_local: input.endDateLocal,
           p_interval_value: input.intervalValue,
           p_is_archived: input.isArchived,
           p_notifications_enabled: input.notificationsEnabled,
@@ -273,6 +278,7 @@ export function createSupabaseRecurringItemsPersistence(
           p_content_key_version: input.contentKeyVersion,
           p_description_ciphertext: input.descriptionCiphertext,
           p_effective_from_utc: input.effectiveFromUtc,
+          p_end_date_local: input.endDateLocal,
           p_has_rule_changes: input.hasRuleChanges,
           p_interval_value: input.intervalValue,
           p_is_archived: input.isArchived,

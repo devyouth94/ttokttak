@@ -16,6 +16,7 @@ const recurringItemRow = {
       anchor_type: "fixed",
       created_at: "2026-05-06T00:00:00.000Z",
       effective_from_utc: "2026-05-05T15:00:00.000Z",
+      end_date_local: "2026-05-09",
       id: "version-1",
       interval_value: null,
       item_id: "item-1",
@@ -64,6 +65,7 @@ describe("recurring items persistence", () => {
       id: "item-1",
       scheduleVersions: [
         expect.objectContaining({
+          endDateLocal: "2026-05-09",
           itemId: "item-1",
           recurrenceType: "daily",
           reminderTimeLocal: "09:00:00",
@@ -122,6 +124,7 @@ describe("recurring items persistence", () => {
       contentKeyVersion: 1,
       descriptionCiphertext: "encrypted-description",
       effectiveFromUtc: "2026-05-05T15:00:00.000Z",
+      endDateLocal: "2026-05-09",
       intervalValue: null,
       isArchived: false,
       notificationsEnabled: true,
@@ -142,6 +145,7 @@ describe("recurring items persistence", () => {
         p_content_encryption_metadata: { algorithm: "test" },
         p_content_key_version: 1,
         p_description_ciphertext: "encrypted-description",
+        p_end_date_local: "2026-05-09",
         p_title_ciphertext: "encrypted-title",
       })
     );
@@ -167,6 +171,7 @@ describe("recurring items persistence", () => {
       contentKeyVersion: 1,
       descriptionCiphertext: "encrypted-description",
       effectiveFromUtc: "2026-05-06T00:00:00.000Z",
+      endDateLocal: "2026-05-09",
       hasRuleChanges: false,
       intervalValue: null,
       isArchived: false,
@@ -187,6 +192,7 @@ describe("recurring items persistence", () => {
         p_content_encryption_metadata: { algorithm: "test" },
         p_content_key_version: 1,
         p_description_ciphertext: "encrypted-description",
+        p_end_date_local: "2026-05-09",
         p_title_ciphertext: "encrypted-title",
       })
     );

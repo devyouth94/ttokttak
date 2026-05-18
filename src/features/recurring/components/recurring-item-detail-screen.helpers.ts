@@ -219,19 +219,24 @@ export function buildSummarySettingBadges(
 ): ItemDetailSummaryBadge[] {
   const currentSchedule = getCurrentScheduleVersion(item);
   const anchorType = currentSchedule?.anchorType ?? item.anchorType;
+  const endDateLocal = currentSchedule
+    ? (currentSchedule.endDateLocal ?? null)
+    : (item.endDateLocal ?? null);
   const badges: ItemDetailSummaryBadge[] = [
     {
       id: "start-date",
       label: "시작",
-      value: format(
-        parse(item.startDateLocal, "yyyy-MM-dd", new Date()),
-        "yyyy년 M월 d일",
-        {
-          locale: ko,
-        }
-      ),
+      value: formatSummaryDate(item.startDateLocal),
     },
   ];
+
+  if (endDateLocal) {
+    badges.push({
+      id: "end-date",
+      label: "종료",
+      value: formatSummaryDate(endDateLocal),
+    });
+  }
 
   if (anchorType === "completion_based") {
     badges.push({
@@ -242,6 +247,12 @@ export function buildSummarySettingBadges(
   }
 
   return badges;
+}
+
+function formatSummaryDate(localDate: string): string {
+  return format(parse(localDate, "yyyy-MM-dd", new Date()), "yyyy년 M월 d일", {
+    locale: ko,
+  });
 }
 
 export function buildStatusCard({

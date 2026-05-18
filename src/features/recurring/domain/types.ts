@@ -53,6 +53,7 @@ export interface RecurringItemScheduleVersion {
   itemId: string;
   userId: string;
   effectiveFromUtc: string;
+  endDateLocal?: string | null;
   recurrenceType: RecurrenceType;
   intervalValue?: number | null;
   weekdayMask?: number[] | null;
@@ -73,6 +74,7 @@ export interface RecurringItem {
     status: "available" | "unrecoverable";
   };
   colorKey: RecurringItemColorKey;
+  endDateLocal?: string | null;
   recurrenceType: RecurrenceType;
   intervalValue?: number | null;
   weekdayMask?: number[] | null;
@@ -140,6 +142,7 @@ export type RecurringItemDraft = Pick<
   | "anchorType"
   | "colorKey"
   | "description"
+  | "endDateLocal"
   | "intervalValue"
   | "isArchived"
   | "notificationsEnabled"

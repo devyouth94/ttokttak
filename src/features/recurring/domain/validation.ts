@@ -1,3 +1,4 @@
+import { hasOccurrenceBetweenLocalDates } from "~/features/recurring/domain/occurrence";
 import {
   completionBasedRecurrenceTypes,
   type RecurrenceType,
@@ -12,6 +13,11 @@ export const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 type ValidationIssueCode =
   | "anchor_type_not_allowed"
   | "color_key_invalid"
+  | "end_date_before_minimum_date"
+  | "end_date_before_start_date"
+  | "end_date_invalid"
+  | "end_date_not_allowed"
+  | "end_date_without_occurrence"
   | "interval_value_missing"
   | "interval_value_not_allowed"
   | "interval_value_invalid"
@@ -28,6 +34,10 @@ export type ValidationIssue = {
   code: ValidationIssueCode;
   field: keyof RecurringItemDraft;
   message: string;
+};
+
+type RecurringItemDraftValidationOptions = {
+  minimumEndDateLocal?: string;
 };
 
 export function requiresIntervalValue(recurrenceType: RecurrenceType): boolean {
@@ -65,8 +75,17 @@ export function hasValidWeekdayMask(
   );
 }
 
+function hasValidIntervalValue(intervalValue: number | null | undefined) {
+  return (
+    Number.isInteger(intervalValue) &&
+    intervalValue != null &&
+    intervalValue >= 1
+  );
+}
+
 export function validateRecurringItemDraft(
-  draft: RecurringItemDraft
+  draft: RecurringItemDraft,
+  options: RecurringItemDraftValidationOptions = {}
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
@@ -84,6 +103,41 @@ export function validateRecurringItemDraft(
       field: "startDateLocal",
       message: "시작일은 YYYY-MM-DD 형식이어야 합니다.",
     });
+  }
+
+  if (draft.endDateLocal != null) {
+    if (!localDatePattern.test(draft.endDateLocal)) {
+      issues.push({
+        code: "end_date_invalid",
+        field: "endDateLocal",
+        message: "종료일은 YYYY-MM-DD 형식이어야 합니다.",
+      });
+    } else if (draft.recurrenceType === "once") {
+      issues.push({
+        code: "end_date_not_allowed",
+        field: "endDateLocal",
+        message: "한 번 일정은 종료일을 가질 수 없습니다.",
+      });
+    } else if (
+      localDatePattern.test(draft.startDateLocal) &&
+      draft.endDateLocal < draft.startDateLocal
+    ) {
+      issues.push({
+        code: "end_date_before_start_date",
+        field: "endDateLocal",
+        message: "종료일은 시작일보다 빠를 수 없습니다.",
+      });
+    } else if (
+      options.minimumEndDateLocal != null &&
+      localDatePattern.test(options.minimumEndDateLocal) &&
+      draft.endDateLocal < options.minimumEndDateLocal
+    ) {
+      issues.push({
+        code: "end_date_before_minimum_date",
+        field: "endDateLocal",
+        message: "종료일은 수정하는 날보다 빠를 수 없습니다.",
+      });
+    }
   }
 
   if (draft.reminderTimeLocal.trim().length === 0) {
@@ -182,6 +236,31 @@ export function validateRecurringItemDraft(
       field: "anchorType",
       message:
         "completion_based는 daily, interval_days, monthly, interval_months에서만 사용할 수 있습니다.",
+    });
+  }
+
+  if (
+    draft.endDateLocal != null &&
+    localDatePattern.test(draft.startDateLocal) &&
+    localDatePattern.test(draft.endDateLocal) &&
+    draft.recurrenceType !== "once" &&
+    recurrenceTypes.includes(draft.recurrenceType) &&
+    (!requiresIntervalValue(draft.recurrenceType) ||
+      hasValidIntervalValue(draft.intervalValue)) &&
+    (!requiresWeekdayMask(draft.recurrenceType) ||
+      hasValidWeekdayMask(draft.weekdayMask)) &&
+    !hasOccurrenceBetweenLocalDates({
+      endDateLocal: draft.endDateLocal,
+      intervalValue: draft.intervalValue,
+      recurrenceType: draft.recurrenceType,
+      startDateLocal: draft.startDateLocal,
+      weekdayMask: draft.weekdayMask,
+    })
+  ) {
+    issues.push({
+      code: "end_date_without_occurrence",
+      field: "endDateLocal",
+      message: "시작일과 종료일 사이에 occurrence가 없습니다.",
     });
   }
 

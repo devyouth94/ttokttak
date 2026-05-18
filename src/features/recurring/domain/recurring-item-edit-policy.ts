@@ -1,3 +1,5 @@
+import { formatInTimeZone } from "date-fns-tz";
+
 import { getFirstFutureOccurrenceLocalDateAfterEdit } from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
@@ -34,6 +36,7 @@ function toRecurringItemDraftFromEntity(
     anchorType: item.anchorType,
     colorKey: item.colorKey,
     description: item.description,
+    endDateLocal: item.endDateLocal,
     intervalValue: item.intervalValue,
     isArchived: item.isArchived,
     notificationsEnabled: item.notificationsEnabled,
@@ -46,8 +49,13 @@ function toRecurringItemDraftFromEntity(
   };
 }
 
-function assertValidDraft(draft: RecurringItemDraft): void {
-  const issues = validateRecurringItemDraft(draft);
+function assertValidDraft(
+  draft: RecurringItemDraft,
+  params: { minimumEndDateLocal?: string } = {}
+): void {
+  const issues = validateRecurringItemDraft(draft, {
+    minimumEndDateLocal: params.minimumEndDateLocal,
+  });
 
   if (issues.length === 0) {
     return;
@@ -64,6 +72,7 @@ function hasRuleChanges(
     item.recurrenceType !== draft.recurrenceType ||
     item.intervalValue !== draft.intervalValue ||
     item.reminderTimeLocal !== draft.reminderTimeLocal ||
+    (item.endDateLocal ?? null) !== (draft.endDateLocal ?? null) ||
     item.notificationsEnabled !== draft.notificationsEnabled ||
     item.anchorType !== draft.anchorType ||
     JSON.stringify(item.weekdayMask ?? null) !==
@@ -96,36 +105,52 @@ export function resolveRecurringItemEditPolicy({
     startDateLocal: item.startDateLocal,
     timezone,
   };
+  const normalizedDraft: RecurringItemDraft = {
+    ...mergedDraft,
+    endDateLocal:
+      mergedDraft.recurrenceType === "once"
+        ? null
+        : (mergedDraft.endDateLocal ?? null),
+  };
 
-  assertValidDraft(mergedDraft);
+  const editNow = now();
+  const shouldValidateMinimumEndDate =
+    Object.prototype.hasOwnProperty.call(patch, "endDateLocal") &&
+    patch.endDateLocal != null;
 
-  const metaChanged = hasMetaChanges(item, mergedDraft);
-  const ruleChanged = hasRuleChanges(item, mergedDraft);
+  assertValidDraft(normalizedDraft, {
+    minimumEndDateLocal: shouldValidateMinimumEndDate
+      ? formatInTimeZone(editNow, timezone, "yyyy-MM-dd")
+      : undefined,
+  });
+
+  const metaChanged = hasMetaChanges(item, normalizedDraft);
+  const ruleChanged = hasRuleChanges(item, normalizedDraft);
   const hasAnyChanges = metaChanged || ruleChanged;
 
   if (!ruleChanged) {
     return {
       effectiveFromUtc: null,
       hasAnyChanges,
-      mergedDraft,
+      mergedDraft: normalizedDraft,
       metaChanged,
       ruleChanged,
       seedStartDateLocal: null,
     };
   }
 
-  const effectiveFromUtc = now().toISOString();
+  const effectiveFromUtc = editNow.toISOString();
   const seedStartDateLocal = completionLogs
     ? (getFirstFutureOccurrenceLocalDateAfterEdit({
         completionLogs,
         effectiveFromUtc,
         item,
         nextSchedule: {
-          anchorType: mergedDraft.anchorType,
-          intervalValue: mergedDraft.intervalValue,
-          recurrenceType: mergedDraft.recurrenceType,
-          reminderTimeLocal: mergedDraft.reminderTimeLocal,
-          weekdayMask: mergedDraft.weekdayMask,
+          anchorType: normalizedDraft.anchorType,
+          intervalValue: normalizedDraft.intervalValue,
+          recurrenceType: normalizedDraft.recurrenceType,
+          reminderTimeLocal: normalizedDraft.reminderTimeLocal,
+          weekdayMask: normalizedDraft.weekdayMask,
         },
         timezone,
       }) ?? item.startDateLocal)
@@ -134,7 +159,7 @@ export function resolveRecurringItemEditPolicy({
   return {
     effectiveFromUtc,
     hasAnyChanges,
-    mergedDraft,
+    mergedDraft: normalizedDraft,
     metaChanged,
     ruleChanged,
     seedStartDateLocal,

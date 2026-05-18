@@ -407,6 +407,7 @@ export function NotificationSection({
       </AppText>
       <Switch
         onValueChange={onToggle}
+        style={styles.optionToggleSwitch}
         thumbColor={colors.primaryForeground}
         trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
         value={enabled}
@@ -476,6 +477,7 @@ export function AdvancedOptionsSection({
         <Switch
           disabled={!isCompletionBasedSwitchEnabled}
           onValueChange={handleToggleCompletionBased}
+          style={styles.optionToggleSwitch}
           thumbColor={colors.primaryForeground}
           trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
           value={isCompletionBasedSelected}
@@ -494,6 +496,7 @@ export function AdvancedOptionsSection({
 type IosPickerModalProps = {
   minimumDate?: Date;
   mode: "date" | "time" | null;
+  title: string;
   value: Date;
   onChange: (event: DateTimePickerEvent, selectedDate?: Date) => void;
   onClose: () => void;
@@ -503,13 +506,12 @@ type IosPickerModalProps = {
 export function IosPickerModal({
   minimumDate,
   mode,
+  title,
   value,
   onChange,
   onClose,
   onConfirm,
 }: IosPickerModalProps): React.JSX.Element {
-  const pickerTitle = mode === "date" ? "시작일 선택" : "알림 시간 선택";
-
   return (
     <Modal
       animationType="fade"
@@ -533,7 +535,7 @@ export function IosPickerModal({
               </AppText>
             </Pressable>
             <AppText style={styles.pickerModalTitle} variant="body2">
-              {pickerTitle}
+              {title}
             </AppText>
             <Pressable
               accessibilityRole="button"

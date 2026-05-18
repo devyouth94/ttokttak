@@ -12,6 +12,7 @@ import type {
   CompletionLog,
   DerivedOccurrence,
   OccurrenceStatus,
+  RecurrenceType,
   RecurringItem,
   RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
@@ -23,6 +24,7 @@ const CALENDAR_HOUR = 12;
 type ScheduleContext = {
   anchorType: RecurringItemScheduleVersion["anchorType"];
   effectiveFromUtc: string;
+  endDateLocal: RecurringItemScheduleVersion["endDateLocal"];
   itemId: string;
   intervalValue: RecurringItemScheduleVersion["intervalValue"];
   recurrenceType: RecurringItemScheduleVersion["recurrenceType"];
@@ -155,6 +157,7 @@ function toScheduleContext(
   return {
     anchorType: version.anchorType,
     effectiveFromUtc: version.effectiveFromUtc,
+    endDateLocal: version.endDateLocal ?? null,
     itemId: item.id,
     intervalValue: version.intervalValue,
     recurrenceType: version.recurrenceType,
@@ -184,6 +187,7 @@ function getScheduleVersions(
         `${item.startDateLocal}T00:00:00.000`,
         item.timezone
       ).toISOString(),
+      endDateLocal: item.endDateLocal ?? null,
       recurrenceType: item.recurrenceType,
       intervalValue: item.intervalValue,
       weekdayMask: item.weekdayMask,
@@ -236,6 +240,82 @@ function getNextLocalDate(
 
 function getMaxLocalDate(left: string, right: string): string {
   return compareLocalDate(left, right) >= 0 ? left : right;
+}
+
+function isPastScheduleEndDate(schedule: ScheduleContext, localDate: string) {
+  return (
+    schedule.endDateLocal != null &&
+    compareLocalDate(localDate, schedule.endDateLocal) > 0
+  );
+}
+
+export function hasOccurrenceBetweenLocalDates(params: {
+  endDateLocal: string;
+  intervalValue: number | null | undefined;
+  recurrenceType: RecurrenceType;
+  startDateLocal: string;
+  weekdayMask: number[] | null | undefined;
+}): boolean {
+  if (compareLocalDate(params.startDateLocal, params.endDateLocal) > 0) {
+    return false;
+  }
+
+  if (
+    params.recurrenceType !== "weekly" &&
+    params.recurrenceType !== "interval_weeks"
+  ) {
+    return true;
+  }
+
+  return hasWeeklyOccurrenceBetweenLocalDates(
+    {
+      intervalValue: params.intervalValue,
+      recurrenceType: params.recurrenceType,
+      seedStartDateLocal: params.startDateLocal,
+      weekdayMask: params.weekdayMask,
+    },
+    params.endDateLocal
+  );
+}
+
+function hasWeeklyOccurrenceBetweenLocalDates(
+  schedule: Pick<
+    ScheduleContext,
+    "intervalValue" | "recurrenceType" | "seedStartDateLocal" | "weekdayMask"
+  >,
+  endDateLocal: string
+): boolean {
+  if (!schedule.weekdayMask?.length) {
+    return false;
+  }
+
+  const startDate = parseLocalDate(schedule.seedStartDateLocal);
+  const startWeek = startOfWeek(startDate, { weekStartsOn: 0 });
+  const weekInterval =
+    schedule.recurrenceType === "interval_weeks"
+      ? (schedule.intervalValue ?? 1)
+      : 1;
+
+  if (weekInterval < 1) {
+    return false;
+  }
+
+  return schedule.weekdayMask.some((weekday) => {
+    const daysUntilWeekday = (weekday - startDate.getUTCDay() + 7) % 7;
+    let candidate = addDays(startDate, daysUntilWeekday);
+    const candidateWeek = startOfWeek(candidate, { weekStartsOn: 0 });
+    const weeksFromStart =
+      differenceInCalendarDays(candidateWeek, startWeek) / 7;
+    const weekRemainder = weeksFromStart % weekInterval;
+
+    if (weekRemainder !== 0) {
+      candidate = addDays(candidate, (weekInterval - weekRemainder) * 7);
+    }
+
+    const candidateLocalDate = formatInTimeZone(candidate, "UTC", "yyyy-MM-dd");
+
+    return compareLocalDate(candidateLocalDate, endDateLocal) <= 0;
+  });
 }
 
 function getNextWeeklyCandidateLocalDate(
@@ -407,6 +487,10 @@ function collectOccurrencesForVersion(params: {
   let occurrenceCount = 0;
 
   while (currentLocalDate) {
+    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
+      break;
+    }
+
     const scheduledAtUtc = getScheduledAtUtc(
       currentLocalDate,
       schedule.reminderTimeLocal,
@@ -506,6 +590,10 @@ function findNextOccurrenceForVersion(params: {
   let occurrenceCount = 0;
 
   while (currentLocalDate) {
+    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
+      return null;
+    }
+
     const scheduledAtUtc = getScheduledAtUtc(
       currentLocalDate,
       schedule.reminderTimeLocal,
@@ -617,6 +705,10 @@ function findFirstFutureLocalDate(params: {
   let occurrenceCount = 0;
 
   while (currentLocalDate) {
+    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
+      return null;
+    }
+
     const scheduledAtUtc = getScheduledAtUtc(
       currentLocalDate,
       schedule.reminderTimeLocal,
@@ -801,6 +893,7 @@ export function getFirstFutureOccurrenceLocalDateAfterEdit(params: {
     initialAnchorLocalDate,
     schedule: {
       anchorType: nextSchedule.anchorType,
+      endDateLocal: null,
       effectiveFromUtc,
       itemId: item.id,
       intervalValue: nextSchedule.intervalValue,

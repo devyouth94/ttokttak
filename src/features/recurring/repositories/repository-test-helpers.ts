@@ -46,6 +46,7 @@ export function createStoredRecurringItemFixture(
         anchorType: "fixed",
         createdAt: "2026-05-06T00:00:00.000Z",
         effectiveFromUtc: "2026-05-05T15:00:00.000Z",
+        endDateLocal: null,
         id: "version-1",
         intervalValue: null,
         itemId: "item-1",

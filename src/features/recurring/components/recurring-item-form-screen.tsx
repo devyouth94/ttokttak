@@ -24,8 +24,10 @@ export function RecurringItemFormScreen({
   });
   const iosPickerChangeHandler = getIosPickerChangeHandler(
     screenModel.picker.iosMode,
+    screenModel.picker.iosDateTarget,
     {
-      onDateChange: screenModel.actions.picker.onStartDatePickerChange,
+      onEndDateChange: screenModel.actions.picker.onEndDatePickerChange,
+      onStartDateChange: screenModel.actions.picker.onStartDatePickerChange,
       onTimeChange: screenModel.actions.picker.onTimePickerChange,
     }
   );

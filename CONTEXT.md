@@ -52,6 +52,10 @@ _Avoid_: form submit, detail delete, 저장 hook
 일정 수정 입력을 기존 일정과 병합해 규칙 변경 여부, 수정 적용 시각, 다음 future occurrence 시작일을 정하는 내부 규칙.
 _Avoid_: repository update policy, version helper, seed 계산
 
+**종료일**:
+일정이 occurrence를 만드는 마지막 local date.
+_Avoid_: 만료일, 종료 시각, 보관일
+
 **일정 persistence**:
 서버 저장소의 일정 row, schedule version, 일정 수정에 필요한 completion log를 읽고 쓰는 저장 Adapter Seam.
 _Avoid_: Supabase client, repository chain, RPC wrapper
@@ -149,6 +153,16 @@ _Avoid_: 일정 색상, 레퍼런스 색상, 복사한 색상
 - **일정 변경 mutation 흐름**은 **기기 로컬 알림** 재동기화 뒤 **일정** 데이터를 다시 읽도록 만든다.
 - **일정 수정 정책**은 규칙 영향 필드가 바뀐 경우에만 새 schedule version 기준 값을 만든다.
 - **일정 수정 정책**은 기존 **일정**의 시작일을 수정 입력으로 바꾸지 않는다.
+- **종료일 정책**은 일정이 occurrence를 만드는 마지막 local date를 모든 화면과 저장 경로에서 같은 의미로 사용한다.
+- **종료일**은 해당 local date의 occurrence까지 포함한다.
+- 한 번 일정은 **종료일**을 갖지 않는다.
+- 사용자는 **일정** 생성 뒤에도 **종료일**을 추가, 변경, 제거할 수 있다.
+- **종료일** 변경은 과거 occurrence와 처리 기록을 다시 쓰지 않는다.
+- 완료일 기준 **일정**에서도 **종료일**은 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
+- 새 **일정**의 **종료일**은 시작일보다 빠를 수 없다.
+- 기존 **일정**의 **종료일**은 수정하는 날보다 빠를 수 없다.
+- **종료일**이 지난 **일정**은 보관되지 않았더라도 새 occurrence를 만들지 않는다.
+- **종료일**이 지난 **일정**은 목록과 상세 화면에 남는다.
 - **일정 persistence**는 Supabase table, RPC, row column 이름을 repository의 저장 의미 Interface 뒤에 숨긴다.
 - **일정 persistence**는 repository가 암호화, 복호화, 수정 정책 같은 도메인 저장 흐름을 Supabase 호출 모양 없이 테스트할 수 있게 한다.
 - **상세 화면**은 occurrence 처리를 수행하지 않는다.
@@ -160,6 +174,7 @@ _Avoid_: 일정 색상, 레퍼런스 색상, 복사한 색상
 - 같은 하단 탭을 다시 누르면 해당 영역의 **탭 루트**로 돌아간다.
 - **기기 로컬 알림**은 일정 알림의 기본 경로다.
 - **기기 로컬 알림**은 기본 30일 rolling window와 일정별 다음 occurrence 1개를 예약한다.
+- **기기 로컬 알림**은 **종료일** 이후 occurrence를 예약하지 않는다.
 - **기기 로컬 알림**을 tap하면 **홈 피드**로 이동한다.
 - **기기 로컬 알림 lifecycle**은 세션 복원, 앱 foreground 복귀, 알림 tap 뒤 현재 기기의 **기기 로컬 알림**을 전체 재동기화한다.
 - **기기 로컬 알림 lifecycle**은 일정 생성, 수정, 보관, **완료**, **건너뛰기** 뒤 영향을 받은 **일정** 범위의 **기기 로컬 알림**을 재동기화한다.

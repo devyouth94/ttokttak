@@ -1,0 +1,2 @@
+alter table public.recurring_item_schedule_versions
+  validate constraint recurring_item_schedule_versions_completion_based_recurrence_check;

@@ -1,7 +1,16 @@
 import {
   createDefaultFormState,
+  createRecurringItemFormSchema,
   getFirstReminderHelperText,
+  getIosPickerChangeHandler,
+  getMinimumEndDateLocal,
   getMinimumStartDateLocal,
+  getNextEndDateDisabledFormState,
+  getNextEndDateEnabledFormState,
+  getNextRecurrenceFormState,
+  getNextStartDateFormState,
+  getRecurringItemFormEndDateControlState,
+  getRecurringItemFormFirstErrorTarget,
   normalizeStartDateSelection,
   recurringItemColorOptions,
   recurringItemFormSchema,
@@ -12,9 +21,20 @@ import {
 import { type RecurringItem } from "~/features/recurring/domain/types";
 
 function getValidationMessages(
-  overrides: Partial<RecurringItemFormValues>
+  overrides: Partial<RecurringItemFormValues>,
+  options: {
+    isEditMode?: boolean;
+    todayLocalDate?: string;
+  } = {}
 ): string[] {
-  const result = recurringItemFormSchema.safeParse({
+  const schema =
+    options.todayLocalDate || options.isEditMode !== undefined
+      ? createRecurringItemFormSchema({
+          isEditMode: options.isEditMode ?? false,
+          todayLocalDate: options.todayLocalDate ?? "2026-05-06",
+        })
+      : recurringItemFormSchema;
+  const result = schema.safeParse({
     ...createDefaultFormState(),
     ...overrides,
   });
@@ -175,11 +195,49 @@ describe("recurring item form validation messages", () => {
         recurrenceType: "weekly",
         weekdayMask: [1],
       }),
+      ...getValidationMessages({
+        endDateLocal: "bad-date",
+      }),
     ].join(" ");
 
     expect(messages).not.toMatch(
-      /intervalValue|weekdayMask|completion_based|HH:mm|YYYY-MM-DD/
+      /endDateLocal|intervalValue|weekdayMask|completion_based|HH:mm|YYYY-MM-DD/
     );
+  });
+
+  it("생성 시 종료일은 시작일보다 빠를 수 없다", () => {
+    expect(
+      getValidationMessages({
+        endDateLocal: "2026-05-05",
+        startDateLocal: "2026-05-06",
+      })
+    ).toContain("종료일은 시작일 이후로 선택해 주세요.");
+  });
+
+  it("수정 시 종료일은 오늘보다 빠를 수 없다", () => {
+    expect(
+      getValidationMessages(
+        {
+          endDateLocal: "2026-05-09",
+          startDateLocal: "2026-05-06",
+        },
+        {
+          isEditMode: true,
+          todayLocalDate: "2026-05-10",
+        }
+      )
+    ).toContain("종료일은 오늘 이후로 선택해 주세요.");
+  });
+
+  it("종료일이 있으면 시작일과 종료일 사이에 최소 1개 occurrence가 있어야 한다", () => {
+    expect(
+      getValidationMessages({
+        endDateLocal: "2026-05-07",
+        recurrenceType: "weekly",
+        startDateLocal: "2026-05-06",
+        weekdayMask: [5],
+      })
+    ).toContain("선택한 기간 안에 알림일이 없어요.");
   });
 });
 
@@ -203,6 +261,22 @@ describe("recurring item form color options", () => {
 });
 
 describe("recurring item form draft", () => {
+  it("종료일 없음은 form state와 draft에서 null로 표현한다", () => {
+    const formState = createDefaultFormState();
+    const draft = toDraft(
+      {
+        ...formState,
+        reminderTimeLocal: "09:00",
+        startDateLocal: "2026-05-06",
+        title: "물 마시기",
+      },
+      "Asia/Seoul"
+    );
+
+    expect(formState.endDateLocal).toBeNull();
+    expect(draft.endDateLocal).toBeNull();
+  });
+
   it("신규 일정 draft는 기본 일정 색상 red를 가진다", () => {
     const draft = toDraft(
       {
@@ -253,5 +327,272 @@ describe("recurring item form draft", () => {
     };
 
     expect(toFormState(item).colorKey).toBe("green");
+  });
+
+  it("수정 화면 form state는 저장된 종료일을 유지한다", () => {
+    const item: RecurringItem = {
+      anchorType: "fixed",
+      colorKey: "green",
+      createdAt: "2026-05-06T00:00:00.000Z",
+      description: null,
+      endDateLocal: "2026-05-10",
+      id: "item-1",
+      intervalValue: null,
+      isArchived: false,
+      notificationsEnabled: true,
+      recurrenceType: "daily",
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-05-06",
+      timezone: "Asia/Seoul",
+      title: "물 마시기",
+      updatedAt: "2026-05-06T00:00:00.000Z",
+      userId: "user-1",
+      weekdayMask: null,
+    };
+
+    expect(toFormState(item).endDateLocal).toBe("2026-05-10");
+  });
+});
+
+describe("recurring item form end date state", () => {
+  it("한 번 일정에서는 종료일 control을 숨긴다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState({
+        endDateLocal: "2026-05-10",
+        recurrenceType: "once",
+      })
+    ).toEqual({
+      displayValue: null,
+      isEnabled: false,
+      isVisible: false,
+    });
+  });
+
+  it("반복 일정에서 종료일이 없으면 switch만 보이고 날짜 값은 숨긴다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState({
+        endDateLocal: null,
+        recurrenceType: "daily",
+      })
+    ).toEqual({
+      displayValue: null,
+      isEnabled: false,
+      isVisible: true,
+    });
+  });
+
+  it("반복 일정에서 종료일이 있으면 switch와 날짜 값을 함께 보여준다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState({
+        endDateLocal: "2026-05-10",
+        recurrenceType: "daily",
+      })
+    ).toEqual({
+      displayValue: "2026년 5월 10일",
+      isEnabled: true,
+      isVisible: true,
+    });
+  });
+
+  it("생성 화면의 종료일 하한선은 시작일이다", () => {
+    expect(
+      getMinimumEndDateLocal({
+        isEditMode: false,
+        startDateLocal: "2026-05-06",
+        todayLocalDate: "2026-05-01",
+      })
+    ).toBe("2026-05-06");
+  });
+
+  it("수정 화면의 종료일 하한선은 오늘이 시작일보다 늦으면 오늘이다", () => {
+    expect(
+      getMinimumEndDateLocal({
+        isEditMode: true,
+        startDateLocal: "2026-05-06",
+        todayLocalDate: "2026-05-10",
+      })
+    ).toBe("2026-05-10");
+  });
+
+  it("수정 화면의 종료일 하한선은 미래 시작일보다 빠를 수 없다", () => {
+    expect(
+      getMinimumEndDateLocal({
+        isEditMode: true,
+        startDateLocal: "2026-06-01",
+        todayLocalDate: "2026-05-10",
+      })
+    ).toBe("2026-06-01");
+  });
+
+  it("생성 화면에서 종료일 switch를 켜면 시작일을 기본값으로 사용한다", () => {
+    expect(
+      getNextEndDateEnabledFormState(
+        {
+          ...createDefaultFormState(),
+          startDateLocal: "2026-05-06",
+        },
+        {
+          isEditMode: false,
+          todayLocalDate: "2026-05-01",
+        }
+      ).endDateLocal
+    ).toBe("2026-05-06");
+  });
+
+  it("수정 화면에서 오늘이 시작일보다 늦으면 종료일 switch 기본값은 오늘이다", () => {
+    expect(
+      getNextEndDateEnabledFormState(
+        {
+          ...createDefaultFormState(),
+          startDateLocal: "2026-05-06",
+        },
+        {
+          isEditMode: true,
+          todayLocalDate: "2026-05-10",
+        }
+      ).endDateLocal
+    ).toBe("2026-05-10");
+  });
+
+  it("수정 화면에서 미래 시작 일정의 종료일 switch를 켜면 시작일을 기본값으로 사용한다", () => {
+    expect(
+      getNextEndDateEnabledFormState(
+        {
+          ...createDefaultFormState(),
+          startDateLocal: "2026-06-01",
+        },
+        {
+          isEditMode: true,
+          todayLocalDate: "2026-05-10",
+        }
+      ).endDateLocal
+    ).toBe("2026-06-01");
+  });
+
+  it("종료일 switch를 끄면 종료일 값을 즉시 제거한다", () => {
+    expect(
+      getNextEndDateDisabledFormState({
+        ...createDefaultFormState(),
+        endDateLocal: "2026-05-10",
+      }).endDateLocal
+    ).toBeNull();
+  });
+
+  it("반복 유형을 한 번으로 바꾸면 종료일이 제거된다", () => {
+    expect(
+      getNextRecurrenceFormState(
+        {
+          ...createDefaultFormState(),
+          endDateLocal: "2026-05-10",
+          recurrenceType: "daily",
+        },
+        "once"
+      ).endDateLocal
+    ).toBeNull();
+  });
+
+  it("한 번에서 반복 일정으로 바꾸면 종료일은 꺼진 상태로 시작한다", () => {
+    expect(
+      getNextRecurrenceFormState(
+        {
+          ...createDefaultFormState(),
+          endDateLocal: "2026-05-10",
+          recurrenceType: "once",
+        },
+        "daily"
+      ).endDateLocal
+    ).toBeNull();
+  });
+
+  it("반복 유형을 반복끼리 바꿀 때는 종료일을 유지한다", () => {
+    expect(
+      getNextRecurrenceFormState(
+        {
+          ...createDefaultFormState(),
+          endDateLocal: "2026-05-10",
+          recurrenceType: "daily",
+        },
+        "weekly"
+      ).endDateLocal
+    ).toBe("2026-05-10");
+  });
+
+  it("생성 중 시작일을 종료일보다 뒤로 바꾸면 종료일을 새 시작일로 보정한다", () => {
+    expect(
+      getNextStartDateFormState(
+        {
+          ...createDefaultFormState(),
+          endDateLocal: "2026-05-10",
+          startDateLocal: "2026-05-06",
+        },
+        "2026-05-12"
+      ).endDateLocal
+    ).toBe("2026-05-12");
+  });
+});
+
+describe("recurring item form picker routing", () => {
+  it("iOS 시작일 picker 변경은 시작일 handler로 전달한다", () => {
+    const onStartDateChange = jest.fn();
+    const onEndDateChange = jest.fn();
+    const onTimeChange = jest.fn();
+    const event = { type: "set" } as never;
+    const selectedDate = new Date("2026-05-10T00:00:00.000Z");
+
+    getIosPickerChangeHandler("date", "startDate", {
+      onEndDateChange,
+      onStartDateChange,
+      onTimeChange,
+    })(event, selectedDate);
+
+    expect(onStartDateChange).toHaveBeenCalledWith(event, selectedDate);
+    expect(onEndDateChange).not.toHaveBeenCalled();
+    expect(onTimeChange).not.toHaveBeenCalled();
+  });
+
+  it("iOS 종료일 picker 변경은 종료일 handler로 전달한다", () => {
+    const onStartDateChange = jest.fn();
+    const onEndDateChange = jest.fn();
+    const onTimeChange = jest.fn();
+    const event = { type: "set" } as never;
+    const selectedDate = new Date("2026-05-10T00:00:00.000Z");
+
+    getIosPickerChangeHandler("date", "endDate", {
+      onEndDateChange,
+      onStartDateChange,
+      onTimeChange,
+    })(event, selectedDate);
+
+    expect(onEndDateChange).toHaveBeenCalledWith(event, selectedDate);
+    expect(onStartDateChange).not.toHaveBeenCalled();
+    expect(onTimeChange).not.toHaveBeenCalled();
+  });
+
+  it("iOS 시간 picker 변경은 시간 handler로 전달한다", () => {
+    const onStartDateChange = jest.fn();
+    const onEndDateChange = jest.fn();
+    const onTimeChange = jest.fn();
+    const event = { type: "set" } as never;
+    const selectedDate = new Date("2026-05-10T09:00:00.000Z");
+
+    getIosPickerChangeHandler("time", null, {
+      onEndDateChange,
+      onStartDateChange,
+      onTimeChange,
+    })(event, selectedDate);
+
+    expect(onTimeChange).toHaveBeenCalledWith(event, selectedDate);
+    expect(onStartDateChange).not.toHaveBeenCalled();
+    expect(onEndDateChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("recurring item form error target", () => {
+  it("종료일 오류는 schedule 섹션으로 이동한다", () => {
+    expect(
+      getRecurringItemFormFirstErrorTarget({
+        endDate: "종료일을 확인해 주세요.",
+      })
+    ).toBe("schedule");
   });
 });
