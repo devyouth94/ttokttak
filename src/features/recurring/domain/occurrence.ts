@@ -859,6 +859,7 @@ export function getFirstFutureOccurrenceLocalDateAfterEdit(params: {
   nextSchedule: Pick<
     RecurringItemScheduleVersion,
     | "anchorType"
+    | "endDateLocal"
     | "intervalValue"
     | "recurrenceType"
     | "reminderTimeLocal"
@@ -893,7 +894,7 @@ export function getFirstFutureOccurrenceLocalDateAfterEdit(params: {
     initialAnchorLocalDate,
     schedule: {
       anchorType: nextSchedule.anchorType,
-      endDateLocal: null,
+      endDateLocal: nextSchedule.endDateLocal ?? null,
       effectiveFromUtc,
       itemId: item.id,
       intervalValue: nextSchedule.intervalValue,

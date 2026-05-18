@@ -13,16 +13,31 @@ export type RecurringItemEditPatch = Partial<
 >;
 
 type RecurringItemEditPolicy = {
-  effectiveFromUtc: string | null;
   hasAnyChanges: boolean;
+  itemPatch: {
+    colorKey: RecurringItemDraft["colorKey"];
+    description: RecurringItemDraft["description"];
+    isArchived: RecurringItemDraft["isArchived"];
+    title: RecurringItemDraft["title"];
+  };
   mergedDraft: RecurringItemDraft;
   metaChanged: boolean;
   ruleChanged: boolean;
-  seedStartDateLocal: string | null;
+  scheduleVersionCommand: {
+    anchorType: RecurringItemDraft["anchorType"];
+    effectiveFromUtc: string;
+    endDateLocal: string | null;
+    intervalValue: number | null;
+    notificationsEnabled: boolean;
+    recurrenceType: RecurringItemDraft["recurrenceType"];
+    reminderTimeLocal: string;
+    seedStartDateLocal: string | null;
+    weekdayMask: number[] | null;
+  } | null;
 };
 
 type ResolveRecurringItemEditPolicyParams = {
-  completionLogs?: CompletionLog[];
+  completionLogs: CompletionLog[];
   item: RecurringItem;
   now: () => Date;
   patch: RecurringItemEditPatch;
@@ -127,41 +142,57 @@ export function resolveRecurringItemEditPolicy({
   const metaChanged = hasMetaChanges(item, normalizedDraft);
   const ruleChanged = hasRuleChanges(item, normalizedDraft);
   const hasAnyChanges = metaChanged || ruleChanged;
+  const itemPatch = {
+    colorKey: normalizedDraft.colorKey,
+    description: normalizedDraft.description,
+    isArchived: normalizedDraft.isArchived,
+    title: normalizedDraft.title,
+  };
 
   if (!ruleChanged) {
     return {
-      effectiveFromUtc: null,
       hasAnyChanges,
+      itemPatch,
       mergedDraft: normalizedDraft,
       metaChanged,
       ruleChanged,
-      seedStartDateLocal: null,
+      scheduleVersionCommand: null,
     };
   }
 
   const effectiveFromUtc = editNow.toISOString();
-  const seedStartDateLocal = completionLogs
-    ? (getFirstFutureOccurrenceLocalDateAfterEdit({
-        completionLogs,
-        effectiveFromUtc,
-        item,
-        nextSchedule: {
-          anchorType: normalizedDraft.anchorType,
-          intervalValue: normalizedDraft.intervalValue,
-          recurrenceType: normalizedDraft.recurrenceType,
-          reminderTimeLocal: normalizedDraft.reminderTimeLocal,
-          weekdayMask: normalizedDraft.weekdayMask,
-        },
-        timezone,
-      }) ?? item.startDateLocal)
-    : null;
+  const seedStartDateLocal =
+    getFirstFutureOccurrenceLocalDateAfterEdit({
+      completionLogs,
+      effectiveFromUtc,
+      item,
+      nextSchedule: {
+        anchorType: normalizedDraft.anchorType,
+        endDateLocal: normalizedDraft.endDateLocal ?? null,
+        intervalValue: normalizedDraft.intervalValue,
+        recurrenceType: normalizedDraft.recurrenceType,
+        reminderTimeLocal: normalizedDraft.reminderTimeLocal,
+        weekdayMask: normalizedDraft.weekdayMask,
+      },
+      timezone,
+    }) ?? item.startDateLocal;
 
   return {
-    effectiveFromUtc,
     hasAnyChanges,
+    itemPatch,
     mergedDraft: normalizedDraft,
     metaChanged,
     ruleChanged,
-    seedStartDateLocal,
+    scheduleVersionCommand: {
+      anchorType: normalizedDraft.anchorType,
+      effectiveFromUtc,
+      endDateLocal: normalizedDraft.endDateLocal ?? null,
+      intervalValue: normalizedDraft.intervalValue ?? null,
+      notificationsEnabled: normalizedDraft.notificationsEnabled,
+      recurrenceType: normalizedDraft.recurrenceType,
+      reminderTimeLocal: normalizedDraft.reminderTimeLocal,
+      seedStartDateLocal,
+      weekdayMask: normalizedDraft.weekdayMask ?? null,
+    },
   };
 }

@@ -385,53 +385,44 @@ export async function updateRecurringItem(
   }
 
   const editNow = new Date();
-  const policyWithoutLogs = resolveRecurringItemEditPolicy({
+  const policy = resolveRecurringItemEditPolicy({
+    completionLogs: await persistence.listCompletionLogsForItem({
+      itemId: input.id,
+      userId: input.userId,
+    }),
     item: existingItem,
     now: () => editNow,
     patch: input.patch,
     timezone: input.timezone,
   });
-  const policy = policyWithoutLogs.ruleChanged
-    ? resolveRecurringItemEditPolicy({
-        completionLogs: await persistence.listCompletionLogsForItem({
-          itemId: input.id,
-          userId: input.userId,
-        }),
-        item: existingItem,
-        now: () => editNow,
-        patch: input.patch,
-        timezone: input.timezone,
-      })
-    : policyWithoutLogs;
-  const { hasAnyChanges, mergedDraft, ruleChanged } = policy;
+  const { hasAnyChanges, itemPatch, scheduleVersionCommand } = policy;
 
   if (hasAnyChanges) {
     const encryptedContent = await contentCipher.encryptRecurringItemContent({
-      description: mergedDraft.description ?? null,
-      title: mergedDraft.title,
+      description: itemPatch.description ?? null,
+      title: itemPatch.title,
       userId: input.userId,
     });
     await persistence.updateItemWithEditPolicy({
-      anchorType: ruleChanged ? mergedDraft.anchorType : null,
-      colorKey: mergedDraft.colorKey,
+      anchorType: scheduleVersionCommand?.anchorType ?? null,
+      colorKey: itemPatch.colorKey,
       contentEncryptionMetadata: encryptedContent.metadata,
       contentKeyVersion: encryptedContent.keyVersion,
       descriptionCiphertext: encryptedContent.descriptionCiphertext,
-      effectiveFromUtc: policy.effectiveFromUtc,
-      hasRuleChanges: ruleChanged,
-      intervalValue: ruleChanged ? (mergedDraft.intervalValue ?? null) : null,
-      endDateLocal: resolveStoredEndDateLocal(mergedDraft, ruleChanged),
-      isArchived: mergedDraft.isArchived,
+      effectiveFromUtc: scheduleVersionCommand?.effectiveFromUtc ?? null,
+      hasRuleChanges: scheduleVersionCommand !== null,
+      intervalValue: scheduleVersionCommand?.intervalValue ?? null,
+      endDateLocal: scheduleVersionCommand?.endDateLocal ?? null,
+      isArchived: itemPatch.isArchived,
       itemId: input.id,
-      notificationsEnabled: ruleChanged
-        ? mergedDraft.notificationsEnabled
-        : null,
-      recurrenceType: ruleChanged ? mergedDraft.recurrenceType : null,
-      reminderTimeLocal: ruleChanged ? mergedDraft.reminderTimeLocal : null,
-      seedStartDateLocal: policy.seedStartDateLocal,
+      notificationsEnabled:
+        scheduleVersionCommand?.notificationsEnabled ?? null,
+      recurrenceType: scheduleVersionCommand?.recurrenceType ?? null,
+      reminderTimeLocal: scheduleVersionCommand?.reminderTimeLocal ?? null,
+      seedStartDateLocal: scheduleVersionCommand?.seedStartDateLocal ?? null,
       titleCiphertext: encryptedContent.titleCiphertext,
       userId: input.userId,
-      weekdayMask: ruleChanged ? (mergedDraft.weekdayMask ?? null) : null,
+      weekdayMask: scheduleVersionCommand?.weekdayMask ?? null,
     });
   }
 
