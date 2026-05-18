@@ -76,7 +76,7 @@ type PickerFieldProps = {
   disabled?: boolean;
   error?: string;
   icon: React.JSX.Element;
-  label: string;
+  label?: string;
   accessibilityHint: string;
   accessibilityLabel: string;
   onPress: () => void;
@@ -532,9 +532,11 @@ function PickerField({
 }: PickerFieldProps): React.JSX.Element {
   return (
     <View style={[styles.field, variantStyle]}>
-      <AppText style={styles.fieldLabel} variant="body2">
-        {label}
-      </AppText>
+      {label ? (
+        <AppText style={styles.fieldLabel} variant="body2">
+          {label}
+        </AppText>
+      ) : null}
       <Pressable
         accessibilityHint={accessibilityHint}
         accessibilityLabel={accessibilityLabel}
@@ -604,6 +606,7 @@ function EndDateControl({
           accessibilityHint="반복 일정의 종료일 설정을 켜거나 꺼요."
           accessibilityLabel="종료일 사용"
           onValueChange={handleToggle}
+          style={styles.optionToggleSwitch}
           thumbColor={colors.primaryForeground}
           trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
           value={isEnabled}
@@ -623,7 +626,6 @@ function EndDateControl({
               strokeWidth={1.2}
             />
           }
-          label="종료일 날짜"
           onPress={onOpenPicker}
           value={displayValue}
           variantStyle={styles.endDateField}

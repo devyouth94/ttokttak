@@ -407,6 +407,7 @@ export function NotificationSection({
       </AppText>
       <Switch
         onValueChange={onToggle}
+        style={styles.optionToggleSwitch}
         thumbColor={colors.primaryForeground}
         trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
         value={enabled}
@@ -476,6 +477,7 @@ export function AdvancedOptionsSection({
         <Switch
           disabled={!isCompletionBasedSwitchEnabled}
           onValueChange={handleToggleCompletionBased}
+          style={styles.optionToggleSwitch}
           thumbColor={colors.primaryForeground}
           trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
           value={isCompletionBasedSelected}

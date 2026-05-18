@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
 import {
   borderRadius,
@@ -20,6 +20,8 @@ export const styles = StyleSheet.create({
   },
   optionToggleLabel: {
     color: colors.textSoft,
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
   optionToggleLabelGroup: {
     alignItems: "center",
@@ -31,6 +33,12 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     height: 40,
     justifyContent: "space-between",
+  },
+  optionToggleSwitch: {
+    transform: Platform.select({
+      ios: [{ translateY: 8 }],
+      default: undefined,
+    }),
   },
   chip: {
     alignItems: "center",
