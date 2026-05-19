@@ -119,7 +119,7 @@ function CalendarDayCellComponent({
   );
 }
 
-export function CalendarColorMarker({
+function CalendarColorMarker({
   colorKey,
   isSelected = false,
 }: {
