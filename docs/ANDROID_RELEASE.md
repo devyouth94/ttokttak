@@ -18,6 +18,9 @@ Play 제출용 서비스 계정은 다음 값을 기준으로 한다.
 - EAS submit profile: `production`.
 - EAS Update production channel: `production`.
 
+OTA 업데이트 기준과 발행 명령은 `docs/IOS_RELEASE.md`의 OTA 업데이트 절차를 따른다.
+현재 앱은 web OTA 배포 대상이 아니므로 iOS와 Android를 분리해서 발행한다.
+
 서비스 계정 JSON key는 secret이다.
 git, 문서, 이슈, 로그에 key 내용을 남기지 않는다.
 

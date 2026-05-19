@@ -44,6 +44,28 @@ preview 빌드는 EAS Update `preview` channel을 사용한다.
 production OTA는 `production` channel에 배포한다.
 preview OTA는 `preview` channel에 배포한다.
 
+현재 앱은 web OTA 배포 대상이 아니다.
+OTA는 iOS와 Android를 분리해서 발행한다.
+`--platform all`은 web export까지 시도할 수 있으므로 사용하지 않는다.
+
+production OTA 발행:
+
+```bash
+CI=1 pnpm exec eas update \
+  --channel production \
+  --environment production \
+  --platform ios \
+  --message "<OTA 변경 요약>" \
+  --non-interactive
+
+CI=1 pnpm exec eas update \
+  --channel production \
+  --environment production \
+  --platform android \
+  --message "<OTA 변경 요약>" \
+  --non-interactive
+```
+
 현재 설정 기준:
 
 - `app.config.ts`: `runtimeVersion.policy = "appVersion"`.

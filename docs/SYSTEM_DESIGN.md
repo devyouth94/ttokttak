@@ -91,6 +91,8 @@ preview 빌드는 `preview` channel을 사용한다.
 
 같은 앱 버전과 runtime 안에서는 JS와 asset 변경을 OTA로 받을 수 있다.
 네이티브 코드, 권한, entitlements, native dependency 변경은 새 스토어 빌드가 필요하다.
+현재 OTA 운영 대상은 iOS와 Android다.
+web export는 운영 대상이 아니므로 EAS Update는 플랫폼별로 발행한다.
 
 ## Data Model
 
