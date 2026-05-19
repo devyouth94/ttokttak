@@ -56,6 +56,27 @@ export function createCalendarScreenState(
   };
 }
 
+export function syncCalendarScreenStateToTimezone({
+  now,
+  previousState,
+  previousTimezone,
+  timezone,
+}: {
+  now: Date;
+  previousState: CalendarScreenState;
+  previousTimezone: string;
+  timezone: string;
+}): CalendarScreenState {
+  const previousTodayState = createCalendarScreenState(now, previousTimezone);
+  const isViewingPreviousToday =
+    previousState.selectedDate === previousTodayState.selectedDate &&
+    previousState.visibleMonth === previousTodayState.visibleMonth;
+
+  return isViewingPreviousToday
+    ? createCalendarScreenState(now, timezone)
+    : previousState;
+}
+
 export function createVisibleMonthDate(visibleMonth: string): Date {
   return parse(`${visibleMonth}-01`, "yyyy-MM-dd", new Date());
 }

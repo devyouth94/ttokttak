@@ -14,6 +14,10 @@ import {
   getScheduledItemOccurrenceEntriesInRange,
   type LocalDateUtcRange,
 } from "~/features/recurring/domain/occurrence-projection";
+import {
+  getOccurrenceProjectionRequirement,
+  type HomeFeedOccurrenceProjectionRequirement,
+} from "~/features/recurring/domain/occurrence-projection-requirement";
 import type {
   CompletionLog,
   DerivedOccurrence,
@@ -26,11 +30,6 @@ import {
   getRecurrenceLabel,
 } from "~/features/recurring/utils/recurring-display";
 import type { ProfileRow } from "~/lib/database.types";
-
-import {
-  getHomeFeedOccurrenceProjectionRequirement,
-  type HomeFeedOccurrenceProjectionRequirement,
-} from "../domain/home-feed-occurrence-projection";
 
 export const HOME_DATE_RANGE_DAYS = 15;
 
@@ -132,10 +131,13 @@ export function buildHomeFeedSections({
   );
   const projectionRequirement =
     projection ??
-    getHomeFeedOccurrenceProjectionRequirement({
+    getOccurrenceProjectionRequirement({
       items,
-      now,
-      selectedDateId,
+      purpose: {
+        now,
+        selectedDateId,
+        type: "homeFeed",
+      },
       timezone,
     }).projection;
   const selectedSection = buildSelectedDateSection({

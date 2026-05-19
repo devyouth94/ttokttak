@@ -8,6 +8,7 @@ import {
   formatVisibleMonthTitle,
   getMinimumVisibleMonth,
   shiftVisibleMonth,
+  syncCalendarScreenStateToTimezone,
 } from "~/features/calendar-view/calendar-screen.helpers";
 import type {
   CompletionLog,
@@ -91,6 +92,57 @@ describe("calendar-screen.helpers", () => {
     ).toEqual({
       selectedDate: "2026-04-30",
       visibleMonth: "2026-04",
+    });
+  });
+
+  it("profile timezone 변경 시 오늘을 보고 있던 캘린더 상태를 새 날짜 경계로 맞춘다", () => {
+    expect(
+      syncCalendarScreenStateToTimezone({
+        now: new Date("2026-05-01T06:30:00.000Z"),
+        previousState: {
+          selectedDate: "2026-05-01",
+          visibleMonth: "2026-05",
+        },
+        previousTimezone: "Asia/Seoul",
+        timezone: "America/Los_Angeles",
+      })
+    ).toEqual({
+      selectedDate: "2026-04-30",
+      visibleMonth: "2026-04",
+    });
+  });
+
+  it("profile timezone 변경 시 사용자가 다른 날짜를 보고 있으면 캘린더 상태를 유지한다", () => {
+    expect(
+      syncCalendarScreenStateToTimezone({
+        now: new Date("2026-05-01T06:30:00.000Z"),
+        previousState: {
+          selectedDate: "2026-04-20",
+          visibleMonth: "2026-05",
+        },
+        previousTimezone: "Asia/Seoul",
+        timezone: "America/Los_Angeles",
+      })
+    ).toEqual({
+      selectedDate: "2026-04-20",
+      visibleMonth: "2026-05",
+    });
+  });
+
+  it("profile timezone 변경 시 오늘을 선택한 채 다른 월을 보고 있으면 캘린더 상태를 유지한다", () => {
+    expect(
+      syncCalendarScreenStateToTimezone({
+        now: new Date("2026-05-01T06:30:00.000Z"),
+        previousState: {
+          selectedDate: "2026-05-01",
+          visibleMonth: "2026-06",
+        },
+        previousTimezone: "Asia/Seoul",
+        timezone: "America/Los_Angeles",
+      })
+    ).toEqual({
+      selectedDate: "2026-05-01",
+      visibleMonth: "2026-06",
     });
   });
 

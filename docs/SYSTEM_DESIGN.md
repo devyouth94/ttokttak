@@ -176,6 +176,10 @@ completion log 조회는 화면이나 후속 계산에 필요한 범위로 제�
 상세 화면의 최근 히스토리는 최신 5건만 표시한다.
 MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
 `completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
+탭 루트는 홈 피드, 일정 목록, 캘린더 같은 projection 목적을 넘긴다.
+화면의 날짜 상태는 profile timezone을 기준으로 만든다.
+반복 기능 hook이 active 일정 조회, completion log 조회 조건, query 상태를 함께 맞춘다.
+화면별 섹션, 정렬, marker 구성은 각 화면 feature helper가 맡는다.
 
 ### 종료일 정책
 

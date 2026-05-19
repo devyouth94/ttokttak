@@ -21,4 +21,13 @@ describe("CalendarScreen", () => {
     expect(calendarScreen).not.toContain("enableSwipeMonths");
     expect(calendarScreen).not.toContain("onMonthChange=");
   });
+
+  it("캘린더의 현재 시각 기준은 mount 시점에 고정하지 않는다", () => {
+    const calendarScreen = readWorkspaceFile(
+      "src/features/calendar-view/components/calendar-screen.tsx"
+    );
+
+    expect(calendarScreen).toContain("useOccurrenceProjectionNow");
+    expect(calendarScreen).not.toContain("useMemo(() => new Date(), [])");
+  });
 });

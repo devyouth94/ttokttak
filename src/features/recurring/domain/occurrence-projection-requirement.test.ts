@@ -1,4 +1,4 @@
-import { getHomeFeedOccurrenceProjectionRequirement } from "~/features/home/domain/home-feed-occurrence-projection";
+import { getOccurrenceProjectionRequirement } from "~/features/recurring/domain/occurrence-projection-requirement";
 import type {
   RecurringItem,
   RecurringItemScheduleVersion,
@@ -48,9 +48,9 @@ function createVersion(
   };
 }
 
-describe("home feed occurrence projection", () => {
-  it("오늘 선택 시 홈 피드에 필요한 completion log 범위와 anchor 대상을 함께 정한다", () => {
-    const requirement = getHomeFeedOccurrenceProjectionRequirement({
+describe("occurrence projection requirement", () => {
+  it("홈 피드 오늘 선택 시 projection과 completion log 조회 조건을 함께 정한다", () => {
+    const requirement = getOccurrenceProjectionRequirement({
       items: [
         createItem({ id: "fixed-item" }),
         createItem({
@@ -72,8 +72,11 @@ describe("home feed occurrence projection", () => {
           ],
         }),
       ],
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      selectedDateId: "2026-04-10",
+      purpose: {
+        now: new Date("2026-04-10T03:00:00.000Z"),
+        selectedDateId: "2026-04-10",
+        type: "homeFeed",
+      },
       timezone,
     });
 
@@ -98,11 +101,14 @@ describe("home feed occurrence projection", () => {
     });
   });
 
-  it("오늘이 아닌 날짜 선택 시 해당 날짜 하루만 조회 요구사항으로 정한다", () => {
-    const requirement = getHomeFeedOccurrenceProjectionRequirement({
+  it("홈 피드에서 오늘이 아닌 날짜 선택 시 해당 날짜 하루만 조회 조건으로 정한다", () => {
+    const requirement = getOccurrenceProjectionRequirement({
       items: [createItem()],
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      selectedDateId: "2026-04-13",
+      purpose: {
+        now: new Date("2026-04-10T03:00:00.000Z"),
+        selectedDateId: "2026-04-13",
+        type: "homeFeed",
+      },
       timezone,
     });
 
@@ -116,5 +122,57 @@ describe("home feed occurrence projection", () => {
       startUtc: "2026-04-12T15:00:00.000Z",
     });
     expect(requirement.projection.upcomingRange).toBeNull();
+  });
+
+  it("일정 목록은 오늘까지의 조회 범위와 완료일 기준 anchor 대상을 정한다", () => {
+    const requirement = getOccurrenceProjectionRequirement({
+      items: [
+        createItem({ id: "fixed-item" }),
+        createItem({
+          anchorType: "completion_based",
+          id: "completion-based-item",
+          recurrenceType: "interval_months",
+        }),
+      ],
+      purpose: {
+        now: new Date("2026-04-10T03:00:00.000Z"),
+        type: "reminderList",
+      },
+      timezone,
+    });
+
+    expect(requirement.completionLogQuery).toEqual({
+      anchorItemIds: ["completion-based-item"],
+      rangeEndUtc: "2026-04-10T14:59:59.999Z",
+      rangeStartUtc: "2024-04-09T15:00:00.000Z",
+    });
+    expect(requirement.projection.todayLocalDate).toBe("2026-04-10");
+  });
+
+  it("캘린더는 보이는 월 범위를 조회 조건으로 정한다", () => {
+    const requirement = getOccurrenceProjectionRequirement({
+      items: [
+        createItem({
+          anchorType: "completion_based",
+          id: "completion-based-item",
+          recurrenceType: "daily",
+        }),
+      ],
+      purpose: {
+        type: "calendarMonth",
+        visibleMonth: "2026-04",
+      },
+      timezone,
+    });
+
+    expect(requirement.completionLogQuery).toEqual({
+      anchorItemIds: ["completion-based-item"],
+      rangeEndUtc: "2026-04-30T14:59:59.999Z",
+      rangeStartUtc: "2026-03-31T15:00:00.000Z",
+    });
+    expect(requirement.projection.selectedMonthRange).toEqual({
+      endUtc: "2026-04-30T14:59:59.999Z",
+      startUtc: "2026-03-31T15:00:00.000Z",
+    });
   });
 });

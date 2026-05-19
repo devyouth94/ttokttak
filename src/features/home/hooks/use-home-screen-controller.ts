@@ -4,14 +4,9 @@ import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import type {
-  CompletionAction,
-  CompletionLog,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
-import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
+import type { CompletionAction } from "~/features/recurring/domain/types";
+import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
-import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 import { useSession } from "~/features/session/session-provider";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
@@ -22,11 +17,8 @@ import {
   type HomeFeedCard,
   type HomeFeedSection,
 } from "../components/home-screen.helpers";
-import { getHomeFeedOccurrenceProjectionRequirement } from "../domain/home-feed-occurrence-projection";
 
 let hasShownNotificationPermissionPrompt = false;
-const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
-const EMPTY_ITEMS: RecurringItem[] = [];
 
 type HomeScreenController = {
   errorMessage: string | null;
@@ -44,21 +36,6 @@ type HomeScreenController = {
   selectedDateId: string;
   selectedDateIsToday: boolean;
 };
-
-function getHomeFeedErrorMessage(
-  itemsError: unknown,
-  completionLogsError: unknown
-): string | null {
-  if (itemsError) {
-    return getErrorMessage(itemsError);
-  }
-
-  if (completionLogsError) {
-    return getErrorMessage(completionLogsError);
-  }
-
-  return null;
-}
 
 function showNotificationPermissionPrompt(
   requestPermission: () => Promise<unknown>
@@ -90,45 +67,36 @@ export function useHomeScreenController(): HomeScreenController {
   const { profile } = useSession();
   const { permission, requestPermission, syncAfterMutation } =
     useNotificationBootstrap();
-  const { isReady, timezone, userId } = useRecurringFeedContext();
+  const recurringFeedContext = useRecurringFeedContext();
   const isFocused = useIsFocused();
 
   const [selectedDateId, setSelectedDateId] = useState(() =>
-    formatInTimeZone(new Date(), timezone, "yyyy-MM-dd")
+    formatInTimeZone(new Date(), recurringFeedContext.timezone, "yyyy-MM-dd")
   );
   const hasFocusedOnceRef = useRef(false);
-  const previousTimezoneRef = useRef(timezone);
-
-  const itemsQuery = useRecurringItemsQuery({
-    enabled: isReady,
-    timezone,
-    userId,
-  });
-  const items = itemsQuery.data ?? EMPTY_ITEMS;
+  const previousTimezoneRef = useRef(recurringFeedContext.timezone);
   const now = new Date();
-  const projectionRequirement = getHomeFeedOccurrenceProjectionRequirement({
+  const projectionQuery = useOccurrenceProjectionQuery({
+    context: recurringFeedContext,
+    purpose: {
+      now,
+      selectedDateId,
+      type: "homeFeed",
+    },
+  });
+  const {
+    completionLogs,
+    isReady,
     items,
-    now,
-    selectedDateId,
+    projectionRequirement,
+    refetch: refetchProjection,
     timezone,
-  });
-
-  const completionLogsQuery = useCompletionLogsQuery({
-    anchorItemIds: projectionRequirement.completionLogQuery.anchorItemIds,
-    enabled: isReady,
-    itemIds: items.map((item) => item.id),
-    rangeEndUtc: projectionRequirement.completionLogQuery.rangeEndUtc,
-    rangeStartUtc: projectionRequirement.completionLogQuery.rangeStartUtc,
     userId,
-  });
-  const completionLogs = completionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;
-
-  const refetchItems = itemsQuery.refetch;
-  const refetchCompletionLogs = completionLogsQuery.refetch;
+  } = projectionQuery;
 
   const refetchFeed = useCallback(async (): Promise<void> => {
-    await Promise.all([refetchItems(), refetchCompletionLogs()]);
-  }, [refetchCompletionLogs, refetchItems]);
+    await refetchProjection();
+  }, [refetchProjection]);
 
   const {
     actionErrorMessage,
@@ -143,11 +111,10 @@ export function useHomeScreenController(): HomeScreenController {
     userId,
   });
 
-  const isLoading =
-    itemsQuery.isPending || (items.length > 0 && completionLogsQuery.isPending);
+  const isLoading = projectionQuery.isLoading;
   const errorMessage =
     actionErrorMessage ??
-    getHomeFeedErrorMessage(itemsQuery.error, completionLogsQuery.error);
+    (projectionQuery.error ? getErrorMessage(projectionQuery.error) : null);
   const feedSections = buildHomeFeedSections({
     completionLogs,
     items,

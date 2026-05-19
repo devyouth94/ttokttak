@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { addDays, format, startOfDay } from "date-fns";
 
 import { AppScreen } from "~/design-system/components/app-screen";
 import { ScreenHeader } from "~/design-system/components/screen-header";
@@ -16,14 +15,7 @@ import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-head
 import { colors, spacing } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
-import { createLocalDateUtcRange } from "~/features/recurring/domain/occurrence-projection";
-import {
-  completionBasedRecurrenceTypes,
-  getCurrentScheduleVersion,
-} from "~/features/recurring/domain/types";
-import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
-import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
-import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
+import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 
 import { ReminderListLoadingPlaceholder } from "./reminder-list-loading-placeholder";
 import { ReminderListSortControl } from "./reminder-list-sort-control";
@@ -39,8 +31,6 @@ import {
   type ReminderListSortMode,
 } from "../reminder-list.helpers";
 
-const REMINDER_LIST_LOOKBACK_DAYS = 730;
-
 export function ReminderListScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const now = useReminderListNow();
@@ -54,86 +44,42 @@ export function ReminderListScreen(): React.JSX.Element {
   const [sortMode, setSortMode] = useState<ReminderListSortMode>(
     DEFAULT_REMINDER_LIST_SORT_MODE
   );
-  const { isReady, timezone, userId } = useRecurringFeedContext();
-  const itemsQuery = useRecurringItemsQuery({
-    enabled: isReady,
-    timezone,
-    userId,
+  const projectionQuery = useOccurrenceProjectionQuery({
+    purpose: {
+      now,
+      type: "reminderList",
+    },
   });
-  const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
-  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
-  const completionLogsRange = useMemo(() => {
-    const today = startOfDay(now);
-    const startLocalDate = format(
-      addDays(today, -REMINDER_LIST_LOOKBACK_DAYS),
-      "yyyy-MM-dd"
-    );
-    const endLocalDate = format(today, "yyyy-MM-dd");
-
-    return {
-      endUtc: createLocalDateUtcRange(endLocalDate, timezone).endUtc,
-      startUtc: createLocalDateUtcRange(startLocalDate, timezone).startUtc,
-    };
-  }, [now, timezone]);
-  const completionBasedItemIds = useMemo(
-    () =>
-      items
-        .filter((item) => {
-          const schedule = getCurrentScheduleVersion(item);
-          const anchorType = schedule?.anchorType ?? item.anchorType;
-          const recurrenceType =
-            schedule?.recurrenceType ?? item.recurrenceType;
-
-          return (
-            anchorType === "completion_based" &&
-            completionBasedRecurrenceTypes.includes(
-              recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
-            )
-          );
-        })
-        .map((item) => item.id),
-    [items]
-  );
-  const completionLogsQuery = useCompletionLogsQuery({
-    anchorItemIds: completionBasedItemIds,
-    enabled: isReady,
-    itemIds,
-    rangeEndUtc: completionLogsRange.endUtc,
-    rangeStartUtc: completionLogsRange.startUtc,
-    userId,
-  });
+  const items = projectionQuery.items;
   const entries = useMemo(
     () =>
       buildReminderListEntries({
-        completionLogs: completionLogsQuery.data ?? [],
+        completionLogs: projectionQuery.completionLogs,
         items,
         now,
         sortMode,
-        timezone,
+        timezone: projectionQuery.timezone,
       }),
-    [completionLogsQuery.data, items, now, sortMode, timezone]
+    [
+      projectionQuery.completionLogs,
+      items,
+      now,
+      sortMode,
+      projectionQuery.timezone,
+    ]
   );
-  const isInitialLoading =
-    !isReady ||
-    itemsQuery.isLoading ||
-    (itemIds.length > 0 && completionLogsQuery.isLoading);
-  const error = itemsQuery.error ?? completionLogsQuery.error;
-  const isRefreshing =
-    itemsQuery.isRefetching || completionLogsQuery.isRefetching;
+  const isInitialLoading = projectionQuery.isLoading;
+  const error = projectionQuery.error;
+  const isRefreshing = projectionQuery.isRefreshing;
+  const refetchProjection = projectionQuery.refetch;
 
   const handleRetry = useCallback(() => {
-    void itemsQuery.refetch();
-    if (itemIds.length > 0) {
-      void completionLogsQuery.refetch();
-    }
-  }, [completionLogsQuery, itemIds.length, itemsQuery]);
+    void refetchProjection();
+  }, [refetchProjection]);
 
   const handleRefresh = useCallback(() => {
-    void itemsQuery.refetch();
-    if (itemIds.length > 0) {
-      void completionLogsQuery.refetch();
-    }
-  }, [completionLogsQuery, itemIds.length, itemsQuery]);
+    void refetchProjection();
+  }, [refetchProjection]);
 
   return (
     <AppScreen contentStyle={styles.screenContent}>

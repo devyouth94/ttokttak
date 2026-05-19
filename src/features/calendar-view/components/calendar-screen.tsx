@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -9,7 +9,6 @@ import {
 import { Calendar, type DateData, LocaleConfig } from "react-native-calendars";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { endOfMonth, format, startOfMonth } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { AppScreen } from "~/design-system/components/app-screen";
@@ -31,12 +30,12 @@ import {
   buildCalendarDaySummaries,
   clampVisibleMonth,
   createCalendarScreenState,
-  createVisibleMonthDate,
   formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
   getMinimumVisibleMonth,
   shiftVisibleMonth,
+  syncCalendarScreenStateToTimezone,
 } from "~/features/calendar-view/calendar-screen.helpers";
 import {
   CALENDAR_DAY_CELL_HEIGHT,
@@ -44,14 +43,9 @@ import {
 } from "~/features/calendar-view/components/calendar-day-cell";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
-import { createLocalDateUtcRange } from "~/features/recurring/domain/occurrence-projection";
-import {
-  completionBasedRecurrenceTypes,
-  getCurrentScheduleVersion,
-} from "~/features/recurring/domain/types";
-import { useCompletionLogsQuery } from "~/features/recurring/hooks/use-completion-logs-query";
+import { useOccurrenceProjectionNow } from "~/features/recurring/hooks/use-occurrence-projection-now";
+import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
-import { useRecurringItemsQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 import { getErrorMessage } from "~/lib/errors/get-error-message";
 
 LocaleConfig.locales.ko = {
@@ -159,92 +153,56 @@ export function CalendarScreen(): React.JSX.Element {
     onScroll,
     scrollEventThrottle,
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const { isReady, timezone, userId } = useRecurringFeedContext();
+  const recurringFeedContext = useRecurringFeedContext();
+  const now = useOccurrenceProjectionNow();
   const [screenState, setScreenState] = useState(() =>
-    createCalendarScreenState(new Date(), timezone)
+    createCalendarScreenState(now, recurringFeedContext.timezone)
   );
-  const todayState = createCalendarScreenState(new Date(), timezone);
-  const itemsQuery = useRecurringItemsQuery({
-    enabled: isReady,
-    timezone,
-    userId,
+  const previousTimezoneRef = useRef(recurringFeedContext.timezone);
+  const projectionQuery = useOccurrenceProjectionQuery({
+    context: recurringFeedContext,
+    purpose: {
+      type: "calendarMonth",
+      visibleMonth: screenState.visibleMonth,
+    },
   });
-  const items = itemsQuery.data;
-  const completionLogsRange = useMemo(() => {
-    const visibleMonthDate = createVisibleMonthDate(screenState.visibleMonth);
-    const startLocalDate = format(startOfMonth(visibleMonthDate), "yyyy-MM-dd");
-    const endLocalDate = format(endOfMonth(visibleMonthDate), "yyyy-MM-dd");
-
-    return {
-      endUtc: createLocalDateUtcRange(endLocalDate, timezone).endUtc,
-      startUtc: createLocalDateUtcRange(startLocalDate, timezone).startUtc,
-    };
-  }, [screenState.visibleMonth, timezone]);
-  const completionBasedItemIds = useMemo(
-    () =>
-      (items ?? [])
-        .filter((item) => {
-          const schedule = getCurrentScheduleVersion(item);
-          const anchorType = schedule?.anchorType ?? item.anchorType;
-          const recurrenceType =
-            schedule?.recurrenceType ?? item.recurrenceType;
-
-          return (
-            anchorType === "completion_based" &&
-            completionBasedRecurrenceTypes.includes(
-              recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
-            )
-          );
-        })
-        .map((item) => item.id),
-    [items]
-  );
-  const completionLogsQuery = useCompletionLogsQuery({
-    anchorItemIds: completionBasedItemIds,
-    enabled: isReady && (items?.length ?? 0) > 0,
-    itemIds: items?.map((item) => item.id) ?? [],
-    rangeEndUtc: completionLogsRange.endUtc,
-    rangeStartUtc: completionLogsRange.startUtc,
-    userId,
-  });
-  const completionLogs = completionLogsQuery.data;
+  const timezone = projectionQuery.timezone;
+  const items = projectionQuery.items;
+  const completionLogs = projectionQuery.completionLogs;
+  const todayState = createCalendarScreenState(now, timezone);
   const minimumVisibleMonth = useMemo(
-    () => getMinimumVisibleMonth(items ?? []),
+    () => getMinimumVisibleMonth(items),
     [items]
   );
   const selectedDateTitle = formatSelectedDateSectionTitle(
     screenState.selectedDate
   );
   const visibleMonthTitle = formatVisibleMonthTitle(screenState.visibleMonth);
-  const isLoading =
-    itemsQuery.isPending ||
-    ((items?.length ?? 0) > 0 && completionLogsQuery.isPending);
-  const errorMessage = itemsQuery.error
-    ? getErrorMessage(itemsQuery.error)
-    : completionLogsQuery.error
-      ? getErrorMessage(completionLogsQuery.error)
-      : null;
+  const isLoading = projectionQuery.isLoading;
+  const errorMessage = projectionQuery.error
+    ? getErrorMessage(projectionQuery.error)
+    : null;
   const daySummaries = useMemo(
     () =>
       buildCalendarDaySummaries({
-        completionLogs: completionLogs ?? [],
-        items: items ?? [],
-        now: new Date(),
+        completionLogs,
+        items,
+        now,
         timezone,
         visibleMonth: screenState.visibleMonth,
       }),
-    [completionLogs, items, screenState.visibleMonth, timezone]
+    [completionLogs, items, now, screenState.visibleMonth, timezone]
   );
   const selectedEntries = useMemo(
     () =>
       buildCalendarDayEntries({
-        completionLogs: completionLogs ?? [],
-        items: items ?? [],
-        now: new Date(),
+        completionLogs,
+        items,
+        now,
         selectedDate: screenState.selectedDate,
         timezone,
       }),
-    [completionLogs, items, screenState.selectedDate, timezone]
+    [completionLogs, items, now, screenState.selectedDate, timezone]
   );
   const isPreviousMonthDisabled =
     minimumVisibleMonth !== null &&
@@ -258,11 +216,26 @@ export function CalendarScreen(): React.JSX.Element {
   };
 
   const handleRetry = () => {
-    void itemsQuery.refetch();
-    if ((items?.length ?? 0) > 0) {
-      void completionLogsQuery.refetch();
-    }
+    void projectionQuery.refetch();
   };
+
+  useEffect(() => {
+    const previousTimezone = previousTimezoneRef.current;
+
+    if (previousTimezone === timezone) {
+      return;
+    }
+
+    previousTimezoneRef.current = timezone;
+    setScreenState((previousState) =>
+      syncCalendarScreenStateToTimezone({
+        now,
+        previousState,
+        previousTimezone,
+        timezone,
+      })
+    );
+  }, [now, timezone]);
 
   const shiftMonth = (amount: number) => {
     setScreenState((prevState) => ({
