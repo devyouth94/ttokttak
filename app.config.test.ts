@@ -55,4 +55,15 @@ describe("app config", () => {
       "GOOGLE_AUTH_IOS_URL_SCHEME 환경 변수가 필요합니다."
     );
   });
+
+  it("로컬 알림 설정만 유지한다", () => {
+    const getAppConfig = loadAppConfig();
+    const config = getAppConfig();
+
+    expect(config.android?.googleServicesFile).toBeUndefined();
+    expect(JSON.stringify(config.plugins)).not.toContain("expo-notifications");
+    expect(JSON.stringify(config.plugins)).toContain(
+      "./plugins/with-local-notifications-only"
+    );
+  });
 });

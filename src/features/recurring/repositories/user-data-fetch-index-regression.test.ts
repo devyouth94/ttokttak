@@ -23,7 +23,6 @@ function readMigrations(): string {
 describe("사용자 데이터 조회 인덱스 회귀 가드", () => {
   const requiredIndexes = [
     "idx_recurring_items_user_archived_created_at",
-    "idx_devices_user_active_created_at",
     "idx_completion_logs_user_item_scheduled_at",
     "idx_completion_logs_user_item_action_acted_at",
   ];

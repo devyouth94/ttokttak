@@ -91,27 +91,6 @@ comment on column public.content_key_recovery_audit_events.result is
   '복구 호출 결과의 낮은 해상도 enum. 내부 exception message를 저장하지 않는다.';
 
 -- =========================================================
--- devices
--- 기기 식별과 마지막 활성 상태 관리용
--- =========================================================
-create table if not exists public.devices (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
-  platform text not null,
-  device_name text,
-  is_active boolean not null default true,
-  last_seen_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint devices_platform_check check (platform in ('ios', 'android', 'web', 'unknown'))
-);
-
-create index if not exists idx_devices_user_id on public.devices(user_id);
-
-create index if not exists idx_devices_user_active_created_at
-  on public.devices(user_id, is_active, created_at desc);
-
--- =========================================================
 -- recurring_items
 -- =========================================================
 create table if not exists public.recurring_items (
@@ -220,8 +199,6 @@ create table if not exists public.completion_logs (
   scheduled_at_utc timestamptz not null,
   action text not null,
   acted_at_utc timestamptz not null default now(),
-
-  device_id uuid references public.devices(id) on delete set null,
 
   created_at timestamptz not null default now(),
 
@@ -552,11 +529,6 @@ create trigger trg_user_content_encryption_keys_set_updated_at
 before update on public.user_content_encryption_keys
 for each row execute function public.set_updated_at();
 
-drop trigger if exists trg_devices_set_updated_at on public.devices;
-create trigger trg_devices_set_updated_at
-before update on public.devices
-for each row execute function public.set_updated_at();
-
 drop trigger if exists trg_recurring_items_set_updated_at on public.recurring_items;
 create trigger trg_recurring_items_set_updated_at
 before update on public.recurring_items
@@ -568,7 +540,6 @@ for each row execute function public.set_updated_at();
 alter table public.profiles enable row level security;
 alter table public.user_content_encryption_keys enable row level security;
 alter table public.content_key_recovery_audit_events enable row level security;
-alter table public.devices enable row level security;
 alter table public.recurring_items enable row level security;
 alter table public.recurring_item_schedule_versions enable row level security;
 alter table public.completion_logs enable row level security;
@@ -623,31 +594,6 @@ to authenticated;
 -- content_key_recovery_audit_events
 revoke all privileges on table public.content_key_recovery_audit_events
 from anon, authenticated;
-
--- devices
-drop policy if exists "devices_select_own" on public.devices;
-create policy "devices_select_own"
-on public.devices
-for select
-using (auth.uid() = user_id);
-
-drop policy if exists "devices_insert_own" on public.devices;
-create policy "devices_insert_own"
-on public.devices
-for insert
-with check (auth.uid() = user_id);
-
-drop policy if exists "devices_update_own" on public.devices;
-create policy "devices_update_own"
-on public.devices
-for update
-using (auth.uid() = user_id);
-
-drop policy if exists "devices_delete_own" on public.devices;
-create policy "devices_delete_own"
-on public.devices
-for delete
-using (auth.uid() = user_id);
 
 -- recurring_items
 drop policy if exists "recurring_items_select_own" on public.recurring_items;

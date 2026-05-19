@@ -49,7 +49,6 @@ export default function getAppConfig(): ExpoConfig {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: iconBackgroundColor,
       },
-      googleServicesFile: "./.google/google-services.json",
       predictiveBackGestureEnabled: false,
       package: "com.youngzin.ttokttak",
     },
@@ -115,12 +114,6 @@ export default function getAppConfig(): ExpoConfig {
         },
       ],
       "expo-secure-store",
-      [
-        "expo-notifications",
-        {
-          defaultChannel: "reminders",
-        },
-      ],
       "expo-apple-authentication",
       "@react-native-community/datetimepicker",
       [
@@ -137,6 +130,7 @@ export default function getAppConfig(): ExpoConfig {
           organization: "kimyoungzin",
         },
       ],
+      "./plugins/with-local-notifications-only",
     ],
     experiments: {
       typedRoutes: true,

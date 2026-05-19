@@ -8,12 +8,12 @@
 
 ## Automated Checks
 
-로컬 테스트가 아래 회귀를 막는다.
+로컬 테스트는 아래 회귀를 확인한다.
 
 - `notification-privacy-regression.test.ts`
-  - 앱 active flow에 원격 푸시 token 등록 API가 다시 들어오지 않는지 확인한다.
-  - 앱 active flow가 `device_push_tokens`, `notification_delivery_jobs`, `notification_delivery_attempts`, `notification_inbox_items`를 다시 참조하지 않는지 확인한다.
-  - 앱 active flow가 `push-delivery-worker`를 다시 참조하지 않는지 확인한다.
+  - 앱 코드 경로에 원격 푸시 token 등록 API가 없는지 확인한다.
+  - 앱 코드 경로가 `device_push_tokens`, `notification_delivery_jobs`, `notification_delivery_attempts`, `notification_inbox_items`를 참조하지 않는지 확인한다.
+  - 앱 코드 경로가 `push-delivery-worker`를 참조하지 않는지 확인한다.
 - `sentry-sanitizer.test.ts`
   - `title`, `description`, `decryptedTitle`, `decryptedDescription`, push payload, token 계열 field를 Sentry event에서 마스킹한다.
   - local notification diagnostics처럼 count 중심의 비표시 값은 유지한다.

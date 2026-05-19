@@ -42,7 +42,6 @@ function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
     scheduledAtUtc: "2026-04-01T00:00:00.000Z",
     action: "completed",
     actedAtUtc: "2026-04-01T02:00:00.000Z",
-    deviceId: null,
     createdAt: "2026-04-01T02:00:00.000Z",
     ...overrides,
   };

@@ -61,7 +61,7 @@ function listSourceFiles(directory: string): string[] {
 }
 
 describe("notification privacy regression guard", () => {
-  it("앱 active flow에 원격 푸시 저장소와 토큰 등록 경로를 되살리지 않는다", () => {
+  it("앱 코드 경로에 원격 푸시 저장소와 토큰 등록 경로가 없다", () => {
     const matches = listSourceFiles(sourceRoot).flatMap((filePath) => {
       const content = readFileSync(filePath, "utf8");
 
@@ -73,7 +73,7 @@ describe("notification privacy regression guard", () => {
     expect(matches).toEqual([]);
   });
 
-  it("기준 DB 문서가 원격 푸시 저장소와 worker RPC를 되살리지 않는다", () => {
+  it("기준 DB 문서에 원격 푸시 저장소와 worker RPC가 없다", () => {
     const content = readFileSync(databaseSchemaPath, "utf8");
     const matches = disallowedDatabaseSchemaTerms.filter((term) =>
       content.includes(term)

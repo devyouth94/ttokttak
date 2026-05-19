@@ -49,7 +49,6 @@
     "expo-constants": "~55.0.16",
     "expo-crypto": "~55.0.14",
     "expo-dev-client": "~55.0.32",
-    "expo-device": "~55.0.16",
     "expo-font": "~55.0.7",
     "expo-glass-effect": "~55.0.11",
     "expo-image": "~55.0.10",

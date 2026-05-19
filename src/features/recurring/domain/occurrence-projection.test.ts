@@ -40,7 +40,6 @@ function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
     actedAtUtc: "2026-04-11T00:05:00.000Z",
     action: "completed",
     createdAt: "2026-04-11T00:05:00.000Z",
-    deviceId: null,
     id: "log-1",
     itemId: "item-1",
     scheduledAtUtc: "2026-04-11T00:00:00.000Z",

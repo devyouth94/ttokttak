@@ -172,7 +172,6 @@ function createCompletionLog(
     action: "completed",
     actedAtUtc: "2026-04-20T13:00:00.000Z",
     createdAt: "2026-04-20T13:00:00.000Z",
-    deviceId: null,
     id: "log-1",
     userId: "user-1",
     ...overrides,

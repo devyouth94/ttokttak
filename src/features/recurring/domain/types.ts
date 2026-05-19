@@ -28,7 +28,6 @@ export const recurringItemColorKeys = [
   "purple",
 ] as const;
 export const defaultRecurringItemColorKey: RecurringItemColorKey = "red";
-export const devicePlatforms = ["ios", "android", "web", "unknown"] as const;
 export const notificationKinds = ["reminder"] as const;
 
 export const completionBasedRecurrenceTypes = [
@@ -43,7 +42,6 @@ export type AnchorType = (typeof anchorTypes)[number];
 export type OccurrenceStatus = (typeof occurrenceStatuses)[number];
 export type CompletionAction = (typeof completionActions)[number];
 export type RecurringItemColorKey = (typeof recurringItemColorKeys)[number];
-export type DevicePlatform = (typeof devicePlatforms)[number];
 export type NotificationKind = (typeof notificationKinds)[number];
 export type CompletionBasedRecurrenceType =
   (typeof completionBasedRecurrenceTypes)[number];
@@ -113,19 +111,7 @@ export interface CompletionLog {
   scheduledAtUtc: string;
   action: CompletionAction;
   actedAtUtc: string;
-  deviceId?: string | null;
   createdAt: string;
-}
-
-export interface Device {
-  id: string;
-  userId: string;
-  platform: DevicePlatform;
-  deviceName?: string | null;
-  isActive: boolean;
-  lastSeenAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface DerivedOccurrence {

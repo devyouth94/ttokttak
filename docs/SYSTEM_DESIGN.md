@@ -102,11 +102,10 @@ web export는 운영 대상이 아니므로 EAS Update는 플랫폼별로 발행
 - `recurring_items`: 일정 메타, 보관 여부, 색상, 암호화된 제목/설명.
 - `recurring_item_schedule_versions`: 반복 규칙 version.
 - `completion_logs`: occurrence 처리 기록.
-- `devices`: 현재 기기 식별과 활성 상태.
 - `user_content_encryption_keys`: content key 복구용 wrapped key.
 - `content_key_recovery_audit_events`: 서버 측 내용 복구 호출 감사 이벤트.
 
-원격 푸시용 `device_push_tokens`, `notification_delivery_jobs`, `notification_delivery_attempts`, `notification_inbox_items`는 현재 active flow에서 읽거나 쓰지 않는다.
+기준 스키마에는 원격 푸시용 `device_push_tokens`, `notification_delivery_jobs`, `notification_delivery_attempts`, `notification_inbox_items`를 두지 않는다.
 
 ## Auth And Session
 
@@ -192,12 +191,8 @@ anchor 조회는 화면 히스토리 조회와 섞지 않는다.
 일정 목록은 MVP에서 active 일정 최대 500개를 조회한다.
 500개를 넘는 사용자를 위한 검색과 페이지네이션은 후속 범위로 둔다.
 
-기기 목록은 기본적으로 active device 최대 50개를 조회한다.
-inactive device를 포함하는 조회는 명시적으로 요청할 때만 사용하고 최대 100개로 제한한다.
-
 조회 인덱스는 필터, 정렬, limit 패턴을 함께 기준으로 둔다.
 일정 목록은 `user_id`, `is_archived`, `created_at desc` 순서를 기준으로 조회한다.
-기기 목록은 `user_id`, `is_active`, `created_at desc` 순서를 기준으로 조회한다.
 completion log 최신 히스토리는 `user_id`, `item_id`, `scheduled_at_utc desc` 순서를 기준으로 조회한다.
 `completion_based` anchor 조회는 `user_id`, `item_id`, `action`, `acted_at_utc desc` 순서를 기준으로 조회한다.
 
@@ -238,7 +233,8 @@ content key 흐름:
 ## Local Notifications
 
 알림은 Expo Notifications 기반 기기 로컬 알림이다.
-서버 원격 푸시는 현재 active flow가 아니다.
+서버 원격 푸시는 사용하지 않는다.
+추후 필요하면 별도 작업으로 설계한다.
 
 예약 조건:
 
@@ -339,7 +335,7 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 
 ## Testing Guardrails
 
-현재 테스트는 다음 회귀를 막는다.
+현재 테스트는 다음 회귀를 확인한다.
 
 - 반복 규칙과 occurrence 계산.
 - 일정 수정 정책.
@@ -347,6 +343,6 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 - 홈 occurrence action flow.
 - 로컬 알림 예약과 lifecycle.
 - 알림 tap routing.
-- 원격 푸시 active flow 재도입.
-- content key 복구 정적 key 재도입.
+- 원격 푸시 코드 경로 없음.
+- content key 복구 정적 key 없음.
 - 복구 감사 이벤트의 민감 정보 저장.

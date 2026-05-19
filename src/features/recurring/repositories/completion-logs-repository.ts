@@ -11,7 +11,6 @@ import type {
 export type CreateCompletionLogInput = {
   actedAtUtc?: string;
   action: CompletionLog["action"];
-  deviceId?: string | null;
   itemId: string;
   scheduledAtUtc: string;
   userId: string;
@@ -72,7 +71,6 @@ function toCompletionLog(row: CompletionLogRow): CompletionLog {
     scheduledAtUtc: normalizeUtcString(row.scheduled_at_utc),
     action: row.action as CompletionLog["action"],
     actedAtUtc: normalizeUtcString(row.acted_at_utc),
-    deviceId: row.device_id,
     createdAt: normalizeUtcString(row.created_at),
   };
 }
@@ -91,7 +89,6 @@ function toCompletionLogInsert(
     acted_at_utc: input.actedAtUtc
       ? normalizeUtcString(input.actedAtUtc)
       : undefined,
-    device_id: input.deviceId,
   };
 }
 

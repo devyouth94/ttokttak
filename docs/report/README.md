@@ -7,5 +7,4 @@
 
 ## Reports
 
-- [iOS 시뮬레이터 APNs 푸시 진단](2026-05-05-ios-simulator-apns-push.md)
 - [Local Notification Privacy Verification](2026-05-07-local-notification-privacy-verification.md)
