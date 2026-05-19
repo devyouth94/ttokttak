@@ -7,14 +7,13 @@ import { type DateTimePickerEvent } from "@react-native-community/datetimepicker
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
-import { completeRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
 import {
   type AnchorType,
   type RecurrenceType,
   type RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
 import { supportsCompletionBased } from "~/features/recurring/domain/validation";
-import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
+import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import {
   archiveRecurringItem,
   createRecurringItem,
@@ -63,6 +62,11 @@ export function useRecurringItemFormScreenController({
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, profile, user } = useSession();
   const { syncAfterMutation } = useNotificationBootstrap();
+  const mutationPostprocess = createRecurringMutationPostprocessAdapter({
+    captureException: Sentry.captureException,
+    queryClient,
+    syncAfterMutation,
+  });
   const [requestState, setRequestState] = useState({
     isBootstrapping: isEditMode,
     isDeleting: false,
@@ -509,12 +513,6 @@ export function useRecurringItemFormScreenController({
     setField("notificationsEnabled", value);
   }
 
-  async function invalidateRecurringUserQueries(userId: string): Promise<void> {
-    await queryClient.invalidateQueries({
-      queryKey: recurringQueryKeys.user(userId),
-    });
-  }
-
   async function handleValidSubmit(
     values: RecurringItemFormValues
   ): Promise<void> {
@@ -553,13 +551,10 @@ export function useRecurringItemFormScreenController({
           timezone,
           userId: user.id,
         });
-        await completeRecurringItemMutationFlow({
-          captureException: Sentry.captureException,
+        await mutationPostprocess.completeItemMutation({
           effectiveFromUtc,
-          invalidateRecurringUserQueries,
           itemId,
           reason: "item-updated",
-          syncAfterMutation,
           userId: user.id,
         });
       } else {
@@ -567,13 +562,10 @@ export function useRecurringItemFormScreenController({
           ...draft,
           userId: user.id,
         });
-        await completeRecurringItemMutationFlow({
-          captureException: Sentry.captureException,
+        await mutationPostprocess.completeItemMutation({
           effectiveFromUtc,
-          invalidateRecurringUserQueries,
           itemId: createdItem.id,
           reason: "item-created",
-          syncAfterMutation,
           userId: user.id,
         });
       }
@@ -609,13 +601,10 @@ export function useRecurringItemFormScreenController({
         id: currentItemId,
         userId,
       });
-      await completeRecurringItemMutationFlow({
-        captureException: Sentry.captureException,
+      await mutationPostprocess.completeItemMutation({
         effectiveFromUtc,
-        invalidateRecurringUserQueries,
         itemId: currentItemId,
         reason: "item-archived",
-        syncAfterMutation,
         userId,
       });
 

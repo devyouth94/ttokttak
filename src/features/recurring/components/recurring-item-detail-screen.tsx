@@ -31,9 +31,8 @@ import {
   type ItemDetailSummaryBadge,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
-import { completeRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
 import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
-import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
+import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
@@ -386,6 +385,11 @@ export function RecurringItemDetailScreen({
   const { isReady, timezone, userId } = useRecurringFeedContext();
   const { syncAfterMutation } = useNotificationBootstrap();
   const queryClient = useQueryClient();
+  const mutationPostprocess = createRecurringMutationPostprocessAdapter({
+    captureException: Sentry.captureException,
+    queryClient,
+    syncAfterMutation,
+  });
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -487,14 +491,6 @@ export function RecurringItemDetailScreen({
     });
   };
 
-  const invalidateRecurringUserQueries = async (
-    currentUserId: string
-  ): Promise<void> => {
-    await queryClient.invalidateQueries({
-      queryKey: recurringQueryKeys.user(currentUserId),
-    });
-  };
-
   const handleDeleteConfirm = async (): Promise<void> => {
     if (!item || !userId || isMutating) {
       return;
@@ -510,13 +506,10 @@ export function RecurringItemDetailScreen({
         id: item.id,
         userId,
       });
-      await completeRecurringItemMutationFlow({
-        captureException: Sentry.captureException,
+      await mutationPostprocess.completeItemMutation({
         effectiveFromUtc,
-        invalidateRecurringUserQueries,
         itemId: item.id,
         reason: "item-archived",
-        syncAfterMutation,
         userId,
       });
 
