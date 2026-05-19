@@ -3,7 +3,7 @@ import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/
 const effectiveFromUtc = "2026-05-07T03:00:00.000Z";
 
 describe("createRecurringMutationPostprocessAdapter", () => {
-  it("일정 변경 후 알림 동기화와 recurring user query 무효화를 처리한다", async () => {
+  it("일정 변경 후 전체 알림 순서 동기화와 recurring user query 무효화를 처리한다", async () => {
     const events: string[] = [];
     const queryClient = {
       invalidateQueries: jest.fn(async () => {
@@ -27,11 +27,7 @@ describe("createRecurringMutationPostprocessAdapter", () => {
 
     expect(syncAfterMutation).toHaveBeenCalledWith({
       reason: "item-updated",
-      scope: {
-        effectiveFromUtc,
-        itemId: "item-1",
-        type: "item",
-      },
+      scope: { type: "all" },
     });
     expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["recurring", "user", "user-1"],

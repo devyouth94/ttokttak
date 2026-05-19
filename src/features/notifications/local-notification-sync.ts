@@ -83,14 +83,25 @@ export function createLocalReminderNotificationSyncPlan(params: {
   const scopedExistingNotifications = existingNotifications.filter(
     (notification) => isWithinScope(notification, scope)
   );
-  const desiredIdentifiers = new Set(
-    scopedDesiredNotifications.map((notification) => notification.identifier)
+  const existingNotificationCountOutsideScope =
+    pendingNotificationCount - scopedExistingNotifications.length;
+  const availableScopedNotificationSlots = Math.max(
+    0,
+    maxPendingLocalNotifications - existingNotificationCountOutsideScope
   );
-  const existingIdentifiers = new Set(
-    scopedExistingNotifications.map((notification) => notification.identifier)
+  const desiredNotificationsWithinLimit = [...scopedDesiredNotifications]
+    .sort((left, right) =>
+      left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
+    )
+    .slice(0, availableScopedNotificationSlots);
+  const desiredIdentifiersWithinLimit = new Set(
+    desiredNotificationsWithinLimit.map(
+      (notification) => notification.identifier
+    )
   );
   const notificationsToCancel = scopedExistingNotifications.filter(
-    (notification) => !desiredIdentifiers.has(notification.identifier)
+    (notification) =>
+      !desiredIdentifiersWithinLimit.has(notification.identifier)
   );
   const remainingPendingCount =
     pendingNotificationCount - notificationsToCancel.length;
@@ -98,7 +109,10 @@ export function createLocalReminderNotificationSyncPlan(params: {
     0,
     maxPendingLocalNotifications - remainingPendingCount
   );
-  const notificationsReadyToSchedule = scopedDesiredNotifications
+  const existingIdentifiers = new Set(
+    scopedExistingNotifications.map((notification) => notification.identifier)
+  );
+  const notificationsReadyToSchedule = desiredNotificationsWithinLimit
     .filter((notification) => !existingIdentifiers.has(notification.identifier))
     .sort((left, right) =>
       left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
@@ -112,7 +126,8 @@ export function createLocalReminderNotificationSyncPlan(params: {
     diagnostics: {
       candidateCount: scopedDesiredNotifications.length,
       omittedDistantCount:
-        notificationsReadyToSchedule.length - notificationsToSchedule.length,
+        scopedDesiredNotifications.length -
+        desiredNotificationsWithinLimit.length,
       scheduledCount: notificationsToSchedule.length,
     },
     notificationsToCancel,

@@ -380,6 +380,54 @@ describe("syncLocalReminderNotifications", () => {
 });
 
 describe("createLocalReminderNotificationSyncPlan", () => {
+  it("pending 상한이 차 있으면 먼 기존 알림을 비워 가까운 새 알림을 예약한다", () => {
+    const result = createLocalReminderNotificationSyncPlan({
+      desiredNotifications: [
+        createDesiredNotification({
+          itemId: "near-item",
+          scheduledAtUtc: "2026-04-21T12:00:00.000Z",
+        }),
+        createDesiredNotification({
+          itemId: "existing-item",
+          scheduledAtUtc: "2026-04-22T12:00:00.000Z",
+        }),
+        createDesiredNotification({
+          itemId: "far-item",
+          scheduledAtUtc: "2026-04-30T12:00:00.000Z",
+        }),
+      ],
+      existingNotifications: [
+        createExistingNotification({
+          itemId: "existing-item",
+          scheduledAtUtc: "2026-04-22T12:00:00.000Z",
+        }),
+        createExistingNotification({
+          itemId: "far-item",
+          scheduledAtUtc: "2026-04-30T12:00:00.000Z",
+        }),
+      ],
+      maxPendingLocalNotifications: 2,
+      pendingNotificationCount: 2,
+      scope: { type: "all" },
+    });
+
+    expect(
+      result.notificationsToCancel.map(
+        (notification) => notification.identifier
+      )
+    ).toEqual(["ttokttak:reminder:user-1:far-item:2026-04-30T12:00:00.000Z"]);
+    expect(
+      result.notificationsToSchedule.map(
+        (notification) => notification.identifier
+      )
+    ).toEqual(["ttokttak:reminder:user-1:near-item:2026-04-21T12:00:00.000Z"]);
+    expect(result.diagnostics).toEqual({
+      candidateCount: 3,
+      omittedDistantCount: 1,
+      scheduledCount: 1,
+    });
+  });
+
   it("scope 안에서 빠진 기존 알림은 취소하고 가까운 새 알림부터 예약한다", () => {
     const result = createLocalReminderNotificationSyncPlan({
       desiredNotifications: [

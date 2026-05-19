@@ -27,9 +27,7 @@ type CompleteRecurringItemMutationFlowInput = {
 
 export async function completeRecurringItemMutationFlow({
   captureException,
-  effectiveFromUtc,
   invalidateRecurringUserQueries,
-  itemId,
   reason,
   syncAfterMutation,
   userId,
@@ -38,11 +36,7 @@ export async function completeRecurringItemMutationFlow({
     captureException,
     invalidateRecurringUserQueries,
     reason,
-    scope: {
-      effectiveFromUtc,
-      itemId,
-      type: "item",
-    },
+    scope: { type: "all" },
     syncAfterMutation,
     userId,
   });
