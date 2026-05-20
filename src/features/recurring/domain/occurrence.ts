@@ -449,6 +449,107 @@ function buildLogsByScheduledAtUtc(
   );
 }
 
+type ScheduleOccurrenceCandidate = {
+  localDate: string;
+  scheduledAtUtc: string;
+};
+
+function getScheduleInitialAnchorLocalDate(params: {
+  completionLogs: CompletionLog[];
+  schedule: ScheduleContext;
+  timezone: string;
+}): string {
+  const { completionLogs, schedule, timezone } = params;
+
+  if (
+    schedule.anchorType === "completion_based" &&
+    supportsCompletionBasedRecurrence(schedule.recurrenceType)
+  ) {
+    return getInitialCompletionAnchorLocalDate(
+      schedule.itemId,
+      schedule.effectiveFromUtc,
+      schedule.seedStartDateLocal,
+      timezone,
+      completionLogs
+    );
+  }
+
+  return schedule.seedStartDateLocal;
+}
+
+function createScheduleOccurrenceCursor(params: {
+  initialAnchorLocalDate: string;
+  logsByScheduledAtUtc: Map<string, CompletionLog>;
+  schedule: ScheduleContext;
+  timezone: string;
+}): {
+  advance: (candidate: ScheduleOccurrenceCandidate) => void;
+  current: () => ScheduleOccurrenceCandidate | null;
+} {
+  const { initialAnchorLocalDate, logsByScheduledAtUtc, schedule, timezone } =
+    params;
+  const isCompletionBased =
+    schedule.anchorType === "completion_based" &&
+    supportsCompletionBasedRecurrence(schedule.recurrenceType);
+  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
+  let currentAnchorLocalDate = initialAnchorLocalDate;
+  let occurrenceCount = 0;
+
+  return {
+    advance: (candidate) => {
+      if (schedule.recurrenceType === "once") {
+        currentLocalDate = null;
+        return;
+      }
+
+      const matchedLog = logsByScheduledAtUtc.get(candidate.scheduledAtUtc);
+
+      if (isCompletionBased) {
+        if (matchedLog?.action === "completed") {
+          currentAnchorLocalDate = formatInTimeZone(
+            matchedLog.actedAtUtc,
+            timezone,
+            "yyyy-MM-dd"
+          );
+          currentLocalDate = getNextLocalDate(
+            schedule,
+            currentAnchorLocalDate,
+            currentAnchorLocalDate
+          );
+        } else {
+          currentLocalDate = getNextLocalDate(
+            schedule,
+            candidate.localDate,
+            currentAnchorLocalDate
+          );
+        }
+      } else {
+        currentLocalDate = getNextFixedLocalDate(schedule, candidate.localDate);
+      }
+
+      occurrenceCount += 1;
+      assertOccurrenceLimit(occurrenceCount);
+    },
+    current: () => {
+      if (
+        !currentLocalDate ||
+        isPastScheduleEndDate(schedule, currentLocalDate)
+      ) {
+        return null;
+      }
+
+      const localDate = currentLocalDate;
+      const scheduledAtUtc = getScheduledAtUtc(
+        localDate,
+        schedule.reminderTimeLocal,
+        timezone
+      );
+
+      return { localDate, scheduledAtUtc };
+    },
+  };
+}
+
 function collectOccurrencesForVersion(params: {
   completionLogs: CompletionLog[];
   logsByScheduledAtUtc: Map<string, CompletionLog>;
@@ -470,32 +571,20 @@ function collectOccurrencesForVersion(params: {
     versionEndUtc,
   } = params;
   const occurrences: DerivedOccurrence[] = [];
-  const isCompletionBased =
-    schedule.anchorType === "completion_based" &&
-    supportsCompletionBasedRecurrence(schedule.recurrenceType);
-  const initialAnchorLocalDate = isCompletionBased
-    ? getInitialCompletionAnchorLocalDate(
-        schedule.itemId,
-        schedule.effectiveFromUtc,
-        schedule.seedStartDateLocal,
-        timezone,
-        completionLogs
-      )
-    : schedule.seedStartDateLocal;
-  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
-  let currentAnchorLocalDate = initialAnchorLocalDate;
-  let occurrenceCount = 0;
+  const cursor = createScheduleOccurrenceCursor({
+    initialAnchorLocalDate: getScheduleInitialAnchorLocalDate({
+      completionLogs,
+      schedule,
+      timezone,
+    }),
+    logsByScheduledAtUtc,
+    schedule,
+    timezone,
+  });
+  let candidate = cursor.current();
 
-  while (currentLocalDate) {
-    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
-      break;
-    }
-
-    const scheduledAtUtc = getScheduledAtUtc(
-      currentLocalDate,
-      schedule.reminderTimeLocal,
-      timezone
-    );
+  while (candidate) {
+    const { localDate, scheduledAtUtc } = candidate;
 
     if (versionEndUtc && scheduledAtUtc >= versionEndUtc) {
       break;
@@ -513,7 +602,7 @@ function collectOccurrencesForVersion(params: {
         toOccurrence(
           schedule.itemId,
           schedule.reminderTimeLocal,
-          currentLocalDate,
+          localDate,
           timezone,
           logsByScheduledAtUtc,
           nowUtc
@@ -521,37 +610,8 @@ function collectOccurrencesForVersion(params: {
       );
     }
 
-    if (schedule.recurrenceType === "once") {
-      break;
-    }
-
-    const matchedLog = logsByScheduledAtUtc.get(scheduledAtUtc);
-
-    if (isCompletionBased) {
-      if (matchedLog?.action === "completed") {
-        currentAnchorLocalDate = formatInTimeZone(
-          matchedLog.actedAtUtc,
-          timezone,
-          "yyyy-MM-dd"
-        );
-        currentLocalDate = getNextLocalDate(
-          schedule,
-          currentAnchorLocalDate,
-          currentAnchorLocalDate
-        );
-      } else {
-        currentLocalDate = getNextLocalDate(
-          schedule,
-          currentLocalDate,
-          currentAnchorLocalDate
-        );
-      }
-    } else {
-      currentLocalDate = getNextFixedLocalDate(schedule, currentLocalDate);
-    }
-
-    occurrenceCount += 1;
-    assertOccurrenceLimit(occurrenceCount);
+    cursor.advance(candidate);
+    candidate = cursor.current();
   }
 
   return occurrences;
@@ -573,32 +633,20 @@ function findNextOccurrenceForVersion(params: {
     timezone,
     versionEndUtc,
   } = params;
-  const isCompletionBased =
-    schedule.anchorType === "completion_based" &&
-    supportsCompletionBasedRecurrence(schedule.recurrenceType);
-  const initialAnchorLocalDate = isCompletionBased
-    ? getInitialCompletionAnchorLocalDate(
-        schedule.itemId,
-        schedule.effectiveFromUtc,
-        schedule.seedStartDateLocal,
-        timezone,
-        completionLogs
-      )
-    : schedule.seedStartDateLocal;
-  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
-  let currentAnchorLocalDate = initialAnchorLocalDate;
-  let occurrenceCount = 0;
+  const cursor = createScheduleOccurrenceCursor({
+    initialAnchorLocalDate: getScheduleInitialAnchorLocalDate({
+      completionLogs,
+      schedule,
+      timezone,
+    }),
+    logsByScheduledAtUtc,
+    schedule,
+    timezone,
+  });
+  let candidate = cursor.current();
 
-  while (currentLocalDate) {
-    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
-      return null;
-    }
-
-    const scheduledAtUtc = getScheduledAtUtc(
-      currentLocalDate,
-      schedule.reminderTimeLocal,
-      timezone
-    );
+  while (candidate) {
+    const { localDate, scheduledAtUtc } = candidate;
 
     if (versionEndUtc && scheduledAtUtc >= versionEndUtc) {
       return null;
@@ -607,7 +655,7 @@ function findNextOccurrenceForVersion(params: {
     const occurrence = toOccurrence(
       schedule.itemId,
       schedule.reminderTimeLocal,
-      currentLocalDate,
+      localDate,
       timezone,
       logsByScheduledAtUtc,
       nowUtc
@@ -621,37 +669,8 @@ function findNextOccurrenceForVersion(params: {
       return occurrence;
     }
 
-    if (schedule.recurrenceType === "once") {
-      return null;
-    }
-
-    const matchedLog = logsByScheduledAtUtc.get(scheduledAtUtc);
-
-    if (isCompletionBased) {
-      if (matchedLog?.action === "completed") {
-        currentAnchorLocalDate = formatInTimeZone(
-          matchedLog.actedAtUtc,
-          timezone,
-          "yyyy-MM-dd"
-        );
-        currentLocalDate = getNextLocalDate(
-          schedule,
-          currentAnchorLocalDate,
-          currentAnchorLocalDate
-        );
-      } else {
-        currentLocalDate = getNextLocalDate(
-          schedule,
-          currentLocalDate,
-          currentAnchorLocalDate
-        );
-      }
-    } else {
-      currentLocalDate = getNextFixedLocalDate(schedule, currentLocalDate);
-    }
-
-    occurrenceCount += 1;
-    assertOccurrenceLimit(occurrenceCount);
+    cursor.advance(candidate);
+    candidate = cursor.current();
   }
 
   return null;
@@ -697,59 +716,23 @@ function findFirstFutureLocalDate(params: {
     schedule.itemId,
     completionLogs
   );
-  const isCompletionBased =
-    schedule.anchorType === "completion_based" &&
-    supportsCompletionBasedRecurrence(schedule.recurrenceType);
-  let currentLocalDate = getInitialOccurrenceLocalDate(schedule);
-  let currentAnchorLocalDate = initialAnchorLocalDate;
-  let occurrenceCount = 0;
+  const cursor = createScheduleOccurrenceCursor({
+    initialAnchorLocalDate,
+    logsByScheduledAtUtc,
+    schedule,
+    timezone,
+  });
+  let candidate = cursor.current();
 
-  while (currentLocalDate) {
-    if (isPastScheduleEndDate(schedule, currentLocalDate)) {
-      return null;
-    }
-
-    const scheduledAtUtc = getScheduledAtUtc(
-      currentLocalDate,
-      schedule.reminderTimeLocal,
-      timezone
-    );
+  while (candidate) {
+    const { localDate, scheduledAtUtc } = candidate;
 
     if (scheduledAtUtc >= effectiveFromUtc) {
-      return currentLocalDate;
+      return localDate;
     }
 
-    if (schedule.recurrenceType === "once") {
-      return null;
-    }
-
-    const matchedLog = logsByScheduledAtUtc.get(scheduledAtUtc);
-
-    if (isCompletionBased) {
-      if (matchedLog?.action === "completed") {
-        currentAnchorLocalDate = formatInTimeZone(
-          matchedLog.actedAtUtc,
-          timezone,
-          "yyyy-MM-dd"
-        );
-        currentLocalDate = getNextLocalDate(
-          schedule,
-          currentAnchorLocalDate,
-          currentAnchorLocalDate
-        );
-      } else {
-        currentLocalDate = getNextLocalDate(
-          schedule,
-          currentLocalDate,
-          currentAnchorLocalDate
-        );
-      }
-    } else {
-      currentLocalDate = getNextFixedLocalDate(schedule, currentLocalDate);
-    }
-
-    occurrenceCount += 1;
-    assertOccurrenceLimit(occurrenceCount);
+    cursor.advance(candidate);
+    candidate = cursor.current();
   }
 
   return null;
