@@ -2,51 +2,35 @@ import {
   createItemOccurrenceProjection,
   createLocalDateUtcRange,
 } from "~/features/recurring/domain/occurrence-projection";
-import type {
-  CompletionLog,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
+import {
+  createCompletionLogFixture,
+  createRecurringItemFixture,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
+import type { RecurringItem } from "~/features/recurring/domain/types";
 
 import {
   type HomeFeedOccurrenceLogInput,
   processHomeFeedOccurrenceAction,
 } from "./home-occurrence-action-flow";
 
-const timezone = "Asia/Seoul";
-
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-01T00:00:00.000Z",
-    description: null,
-    id: "item-1",
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
+  return createRecurringItemFixture({
     recurrenceType: "once",
     reminderTimeLocal: "18:00",
-    startDateLocal: "2026-04-10",
-    timezone,
-    title: "테스트 일정",
-    updatedAt: "2026-04-01T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
     ...overrides,
-  };
+  });
 }
 
-function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return {
+function createLog(
+  overrides: Parameters<typeof createCompletionLogFixture>[0] = {}
+) {
+  return createCompletionLogFixture({
     actedAtUtc: "2026-04-10T09:05:00.000Z",
-    action: "completed",
     createdAt: "2026-04-10T09:05:00.000Z",
-    id: "log-1",
-    itemId: "item-1",
     scheduledAtUtc: "2026-04-10T09:00:00.000Z",
-    userId: "user-1",
     ...overrides,
-  };
+  });
 }
 
 function getTodayOccurrence(item: RecurringItem) {

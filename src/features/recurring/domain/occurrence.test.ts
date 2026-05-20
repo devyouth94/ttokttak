@@ -4,68 +4,12 @@ import {
   hasOccurrenceBetweenLocalDates,
   resolveOccurrenceStatus,
 } from "~/features/recurring/domain/occurrence";
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
-
-const timezone = "Asia/Seoul";
-
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
-  return {
-    id: "item-1",
-    userId: "user-1",
-    title: "테스트 항목",
-    description: null,
-    colorKey: "blue",
-    recurrenceType: "daily",
-    intervalValue: null,
-    weekdayMask: null,
-    startDateLocal: "2026-04-01",
-    reminderTimeLocal: "09:00",
-    notificationsEnabled: true,
-    anchorType: "fixed",
-    timezone,
-    isArchived: false,
-    createdAt: "2026-04-01T00:00:00.000Z",
-    updatedAt: "2026-04-01T00:00:00.000Z",
-    ...overrides,
-  };
-}
-
-function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return {
-    id: "log-1",
-    userId: "user-1",
-    itemId: "item-1",
-    scheduledAtUtc: "2026-04-01T00:00:00.000Z",
-    action: "completed",
-    actedAtUtc: "2026-04-01T02:00:00.000Z",
-    createdAt: "2026-04-01T02:00:00.000Z",
-    ...overrides,
-  };
-}
-
-function createVersion(
-  overrides: Partial<RecurringItemScheduleVersion> = {}
-): RecurringItemScheduleVersion {
-  return {
-    id: "version-1",
-    itemId: "item-1",
-    userId: "user-1",
-    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
-    recurrenceType: "daily",
-    intervalValue: null,
-    weekdayMask: null,
-    reminderTimeLocal: "09:00",
-    anchorType: "fixed",
-    seedStartDateLocal: "2026-04-01",
-    notificationsEnabled: true,
-    createdAt: "2026-04-01T00:00:00.000Z",
-    ...overrides,
-  };
-}
+import {
+  createCompletionLogFixture as createLog,
+  createRecurringItemFixture as createItem,
+  createScheduleVersionFixture as createVersion,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 
 describe("getOccurrencesInRange", () => {
   it("월말 보정 규칙으로 monthly occurrence를 계산한다", () => {

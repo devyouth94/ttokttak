@@ -6,67 +6,43 @@ import {
   getItemDetailBasisOccurrence,
   getRecurringItemDetailDeleteReturnPath,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
+import {
+  createCompletionLogFixture,
+  createRecurringItemFixture,
+  createScheduleVersionFixture,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 import type {
   CompletionLog,
   RecurringItem,
   RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 
-const timezone = "Asia/Seoul";
-
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-01T00:00:00.000Z",
+  return createRecurringItemFixture({
     description: "매일 아침 복용합니다.",
-    id: "item-1",
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
     startDateLocal: "2026-04-08",
-    timezone,
     title: "영양제",
-    updatedAt: "2026-04-01T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
     ...overrides,
-  };
+  });
 }
 
 function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return {
+  return createCompletionLogFixture({
     actedAtUtc: "2026-04-10T00:05:00.000Z",
-    action: "completed",
     createdAt: "2026-04-10T00:05:00.000Z",
-    id: "log-1",
-    itemId: "item-1",
     scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-    userId: "user-1",
     ...overrides,
-  };
+  });
 }
 
 function createVersion(
   overrides: Partial<RecurringItemScheduleVersion> = {}
 ): RecurringItemScheduleVersion {
-  return {
-    id: "version-1",
-    itemId: "item-1",
-    userId: "user-1",
-    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
-    recurrenceType: "daily",
-    intervalValue: null,
-    weekdayMask: null,
-    reminderTimeLocal: "09:00",
-    anchorType: "fixed",
+  return createScheduleVersionFixture({
     seedStartDateLocal: "2026-04-08",
-    notificationsEnabled: true,
-    createdAt: "2026-04-01T00:00:00.000Z",
     ...overrides,
-  };
+  });
 }
 
 describe("recurring item detail helpers", () => {

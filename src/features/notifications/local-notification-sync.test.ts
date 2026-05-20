@@ -6,10 +6,11 @@ import {
   syncLocalReminderNotifications,
 } from "~/features/notifications/local-notification-sync";
 import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
-import type {
-  CompletionLog,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
+import {
+  createCompletionLogFixture as createCompletionLog,
+  createRecurringItemFixture as createRecurringItem,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 import { listCompletionLogs } from "~/features/recurring/repositories/completion-logs-repository";
 import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
 
@@ -43,8 +44,6 @@ jest.mock(
   })
 );
 
-const timezone = "Asia/Seoul";
-
 describe("syncLocalReminderNotifications", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -77,6 +76,7 @@ describe("syncLocalReminderNotifications", () => {
         id: "item-1",
         recurrenceType: "once",
         reminderTimeLocal: "21:00",
+        startDateLocal: "2026-04-21",
         title: "약 먹기",
       }),
     ]);
@@ -288,6 +288,7 @@ describe("syncLocalReminderNotifications", () => {
       createRecurringItem({
         id: "item-1",
         recurrenceType: "once",
+        startDateLocal: "2026-04-21",
         title: "약 먹기",
       }),
     ]);
@@ -359,6 +360,7 @@ describe("syncLocalReminderNotifications", () => {
       createRecurringItem({
         id: "item-1",
         recurrenceType: "once",
+        startDateLocal: "2026-04-21",
         title: "약 먹기",
       }),
     ]);
@@ -581,20 +583,6 @@ function createDesiredNotification(params: {
   };
 }
 
-function createCompletionLog(
-  overrides: Partial<CompletionLog> &
-    Pick<CompletionLog, "itemId" | "scheduledAtUtc">
-): CompletionLog {
-  return {
-    action: "completed",
-    actedAtUtc: "2026-04-20T13:00:00.000Z",
-    createdAt: "2026-04-20T13:00:00.000Z",
-    id: "log-1",
-    userId: "user-1",
-    ...overrides,
-  };
-}
-
 function createUnrelatedScheduledNotificationRequest(
   identifier: string
 ): Notifications.NotificationRequest {
@@ -609,31 +597,5 @@ function createUnrelatedScheduledNotificationRequest(
     },
     identifier,
     trigger: null,
-  };
-}
-
-function createRecurringItem(
-  overrides: Partial<RecurringItem> & Pick<RecurringItem, "id" | "title">
-): RecurringItem {
-  const { id, title, ...rest } = overrides;
-
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-20T00:00:00.000Z",
-    description: null,
-    id,
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
-    startDateLocal: "2026-04-21",
-    timezone,
-    title,
-    updatedAt: "2026-04-20T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
-    ...rest,
   };
 }

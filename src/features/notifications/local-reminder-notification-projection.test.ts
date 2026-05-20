@@ -1,11 +1,11 @@
-import type {
-  CompletionLog,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
+import {
+  createCompletionLogFixture as createCompletionLog,
+  createRecurringItemFixture as createRecurringItem,
+  createScheduleVersionFixture,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 
 import { createLocalReminderNotificationProjection } from "./local-reminder-notification-projection";
-
-const timezone = "Asia/Seoul";
 
 describe("createLocalReminderNotificationProjection", () => {
   it("복구 불가 일정과 설명을 제외하고 기기 로컬 알림 후보를 만든다", () => {
@@ -17,6 +17,7 @@ describe("createLocalReminderNotificationProjection", () => {
           id: "item-1",
           recurrenceType: "once",
           reminderTimeLocal: "21:00",
+          startDateLocal: "2026-04-21",
           title: "약 먹기",
         }),
         createRecurringItem({
@@ -26,6 +27,7 @@ describe("createLocalReminderNotificationProjection", () => {
           },
           id: "unrecoverable-item",
           recurrenceType: "once",
+          startDateLocal: "2026-04-21",
           title: "복구 불가",
         }),
       ],
@@ -134,22 +136,15 @@ describe("createLocalReminderNotificationProjection", () => {
           recurrenceType: "daily",
           reminderTimeLocal: "21:00",
           scheduleVersions: [
-            {
-              anchorType: "fixed",
-              createdAt: "2026-04-20T00:00:00.000Z",
+            createScheduleVersionFixture({
               effectiveFromUtc: "2026-04-20T15:00:00.000Z",
               endDateLocal: "2026-04-22",
               id: "version-1",
-              intervalValue: null,
-              itemId: "item-1",
-              notificationsEnabled: true,
-              recurrenceType: "daily",
               reminderTimeLocal: "21:00",
               seedStartDateLocal: "2026-04-21",
-              userId: "user-1",
-              weekdayMask: null,
-            },
+            }),
           ],
+          startDateLocal: "2026-04-21",
           title: "약 먹기",
         }),
       ],
@@ -163,43 +158,3 @@ describe("createLocalReminderNotificationProjection", () => {
     ).toEqual(["2026-04-21T12:00:00.000Z", "2026-04-22T12:00:00.000Z"]);
   });
 });
-
-function createCompletionLog(
-  overrides: Partial<CompletionLog> &
-    Pick<CompletionLog, "itemId" | "scheduledAtUtc">
-): CompletionLog {
-  return {
-    action: "completed",
-    actedAtUtc: "2026-04-20T13:00:00.000Z",
-    createdAt: "2026-04-20T13:00:00.000Z",
-    id: "log-1",
-    userId: "user-1",
-    ...overrides,
-  };
-}
-
-function createRecurringItem(
-  overrides: Partial<RecurringItem> & Pick<RecurringItem, "id" | "title">
-): RecurringItem {
-  const { id, title, ...rest } = overrides;
-
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-20T00:00:00.000Z",
-    description: null,
-    id,
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
-    startDateLocal: "2026-04-21",
-    timezone,
-    title,
-    updatedAt: "2026-04-20T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
-    ...rest,
-  };
-}

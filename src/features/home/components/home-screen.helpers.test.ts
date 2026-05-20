@@ -3,67 +3,42 @@ import {
   buildHomeFeedSections,
   createHomeDateOptions,
 } from "~/features/home/components/home-screen.helpers";
+import {
+  createCompletionLogFixture,
+  createRecurringItemFixture,
+  createScheduleVersionFixture,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 import type {
   CompletionLog,
   RecurringItem,
   RecurringItemScheduleVersion,
 } from "~/features/recurring/domain/types";
 
-const timezone = "Asia/Seoul";
-
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-01T00:00:00.000Z",
-    description: null,
-    id: "item-1",
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
+  return createRecurringItemFixture({
     recurrenceType: "once",
-    reminderTimeLocal: "09:00",
-    startDateLocal: "2026-04-10",
-    timezone,
     title: "테스트 항목",
-    updatedAt: "2026-04-01T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
     ...overrides,
-  };
+  });
 }
 
 function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return {
+  return createCompletionLogFixture({
     actedAtUtc: "2026-04-12T01:05:00.000Z",
-    action: "completed",
     createdAt: "2026-04-12T01:05:00.000Z",
-    id: "log-1",
-    itemId: "item-1",
     scheduledAtUtc: "2026-04-12T00:00:00.000Z",
-    userId: "user-1",
     ...overrides,
-  };
+  });
 }
 
 function createVersion(
   overrides: Partial<RecurringItemScheduleVersion> = {}
 ): RecurringItemScheduleVersion {
-  return {
-    id: "version-1",
-    itemId: "item-1",
-    userId: "user-1",
-    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
-    recurrenceType: "daily",
-    intervalValue: null,
-    weekdayMask: null,
-    reminderTimeLocal: "09:00",
-    anchorType: "fixed",
+  return createScheduleVersionFixture({
     seedStartDateLocal: "2026-04-10",
-    notificationsEnabled: true,
-    createdAt: "2026-04-01T00:00:00.000Z",
     ...overrides,
-  };
+  });
 }
 
 describe("buildHomeFeedSections", () => {

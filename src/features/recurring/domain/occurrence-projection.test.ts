@@ -6,47 +6,11 @@ import {
   getNextItemOccurrenceEntries,
   getScheduledItemOccurrenceEntriesInRange,
 } from "~/features/recurring/domain/occurrence-projection";
-import type {
-  CompletionLog,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
-
-const timezone = "Asia/Seoul";
-
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-01T00:00:00.000Z",
-    description: null,
-    id: "item-1",
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
-    startDateLocal: "2026-04-10",
-    timezone,
-    title: "테스트 일정",
-    updatedAt: "2026-04-01T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
-    ...overrides,
-  };
-}
-
-function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return {
-    actedAtUtc: "2026-04-11T00:05:00.000Z",
-    action: "completed",
-    createdAt: "2026-04-11T00:05:00.000Z",
-    id: "log-1",
-    itemId: "item-1",
-    scheduledAtUtc: "2026-04-11T00:00:00.000Z",
-    userId: "user-1",
-    ...overrides,
-  };
-}
+import {
+  createCompletionLogFixture as createLog,
+  createRecurringItemFixture as createItem,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 
 describe("occurrence projection", () => {
   it("local date range를 timezone 기준 UTC range로 바꾼다", () => {

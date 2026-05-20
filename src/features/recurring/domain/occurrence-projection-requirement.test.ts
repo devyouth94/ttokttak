@@ -1,52 +1,9 @@
 import { getOccurrenceProjectionRequirement } from "~/features/recurring/domain/occurrence-projection-requirement";
-import type {
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
-
-const timezone = "Asia/Seoul";
-
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
-    createdAt: "2026-04-01T00:00:00.000Z",
-    description: null,
-    id: "item-1",
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
-    startDateLocal: "2026-04-10",
-    timezone,
-    title: "테스트 일정",
-    updatedAt: "2026-04-01T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
-    ...overrides,
-  };
-}
-
-function createVersion(
-  overrides: Partial<RecurringItemScheduleVersion> = {}
-): RecurringItemScheduleVersion {
-  return {
-    anchorType: "fixed",
-    createdAt: "2026-04-01T00:00:00.000Z",
-    effectiveFromUtc: "2026-04-01T00:00:00.000Z",
-    id: "version-1",
-    intervalValue: null,
-    itemId: "item-1",
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
-    seedStartDateLocal: "2026-04-10",
-    userId: "user-1",
-    weekdayMask: null,
-    ...overrides,
-  };
-}
+import {
+  createRecurringItemFixture as createItem,
+  createScheduleVersionFixture as createVersion,
+  recurringTestTimezone as timezone,
+} from "~/features/recurring/domain/recurring-test-fixtures";
 
 describe("occurrence projection requirement", () => {
   it("홈 피드 오늘 선택 시 projection과 completion log 조회 조건을 함께 정한다", () => {

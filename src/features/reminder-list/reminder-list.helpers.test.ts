@@ -1,3 +1,4 @@
+import { createRecurringItemFixture } from "~/features/recurring/domain/recurring-test-fixtures";
 import type { RecurringItem } from "~/features/recurring/domain/types";
 
 import {
@@ -239,25 +240,10 @@ describe("reminder-list helpers", () => {
 function createRecurringItem(
   overrides: Partial<RecurringItem> & Pick<RecurringItem, "id" | "title">
 ): RecurringItem {
-  const { id, title, ...rest } = overrides;
-
-  return {
-    anchorType: "fixed",
-    colorKey: "blue",
+  return createRecurringItemFixture({
     createdAt: "2026-04-20T00:00:00.000Z",
-    description: null,
-    id,
-    intervalValue: null,
-    isArchived: false,
-    notificationsEnabled: true,
-    recurrenceType: "daily",
-    reminderTimeLocal: "09:00",
     startDateLocal: "2026-04-22",
-    timezone: "Asia/Seoul",
-    title,
     updatedAt: "2026-04-20T00:00:00.000Z",
-    userId: "user-1",
-    weekdayMask: null,
-    ...rest,
-  };
+    ...overrides,
+  });
 }

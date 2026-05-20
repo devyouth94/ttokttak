@@ -27,7 +27,13 @@ const contentCipher = {
 
 describe("recurring items repository", () => {
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-05-07T03:00:00.000Z"));
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("신규 일정 생성은 제목과 설명을 암호화해서 저장하고 조회 시 복호화된 값을 제공한다", async () => {
