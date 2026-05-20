@@ -31,8 +31,6 @@ import {
   getRecurringItemFormEndDateControlState,
   getRecurringItemFormFirstErrorTarget,
   getRecurringItemFormScreenTitle,
-  parseLocalDateToDate,
-  parseLocalTimeToDate,
 } from "./recurring-item-form-screen.helpers";
 import {
   AdvancedOptionsSection,
@@ -42,6 +40,10 @@ import {
   RecurrenceSection,
 } from "./recurring-item-form-screen.sections";
 import { styles } from "./recurring-item-form-screen.styles";
+import {
+  parseLocalDateToDate,
+  parseLocalTimeToDate,
+} from "./recurring-item-form-state";
 
 type ScreenErrorCardProps = {
   message: string | null;

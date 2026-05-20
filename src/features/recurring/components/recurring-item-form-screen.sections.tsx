@@ -26,7 +26,6 @@ import {
 } from "~/features/recurring/domain/types";
 
 import {
-  type CustomRecurrenceUnit,
   customRecurrenceUnitOptions,
   getAdvancedOptionsState,
   getCompletionBasedInfoText,
@@ -36,6 +35,7 @@ import {
   weekdayOptions,
 } from "./recurring-item-form-screen.helpers";
 import { styles } from "./recurring-item-form-screen.styles";
+import { type CustomRecurrenceUnit } from "./recurring-item-form-state";
 
 type WeekdaySelectorProps = {
   errorMessage?: string;
