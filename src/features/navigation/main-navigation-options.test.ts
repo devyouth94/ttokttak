@@ -21,7 +21,7 @@ describe("main navigation options", () => {
   });
 
   it("루트 layout은 메인 탭 컨테이너에 swipe back 차단 옵션을 적용한다", () => {
-    const rootLayout = readWorkspaceFile("src/app/_layout.tsx");
+    const rootLayout = readWorkspaceFile("app/_layout.tsx");
 
     expect(rootLayout).toContain(
       '<Stack.Screen name="(tabs)" options={mainTabsRootScreenOptions} />'
@@ -38,10 +38,10 @@ describe("main navigation options", () => {
 
   it("네 개 메인 탭 layout은 공통 stack 옵션을 적용한다", () => {
     const tabLayoutPaths = [
-      "src/app/(tabs)/home/_layout.tsx",
-      "src/app/(tabs)/schedule/_layout.tsx",
-      "src/app/(tabs)/calendar/_layout.tsx",
-      "src/app/(tabs)/settings/_layout.tsx",
+      "app/(tabs)/home/_layout.tsx",
+      "app/(tabs)/schedule/_layout.tsx",
+      "app/(tabs)/calendar/_layout.tsx",
+      "app/(tabs)/settings/_layout.tsx",
     ];
 
     for (const tabLayoutPath of tabLayoutPaths) {

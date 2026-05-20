@@ -28,7 +28,10 @@
 
 ### Presentation
 
-- `src/app`: Expo Router route.
+- `app`: Expo Router route.
+- `src/application`: provider, bootstrap, route params wiring.
+- `src/screens/login`: 로그인 화면.
+- `src/screens/settings`: 설정 화면.
 - `src/features/*/components`: 화면과 화면 전용 UI.
 - `src/design-system`: 공통 텍스트, 화면, 카드, 버튼, token.
 

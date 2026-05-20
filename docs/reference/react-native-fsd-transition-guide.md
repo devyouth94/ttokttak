@@ -222,19 +222,22 @@ constants
 
 ## 전환 순서
 
-1. Route 이동.
+1. Route shell과 application layer 기준 세우기.
    `src/app` route를 루트 `app`으로 옮긴다.
-   route 파일은 screen만 렌더링하게 만든다.
-2. Screens 생성.
-   `home`, `schedule-list`, `calendar`, `settings`, `schedule-detail`, `schedule-create`, `schedule-edit`, `login`을 만든다.
+   provider, bootstrap, app-level wiring은 `src/application`으로 옮긴다.
+   route 파일은 params를 읽고 screen만 연결한다.
+   route가 직접 가진 화면 구현은 `src/screens`로 옮긴다.
+2. Screens 정리.
+   `home`, `schedule-list`, `calendar`, `schedule-detail`, `schedule-create`, `schedule-edit`, `login`을 만든다.
+   이미 만든 `settings`는 같은 screen slice 기준을 따른다.
 3. Shared 정리.
    디자인 시스템, QueryClient, error helper, Supabase client, Sentry config를 `shared` 기준으로 옮긴다.
 4. `entities/schedule` 생성.
    일정 도메인 타입, 반복 규칙, occurrence 계산, projection, 저장소, 도메인 UI를 옮긴다.
 5. Features 추출.
    일정 생성/수정/보관, occurrence 완료/건너뛰기, 로그인, 계정 삭제, 알림 동기화를 use case 단위로 나눈다.
-6. `src/application` 생성.
-   provider, bootstrap, app-level wiring을 정리한다.
+6. Application wiring 보강.
+   route shell이 요구하는 전역 wiring이 늘어나면 `src/application` 안에서 목적별로 정리한다.
 7. Import rule과 public API 정리.
    barrel export, path alias, lint rule 또는 dependency rule을 추가한다.
 

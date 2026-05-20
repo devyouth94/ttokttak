@@ -178,7 +178,7 @@ function getNotificationStatusText(
   return "꺼짐";
 }
 
-export default function SettingsTabPage(): React.JSX.Element {
+export function SettingsScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,

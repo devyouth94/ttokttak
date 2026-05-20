@@ -1,26 +1,13 @@
 import { useEffect, useRef } from "react";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
-import { SplashScreen, Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { PortalHost } from "@rn-primitives/portal";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { SplashScreen } from "expo-router";
 
-import { mainTabsRootScreenOptions } from "~/features/navigation/main-navigation-options";
-import {
-  NotificationBootstrapProvider,
-  useNotificationBootstrap,
-} from "~/features/notifications/notification-bootstrap";
+import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
 import {
   getNotificationNavigationKey,
   navigateFromNotificationResponse,
 } from "~/features/notifications/notification-response-navigation";
-import {
-  SessionProvider,
-  useSession,
-} from "~/features/session/session-provider";
-import { queryClient } from "~/lib/query/query-client";
-import { Sentry } from "~/lib/sentry";
+import { useSession } from "~/features/session/session-provider";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -33,7 +20,16 @@ Notifications.setNotificationHandler({
   }),
 });
 
-function SplashScreenController() {
+export function AppBootstrap(): React.JSX.Element {
+  return (
+    <>
+      <SplashScreenController />
+      <NotificationResponseController />
+    </>
+  );
+}
+
+function SplashScreenController(): null {
   const { isLoading } = useSession();
 
   useEffect(() => {
@@ -91,25 +87,3 @@ function NotificationResponseController(): null {
 
   return null;
 }
-
-function RootLayout() {
-  return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <SessionProvider>
-          <NotificationBootstrapProvider>
-            <StatusBar style="dark" />
-            <SplashScreenController />
-            <NotificationResponseController />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" options={mainTabsRootScreenOptions} />
-            </Stack>
-            <PortalHost />
-          </NotificationBootstrapProvider>
-        </SessionProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
-  );
-}
-
-export default Sentry.wrap(RootLayout);
