@@ -2,14 +2,14 @@ import type { RecurringItem } from "~/entities/schedule";
 import { createRecurringItemFixture } from "~/entities/schedule/testing";
 
 import {
-  buildReminderListEntries,
-  formatReminderListNextOccurrenceTimeLabel,
-} from "./reminder-list.helpers";
+  buildScheduleListEntries,
+  formatScheduleListNextOccurrenceTimeLabel,
+} from "./schedule-list-entries";
 
-describe("reminder-list helpers", () => {
+describe("schedule-list entries", () => {
   it("내일 반복 일정의 다음 예정 시간만 표시한다", () => {
     expect(
-      formatReminderListNextOccurrenceTimeLabel(
+      formatScheduleListNextOccurrenceTimeLabel(
         "2026-04-23T00:00:00.000Z",
         "Asia/Seoul"
       )
@@ -18,7 +18,7 @@ describe("reminder-list helpers", () => {
 
   it("오늘이고 아직 미래인 반복 예정일도 시간만 표시한다", () => {
     expect(
-      formatReminderListNextOccurrenceTimeLabel(
+      formatScheduleListNextOccurrenceTimeLabel(
         "2026-04-22T00:00:00.000Z",
         "Asia/Seoul"
       )
@@ -27,7 +27,7 @@ describe("reminder-list helpers", () => {
 
   it("14일 이내 반복 예정일도 시간만 표시한다", () => {
     expect(
-      formatReminderListNextOccurrenceTimeLabel(
+      formatScheduleListNextOccurrenceTimeLabel(
         "2026-04-25T00:00:00.000Z",
         "Asia/Seoul"
       )
@@ -36,7 +36,7 @@ describe("reminder-list helpers", () => {
 
   it("15일 이후 반복 예정일도 시간만 표시한다", () => {
     expect(
-      formatReminderListNextOccurrenceTimeLabel(
+      formatScheduleListNextOccurrenceTimeLabel(
         "2026-05-11T23:00:00.000Z",
         "Asia/Seoul"
       )
@@ -45,7 +45,7 @@ describe("reminder-list helpers", () => {
 
   it("한 번 일정도 시간만 표시한다", () => {
     expect(
-      formatReminderListNextOccurrenceTimeLabel(
+      formatScheduleListNextOccurrenceTimeLabel(
         "2026-05-11T23:00:00.000Z",
         "Asia/Seoul"
       )
@@ -53,7 +53,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("오늘 시간이 지난 반복 일정은 다음 발생을 표시한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -72,7 +72,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("다음 예정이 없는 일정은 예정 없음으로 표시한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -101,7 +101,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("종료일이 지나 다음 예정이 없는 반복 일정도 목록 row에서는 예정 없음으로 표시한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -122,7 +122,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("일정 목록 entry는 일정 색상 key를 함께 제공한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -139,7 +139,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("기본 정렬은 제목순이다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -163,7 +163,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("생성순에서는 다음 예정이 없어도 생성일 기준으로 정렬한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -189,7 +189,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("제목순으로 정렬한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -210,7 +210,7 @@ describe("reminder-list helpers", () => {
   });
 
   it("제목순에서는 다음 예정이 없어도 제목 기준으로 정렬한다", () => {
-    const entries = buildReminderListEntries({
+    const entries = buildScheduleListEntries({
       completionLogs: [],
       items: [
         createRecurringItem({

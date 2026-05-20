@@ -14,7 +14,7 @@ function readWorkspaceFile(relativePath: string): string {
 describe("CalendarScreen", () => {
   it("월 이동은 스와이프가 아니라 상단 화살표로만 제공한다", () => {
     const calendarScreen = readWorkspaceFile(
-      "src/features/calendar-view/components/calendar-screen.tsx"
+      "src/screens/calendar/ui/calendar-screen.tsx"
     );
 
     expect(calendarScreen).toContain("<MonthArrowButton");
@@ -24,7 +24,7 @@ describe("CalendarScreen", () => {
 
   it("캘린더의 현재 시각 기준은 mount 시점에 고정하지 않는다", () => {
     const calendarScreen = readWorkspaceFile(
-      "src/features/calendar-view/components/calendar-screen.tsx"
+      "src/screens/calendar/ui/calendar-screen.tsx"
     );
 
     expect(calendarScreen).toContain("useOccurrenceProjectionNow");

@@ -1,5 +1,5 @@
-import { ReminderListScreen } from "~/features/reminder-list/components/reminder-list-screen";
+import { ScheduleListScreen } from "~/screens/schedule-list";
 
 export default function ScheduleTabPage(): React.JSX.Element {
-  return <ReminderListScreen />;
+  return <ScheduleListScreen />;
 }

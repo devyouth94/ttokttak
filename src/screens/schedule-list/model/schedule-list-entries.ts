@@ -11,7 +11,7 @@ import {
   getRecurrenceLabel,
 } from "~/entities/schedule";
 
-export type ReminderListEntry = {
+export type ScheduleListEntry = {
   colorKey: RecurringItemColorKey;
   id: string;
   item: RecurringItem;
@@ -21,23 +21,23 @@ export type ReminderListEntry = {
   title: string;
 };
 
-export type ReminderListSortMode = "createdDesc" | "titleAsc";
+export type ScheduleListSortMode = "createdDesc" | "titleAsc";
 
-export const DEFAULT_REMINDER_LIST_SORT_MODE: ReminderListSortMode = "titleAsc";
+export const DEFAULT_SCHEDULE_LIST_SORT_MODE: ScheduleListSortMode = "titleAsc";
 
-export function buildReminderListEntries({
+export function buildScheduleListEntries({
   completionLogs,
   items,
   now,
-  sortMode = DEFAULT_REMINDER_LIST_SORT_MODE,
+  sortMode = DEFAULT_SCHEDULE_LIST_SORT_MODE,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
   now: Date;
-  sortMode?: ReminderListSortMode;
+  sortMode?: ScheduleListSortMode;
   timezone: string;
-}): ReminderListEntry[] {
+}): ScheduleListEntry[] {
   return getNextItemOccurrenceEntries({
     completionLogs,
     items,
@@ -49,7 +49,7 @@ export function buildReminderListEntries({
       id: item.id,
       item,
       nextOccurrenceTimeLabel: occurrence
-        ? formatReminderListNextOccurrenceTimeLabel(
+        ? formatScheduleListNextOccurrenceTimeLabel(
             occurrence.scheduledAtUtc,
             timezone
           )
@@ -58,10 +58,10 @@ export function buildReminderListEntries({
       recurrenceLabel: getRecurrenceLabel(item),
       title: item.title,
     }))
-    .sort((left, right) => compareReminderListEntries(left, right, sortMode));
+    .sort((left, right) => compareScheduleListEntries(left, right, sortMode));
 }
 
-export function formatReminderListNextOccurrenceTimeLabel(
+export function formatScheduleListNextOccurrenceTimeLabel(
   scheduledAtUtc: string,
   timezone: string
 ): string {
@@ -70,10 +70,10 @@ export function formatReminderListNextOccurrenceTimeLabel(
   });
 }
 
-function compareReminderListEntries(
-  left: ReminderListEntry,
-  right: ReminderListEntry,
-  sortMode: ReminderListSortMode
+function compareScheduleListEntries(
+  left: ScheduleListEntry,
+  right: ScheduleListEntry,
+  sortMode: ScheduleListSortMode
 ): number {
   return sortMode === "createdDesc"
     ? compareByCreatedAtDesc(left, right)
@@ -81,8 +81,8 @@ function compareReminderListEntries(
 }
 
 function compareByCreatedAtDesc(
-  left: ReminderListEntry,
-  right: ReminderListEntry
+  left: ScheduleListEntry,
+  right: ScheduleListEntry
 ): number {
   return (
     right.item.createdAt.localeCompare(left.item.createdAt) ||
@@ -91,8 +91,8 @@ function compareByCreatedAtDesc(
 }
 
 function compareByTitleAsc(
-  left: ReminderListEntry,
-  right: ReminderListEntry
+  left: ScheduleListEntry,
+  right: ScheduleListEntry
 ): number {
   return (
     left.title.localeCompare(right.title, "ko") ||
@@ -101,8 +101,8 @@ function compareByTitleAsc(
 }
 
 function compareByCreatedAtDescOnly(
-  left: ReminderListEntry,
-  right: ReminderListEntry
+  left: ScheduleListEntry,
+  right: ScheduleListEntry
 ): number {
   return right.item.createdAt.localeCompare(left.item.createdAt);
 }

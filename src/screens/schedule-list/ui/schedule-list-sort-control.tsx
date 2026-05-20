@@ -3,14 +3,14 @@ import {
   type AppSelectMenuOption,
 } from "~/shared/ui/app-select-menu";
 
-import type { ReminderListSortMode } from "../reminder-list.helpers";
+import type { ScheduleListSortMode } from "../model/schedule-list-entries";
 
-type ReminderListSortControlProps = {
-  onChange: (value: ReminderListSortMode) => void;
-  value: ReminderListSortMode;
+type ScheduleListSortControlProps = {
+  onChange: (value: ScheduleListSortMode) => void;
+  value: ScheduleListSortMode;
 };
 
-const sortOptions: AppSelectMenuOption<ReminderListSortMode>[] = [
+const sortOptions: AppSelectMenuOption<ScheduleListSortMode>[] = [
   {
     accessibilityHint: "제목순으로 정렬해요.",
     label: "제목순",
@@ -23,10 +23,10 @@ const sortOptions: AppSelectMenuOption<ReminderListSortMode>[] = [
   },
 ];
 
-export function ReminderListSortControl({
+export function ScheduleListSortControl({
   onChange,
   value,
-}: ReminderListSortControlProps): React.JSX.Element {
+}: ScheduleListSortControlProps): React.JSX.Element {
   const selectedOption = getSortOption(value);
 
   return (
@@ -42,10 +42,10 @@ export function ReminderListSortControl({
   );
 }
 
-function getSortOption(value: ReminderListSortMode): {
+function getSortOption(value: ScheduleListSortMode): {
   accessibilityHint?: string;
   label: string;
-  value: ReminderListSortMode;
+  value: ScheduleListSortMode;
 } {
   return (
     sortOptions.find((option) => option.value === value) ?? sortOptions[0]!

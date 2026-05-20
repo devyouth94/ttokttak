@@ -9,31 +9,31 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-import { RecurringItemSummaryRow } from "~/entities/schedule/ui";
+import { RecurringItemSummaryRow } from "~/entities/schedule";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
+import { useOccurrenceProjectionNow } from "~/features/recurring/hooks/use-occurrence-projection-now";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { colors, spacing } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
-import { ReminderListLoadingPlaceholder } from "./reminder-list-loading-placeholder";
-import { ReminderListSortControl } from "./reminder-list-sort-control";
+import { ScheduleListLoadingPlaceholder } from "./schedule-list-loading-placeholder";
+import { ScheduleListSortControl } from "./schedule-list-sort-control";
 import {
-  ReminderListEmptyState,
-  ReminderListErrorState,
-} from "./reminder-list-state-views";
-import { useReminderListNow } from "../hooks/use-reminder-list-now";
+  ScheduleListEmptyState,
+  ScheduleListErrorState,
+} from "./schedule-list-state-views";
 import {
-  buildReminderListEntries,
-  DEFAULT_REMINDER_LIST_SORT_MODE,
-  type ReminderListEntry,
-  type ReminderListSortMode,
-} from "../reminder-list.helpers";
+  buildScheduleListEntries,
+  DEFAULT_SCHEDULE_LIST_SORT_MODE,
+  type ScheduleListEntry,
+  type ScheduleListSortMode,
+} from "../model/schedule-list-entries";
 
-export function ReminderListScreen(): React.JSX.Element {
+export function ScheduleListScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  const now = useReminderListNow();
+  const now = useOccurrenceProjectionNow();
   const {
     headerAnimatedStyle,
     headerHeight,
@@ -41,8 +41,8 @@ export function ReminderListScreen(): React.JSX.Element {
     onScroll,
     scrollEventThrottle,
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const [sortMode, setSortMode] = useState<ReminderListSortMode>(
-    DEFAULT_REMINDER_LIST_SORT_MODE
+  const [sortMode, setSortMode] = useState<ScheduleListSortMode>(
+    DEFAULT_SCHEDULE_LIST_SORT_MODE
   );
   const projectionQuery = useOccurrenceProjectionQuery({
     purpose: {
@@ -53,7 +53,7 @@ export function ReminderListScreen(): React.JSX.Element {
   const items = projectionQuery.items;
   const entries = useMemo(
     () =>
-      buildReminderListEntries({
+      buildScheduleListEntries({
         completionLogs: projectionQuery.completionLogs,
         items,
         now,
@@ -95,11 +95,11 @@ export function ReminderListScreen(): React.JSX.Element {
             { paddingTop: headerHeight },
           ]}
         >
-          <ReminderListLoadingPlaceholder />
+          <ScheduleListLoadingPlaceholder />
         </View>
       ) : error ? (
         <View style={[styles.staticContent, { paddingTop: headerHeight }]}>
-          <ReminderListErrorState onRetry={handleRetry} />
+          <ScheduleListErrorState onRetry={handleRetry} />
         </View>
       ) : (
         <FlatList
@@ -116,14 +116,14 @@ export function ReminderListScreen(): React.JSX.Element {
           ListHeaderComponent={
             entries.length > 0 ? (
               <View style={styles.sortControlSlot}>
-                <ReminderListSortControl
+                <ScheduleListSortControl
                   onChange={setSortMode}
                   value={sortMode}
                 />
               </View>
             ) : null
           }
-          ListEmptyComponent={<ReminderListEmptyState />}
+          ListEmptyComponent={<ScheduleListEmptyState />}
           refreshControl={
             <RefreshControl
               onRefresh={handleRefresh}
@@ -164,7 +164,7 @@ export function ReminderListScreen(): React.JSX.Element {
   );
 }
 
-function keyExtractor(entry: ReminderListEntry): string {
+function keyExtractor(entry: ScheduleListEntry): string {
   return entry.id;
 }
 

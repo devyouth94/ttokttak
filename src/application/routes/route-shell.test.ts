@@ -50,6 +50,24 @@ describe("route shell", () => {
     expect(homeRoute).not.toContain("useNotifications");
   });
 
+  it("일정 목록 route는 schedule list screen만 연결한다", () => {
+    const scheduleRoute = readWorkspaceFile("app/(tabs)/schedule/index.tsx");
+
+    expect(scheduleRoute).toContain("<ScheduleListScreen />");
+    expect(scheduleRoute).toContain("~/screens/schedule-list");
+    expect(scheduleRoute).not.toContain("~/features/reminder-list");
+    expect(scheduleRoute).not.toContain("useOccurrenceProjectionQuery");
+  });
+
+  it("캘린더 route는 calendar screen만 연결한다", () => {
+    const calendarRoute = readWorkspaceFile("app/(tabs)/calendar/index.tsx");
+
+    expect(calendarRoute).toContain("<CalendarScreen />");
+    expect(calendarRoute).toContain("~/screens/calendar");
+    expect(calendarRoute).not.toContain("~/features/calendar-view");
+    expect(calendarRoute).not.toContain("useOccurrenceProjectionQuery");
+  });
+
   it("index route는 login screen만 연결한다", () => {
     const indexRoute = readWorkspaceFile("app/index.tsx");
 

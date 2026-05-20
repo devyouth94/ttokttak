@@ -24,7 +24,6 @@ export const calendarStatusLabelByStatus: Record<OccurrenceStatus, string> = {
 };
 
 export type CalendarDaySummary = {
-  hasEntries: boolean;
   localDate: string;
   markerColorKeys: RecurringItemColorKey[];
   occurrenceCount: number;
@@ -178,7 +177,6 @@ export function buildCalendarDaySummaries({
     Array.from(summaryMap.entries()).map(([localDate, summary]) => [
       localDate,
       {
-        hasEntries: summary.occurrenceCount > 0,
         localDate,
         markerColorKeys: getCalendarMarkerColorKeysByTime(summary.markerItems),
         occurrenceCount: summary.occurrenceCount,

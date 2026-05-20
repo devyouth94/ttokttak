@@ -5,7 +5,7 @@ import { Plus } from "lucide-react-native";
 import { AppEmptyStateView, AppRetryStateView } from "~/shared/ui/app-state";
 import { colors } from "~/shared/ui/tokens";
 
-export function ReminderListEmptyState(): React.JSX.Element {
+export function ScheduleListEmptyState(): React.JSX.Element {
   return (
     <AppEmptyStateView
       action={{
@@ -26,7 +26,7 @@ export function ReminderListEmptyState(): React.JSX.Element {
   );
 }
 
-export function ReminderListErrorState({
+export function ScheduleListErrorState({
   onRetry,
 }: {
   onRetry: () => void;

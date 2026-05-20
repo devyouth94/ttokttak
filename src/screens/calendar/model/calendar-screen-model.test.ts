@@ -9,6 +9,7 @@ import {
   createScheduleVersionFixture,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
+
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
@@ -20,7 +21,7 @@ import {
   getMinimumVisibleMonth,
   shiftVisibleMonth,
   syncCalendarScreenStateToTimezone,
-} from "~/features/calendar-view/calendar-screen.helpers";
+} from "./calendar-screen-model";
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return createRecurringItemFixture({
@@ -48,7 +49,7 @@ function createVersion(
   });
 }
 
-describe("calendar-screen.helpers", () => {
+describe("calendar-screen-model", () => {
   it("오늘 기준으로 선택 날짜와 보이는 월 상태를 만든다", () => {
     expect(
       createCalendarScreenState(new Date("2026-04-14T04:30:00.000Z"), timezone)
@@ -213,7 +214,6 @@ describe("calendar-screen.helpers", () => {
     });
 
     expect(daySummaries["2026-04-12"]).toEqual({
-      hasEntries: true,
       localDate: "2026-04-12",
       markerColorKeys: ["blue", "purple", "yellow", "green", "red"],
       occurrenceCount: 6,
@@ -237,7 +237,6 @@ describe("calendar-screen.helpers", () => {
     });
 
     expect(daySummaries["2026-05-01"]).toEqual({
-      hasEntries: true,
       localDate: "2026-05-01",
       markerColorKeys: ["blue"],
       occurrenceCount: 1,
@@ -458,8 +457,8 @@ describe("calendar-screen.helpers", () => {
       visibleMonth: "2026-04",
     });
 
-    expect(summaries["2026-04-17"]?.hasEntries).toBe(true);
-    expect(summaries["2026-04-21"]?.hasEntries).toBe(true);
+    expect(summaries["2026-04-17"]?.occurrenceCount).toBe(1);
+    expect(summaries["2026-04-21"]?.occurrenceCount).toBe(1);
     expect(summaries["2026-04-16"]).toBeUndefined();
   });
 });

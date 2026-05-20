@@ -31,6 +31,8 @@
 - `app`: Expo Router route.
 - `src/application`: provider, bootstrap, route params wiring.
 - `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
+- `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
+- `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
 - `src/screens/login`: 로그인 화면.
 - `src/screens/settings`: 설정 화면.
 - `src/features/*/components`: 아직 screen slice로 옮기지 않은 화면과 화면 전용 UI.

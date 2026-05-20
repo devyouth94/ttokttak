@@ -5,4 +5,4 @@ export * from "./model/occurrence-projection";
 export * from "./model/occurrence-projection-requirement";
 export * from "./model/types";
 export * from "./model/validation";
-export * from "./ui/color-palette";
+export * from "./ui";

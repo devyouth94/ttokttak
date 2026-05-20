@@ -4,7 +4,7 @@ import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 const PLACEHOLDER_ROW_COUNT = 4;
 
-export function ReminderListLoadingPlaceholder(): React.JSX.Element {
+export function ScheduleListLoadingPlaceholder(): React.JSX.Element {
   return (
     <View>
       <View style={styles.sortControlPlaceholder} />
