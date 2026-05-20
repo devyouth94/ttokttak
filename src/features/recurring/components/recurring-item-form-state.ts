@@ -1,7 +1,15 @@
 import { format, parse } from "date-fns";
 import { z } from "zod/v4";
 
-import { hasOccurrenceBetweenLocalDates } from "~/features/recurring/domain/occurrence";
+import {
+  hasOccurrenceBetweenLocalDates,
+  hasValidWeekdayMask,
+  localDatePattern,
+  localTimePattern,
+  requiresIntervalValue,
+  requiresWeekdayMask,
+  supportsCompletionBased,
+} from "~/entities/schedule";
 import {
   type AnchorType,
   anchorTypes,
@@ -11,15 +19,7 @@ import {
   type RecurringItem,
   recurringItemColorKeys,
   type RecurringItemDraft,
-} from "~/features/recurring/domain/types";
-import {
-  hasValidWeekdayMask,
-  localDatePattern,
-  localTimePattern,
-  requiresIntervalValue,
-  requiresWeekdayMask,
-  supportsCompletionBased,
-} from "~/features/recurring/domain/validation";
+} from "~/entities/schedule";
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
 export type DatePickerTarget = "endDate" | "startDate";

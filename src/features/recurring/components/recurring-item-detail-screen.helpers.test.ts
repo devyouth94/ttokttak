@@ -1,3 +1,14 @@
+import type {
+  CompletionLog,
+  RecurringItem,
+  RecurringItemScheduleVersion,
+} from "~/entities/schedule";
+import {
+  createCompletionLogFixture,
+  createRecurringItemFixture,
+  createScheduleVersionFixture,
+  recurringTestTimezone as timezone,
+} from "~/entities/schedule/testing";
 import {
   buildHistoryPreview,
   buildOccurrenceStatusCard,
@@ -6,17 +17,6 @@ import {
   getItemDetailBasisOccurrence,
   getRecurringItemDetailDeleteReturnPath,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
-import {
-  createCompletionLogFixture,
-  createRecurringItemFixture,
-  createScheduleVersionFixture,
-  recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return createRecurringItemFixture({

@@ -5,12 +5,12 @@ import {
   getLatestOverdueItemOccurrenceEntries,
   getNextItemOccurrenceEntries,
   getScheduledItemOccurrenceEntriesInRange,
-} from "~/features/recurring/domain/occurrence-projection";
+} from "~/entities/schedule";
 import {
   createCompletionLogFixture as createLog,
   createRecurringItemFixture as createItem,
   recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
+} from "~/entities/schedule/testing";
 
 describe("occurrence projection", () => {
   it("local date range를 timezone 기준 UTC range로 바꾼다", () => {

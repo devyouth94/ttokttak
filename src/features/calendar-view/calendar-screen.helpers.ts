@@ -2,17 +2,17 @@ import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import {
-  createLocalDateUtcRange as createProjectionLocalDateUtcRange,
-  getItemOccurrenceEntriesInRange,
-} from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   OccurrenceStatus,
   RecurringItem,
   RecurringItemColorKey,
-} from "~/features/recurring/domain/types";
-import { formatUtcTimeInTimezone } from "~/features/recurring/utils/recurring-display";
+} from "~/entities/schedule";
+import {
+  createLocalDateUtcRange as createProjectionLocalDateUtcRange,
+  formatUtcTimeInTimezone,
+  getItemOccurrenceEntriesInRange,
+} from "~/entities/schedule";
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 

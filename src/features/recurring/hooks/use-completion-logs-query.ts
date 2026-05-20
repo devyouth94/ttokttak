@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { CompletionLog } from "~/features/recurring/domain/types";
+import type { CompletionLog } from "~/entities/schedule";
 import {
   getCompletionLogAnchorBeforeRange,
   listCompletionLogs,

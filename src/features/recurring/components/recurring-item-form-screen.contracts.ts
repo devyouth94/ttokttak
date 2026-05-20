@@ -5,7 +5,7 @@ import {
   type AnchorType,
   type RecurrenceType,
   type RecurringItemColorKey,
-} from "~/features/recurring/domain/types";
+} from "~/entities/schedule";
 
 import { type PickerChangeHandler } from "./recurring-item-form-screen.helpers";
 import {

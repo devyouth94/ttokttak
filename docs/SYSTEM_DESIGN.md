@@ -43,7 +43,10 @@
 
 ### Domain
 
-- `src/features/recurring/domain`: 반복 계산, occurrence projection, 상태 판정, 수정 정책, mutation 후속 흐름.
+- `src/entities/schedule/model`: 일정 타입, 반복 규칙, occurrence 계산, occurrence projection, validation, 수정 정책.
+- `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
+- `src/entities/schedule/ui`: 일정 색상 표시 palette.
+- `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Infrastructure

@@ -6,6 +6,8 @@ import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
+import type { RecurringItemColorKey } from "~/entities/schedule";
+import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   buildOccurrenceStatusCard,
@@ -15,8 +17,6 @@ import {
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
 } from "~/features/recurring/components/recurring-item-detail-screen.helpers";
-import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
-import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";

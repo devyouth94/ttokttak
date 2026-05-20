@@ -1,14 +1,14 @@
-import { createItemOccurrenceProjection } from "~/features/recurring/domain/occurrence-projection";
-import {
-  type CaptureRecurringMutationPostprocessException,
-  completeRecurringMutationPostprocessFlow,
-} from "~/features/recurring/domain/recurring-mutation-postprocess-flow";
 import type {
   CompletionAction,
   CompletionLog,
   DerivedOccurrence,
   RecurringItem,
-} from "~/features/recurring/domain/types";
+} from "~/entities/schedule";
+import { createItemOccurrenceProjection } from "~/entities/schedule";
+import {
+  type CaptureRecurringMutationPostprocessException,
+  completeRecurringMutationPostprocessFlow,
+} from "~/features/recurring/model/recurring-mutation-postprocess-flow";
 
 export type HomeFeedOccurrenceLogInput = {
   action: CompletionAction;

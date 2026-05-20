@@ -1,5 +1,5 @@
-import { createRecurringItemFixture } from "~/features/recurring/domain/recurring-test-fixtures";
-import type { RecurringItem } from "~/features/recurring/domain/types";
+import type { RecurringItem } from "~/entities/schedule";
+import { createRecurringItemFixture } from "~/entities/schedule/testing";
 
 import {
   buildReminderListEntries,

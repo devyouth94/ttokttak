@@ -5,7 +5,7 @@ import type {
 import {
   type CaptureRecurringMutationPostprocessException,
   completeRecurringMutationPostprocessFlow,
-} from "~/features/recurring/domain/recurring-mutation-postprocess-flow";
+} from "~/features/recurring/model/recurring-mutation-postprocess-flow";
 
 type RecurringItemMutationReason = Extract<
   NotificationSyncReason,

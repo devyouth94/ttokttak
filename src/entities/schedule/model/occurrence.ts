@@ -15,8 +15,8 @@ import type {
   RecurrenceType,
   RecurringItem,
   RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
-import { completionBasedRecurrenceTypes } from "~/features/recurring/domain/types";
+} from "./types";
+import { completionBasedRecurrenceTypes } from "./types";
 
 const MAX_OCCURRENCES_PER_QUERY = 1000;
 const CALENDAR_HOUR = 12;
@@ -319,7 +319,10 @@ function hasWeeklyOccurrenceBetweenLocalDates(
 }
 
 function getNextWeeklyCandidateLocalDate(
-  schedule: ScheduleContext,
+  schedule: Pick<
+    ScheduleContext,
+    "intervalValue" | "recurrenceType" | "seedStartDateLocal" | "weekdayMask"
+  >,
   startLocalDate: string
 ): string | null {
   const itemStartDate = parseLocalDate(schedule.seedStartDateLocal);
@@ -379,7 +382,10 @@ function getNextFixedLocalDate(
 }
 
 function getInitialOccurrenceLocalDate(
-  schedule: ScheduleContext
+  schedule: Pick<
+    ScheduleContext,
+    "intervalValue" | "recurrenceType" | "seedStartDateLocal" | "weekdayMask"
+  >
 ): string | null {
   switch (schedule.recurrenceType) {
     case "weekly":
@@ -391,6 +397,20 @@ function getInitialOccurrenceLocalDate(
     default:
       return schedule.seedStartDateLocal;
   }
+}
+
+export function getFirstOccurrenceLocalDate(params: {
+  intervalValue: number | null | undefined;
+  recurrenceType: RecurrenceType;
+  startDateLocal: string;
+  weekdayMask: number[] | null | undefined;
+}): string | null {
+  return getInitialOccurrenceLocalDate({
+    intervalValue: params.intervalValue,
+    recurrenceType: params.recurrenceType,
+    seedStartDateLocal: params.startDateLocal,
+    weekdayMask: params.weekdayMask,
+  });
 }
 
 function getInitialCompletionAnchorLocalDate(

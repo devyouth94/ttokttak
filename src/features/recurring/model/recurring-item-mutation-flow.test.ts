@@ -1,4 +1,4 @@
-import { completeRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
+import { completeRecurringItemMutationFlow } from "~/features/recurring/model/recurring-item-mutation-flow";
 
 const effectiveFromUtc = "2026-05-07T03:00:00.000Z";
 

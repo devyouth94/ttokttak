@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
-import type { CompletionAction } from "~/features/recurring/domain/types";
+import type { CompletionAction } from "~/entities/schedule";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 

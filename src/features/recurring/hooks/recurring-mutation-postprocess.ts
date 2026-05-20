@@ -1,6 +1,6 @@
 import type { NotificationSyncReason } from "~/features/notifications/notification-sync.types";
-import { completeRecurringItemMutationFlow } from "~/features/recurring/domain/recurring-item-mutation-flow";
-import type { CaptureRecurringMutationPostprocessException } from "~/features/recurring/domain/recurring-mutation-postprocess-flow";
+import { completeRecurringItemMutationFlow } from "~/features/recurring/model/recurring-item-mutation-flow";
+import type { CaptureRecurringMutationPostprocessException } from "~/features/recurring/model/recurring-mutation-postprocess-flow";
 
 import { recurringQueryKeys } from "./recurring-query-keys";
 

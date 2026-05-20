@@ -1,10 +1,10 @@
-import type { RecurringItemContentEncryptionMetadata } from "~/features/privacy/recurring-content-cipher";
 import type {
   AnchorType,
   CompletionLog,
   RecurrenceType,
   RecurringItemColorKey,
-} from "~/features/recurring/domain/types";
+} from "~/entities/schedule";
+import type { RecurringItemContentEncryptionMetadata } from "~/features/privacy/recurring-content-cipher";
 import {
   listCompletionLogsForItem,
   listCompletionLogsForItemHistory,

@@ -1,17 +1,29 @@
 import {
+  getFirstOccurrenceLocalDate,
   getNextOccurrence,
   getOccurrencesInRange,
   hasOccurrenceBetweenLocalDates,
   resolveOccurrenceStatus,
-} from "~/features/recurring/domain/occurrence";
+} from "~/entities/schedule";
 import {
   createCompletionLogFixture as createLog,
   createRecurringItemFixture as createItem,
   createScheduleVersionFixture as createVersion,
   recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
+} from "~/entities/schedule/testing";
 
 describe("getOccurrencesInRange", () => {
+  it("첫 weekly occurrence local date를 계산한다", () => {
+    expect(
+      getFirstOccurrenceLocalDate({
+        intervalValue: 2,
+        recurrenceType: "interval_weeks",
+        startDateLocal: "2026-04-25",
+        weekdayMask: [1],
+      })
+    ).toBe("2026-05-04");
+  });
+
   it("월말 보정 규칙으로 monthly occurrence를 계산한다", () => {
     const item = createItem({
       recurrenceType: "monthly",

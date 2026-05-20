@@ -2,11 +2,8 @@ import { format, parse } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import type {
-  CompletionAction,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
-import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
+import type { CompletionAction, RecurringItem } from "../model/types";
+import { getCurrentScheduleVersion } from "../model/types";
 
 const weekdayLabelByValue = new Map<number, string>([
   [0, "일"],

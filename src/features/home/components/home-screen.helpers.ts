@@ -8,27 +8,23 @@ import {
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { getOccurrenceIdentity } from "~/features/recurring/domain/occurrence";
-import {
-  getLatestOverdueItemOccurrenceEntries,
-  getScheduledItemOccurrenceEntriesInRange,
-  type LocalDateUtcRange,
-} from "~/features/recurring/domain/occurrence-projection";
-import {
-  getOccurrenceProjectionRequirement,
-  type HomeFeedOccurrenceProjectionRequirement,
-} from "~/features/recurring/domain/occurrence-projection-requirement";
 import type {
   CompletionLog,
   DerivedOccurrence,
+  HomeFeedOccurrenceProjectionRequirement,
+  LocalDateUtcRange,
   RecurringItem,
-} from "~/features/recurring/domain/types";
-import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
+} from "~/entities/schedule";
 import {
   formatLocalDateTitle,
   formatLocalTimeLabel,
+  getCurrentScheduleVersion,
+  getLatestOverdueItemOccurrenceEntries,
+  getOccurrenceIdentity,
+  getOccurrenceProjectionRequirement,
   getRecurrenceLabel,
-} from "~/features/recurring/utils/recurring-display";
+  getScheduledItemOccurrenceEntriesInRange,
+} from "~/entities/schedule";
 
 export const HOME_DATE_RANGE_DAYS = 15;
 

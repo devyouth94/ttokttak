@@ -1,13 +1,13 @@
+import type { RecurringItem } from "~/entities/schedule";
 import {
   createItemOccurrenceProjection,
   createLocalDateUtcRange,
-} from "~/features/recurring/domain/occurrence-projection";
+} from "~/entities/schedule";
 import {
   createCompletionLogFixture,
   createRecurringItemFixture,
   recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
-import type { RecurringItem } from "~/features/recurring/domain/types";
+} from "~/entities/schedule/testing";
 
 import {
   type HomeFeedOccurrenceLogInput,

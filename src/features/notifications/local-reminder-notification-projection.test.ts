@@ -3,7 +3,7 @@ import {
   createRecurringItemFixture as createRecurringItem,
   createScheduleVersionFixture,
   recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
+} from "~/entities/schedule/testing";
 
 import { createLocalReminderNotificationProjection } from "./local-reminder-notification-projection";
 

@@ -1,21 +1,21 @@
 import { fromZonedTime } from "date-fns-tz";
 
-import {
-  recurringContentCipher,
-  type RecurringItemContentCipher,
-} from "~/features/privacy/recurring-content-cipher";
-import {
-  type RecurringItemEditPatch,
-  resolveRecurringItemEditPolicy,
-} from "~/features/recurring/domain/recurring-item-edit-policy";
 import type {
   RecurringItem,
   RecurringItemColorKey,
   RecurringItemDraft,
+  RecurringItemEditPatch,
   RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
-import { defaultRecurringItemColorKey } from "~/features/recurring/domain/types";
-import { validateRecurringItemDraft } from "~/features/recurring/domain/validation";
+} from "~/entities/schedule";
+import {
+  defaultRecurringItemColorKey,
+  resolveRecurringItemEditPolicy,
+  validateRecurringItemDraft,
+} from "~/entities/schedule";
+import {
+  recurringContentCipher,
+  type RecurringItemContentCipher,
+} from "~/features/privacy/recurring-content-cipher";
 import {
   createSupabaseRecurringItemsPersistence,
   type RecurringItemsPersistence,

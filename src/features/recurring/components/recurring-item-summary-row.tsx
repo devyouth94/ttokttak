@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
-import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
-import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
+import type { RecurringItemColorKey } from "~/entities/schedule";
+import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 

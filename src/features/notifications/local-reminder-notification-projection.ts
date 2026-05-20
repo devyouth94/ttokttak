@@ -1,17 +1,17 @@
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
-import {
-  getNextOccurrence,
-  getOccurrencesInRange,
-} from "~/features/recurring/domain/occurrence";
 import type {
   CompletionLog,
   DerivedOccurrence,
   RecurringItem,
-} from "~/features/recurring/domain/types";
-import { completionBasedRecurrenceTypes } from "~/features/recurring/domain/types";
-import { formatUtcTimeInTimezone } from "~/features/recurring/utils/recurring-display";
+} from "~/entities/schedule";
+import {
+  completionBasedRecurrenceTypes,
+  formatUtcTimeInTimezone,
+  getNextOccurrence,
+  getOccurrencesInRange,
+} from "~/entities/schedule";
 
 const LOCAL_REMINDER_IDENTIFIER_PREFIX = "ttokttak:reminder";
 

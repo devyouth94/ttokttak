@@ -1,23 +1,25 @@
 import { useCallback, useMemo } from "react";
 
+import type {
+  CalendarMonthOccurrenceProjectionPurpose,
+  CalendarMonthOccurrenceProjectionRequirement,
+  CompletionLog,
+  HomeFeedOccurrenceProjectionPurpose,
+  HomeFeedOccurrenceProjectionRequirement,
+  OccurrenceProjectionPurpose,
+  OccurrenceProjectionRequirement,
+  RecurringItem,
+  ReminderListOccurrenceProjectionPurpose,
+  ReminderListOccurrenceProjectionRequirement,
+} from "~/entities/schedule";
+import { getOccurrenceProjectionRequirement } from "~/entities/schedule";
+
 import { useCompletionLogsQuery } from "./use-completion-logs-query";
 import {
   type RecurringFeedContext,
   useRecurringFeedContext,
 } from "./use-recurring-feed-context";
 import { useRecurringItemsQuery } from "./use-recurring-items-query";
-import {
-  type CalendarMonthOccurrenceProjectionPurpose,
-  type CalendarMonthOccurrenceProjectionRequirement,
-  getOccurrenceProjectionRequirement,
-  type HomeFeedOccurrenceProjectionPurpose,
-  type HomeFeedOccurrenceProjectionRequirement,
-  type OccurrenceProjectionPurpose,
-  type OccurrenceProjectionRequirement,
-  type ReminderListOccurrenceProjectionPurpose,
-  type ReminderListOccurrenceProjectionRequirement,
-} from "../domain/occurrence-projection-requirement";
-import type { CompletionLog, RecurringItem } from "../domain/types";
 
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
 const EMPTY_ITEMS: RecurringItem[] = [];

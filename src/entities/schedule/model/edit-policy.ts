@@ -1,12 +1,8 @@
 import { formatInTimeZone } from "date-fns-tz";
 
-import { getFirstFutureOccurrenceLocalDateAfterEdit } from "~/features/recurring/domain/occurrence";
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemDraft,
-} from "~/features/recurring/domain/types";
-import { validateRecurringItemDraft } from "~/features/recurring/domain/validation";
+import { getFirstFutureOccurrenceLocalDateAfterEdit } from "./occurrence";
+import type { CompletionLog, RecurringItem, RecurringItemDraft } from "./types";
+import { validateRecurringItemDraft } from "./validation";
 
 export type RecurringItemEditPatch = Partial<
   Omit<RecurringItemDraft, "timezone">

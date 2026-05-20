@@ -1,14 +1,7 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
-import {
-  getNextOccurrence,
-  getOccurrencesInRange,
-} from "~/features/recurring/domain/occurrence";
-import type {
-  CompletionLog,
-  DerivedOccurrence,
-  RecurringItem,
-} from "~/features/recurring/domain/types";
+import { getNextOccurrence, getOccurrencesInRange } from "./occurrence";
+import type { CompletionLog, DerivedOccurrence, RecurringItem } from "./types";
 
 export type LocalDateUtcRange = {
   endUtc: string;

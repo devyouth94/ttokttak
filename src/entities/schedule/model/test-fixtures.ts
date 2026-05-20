@@ -2,7 +2,7 @@ import type {
   CompletionLog,
   RecurringItem,
   RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
+} from "./types";
 
 export const recurringTestTimezone = "Asia/Seoul";
 

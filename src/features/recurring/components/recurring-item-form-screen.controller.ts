@@ -6,13 +6,13 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   type AnchorType,
   type RecurrenceType,
   type RecurringItemColorKey,
-} from "~/features/recurring/domain/types";
-import { supportsCompletionBased } from "~/features/recurring/domain/validation";
+} from "~/entities/schedule";
+import { supportsCompletionBased } from "~/entities/schedule";
+import { useNotifications } from "~/features/notifications/notification-provider";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import {
   archiveRecurringItem,

@@ -1,19 +1,19 @@
-import { getFeedItemMetaLine } from "~/features/home/components/home-feed-item-row";
-import {
-  buildHomeFeedSections,
-  createHomeDateOptions,
-} from "~/features/home/components/home-screen.helpers";
+import type {
+  CompletionLog,
+  RecurringItem,
+  RecurringItemScheduleVersion,
+} from "~/entities/schedule";
 import {
   createCompletionLogFixture,
   createRecurringItemFixture,
   createScheduleVersionFixture,
   recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/features/recurring/domain/types";
+} from "~/entities/schedule/testing";
+import { getFeedItemMetaLine } from "~/features/home/components/home-feed-item-row";
+import {
+  buildHomeFeedSections,
+  createHomeDateOptions,
+} from "~/features/home/components/home-screen.helpers";
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return createRecurringItemFixture({

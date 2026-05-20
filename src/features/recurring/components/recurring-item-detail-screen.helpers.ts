@@ -2,24 +2,22 @@ import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import {
-  createItemOccurrenceProjection,
-  type ItemOccurrenceProjection,
-} from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   DerivedOccurrence,
+  ItemOccurrenceProjection,
   RecurringItem,
   RecurringItemColorKey,
-} from "~/features/recurring/domain/types";
-import { getCurrentScheduleVersion } from "~/features/recurring/domain/types";
+} from "~/entities/schedule";
 import {
+  createItemOccurrenceProjection,
   formatLocalDateTitle,
   formatLocalTimeLabel,
   formatUtcTimeInTimezone,
   getCompletionActionLabel,
+  getCurrentScheduleVersion,
   getRecurrenceLabel,
-} from "~/features/recurring/utils/recurring-display";
+} from "~/entities/schedule";
 
 const OVERDUE_LOOKBACK_DAYS = 730;
 

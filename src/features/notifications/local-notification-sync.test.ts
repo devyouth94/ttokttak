@@ -1,16 +1,16 @@
 import * as Notifications from "expo-notifications";
 
 import {
+  createCompletionLogFixture as createCompletionLog,
+  createRecurringItemFixture as createRecurringItem,
+  recurringTestTimezone as timezone,
+} from "~/entities/schedule/testing";
+import {
   cancelAllTtokttakLocalReminderNotifications,
   createLocalReminderNotificationSyncPlan,
   syncLocalReminderNotifications,
 } from "~/features/notifications/local-notification-sync";
 import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
-import {
-  createCompletionLogFixture as createCompletionLog,
-  createRecurringItemFixture as createRecurringItem,
-  recurringTestTimezone as timezone,
-} from "~/features/recurring/domain/recurring-test-fixtures";
 import { listCompletionLogs } from "~/features/recurring/repositories/completion-logs-repository";
 import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
 

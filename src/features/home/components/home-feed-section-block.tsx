@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
-import type { CompletionAction } from "~/features/recurring/domain/types";
+import type { CompletionAction } from "~/entities/schedule";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 

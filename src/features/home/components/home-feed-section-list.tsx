@@ -1,6 +1,6 @@
 import { View, type ViewStyle } from "react-native";
 
-import type { CompletionAction } from "~/features/recurring/domain/types";
+import type { CompletionAction } from "~/entities/schedule";
 import { spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedSectionBlock } from "./home-feed-section-block";

@@ -4,12 +4,12 @@ import { formatInTimeZone } from "date-fns-tz";
 import {
   createLocalDateUtcRange,
   type LocalDateUtcRange,
-} from "~/features/recurring/domain/occurrence-projection";
-import type { RecurringItem } from "~/features/recurring/domain/types";
+} from "./occurrence-projection";
+import type { RecurringItem } from "./types";
 import {
   completionBasedRecurrenceTypes,
   getCurrentScheduleVersion,
-} from "~/features/recurring/domain/types";
+} from "./types";
 
 export const HOME_OVERDUE_LOOKBACK_DAYS = 730;
 export const HOME_UPCOMING_RANGE_DAYS = 14;

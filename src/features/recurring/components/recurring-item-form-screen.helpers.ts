@@ -1,28 +1,25 @@
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import {
-  addDays,
-  differenceInCalendarDays,
-  format,
-  startOfWeek,
-} from "date-fns";
+import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
-import { type RecurrenceType } from "~/features/recurring/domain/types";
+import {
+  getFirstOccurrenceLocalDate,
+  type RecurrenceType,
+} from "~/entities/schedule";
 import {
   requiresWeekdayMask,
   supportsCompletionBased,
-} from "~/features/recurring/domain/validation";
+} from "~/entities/schedule";
 
 import {
   type CustomRecurrenceUnit,
   type DatePickerTarget,
-  formatDateToLocalDate,
   getCustomRecurrenceUnit,
   parseLocalDateToDate,
   parseLocalTimeToDate,
   type PickerMode,
 } from "./recurring-item-form-state";
-export { recurringItemColorOptions } from "~/features/recurring/domain/color-palette";
+export { recurringItemColorOptions } from "~/entities/schedule";
 
 export type FormErrorTarget = "options" | "recurrence" | "schedule" | "title";
 export type PickerChangeHandler = (
@@ -48,7 +45,6 @@ export type RecurrenceSectionState = {
   showsWeekdaysInsideCustomPanel: boolean;
 };
 
-const MAX_FIRST_REMINDER_LOOKAHEAD_DAYS = 3710;
 const positiveIntegerPattern = /^[1-9]\d*$/;
 
 export const weekdayOptions = [
@@ -192,29 +188,12 @@ function getFirstWeeklyOccurrenceLocalDate(formState: {
     formState.recurrenceType === "interval_weeks"
       ? parsePositiveInteger(formState.intervalValue)
       : 1;
-  const weekInterval = intervalValue ?? 1;
-  const selectedWeekdaySet = new Set(formState.weekdayMask);
-  const startDate = parseLocalDateToDate(formState.startDateLocal);
-  const startWeek = startOfWeek(startDate, { weekStartsOn: 0 });
-  let cursor = startDate;
-  let dayOffset = 0;
-
-  while (dayOffset <= MAX_FIRST_REMINDER_LOOKAHEAD_DAYS) {
-    const cursorWeek = startOfWeek(cursor, { weekStartsOn: 0 });
-    const weeksFromStart = differenceInCalendarDays(cursorWeek, startWeek) / 7;
-    const matchesWeekInterval =
-      formState.recurrenceType === "weekly" ||
-      weeksFromStart % weekInterval === 0;
-
-    if (selectedWeekdaySet.has(cursor.getDay()) && matchesWeekInterval) {
-      return formatDateToLocalDate(cursor);
-    }
-
-    cursor = addDays(cursor, 1);
-    dayOffset += 1;
-  }
-
-  return null;
+  return getFirstOccurrenceLocalDate({
+    intervalValue,
+    recurrenceType: formState.recurrenceType,
+    startDateLocal: formState.startDateLocal,
+    weekdayMask: formState.weekdayMask,
+  });
 }
 
 export function getIosPickerChangeHandler(

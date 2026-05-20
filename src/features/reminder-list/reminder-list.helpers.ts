@@ -1,13 +1,15 @@
 import { ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { getNextItemOccurrenceEntries } from "~/features/recurring/domain/occurrence-projection";
 import type {
   CompletionLog,
   RecurringItem,
   RecurringItemColorKey,
-} from "~/features/recurring/domain/types";
-import { getRecurrenceLabel } from "~/features/recurring/utils/recurring-display";
+} from "~/entities/schedule";
+import {
+  getNextItemOccurrenceEntries,
+  getRecurrenceLabel,
+} from "~/entities/schedule";
 
 export type ReminderListEntry = {
   colorKey: RecurringItemColorKey;

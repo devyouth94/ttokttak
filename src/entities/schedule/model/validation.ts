@@ -1,11 +1,11 @@
-import { hasOccurrenceBetweenLocalDates } from "~/features/recurring/domain/occurrence";
+import { hasOccurrenceBetweenLocalDates } from "./occurrence";
 import {
   completionBasedRecurrenceTypes,
   type RecurrenceType,
   recurrenceTypes,
   recurringItemColorKeys,
   type RecurringItemDraft,
-} from "~/features/recurring/domain/types";
+} from "./types";
 
 export const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 export const localTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;

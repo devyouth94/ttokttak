@@ -3,8 +3,8 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
+import type { CompletionAction } from "~/entities/schedule";
 import { useNotifications } from "~/features/notifications/notification-provider";
-import type { CompletionAction } from "~/features/recurring/domain/types";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useSession } from "~/features/session/session-provider";

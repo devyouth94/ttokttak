@@ -1,8 +1,8 @@
 import {
   defaultRecurringItemColorKey,
   type RecurringItemDraft,
-} from "~/features/recurring/domain/types";
-import { validateRecurringItemDraft } from "~/features/recurring/domain/validation";
+} from "~/entities/schedule";
+import { validateRecurringItemDraft } from "~/entities/schedule";
 
 function createDraft(
   overrides: Partial<RecurringItemDraft> = {}
