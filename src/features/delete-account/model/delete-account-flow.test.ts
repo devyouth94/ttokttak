@@ -2,7 +2,7 @@ import {
   AccountDeletionAppleAuthorizationRequiredError,
   AccountDeletionSessionRequiredError,
   deleteAccount,
-} from "~/features/session/account-deletion";
+} from "~/features/delete-account";
 
 describe("deleteAccount", () => {
   it("계정 삭제 성공 뒤 현재 기기의 세션과 Ttokttak 로컬 알림을 정리한다", async () => {

@@ -12,24 +12,24 @@ import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
 } from "~/features/legal/legal-links";
-import { isAppleSignInAvailable } from "~/features/session/apple-sign-in";
+import { isAppleSignInAvailable } from "~/features/sign-in";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { AppleLogoIcon, GoogleLogoIcon } from "~/shared/ui/social-icons";
 import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
 
-type LoginScreenProps = {
+type LoginScreenContentProps = {
   isConfigured: boolean;
   onApplePress: () => Promise<void>;
   onGooglePress: () => Promise<void>;
 };
 
-export function LoginScreen({
+export function LoginScreenContent({
   isConfigured,
   onApplePress,
   onGooglePress,
-}: LoginScreenProps): React.JSX.Element {
+}: LoginScreenContentProps): React.JSX.Element {
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
 
   useEffect(() => {

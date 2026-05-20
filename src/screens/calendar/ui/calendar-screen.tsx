@@ -11,11 +11,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
+import { useRecurringFeedContext } from "~/application/recurring";
 import { RecurringItemSummaryRow } from "~/entities/schedule";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useOccurrenceProjectionNow } from "~/features/recurring/hooks/use-occurrence-projection-now";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
-import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppEmptyStateView, AppRetryStatePanel } from "~/shared/ui/app-state";

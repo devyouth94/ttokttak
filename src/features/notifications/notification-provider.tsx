@@ -25,7 +25,6 @@ import {
   type NotificationSyncScope,
 } from "~/features/notifications/notification-sync.types";
 import { createLocalNotificationSyncLifecycle } from "~/features/notifications/notification-sync-lifecycle";
-import { useSession } from "~/features/session/session-provider";
 import { Sentry } from "~/shared/config/sentry";
 
 type NotificationContextValue = {
@@ -55,6 +54,11 @@ const NotificationContext = createContext<NotificationContextValue | null>(
   null
 );
 
+type NotificationProviderProps = PropsWithChildren<{
+  timezone: string;
+  userId: string | null | undefined;
+}>;
+
 async function ensureAndroidReminderNotificationChannel(): Promise<void> {
   if (Platform.OS !== "android") {
     return;
@@ -74,15 +78,14 @@ async function ensureAndroidReminderNotificationChannel(): Promise<void> {
 
 export function NotificationProvider({
   children,
-}: PropsWithChildren): React.JSX.Element {
-  const { profile, user } = useSession();
+  timezone,
+  userId,
+}: NotificationProviderProps): React.JSX.Element {
   const [permission, setPermission] = useState<NotificationPermissionState>(
     initialPermissionState
   );
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const notificationSyncLifecycleRef = useRef<ReturnType<
     typeof createLocalNotificationSyncLifecycle
   > | null>(null);
@@ -149,7 +152,7 @@ export function NotificationProvider({
         void refreshPermission();
         void notificationSyncLifecycle.syncAfterAppForegrounded({
           timezone,
-          userId: user?.id,
+          userId,
         });
       }
     });
@@ -157,21 +160,21 @@ export function NotificationProvider({
     return () => {
       subscription.remove();
     };
-  }, [notificationSyncLifecycle, refreshPermission, timezone, user?.id]);
+  }, [notificationSyncLifecycle, refreshPermission, timezone, userId]);
 
   useEffect(() => {
     void notificationSyncLifecycle.syncAfterSessionRestored({
       timezone,
-      userId: user?.id,
+      userId,
     });
-  }, [notificationSyncLifecycle, timezone, user?.id]);
+  }, [notificationSyncLifecycle, timezone, userId]);
 
   useEffect(() => {
     void notificationSyncLifecycle.flushPendingNotificationTapSync({
       timezone,
-      userId: user?.id,
+      userId,
     });
-  }, [notificationSyncLifecycle, timezone, user?.id]);
+  }, [notificationSyncLifecycle, timezone, userId]);
 
   const syncAfterMutation = useCallback(
     async ({
@@ -185,18 +188,18 @@ export function NotificationProvider({
         reason,
         scope,
         timezone,
-        userId: user?.id,
+        userId,
       });
     },
-    [notificationSyncLifecycle, timezone, user?.id]
+    [notificationSyncLifecycle, timezone, userId]
   );
 
   const syncAfterNotificationTap = useCallback(async (): Promise<void> => {
     await notificationSyncLifecycle.syncAfterNotificationTapped({
       timezone,
-      userId: user?.id,
+      userId,
     });
-  }, [notificationSyncLifecycle, timezone, user?.id]);
+  }, [notificationSyncLifecycle, timezone, userId]);
 
   const value: NotificationContextValue = {
     isPermissionLoading,

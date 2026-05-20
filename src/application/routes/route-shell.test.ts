@@ -102,8 +102,11 @@ describe("route shell", () => {
     const indexRoute = readWorkspaceFile("app/index.tsx");
 
     expect(indexRoute).toContain("<LoginScreen />");
+    expect(indexRoute).toContain("~/screens/login");
     expect(indexRoute).not.toContain("useSession");
     expect(indexRoute).not.toContain("Redirect");
+    expect(indexRoute).not.toContain("~/features/sign-in");
+    expect(indexRoute).not.toContain("~/application/session");
   });
 
   it("route params 배열 정규화는 application helper를 사용한다", () => {

@@ -2,12 +2,12 @@ import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { SplashScreen } from "expo-router";
 
+import { useSession } from "~/application/session";
 import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   getNotificationNavigationKey,
   navigateFromNotificationResponse,
 } from "~/features/notifications/notification-response-navigation";
-import { useSession } from "~/features/session/session-provider";
 
 void SplashScreen.preventAutoHideAsync();
 

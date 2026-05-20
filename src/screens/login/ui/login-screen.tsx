@@ -1,7 +1,8 @@
 import { Redirect } from "expo-router";
 
-import { LoginScreen as SessionLoginScreen } from "~/features/session/components/login-screen";
-import { useSession } from "~/features/session/session-provider";
+import { useSession } from "~/application/session";
+
+import { LoginScreenContent } from "./login-screen-content";
 
 export function LoginScreen(): React.JSX.Element {
   const {
@@ -21,7 +22,7 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
-    <SessionLoginScreen
+    <LoginScreenContent
       isConfigured={isConfigured}
       onApplePress={signInWithApple}
       onGooglePress={signInWithGoogle}

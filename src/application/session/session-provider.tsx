@@ -2,19 +2,22 @@ import type { PropsWithChildren } from "react";
 import { createContext, use, useEffect, useState } from "react";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
-import { cancelAllTtokttakLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
-import { deleteAccount as deleteAccountWithCleanup } from "~/features/session/account-deletion";
 import {
+  ensureProfile,
+  type ProfileRow,
+  updateProfileDisplayName,
+} from "~/entities/profile";
+import {
+  deleteAccount as deleteAccountWithCleanup,
   requestAppleAuthorizationCodeForAccountDeletion,
-  signInWithAppleIdToken,
-} from "~/features/session/apple-sign-in";
+} from "~/features/delete-account";
+import { cancelAllTtokttakLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
 import {
-  signInWithGoogleIdToken,
+  signInWithApple,
+  signInWithGoogle,
   signOutFromGoogle,
-} from "~/features/session/google-sign-in";
+} from "~/features/sign-in";
 import { isSupabaseConfigured, supabase } from "~/shared/api/supabase";
-
-import type { ProfileRow } from "./profile.types";
 
 type SessionContextValue = {
   authEvent: AuthChangeEvent | "BOOTSTRAP" | null;
@@ -49,73 +52,6 @@ function getAuthProvider(user: User | null | undefined): string | null {
   const provider = user?.app_metadata.provider;
 
   return typeof provider === "string" ? provider : null;
-}
-
-function getDeviceTimeZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
-
-function getMetadataDisplayName(user: User): string | null {
-  const fullName = user.user_metadata?.full_name;
-  return typeof fullName === "string" && fullName.trim()
-    ? fullName.trim()
-    : null;
-}
-
-async function ensureProfile(user: User): Promise<ProfileRow> {
-  const client = supabase!;
-  const { data: existingProfile, error: fetchError } = await client
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (fetchError) {
-    throw fetchError;
-  }
-
-  if (existingProfile) {
-    const metadataDisplayName = getMetadataDisplayName(user);
-    const shouldSyncDisplayName =
-      metadataDisplayName &&
-      metadataDisplayName !== existingProfile.display_name &&
-      !existingProfile.display_name;
-
-    if (!shouldSyncDisplayName) {
-      return existingProfile;
-    }
-
-    const { data: updatedProfile, error: updateError } = await client
-      .from("profiles")
-      .update({
-        display_name: metadataDisplayName,
-      })
-      .eq("id", user.id)
-      .select("*")
-      .single();
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    return updatedProfile;
-  }
-
-  const { data: insertedProfile, error: insertError } = await client
-    .from("profiles")
-    .insert({
-      id: user.id,
-      timezone: getDeviceTimeZone(),
-      display_name: getMetadataDisplayName(user),
-    })
-    .select("*")
-    .single();
-
-  if (insertError) {
-    throw insertError;
-  }
-
-  return insertedProfile;
 }
 
 export function SessionProvider({
@@ -156,7 +92,10 @@ export function SessionProvider({
       setIsLoading(true);
 
       try {
-        const nextProfile = await ensureProfile(nextSession.user);
+        const nextProfile = await ensureProfile({
+          client,
+          user: nextSession.user,
+        });
 
         setProfile(nextProfile);
         setErrorMessage(null);
@@ -216,61 +155,11 @@ export function SessionProvider({
     session,
     async signInWithApple() {
       const client = supabase!;
-      const { displayName, familyName, givenName, identityToken } =
-        await signInWithAppleIdToken();
-      const { data, error } = await client.auth.signInWithIdToken({
-        provider: "apple",
-        token: identityToken,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (displayName || givenName || familyName) {
-        const metadata: Record<string, string> = {};
-
-        if (displayName) {
-          metadata.full_name = displayName;
-        }
-
-        if (givenName) {
-          metadata.given_name = givenName;
-        }
-
-        if (familyName) {
-          metadata.family_name = familyName;
-        }
-
-        const { error: metadataError } = await client.auth.updateUser({
-          data: metadata,
-        });
-
-        if (metadataError) {
-          throw metadataError;
-        }
-      }
-
-      if (displayName && data.user) {
-        await client
-          .from("profiles")
-          .update({
-            display_name: displayName,
-          })
-          .eq("id", data.user.id);
-      }
+      await signInWithApple({ client });
     },
     async signInWithGoogle() {
       const client = supabase!;
-      const token = await signInWithGoogleIdToken();
-      const { error } = await client.auth.signInWithIdToken({
-        provider: "google",
-        token,
-      });
-
-      if (error) {
-        throw error;
-      }
+      await signInWithGoogle({ client });
     },
     async signOut() {
       const client = supabase!;
@@ -303,18 +192,11 @@ export function SessionProvider({
         throw new Error("로그인이 필요합니다.");
       }
 
-      const { data, error } = await client
-        .from("profiles")
-        .update({
-          display_name: displayName.trim(),
-        })
-        .eq("id", userId)
-        .select("*")
-        .single();
-
-      if (error) {
-        throw error;
-      }
+      const data = await updateProfileDisplayName({
+        client,
+        displayName,
+        userId,
+      });
 
       setProfile(data);
     },

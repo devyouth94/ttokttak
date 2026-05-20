@@ -6,6 +6,7 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { useSession } from "~/application/session";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -17,7 +18,6 @@ import { archiveSchedule } from "~/features/archive-schedule";
 import { createSchedule } from "~/features/create-schedule";
 import { useNotifications } from "~/features/notifications/notification-provider";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
-import { useSession } from "~/features/session/session-provider";
 import { updateSchedule } from "~/features/update-schedule";
 import { Sentry } from "~/shared/config/sentry";
 

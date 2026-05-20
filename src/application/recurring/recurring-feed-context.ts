@@ -1,10 +1,5 @@
-import { useSession } from "~/features/session/session-provider";
-
-export type RecurringFeedContext = {
-  isReady: boolean;
-  timezone: string;
-  userId: string | null;
-};
+import { useSession } from "~/application/session";
+import type { RecurringFeedContext } from "~/features/recurring/hooks/recurring-feed-context";
 
 export function useRecurringFeedContext(): RecurringFeedContext {
   const { isAuthenticated, profile, user } = useSession();

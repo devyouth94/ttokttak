@@ -29,7 +29,7 @@
 ### Presentation
 
 - `app`: Expo Router route.
-- `src/application`: provider, bootstrap, route params wiring.
+- `src/application`: provider, bootstrap, session wiring, route params wiring.
 - `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
 - `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
 - `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
@@ -53,10 +53,13 @@
 - `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
+- `src/entities/profile`: profile 복원과 표시 이름 저장.
 - `src/features/create-schedule`: 일정 생성 use case.
 - `src/features/update-schedule`: 일정 수정 use case.
 - `src/features/archive-schedule`: 일정 보관 use case.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
+- `src/features/sign-in`: Apple/Google 로그인 use case와 provider adapter.
+- `src/features/delete-account`: 계정 삭제 use case와 Apple 계정 삭제 재인증 adapter.
 - `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
@@ -64,7 +67,6 @@
 
 - `src/shared/lib/privacy`: content key 복구 저장소와 privacy 공통 helper.
 - `src/features/notifications`: 기기 로컬 알림 예약, 권한, lifecycle, 알림 tap routing.
-- `src/features/session`: Supabase Auth 세션과 profile 복원.
 - `src/shared/api`: Supabase client와 schema type.
 - `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.

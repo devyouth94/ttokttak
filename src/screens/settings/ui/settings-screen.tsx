@@ -14,17 +14,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { ExternalLink, Pencil } from "lucide-react-native";
 
+import { useSession } from "~/application/session";
+import {
+  AccountDeletionAppleAuthorizationRequiredError,
+  AccountDeletionSessionRequiredError,
+} from "~/features/delete-account";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
 } from "~/features/legal/legal-links";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { useNotifications } from "~/features/notifications/notification-provider";
-import {
-  AccountDeletionAppleAuthorizationRequiredError,
-  AccountDeletionSessionRequiredError,
-} from "~/features/session/account-deletion";
-import { useSession } from "~/features/session/session-provider";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,

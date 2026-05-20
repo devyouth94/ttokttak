@@ -14,11 +14,8 @@ import type {
 } from "~/entities/schedule";
 import { getOccurrenceProjectionRequirement } from "~/entities/schedule";
 
+import type { RecurringFeedContext } from "./recurring-feed-context";
 import { useCompletionLogsQuery } from "./use-completion-logs-query";
-import {
-  type RecurringFeedContext,
-  useRecurringFeedContext,
-} from "./use-recurring-feed-context";
 import { useRecurringItemsQuery } from "./use-recurring-items-query";
 
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
@@ -42,32 +39,31 @@ export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context?: RecurringFeedContext;
+  context: RecurringFeedContext;
   purpose: HomeFeedOccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<HomeFeedOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context?: RecurringFeedContext;
+  context: RecurringFeedContext;
   purpose: ReminderListOccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<ReminderListOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context?: RecurringFeedContext;
+  context: RecurringFeedContext;
   purpose: CalendarMonthOccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<CalendarMonthOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context?: RecurringFeedContext;
+  context: RecurringFeedContext;
   purpose: OccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<OccurrenceProjectionRequirement> {
-  const fallbackContext = useRecurringFeedContext();
-  const { isReady, timezone, userId } = context ?? fallbackContext;
+  const { isReady, timezone, userId } = context;
   const itemsQuery = useRecurringItemsQuery({
     enabled: isReady,
     timezone,

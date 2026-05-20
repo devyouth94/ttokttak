@@ -6,13 +6,13 @@ import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
+import { useRecurringFeedContext } from "~/application/recurring";
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/archive-schedule";
 import { useNotifications } from "~/features/notifications/notification-provider";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
-import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
