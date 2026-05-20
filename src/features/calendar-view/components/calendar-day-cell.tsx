@@ -2,11 +2,11 @@ import { memo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import type { DateData } from "react-native-calendars";
 
-import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, colors, typography } from "~/design-system/tokens";
 import { CALENDAR_MAX_VISIBLE_MARKERS } from "~/features/calendar-view/calendar-screen.helpers";
 import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
 import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
+import { AppText } from "~/shared/ui/app-text";
+import { borderRadius, colors, typography } from "~/shared/ui/tokens";
 
 type CalendarDayCellProps = {
   date: DateData;
@@ -157,10 +157,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   dayLabelSaturday: {
-    color: colors.weekendSaturday,
+    color: colors.blue,
   },
   dayLabelSunday: {
-    color: colors.weekendSunday,
+    color: colors.red,
   },
   daySurface: {
     alignItems: "center",

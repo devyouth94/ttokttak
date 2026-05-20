@@ -1,8 +1,8 @@
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AppText } from "~/design-system/components/app-text";
-import { colors } from "~/design-system/tokens";
+import { AppText } from "~/shared/ui/app-text";
+import { colors } from "~/shared/ui/tokens";
 
 import { useRecurringItemFormScreenController } from "./recurring-item-form-screen.controller";
 import { getIosPickerChangeHandler } from "./recurring-item-form-screen.helpers";

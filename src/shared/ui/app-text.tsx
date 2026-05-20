@@ -7,7 +7,7 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { colors, typography } from "~/design-system/tokens";
+import { colors, typography } from "~/shared/ui/tokens";
 
 type AppTextVariant =
   | "body"

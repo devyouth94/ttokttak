@@ -11,20 +11,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
-import { AppScreen } from "~/design-system/components/app-screen";
-import {
-  AppEmptyStateView,
-  AppRetryStatePanel,
-} from "~/design-system/components/app-state";
-import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
-import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
@@ -46,7 +32,13 @@ import { RecurringItemSummaryRow } from "~/features/recurring/components/recurri
 import { useOccurrenceProjectionNow } from "~/features/recurring/hooks/use-occurrence-projection-now";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
-import { getErrorMessage } from "~/lib/errors/get-error-message";
+import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
+import { AppScreen } from "~/shared/ui/app-screen";
+import { AppEmptyStateView, AppRetryStatePanel } from "~/shared/ui/app-state";
+import { AppText } from "~/shared/ui/app-text";
+import { ScreenHeader } from "~/shared/ui/screen-header";
+import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 LocaleConfig.locales.ko = {
   dayNames: [
@@ -115,10 +107,10 @@ const calendarTheme = {
       display: "none",
     },
     dayTextAtIndex0: {
-      color: colors.weekendSunday,
+      color: colors.red,
     },
     dayTextAtIndex6: {
-      color: colors.weekendSaturday,
+      color: colors.blue,
     },
     dayHeader: {
       color: colors.textMuted,

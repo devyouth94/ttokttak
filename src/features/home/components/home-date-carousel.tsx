@@ -3,8 +3,8 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
-import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import { AppText } from "~/shared/ui/app-text";
+import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 import { createHomeDateOptions } from "./home-screen.helpers";
 

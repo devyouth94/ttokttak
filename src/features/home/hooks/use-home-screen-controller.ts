@@ -3,12 +3,12 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { useNotifications } from "~/features/notifications/notification-provider";
 import type { CompletionAction } from "~/features/recurring/domain/types";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useSession } from "~/features/session/session-provider";
-import { getErrorMessage } from "~/lib/errors/get-error-message";
+import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
 import { useHomeOccurrenceActions } from "./use-home-occurrence-actions";
 import {
@@ -66,7 +66,7 @@ function showNotificationPermissionPrompt(
 export function useHomeScreenController(): HomeScreenController {
   const { profile } = useSession();
   const { permission, requestPermission, syncAfterMutation } =
-    useNotificationBootstrap();
+    useNotifications();
   const recurringFeedContext = useRecurringFeedContext();
   const isFocused = useIsFocused();
 

@@ -26,9 +26,9 @@ import {
 } from "~/features/notifications/notification-sync.types";
 import { createLocalNotificationSyncLifecycle } from "~/features/notifications/notification-sync-lifecycle";
 import { useSession } from "~/features/session/session-provider";
-import { Sentry } from "~/lib/sentry";
+import { Sentry } from "~/shared/config/sentry";
 
-type NotificationBootstrapContextValue = {
+type NotificationContextValue = {
   isPermissionLoading: boolean;
   isRequestingPermission: boolean;
   openSettings: () => Promise<void>;
@@ -51,8 +51,9 @@ const initialPermissionState: NotificationPermissionState = {
 
 const ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 
-const NotificationBootstrapContext =
-  createContext<NotificationBootstrapContextValue | null>(null);
+const NotificationContext = createContext<NotificationContextValue | null>(
+  null
+);
 
 async function ensureAndroidReminderNotificationChannel(): Promise<void> {
   if (Platform.OS !== "android") {
@@ -71,7 +72,7 @@ async function ensureAndroidReminderNotificationChannel(): Promise<void> {
   );
 }
 
-export function NotificationBootstrapProvider({
+export function NotificationProvider({
   children,
 }: PropsWithChildren): React.JSX.Element {
   const { profile, user } = useSession();
@@ -197,7 +198,7 @@ export function NotificationBootstrapProvider({
     });
   }, [notificationSyncLifecycle, timezone, user?.id]);
 
-  const value: NotificationBootstrapContextValue = {
+  const value: NotificationContextValue = {
     isPermissionLoading,
     isRequestingPermission,
     openSettings: openNotificationSettings,
@@ -208,19 +209,15 @@ export function NotificationBootstrapProvider({
     syncAfterNotificationTap,
   };
 
-  return (
-    <NotificationBootstrapContext value={value}>
-      {children}
-    </NotificationBootstrapContext>
-  );
+  return <NotificationContext value={value}>{children}</NotificationContext>;
 }
 
-export function useNotificationBootstrap(): NotificationBootstrapContextValue {
-  const context = use(NotificationBootstrapContext);
+export function useNotifications(): NotificationContextValue {
+  const context = use(NotificationContext);
 
   if (!context) {
     throw new Error(
-      "useNotificationBootstrap는 NotificationBootstrapProvider 안에서만 사용할 수 있습니다."
+      "useNotifications는 NotificationProvider 안에서만 사용할 수 있습니다."
     );
   }
 

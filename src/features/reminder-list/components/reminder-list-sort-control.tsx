@@ -1,7 +1,7 @@
 import {
   AppSelectMenu,
   type AppSelectMenuOption,
-} from "~/design-system/components/app-select-menu";
+} from "~/shared/ui/app-select-menu";
 
 import type { ReminderListSortMode } from "../reminder-list.helpers";
 

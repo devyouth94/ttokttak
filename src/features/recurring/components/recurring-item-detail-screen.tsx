@@ -6,22 +6,7 @@ import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
-import { AppScreen } from "~/design-system/components/app-screen";
-import {
-  AppRetryStatePanel,
-  AppStatePanel,
-} from "~/design-system/components/app-state";
-import { AppText } from "~/design-system/components/app-text";
-import { FocusScreenHeader } from "~/design-system/components/focus-screen-header";
-import { IconButton } from "~/design-system/components/icon-button";
-import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
-import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
@@ -37,8 +22,15 @@ import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-co
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
 import { archiveRecurringItem } from "~/features/recurring/repositories/recurring-items-repository";
-import { getErrorMessage } from "~/lib/errors/get-error-message";
-import { Sentry } from "~/lib/sentry";
+import { Sentry } from "~/shared/config/sentry";
+import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
+import { AppScreen } from "~/shared/ui/app-screen";
+import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
+import { AppText } from "~/shared/ui/app-text";
+import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
+import { IconButton } from "~/shared/ui/icon-button";
+import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
@@ -383,7 +375,7 @@ export function RecurringItemDetailScreen({
   scheduledAtUtc?: string;
 }): React.JSX.Element {
   const { isReady, timezone, userId } = useRecurringFeedContext();
-  const { syncAfterMutation } = useNotificationBootstrap();
+  const { syncAfterMutation } = useNotifications();
   const queryClient = useQueryClient();
   const mutationPostprocess = createRecurringMutationPostprocessAdapter({
     captureException: Sentry.captureException,
@@ -742,21 +734,21 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   historyStatusChipCompleted: {
-    backgroundColor: colors.statusCompletedSoft,
-    borderColor: colors.statusCompletedBorder,
+    backgroundColor: colors.greenSoft,
+    borderColor: colors.greenBorder,
   },
   historyStatusChipSkipped: {
-    backgroundColor: colors.statusSkippedSoft,
-    borderColor: colors.statusSkippedBorder,
+    backgroundColor: colors.graySoft,
+    borderColor: colors.grayBorder,
   },
   historyStatusChipText: {
     fontSize: 11,
   },
   historyStatusChipTextCompleted: {
-    color: colors.statusCompletedText,
+    color: colors.greenText,
   },
   historyStatusChipTextSkipped: {
-    color: colors.statusSkippedText,
+    color: colors.grayText,
   },
   managementDeleteText: {
     color: colors.error,

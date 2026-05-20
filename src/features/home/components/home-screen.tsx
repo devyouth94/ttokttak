@@ -2,10 +2,10 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppScreen } from "~/design-system/components/app-screen";
-import { AppStatePlaceholder } from "~/design-system/components/app-state";
-import { colors } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
+import { AppScreen } from "~/shared/ui/app-screen";
+import { AppStatePlaceholder } from "~/shared/ui/app-state";
+import { colors } from "~/shared/ui/tokens";
 
 import { HomeFeedErrorCard } from "./home-feed-error-card";
 import { HomeFeedSectionList } from "./home-feed-section-list";

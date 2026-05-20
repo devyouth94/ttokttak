@@ -1,7 +1,7 @@
 import { View, type ViewStyle } from "react-native";
 
-import { spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
+import { spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedSectionBlock } from "./home-feed-section-block";
 import type { HomeFeedCard, HomeFeedSection } from "./home-screen.helpers";

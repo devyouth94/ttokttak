@@ -2,11 +2,8 @@ import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
-import {
-  AppEmptyStateView,
-  AppRetryStateView,
-} from "~/design-system/components/app-state";
-import { colors } from "~/design-system/tokens";
+import { AppEmptyStateView, AppRetryStateView } from "~/shared/ui/app-state";
+import { colors } from "~/shared/ui/tokens";
 
 export function ReminderListEmptyState(): React.JSX.Element {
   return (

@@ -19,10 +19,10 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
-import { AppText } from "~/design-system/components/app-text";
-import { FocusScreenHeader } from "~/design-system/components/focus-screen-header";
-import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import { colors } from "~/design-system/tokens";
+import { AppText } from "~/shared/ui/app-text";
+import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
+import { colors } from "~/shared/ui/tokens";
+import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 import { type RecurringItemFormScreenContentProps } from "./recurring-item-form-screen.contracts";
 import {

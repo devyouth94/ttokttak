@@ -1,9 +1,9 @@
 import { Fragment } from "react";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
-import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import type { CompletionAction } from "~/features/recurring/domain/types";
+import { AppText } from "~/shared/ui/app-text";
+import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedItemRow } from "./home-feed-item-row";
 import type { HomeFeedCard, HomeFeedSection } from "./home-screen.helpers";
@@ -222,10 +222,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   feedSectionOverdue: {
-    backgroundColor: colors.statusOverdueSoft,
+    backgroundColor: colors.redSoft,
   },
   feedSectionSelectedDate: {
-    backgroundColor: colors.statusCompletedSoft,
+    backgroundColor: colors.greenSoft,
   },
   feedSectionSummarySlot: {
     alignItems: "center",
@@ -244,6 +244,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   feedSectionUpcoming: {
-    backgroundColor: colors.statusScheduledSoft,
+    backgroundColor: colors.amberSoft,
   },
 });

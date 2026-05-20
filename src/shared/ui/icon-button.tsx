@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable, StyleSheet } from "react-native";
 
-import { borderRadius } from "~/design-system/tokens";
+import { borderRadius } from "~/shared/ui/tokens";
 
 type IconButtonSize = "sm" | "md" | "lg";
 

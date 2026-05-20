@@ -8,24 +8,16 @@ import {
   View,
 } from "react-native";
 
-import { AppLogoIcon } from "~/design-system/components/app-logo-icon";
-import { AppScreen } from "~/design-system/components/app-screen";
-import { AppText } from "~/design-system/components/app-text";
-import {
-  AppleLogoIcon,
-  GoogleLogoIcon,
-} from "~/design-system/components/social-icons";
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
 } from "~/features/legal/legal-links";
 import { isAppleSignInAvailable } from "~/features/session/apple-sign-in";
+import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
+import { AppScreen } from "~/shared/ui/app-screen";
+import { AppText } from "~/shared/ui/app-text";
+import { AppleLogoIcon, GoogleLogoIcon } from "~/shared/ui/social-icons";
+import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
 
 type LoginScreenProps = {
   isConfigured: boolean;

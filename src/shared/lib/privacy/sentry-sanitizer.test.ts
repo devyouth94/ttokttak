@@ -1,7 +1,7 @@
 import {
   sanitizeSentryEvent,
   SENTRY_MASKED_VALUE,
-} from "~/lib/sentry-sanitizer";
+} from "~/shared/lib/privacy/sentry-sanitizer";
 
 describe("sanitizeSentryEvent", () => {
   it("token, credential, push payload, 일정 제목과 본문을 마스킹한다", () => {

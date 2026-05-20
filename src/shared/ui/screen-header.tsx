@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
-import { colors, spacing } from "~/design-system/tokens";
+import { colors, spacing } from "~/shared/ui/tokens";
 
 import { AppText } from "./app-text";
 

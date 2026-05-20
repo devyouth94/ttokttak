@@ -1,11 +1,6 @@
 import { Platform, StyleSheet } from "react-native";
 
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
+import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
 
 export const styles = StyleSheet.create({
   optionInfoButton: {

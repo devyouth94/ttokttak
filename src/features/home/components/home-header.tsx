@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 
-import { AppText } from "~/design-system/components/app-text";
-import { colors } from "~/design-system/tokens";
+import { AppText } from "~/shared/ui/app-text";
+import { colors } from "~/shared/ui/tokens";
 
 type HomeHeaderProps = {
   profileName: string;

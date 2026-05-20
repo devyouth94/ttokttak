@@ -14,16 +14,16 @@ import DateTimePicker, {
 import { Info } from "lucide-react-native";
 
 import {
-  AppSelectMenu,
-  type AppSelectMenuOption,
-} from "~/design-system/components/app-select-menu";
-import { AppText } from "~/design-system/components/app-text";
-import { colors } from "~/design-system/tokens";
-import {
   type AnchorType,
   type RecurrenceType,
   type RecurringItemColorKey,
 } from "~/features/recurring/domain/types";
+import {
+  AppSelectMenu,
+  type AppSelectMenuOption,
+} from "~/shared/ui/app-select-menu";
+import { AppText } from "~/shared/ui/app-text";
+import { colors } from "~/shared/ui/tokens";
 
 import {
   customRecurrenceUnitOptions,

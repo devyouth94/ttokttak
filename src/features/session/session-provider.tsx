@@ -12,8 +12,9 @@ import {
   signInWithGoogleIdToken,
   signOutFromGoogle,
 } from "~/features/session/google-sign-in";
-import type { ProfileRow } from "~/lib/database.types";
-import { isSupabaseConfigured, supabase } from "~/lib/supabase";
+import { isSupabaseConfigured, supabase } from "~/shared/api/supabase";
+
+import type { ProfileRow } from "./profile.types";
 
 type SessionContextValue = {
   authEvent: AuthChangeEvent | "BOOTSTRAP" | null;

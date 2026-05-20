@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { SplashScreen } from "expo-router";
 
-import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   getNotificationNavigationKey,
   navigateFromNotificationResponse,
@@ -42,7 +42,7 @@ function SplashScreenController(): null {
 }
 
 function NotificationResponseController(): null {
-  const { syncAfterNotificationTap } = useNotificationBootstrap();
+  const { syncAfterNotificationTap } = useNotifications();
   const handledResponseKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {

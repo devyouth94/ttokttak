@@ -175,6 +175,8 @@ src/shared/lib/query/
 
 예시 기준:
 
+- `shared/api`: Supabase client, generated `Database` type.
+- feature/entity repository: table row alias, RPC input alias, 도메인 저장 타입.
 - `shared/lib/privacy`: 암호화 primitive, byte/base64 helper.
 - `entities/schedule`: 일정 제목/설명 암호화처럼 schedule 도메인을 아는 코드.
 - `shared/lib/notifications`: Expo Notifications adapter, identifier parser.

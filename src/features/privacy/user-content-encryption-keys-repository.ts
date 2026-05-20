@@ -2,10 +2,11 @@ import {
   getRepositoryClient,
   type RepositoryClient,
 } from "~/features/recurring/repositories/repository-client";
+
 import type {
   UserContentEncryptionKeyInsert,
   UserContentEncryptionKeyRow,
-} from "~/lib/database.types";
+} from "./privacy-database.types";
 
 export type UserContentEncryptionKey = {
   createdAt: string;

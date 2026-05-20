@@ -33,7 +33,7 @@
 - `src/screens/login`: 로그인 화면.
 - `src/screens/settings`: 설정 화면.
 - `src/features/*/components`: 화면과 화면 전용 UI.
-- `src/design-system`: 공통 텍스트, 화면, 카드, 버튼, token.
+- `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
 
 ### Application
 
@@ -52,7 +52,9 @@
 - `src/features/privacy`: 일정 제목/설명 암호화와 content key 복구.
 - `src/features/notifications`: 기기 로컬 알림 예약, 권한, lifecycle, 알림 tap routing.
 - `src/features/session`: Supabase Auth 세션과 profile 복원.
-- `src/lib`: Supabase client, Sentry, QueryClient, 공통 error helper.
+- `src/shared/api`: Supabase client와 schema type.
+- `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
+- `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
 
 ## Routing
 

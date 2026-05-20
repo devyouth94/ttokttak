@@ -1,10 +1,10 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
-import { AppText } from "~/design-system/components/app-text";
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
 import { recurringItemColorOptionByKey } from "~/features/recurring/domain/color-palette";
 import type { RecurringItemColorKey } from "~/features/recurring/domain/types";
+import { AppText } from "~/shared/ui/app-text";
+import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 type RecurringItemSummaryRowProps = {
   accessibilityHint: string;

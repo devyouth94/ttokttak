@@ -315,27 +315,3 @@ export type Database = {
     CompositeTypes: Record<string, never>;
   };
 };
-
-export type CompletionLogInsert =
-  Database["public"]["Tables"]["completion_logs"]["Insert"];
-export type CompletionLogRow =
-  Database["public"]["Tables"]["completion_logs"]["Row"];
-export type ContentKeyRecoveryAuditEventInsert =
-  Database["public"]["Tables"]["content_key_recovery_audit_events"]["Insert"];
-export type ContentKeyRecoveryAuditEventRow =
-  Database["public"]["Tables"]["content_key_recovery_audit_events"]["Row"];
-export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-export type RecurringItemInsert =
-  Database["public"]["Tables"]["recurring_items"]["Insert"];
-export type RecurringItemRow =
-  Database["public"]["Tables"]["recurring_items"]["Row"];
-export type RecurringItemUpdate =
-  Database["public"]["Tables"]["recurring_items"]["Update"];
-export type RecurringItemScheduleVersionInsert =
-  Database["public"]["Tables"]["recurring_item_schedule_versions"]["Insert"];
-export type RecurringItemScheduleVersionRow =
-  Database["public"]["Tables"]["recurring_item_schedule_versions"]["Row"];
-export type UserContentEncryptionKeyInsert =
-  Database["public"]["Tables"]["user_content_encryption_keys"]["Insert"];
-export type UserContentEncryptionKeyRow =
-  Database["public"]["Tables"]["user_content_encryption_keys"]["Row"];

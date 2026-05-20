@@ -9,13 +9,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-import { AppScreen } from "~/design-system/components/app-screen";
-import { ScreenHeader } from "~/design-system/components/screen-header";
-import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import { colors, spacing } from "~/design-system/tokens";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
+import { AppScreen } from "~/shared/ui/app-screen";
+import { ScreenHeader } from "~/shared/ui/screen-header";
+import { colors, spacing } from "~/shared/ui/tokens";
+import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 import { ReminderListLoadingPlaceholder } from "./reminder-list-loading-placeholder";
 import { ReminderListSortControl } from "./reminder-list-sort-control";

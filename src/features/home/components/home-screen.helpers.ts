@@ -29,7 +29,6 @@ import {
   formatLocalTimeLabel,
   getRecurrenceLabel,
 } from "~/features/recurring/utils/recurring-display";
-import type { ProfileRow } from "~/lib/database.types";
 
 export const HOME_DATE_RANGE_DAYS = 15;
 
@@ -95,7 +94,11 @@ type BuildRelativeCardsOptions = Omit<
   upcomingRange?: LocalDateUtcRange;
 };
 
-export function getProfileName(profile: ProfileRow | null): string {
+type ProfileNameSource = {
+  display_name: string | null;
+};
+
+export function getProfileName(profile: ProfileNameSource | null): string {
   return profile?.display_name?.trim() || "사용자";
 }
 

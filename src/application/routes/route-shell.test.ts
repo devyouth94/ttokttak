@@ -28,7 +28,7 @@ describe("route shell", () => {
     expect(rootLayout).toContain("<AppProviders>");
     expect(rootLayout).toContain("<AppBootstrap />");
     expect(rootLayout).not.toContain("QueryClientProvider");
-    expect(rootLayout).not.toContain("NotificationBootstrapProvider");
+    expect(rootLayout).not.toContain("NotificationProvider");
   });
 
   it("설정 route는 settings screen만 연결한다", () => {
@@ -36,7 +36,7 @@ describe("route shell", () => {
 
     expect(settingsRoute).toContain("<SettingsScreen />");
     expect(settingsRoute).not.toContain("useSession");
-    expect(settingsRoute).not.toContain("useNotificationBootstrap");
+    expect(settingsRoute).not.toContain("useNotifications");
     expect(settingsRoute).not.toContain("Alert");
   });
 

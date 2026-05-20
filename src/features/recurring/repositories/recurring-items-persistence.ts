@@ -13,10 +13,11 @@ import {
   getRepositoryClient,
   type RepositoryClient,
 } from "~/features/recurring/repositories/repository-client";
+
 import type {
   RecurringItemRow,
   RecurringItemScheduleVersionRow,
-} from "~/lib/database.types";
+} from "./recurring-database.types";
 
 export type StoredRecurringItemScheduleVersion = {
   anchorType: AnchorType;

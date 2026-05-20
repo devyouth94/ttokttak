@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
 
-import { sanitizeSentryEvent } from "~/lib/sentry-sanitizer";
+import { sanitizeSentryEvent } from "~/shared/lib/privacy/sentry-sanitizer";
 
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 

@@ -4,9 +4,9 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-import { NotificationBootstrapProvider } from "~/features/notifications/notification-bootstrap";
+import { NotificationProvider } from "~/features/notifications/notification-provider";
 import { SessionProvider } from "~/features/session/session-provider";
-import { queryClient } from "~/lib/query/query-client";
+import { queryClient } from "~/shared/lib/query/query-client";
 
 export function AppProviders({
   children,
@@ -15,11 +15,11 @@ export function AppProviders({
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
-          <NotificationBootstrapProvider>
+          <NotificationProvider>
             <StatusBar style="dark" />
             {children}
             <PortalHost />
-          </NotificationBootstrapProvider>
+          </NotificationProvider>
         </SessionProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

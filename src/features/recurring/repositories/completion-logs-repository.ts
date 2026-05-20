@@ -3,10 +3,11 @@ import {
   getRepositoryClient,
   type RepositoryClient,
 } from "~/features/recurring/repositories/repository-client";
+
 import type {
   CompletionLogInsert,
   CompletionLogRow,
-} from "~/lib/database.types";
+} from "./recurring-database.types";
 
 export type CreateCompletionLogInput = {
   actedAtUtc?: string;

@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 const PLACEHOLDER_ROW_COUNT = 4;
 

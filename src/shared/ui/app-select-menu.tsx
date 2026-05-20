@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
-import { borderRadius, colors, spacing } from "~/design-system/tokens";
+import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 import { AppText } from "./app-text";
 

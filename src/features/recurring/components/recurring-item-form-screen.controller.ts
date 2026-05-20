@@ -6,7 +6,7 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -21,7 +21,7 @@ import {
   updateRecurringItem,
 } from "~/features/recurring/repositories/recurring-items-repository";
 import { useSession } from "~/features/session/session-provider";
-import { Sentry } from "~/lib/sentry";
+import { Sentry } from "~/shared/config/sentry";
 
 import { type RecurringItemFormScreenModel } from "./recurring-item-form-screen.contracts";
 import {
@@ -61,7 +61,7 @@ export function useRecurringItemFormScreenController({
   const todayLocalDate = getTodayLocalDate();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, profile, user } = useSession();
-  const { syncAfterMutation } = useNotificationBootstrap();
+  const { syncAfterMutation } = useNotifications();
   const mutationPostprocess = createRecurringMutationPostprocessAdapter({
     captureException: Sentry.captureException,
     queryClient,

@@ -14,22 +14,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { ExternalLink, Pencil } from "lucide-react-native";
 
-import { AppScreen } from "~/design-system/components/app-screen";
-import { AppText } from "~/design-system/components/app-text";
-import { ScreenHeader } from "~/design-system/components/screen-header";
-import { useCollapsibleHeader } from "~/design-system/hooks/use-collapsible-header";
-import {
-  borderRadius,
-  colors,
-  spacing,
-  typography,
-} from "~/design-system/tokens";
 import {
   PRIVACY_POLICY_URL,
   TERMS_OF_SERVICE_URL,
 } from "~/features/legal/legal-links";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
-import { useNotificationBootstrap } from "~/features/notifications/notification-bootstrap";
+import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   AccountDeletionAppleAuthorizationRequiredError,
   AccountDeletionSessionRequiredError,
@@ -39,6 +29,11 @@ import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
 } from "~/features/settings/settings.helpers";
+import { AppScreen } from "~/shared/ui/app-screen";
+import { AppText } from "~/shared/ui/app-text";
+import { ScreenHeader } from "~/shared/ui/screen-header";
+import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 type SectionTitleProps = {
   title: string;
@@ -165,7 +160,7 @@ function SettingsValueRow({
 }
 
 function getNotificationStatusText(
-  status: ReturnType<typeof useNotificationBootstrap>["permission"]["status"]
+  status: ReturnType<typeof useNotifications>["permission"]["status"]
 ): string {
   if (status === "granted") {
     return "사용 중";
@@ -195,7 +190,7 @@ export function SettingsScreen(): React.JSX.Element {
     openSettings,
     permission,
     requestPermission,
-  } = useNotificationBootstrap();
+  } = useNotifications();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);

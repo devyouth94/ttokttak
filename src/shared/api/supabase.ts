@@ -1,7 +1,7 @@
 import { deleteItemAsync, getItemAsync, setItemAsync } from "expo-secure-store";
 import { createClient } from "@supabase/supabase-js";
 
-import type { Database } from "~/lib/database.types";
+import type { Database } from "~/shared/api/database.types";
 
 import "react-native-url-polyfill/auto";
 

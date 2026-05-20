@@ -1,8 +1,8 @@
 import { StyleSheet } from "react-native";
 import { RotateCw } from "lucide-react-native";
 
-import { AppRetryStatePanel } from "~/design-system/components/app-state";
-import { colors, spacing } from "~/design-system/tokens";
+import { AppRetryStatePanel } from "~/shared/ui/app-state";
+import { colors, spacing } from "~/shared/ui/tokens";
 
 type HomeFeedErrorCardProps = {
   message: string;

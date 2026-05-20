@@ -7,8 +7,8 @@ import type {
 } from "~/features/recurring/domain/types";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { createCompletionLog } from "~/features/recurring/repositories/completion-logs-repository";
-import { getErrorMessage } from "~/lib/errors/get-error-message";
-import { Sentry } from "~/lib/sentry";
+import { Sentry } from "~/shared/config/sentry";
+import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
 import type { HomeFeedCard } from "../components/home-screen.helpers";
 import {
