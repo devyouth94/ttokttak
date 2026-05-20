@@ -11,9 +11,9 @@ import {
   getCurrentScheduleVersion,
 } from "./types";
 
-export const HOME_OVERDUE_LOOKBACK_DAYS = 730;
-export const HOME_UPCOMING_RANGE_DAYS = 14;
-export const REMINDER_LIST_COMPLETION_LOG_LOOKBACK_DAYS = 730;
+const HOME_OVERDUE_LOOKBACK_DAYS = 730;
+const HOME_UPCOMING_RANGE_DAYS = 14;
+const REMINDER_LIST_COMPLETION_LOG_LOOKBACK_DAYS = 730;
 
 export type OccurrenceProjectionCompletionLogQueryRequirement = {
   anchorItemIds: string[];

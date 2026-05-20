@@ -26,7 +26,7 @@ import {
   getScheduledItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
 
-export const HOME_DATE_RANGE_DAYS = 15;
+const HOME_DATE_RANGE_DAYS = 15;
 
 export type HomeDateOption = {
   dayLabel: string;

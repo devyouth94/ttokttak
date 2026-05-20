@@ -788,13 +788,6 @@ export function resolveOccurrenceStatus(
   return "scheduled";
 }
 
-export function getLastCompletedLog(
-  itemId: string,
-  logs: CompletionLog[]
-): CompletionLog | null {
-  return findLastCompletedLog(itemId, logs);
-}
-
 export function getOccurrencesInRange(
   item: RecurringItem,
   rangeStartUtc: string,

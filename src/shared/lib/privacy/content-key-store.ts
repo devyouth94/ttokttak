@@ -16,13 +16,13 @@ export type StoredContentKey = {
 
 export const contentKeyVersion = 1;
 
-export function assertSupportedContentKeyVersion(keyVersion: number): void {
+function assertSupportedContentKeyVersion(keyVersion: number): void {
   if (keyVersion !== contentKeyVersion) {
     throw new Error("지원하지 않는 내용 암호화 키 버전입니다.");
   }
 }
 
-export function getContentKeySecureStoreKey(
+function getContentKeySecureStoreKey(
   userId: string,
   keyVersion: number
 ): string {

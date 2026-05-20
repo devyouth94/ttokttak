@@ -4,11 +4,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation";
 import { AppScreen } from "~/shared/ui/app-screen";
-import { AppStatePlaceholder } from "~/shared/ui/app-state";
 import { colors } from "~/shared/ui/tokens";
 
 import { HomeFeedErrorCard } from "./home-feed-error-card";
 import { HomeFeedSectionList } from "./home-feed-section-list";
+import { HomeLoadingPlaceholder } from "./home-loading-placeholder";
 import { HomeTopPanel } from "./home-top-panel";
 import { useHomeScreenController } from "../model/use-home-screen-controller";
 
@@ -32,7 +32,7 @@ export function HomeScreen(): React.JSX.Element {
   if (!home.isContentReady) {
     return (
       <AppScreen>
-        <AppStatePlaceholder rowCount={3} showHeader />
+        <HomeLoadingPlaceholder />
       </AppScreen>
     );
   }

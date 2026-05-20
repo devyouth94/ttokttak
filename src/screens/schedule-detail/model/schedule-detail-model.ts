@@ -253,7 +253,7 @@ function formatSummaryDate(localDate: string): string {
   });
 }
 
-export function buildStatusCard({
+function buildStatusCard({
   now,
   nextOccurrence,
   overdueOccurrences,

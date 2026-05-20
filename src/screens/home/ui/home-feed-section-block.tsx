@@ -100,7 +100,7 @@ export function HomeFeedSectionBlock({
                 ) : null}
                 <HomeFeedItemRow
                   card={card}
-                  isLast={shouldHideItemDivider(section.id, card, nextCard)}
+                  isLast={shouldHideItemDivider(section.id, nextCard)}
                   isProcessing={processingOccurrenceIds.includes(card.id)}
                   onAction={onAction}
                   showsActions={showsActions}
@@ -173,7 +173,6 @@ function shouldShowDateSeparator(
 
 function shouldHideItemDivider(
   sectionId: HomeFeedSection["id"],
-  card: HomeFeedCard,
   nextCard: HomeFeedCard | undefined
 ): boolean {
   if (!nextCard) {

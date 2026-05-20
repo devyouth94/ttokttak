@@ -55,7 +55,7 @@ export function formatDateToLocalDate(date: Date): string {
   return format(date, "yyyy-MM-dd");
 }
 
-export function getCurrentLocalTime(): string {
+function getCurrentLocalTime(): string {
   return format(new Date(), "HH:mm");
 }
 
@@ -314,7 +314,7 @@ export const recurringItemFormSchema = createRecurringItemFormSchema({
 
 export type RecurringItemFormValues = z.infer<typeof recurringItemFormSchema>;
 
-export function getWeekdayMaskFromDate(dateText: string): number[] {
+function getWeekdayMaskFromDate(dateText: string): number[] {
   const date = parseLocalDateToDate(dateText);
 
   return [date.getDay()];
@@ -377,7 +377,7 @@ export function getNextRecurrenceFormState(
   };
 }
 
-export function normalizeOptionalText(value: string): string | null {
+function normalizeOptionalText(value: string): string | null {
   const trimmed = value.trim();
 
   return trimmed.length > 0 ? trimmed : null;
@@ -440,12 +440,6 @@ export function getCustomRecurrenceUnit(
     default:
       return null;
   }
-}
-
-export function isCustomRecurrenceType(
-  recurrenceType: RecurrenceType
-): boolean {
-  return getCustomRecurrenceUnit(recurrenceType) !== null;
 }
 
 export function getCustomRecurrenceType(

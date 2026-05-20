@@ -10,14 +10,6 @@ export const recurrenceTypes = [
 
 export const anchorTypes = ["fixed", "completion_based"] as const;
 
-export const occurrenceStatuses = [
-  "scheduled",
-  "completed",
-  "skipped",
-  "overdue",
-] as const;
-
-export const completionActions = ["completed", "skipped"] as const;
 export const recurringItemColorKeys = [
   "red",
   "orange",
@@ -28,7 +20,6 @@ export const recurringItemColorKeys = [
   "purple",
 ] as const;
 export const defaultRecurringItemColorKey: RecurringItemColorKey = "red";
-export const notificationKinds = ["reminder"] as const;
 
 export const completionBasedRecurrenceTypes = [
   "daily",
@@ -39,10 +30,14 @@ export const completionBasedRecurrenceTypes = [
 
 export type RecurrenceType = (typeof recurrenceTypes)[number];
 export type AnchorType = (typeof anchorTypes)[number];
-export type OccurrenceStatus = (typeof occurrenceStatuses)[number];
-export type CompletionAction = (typeof completionActions)[number];
+export type OccurrenceStatus =
+  | "completed"
+  | "overdue"
+  | "scheduled"
+  | "skipped";
+export type CompletionAction = "completed" | "skipped";
 export type RecurringItemColorKey = (typeof recurringItemColorKeys)[number];
-export type NotificationKind = (typeof notificationKinds)[number];
+export type NotificationKind = "reminder";
 export type CompletionBasedRecurrenceType =
   (typeof completionBasedRecurrenceTypes)[number];
 

@@ -16,7 +16,7 @@ import {
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
-export const calendarStatusLabelByStatus: Record<OccurrenceStatus, string> = {
+const calendarStatusLabelByStatus: Record<OccurrenceStatus, string> = {
   completed: "완료",
   overdue: "지남",
   scheduled: "예정",
@@ -76,7 +76,7 @@ export function syncCalendarScreenStateToTimezone({
     : previousState;
 }
 
-export function createVisibleMonthDate(visibleMonth: string): Date {
+function createVisibleMonthDate(visibleMonth: string): Date {
   return parse(`${visibleMonth}-01`, "yyyy-MM-dd", new Date());
 }
 

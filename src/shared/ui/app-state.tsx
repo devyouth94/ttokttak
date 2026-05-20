@@ -44,19 +44,13 @@ type AppRetryStatePanelProps = Omit<AppStatePanelProps, "action"> & {
   onRetry: () => void;
 };
 
-type AppStatePlaceholderProps = {
-  rowCount?: number;
-  showHeader?: boolean;
-  style?: StyleProp<ViewStyle>;
-};
-
 type AppEmptyStateViewProps = {
   action?: AppStateAction;
   style?: StyleProp<ViewStyle>;
   title: string;
 };
 
-export function AppStateView({
+function AppStateView({
   action,
   description,
   icon,
@@ -212,35 +206,6 @@ export function AppEmptyStateView({
   );
 }
 
-/**
- * @deprecated 기존 화면의 로딩 상태를 유지하기 위한 레거시 placeholder다.
- * 리디자인 화면에서는 사용하지 말고 화면 구조에 맞는 전용 placeholder를 만든다.
- */
-export function AppStatePlaceholder({
-  rowCount = 3,
-  showHeader = false,
-  style,
-}: AppStatePlaceholderProps): React.JSX.Element {
-  return (
-    <View
-      accessibilityLabel="내용을 불러오는 중"
-      accessibilityRole="progressbar"
-      style={[styles.placeholder, style]}
-    >
-      {showHeader ? <View style={styles.placeholderHeader} /> : null}
-      {Array.from({ length: rowCount }).map((_, index) => (
-        <View key={index} style={styles.placeholderRow}>
-          <View style={styles.placeholderIcon} />
-          <View style={styles.placeholderCopy}>
-            <View style={styles.placeholderTitle} />
-            <View style={styles.placeholderBody} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   action: {
     alignItems: "center",
@@ -318,50 +283,6 @@ const styles = StyleSheet.create({
   },
   panelState: {
     flex: 0,
-  },
-  placeholder: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  placeholderBody: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: 12,
-    width: "58%",
-  },
-  placeholderCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  placeholderHeader: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: 16,
-    marginBottom: spacing.xs,
-    width: 112,
-  },
-  placeholderIcon: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: 28,
-    width: 28,
-  },
-  placeholderRow: {
-    alignItems: "center",
-    borderBottomColor: colors.dividerOnPrimary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: spacing.sm,
-    minHeight: 76,
-    paddingVertical: spacing.sm,
-  },
-  placeholderTitle: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: 14,
-    width: "72%",
   },
   pressed: {
     opacity: 0.88,

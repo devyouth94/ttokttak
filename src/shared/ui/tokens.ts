@@ -66,49 +66,6 @@ export const borderRadius = {
   pill: 999,
 } as const;
 
-export const elevation = {
-  flat: {
-    android: 0,
-    shadowColor: "transparent",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-  },
-  surface: {
-    android: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-  },
-  floating: {
-    android: 4,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-  },
-  nav: {
-    android: 10,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: -6,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 18,
-  },
-} as const;
-
 export const typography = {
   fontFamily: {
     body: "Pretendard",

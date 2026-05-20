@@ -266,7 +266,3 @@ export function validateRecurringItemDraft(
 
   return issues;
 }
-
-export function isRecurringItemDraftValid(draft: RecurringItemDraft): boolean {
-  return validateRecurringItemDraft(draft).length === 0;
-}
