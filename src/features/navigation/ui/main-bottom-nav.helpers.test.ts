@@ -1,7 +1,7 @@
 import {
   pressMainBottomNavRoute,
   shouldShowMainBottomNav,
-} from "~/features/navigation/components/main-bottom-nav.helpers";
+} from "./main-bottom-nav.helpers";
 
 describe("main-bottom-nav helpers", () => {
   it("비활성 탭을 누르면 탭 navigator 안에서 route 이름으로 이동한다", () => {

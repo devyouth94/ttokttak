@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-import { LocalNotificationProvider } from "~/application/notifications/local-notification-provider";
+import { LocalNotificationProvider } from "~/application/notifications";
 import { SessionProvider, useSession } from "~/application/session";
 import { queryClient } from "~/shared/lib/query/query-client";
 

@@ -1,4 +1,4 @@
-import { shouldNavigateHomeFromNotificationResponse } from "~/features/notifications/notification-response-navigation";
+import { shouldNavigateHomeFromNotificationResponse } from "~/features/notifications";
 
 jest.mock("expo-notifications", () => ({
   DEFAULT_ACTION_IDENTIFIER: "default",
@@ -11,7 +11,7 @@ describe("notification response navigation", () => {
 
   it("navigation 공개 surface에 알림함 item 전용 진입점을 두지 않는다", () => {
     const navigationModule = jest.requireActual(
-      "~/features/notifications/notification-response-navigation"
+      "~/features/notifications"
     ) as Record<string, unknown>;
 
     expect(navigationModule).not.toHaveProperty(

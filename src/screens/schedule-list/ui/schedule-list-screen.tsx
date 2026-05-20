@@ -11,9 +11,11 @@ import { router } from "expo-router";
 
 import { useRecurringFeedContext } from "~/application/recurring";
 import { RecurringItemSummaryRow } from "~/entities/schedule";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
-import { useOccurrenceProjectionNow } from "~/features/recurring/hooks/use-occurrence-projection-now";
-import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation";
+import {
+  useOccurrenceProjectionNow,
+  useOccurrenceProjectionQuery,
+} from "~/features/recurring";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { colors, spacing } from "~/shared/ui/tokens";

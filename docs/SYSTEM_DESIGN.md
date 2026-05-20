@@ -73,6 +73,17 @@
 - `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
 
+### Architecture Guard
+
+- `src/application/structure/fsd-import-rules.test.ts`가 FSD import rule과 public API rule을 검증한다.
+- `screens`, `features`, `entities` slice 외부 호출자는 root `index.ts` 공개 진입점을 사용한다.
+- `entities/<slice>/api`는 저장 adapter 공개 진입점이다.
+- `entities/<slice>/testing`은 테스트 fixture 공개 진입점이다.
+- 같은 slice 내부에서는 segment 파일을 직접 import할 수 있다.
+- `shared`는 작은 foundation이므로 `shared/ui`, `shared/api`, `shared/config` 파일 직접 import를 허용한다.
+- `shared/lib/<topic>`은 주제 경계다. Barrel import가 side effect나 bundle coupling을 만들면 leaf 파일 직접 import를 허용한다.
+- `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
+
 ## Routing
 
 하단 탭은 홈, 목록, 캘린더, 설정으로 구성한다.

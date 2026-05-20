@@ -1,5 +1,5 @@
 import { useSession } from "~/application/session";
-import type { RecurringFeedContext } from "~/features/recurring/hooks/recurring-feed-context";
+import type { RecurringFeedContext } from "~/features/recurring";
 
 export function useRecurringFeedContext(): RecurringFeedContext {
   const { isAuthenticated, profile, user } = useSession();

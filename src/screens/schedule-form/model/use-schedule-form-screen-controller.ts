@@ -17,7 +17,7 @@ import { getRecurringItemById } from "~/entities/schedule/api";
 import { archiveSchedule } from "~/features/archive-schedule";
 import { createSchedule } from "~/features/create-schedule";
 import { useNotifications } from "~/features/notifications";
-import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
+import { createRecurringMutationPostprocessAdapter } from "~/features/recurring";
 import { updateSchedule } from "~/features/update-schedule";
 import { Sentry } from "~/shared/config/sentry";
 

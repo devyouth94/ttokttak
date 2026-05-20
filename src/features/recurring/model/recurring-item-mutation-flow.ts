@@ -1,11 +1,12 @@
-import {
-  type CaptureRecurringMutationPostprocessException,
-  completeRecurringMutationPostprocessFlow,
-} from "~/features/recurring/model/recurring-mutation-postprocess-flow";
 import type {
   NotificationSyncReason,
   NotificationSyncScope,
 } from "~/features/sync-local-notifications";
+
+import {
+  type CaptureRecurringMutationPostprocessException,
+  completeRecurringMutationPostprocessFlow,
+} from "./recurring-mutation-postprocess-flow";
 
 type RecurringItemMutationReason = Extract<
   NotificationSyncReason,

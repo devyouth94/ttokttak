@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { getFirstRouteParam } from "~/application/routes/route-params";
+import { getFirstRouteParam } from "~/application/routes";
 import { ScheduleEditScreen } from "~/screens/schedule-edit";
 
 export default function EditRecurringItemRoute(): React.JSX.Element {

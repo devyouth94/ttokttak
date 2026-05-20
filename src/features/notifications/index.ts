@@ -2,8 +2,8 @@ export {
   NotificationContextProvider,
   useNotifications,
   type NotificationContextValue,
-} from "./notification-context";
+} from "./model/notification-context";
 export {
   getNotificationNavigationKey,
   shouldNavigateHomeFromNotificationResponse,
-} from "./notification-response-navigation";
+} from "./model/notification-response-navigation";

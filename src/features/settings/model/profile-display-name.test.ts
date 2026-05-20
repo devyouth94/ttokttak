@@ -2,7 +2,7 @@ import {
   getEditableProfileDisplayName,
   normalizeProfileDisplayName,
   validateProfileDisplayName,
-} from "./settings.helpers";
+} from "./profile-display-name";
 
 describe("settings profile display name", () => {
   it("앞뒤 공백을 제거한 이름을 저장 값으로 사용한다", () => {

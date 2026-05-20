@@ -9,10 +9,11 @@ import {
   Settings2,
 } from "lucide-react-native";
 
-import { pressMainBottomNavRoute } from "~/features/navigation/components/main-bottom-nav.helpers";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
 import { AppText } from "~/shared/ui/app-text";
 import { colors, spacing } from "~/shared/ui/tokens";
+
+import { pressMainBottomNavRoute } from "./main-bottom-nav.helpers";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "./main-bottom-nav-layout";
 
 type MainTabKey = "home" | "calendar" | "schedule" | "settings";
 

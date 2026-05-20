@@ -1,4 +1,4 @@
-import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
+import { createRecurringMutationPostprocessAdapter } from "~/features/recurring";
 
 const effectiveFromUtc = "2026-05-07T03:00:00.000Z";
 

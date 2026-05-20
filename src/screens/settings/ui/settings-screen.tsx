@@ -19,16 +19,13 @@ import {
   AccountDeletionAppleAuthorizationRequiredError,
   AccountDeletionSessionRequiredError,
 } from "~/features/delete-account";
-import {
-  PRIVACY_POLICY_URL,
-  TERMS_OF_SERVICE_URL,
-} from "~/features/legal/legal-links";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation";
 import { useNotifications } from "~/features/notifications";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
-} from "~/features/settings/settings.helpers";
+} from "~/features/settings";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";

@@ -93,7 +93,7 @@ describe("shared foundation", () => {
       )
     ).toBe(true);
     expect(
-      existsSync(getWorkspacePath("src/features/legal/legal-links.ts"))
+      existsSync(getWorkspacePath("src/features/legal/config/legal-links.ts"))
     ).toBe(true);
   });
 });

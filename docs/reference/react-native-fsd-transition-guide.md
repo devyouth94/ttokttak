@@ -216,6 +216,46 @@ constants
 `lib`는 주제 폴더 없이 쓰지 않는다.
 `shared/lib/utils.ts`, `shared/lib/misc.ts` 같은 파일은 만들지 않는다.
 
+## Public API
+
+`screens`, `features`, `entities` slice의 root `index.ts`는 외부 호출자의 기본 공개 진입점이다.
+외부 slice는 다른 screen 또는 feature의 `model`, `ui`, `api`, `lib`, `config` 내부 파일을 직접 import하지 않는다.
+
+`entities`는 도메인 surface와 저장 surface를 분리한다.
+`~/entities/<slice>`는 도메인 model, lib, ui 공개 surface다.
+`~/entities/<slice>/api`는 저장 adapter 공개 surface다.
+`~/entities/<slice>/testing`은 테스트 fixture 공개 surface다.
+그 아래 내부 파일 직접 참조는 같은 entity slice 안에서만 허용한다.
+
+`application`은 segment root를 공개 진입점으로 쓴다.
+route와 screen은 `~/application/session`, `~/application/recurring`처럼 segment 공개 진입점을 사용한다.
+`application` 내부 segment의 파일 직접 참조는 같은 application segment 안에서만 사용한다.
+
+`shared`는 slice가 아니다.
+`shared/ui`, `shared/api`, `shared/config`의 파일은 작은 foundation 단위라 직접 import할 수 있다.
+`shared/lib`는 주제 폴더를 공개 경계로 보되, side effect나 bundle coupling을 피해야 하면 주제 안의 leaf 파일 직접 import를 허용한다.
+예를 들어 Expo Notifications adapter를 같이 로드하면 안 되는 순수 projection 코드는 `shared/lib/notifications` barrel 대신 identifier leaf 파일을 import할 수 있다.
+
+## Import Rules
+
+자동 검사는 `src/application/structure/fsd-import-rules.test.ts`가 담당한다.
+
+현재 허용 방향:
+
+- `shared`는 `shared`만 import한다.
+- `entities`는 같은 entity slice와 `shared`만 import한다.
+- `features`는 feature 공개 API, `entities`, `shared`를 import한다.
+- `screens`는 screen 공개 API, `features`, `entities`, `shared`, 필요한 `application` context 공개 API를 import한다.
+- `application`은 앱 조립을 위해 `features`, `entities`, `shared`, 같은 `application` 공개 API를 import한다.
+- `app` route는 thin shell로 `application`, `screens`, navigation feature, `shared`만 import한다.
+
+자동 검사는 다음을 실패로 본다.
+
+- 허용 방향 밖 cross-layer import.
+- 외부 slice에서 내부 segment 파일 직접 import.
+- slice root의 `index.ts` 또는 entity `testing.ts` 외 root 파일.
+- `components`, `hooks`, `types`, `utils`, `helpers`, `constants` segment.
+
 ## Widgets
 
 초기 전환에서는 `widgets` layer를 만들지 않는다.

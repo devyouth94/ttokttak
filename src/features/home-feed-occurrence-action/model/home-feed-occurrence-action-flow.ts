@@ -8,7 +8,7 @@ import { createItemOccurrenceProjection } from "~/entities/schedule";
 import {
   type CaptureRecurringMutationPostprocessException,
   completeRecurringMutationPostprocessFlow,
-} from "~/features/recurring/model/recurring-mutation-postprocess-flow";
+} from "~/features/recurring";
 
 export type HomeFeedOccurrenceLogInput = {
   action: CompletionAction;

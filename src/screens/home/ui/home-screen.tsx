@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppStatePlaceholder } from "~/shared/ui/app-state";
 import { colors } from "~/shared/ui/tokens";

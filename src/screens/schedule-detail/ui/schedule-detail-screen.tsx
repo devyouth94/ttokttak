@@ -11,9 +11,11 @@ import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/archive-schedule";
 import { useNotifications } from "~/features/notifications";
-import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
-import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
-import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
+import {
+  createRecurringMutationPostprocessAdapter,
+  useCompletionLogsForItemQuery,
+  useRecurringItemByIdQuery,
+} from "~/features/recurring";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";

@@ -1,4 +1,4 @@
-import { handleLocalNotificationResponse } from "~/application/bootstrap/app-bootstrap";
+import { handleLocalNotificationResponse } from "~/application/bootstrap";
 import type { LocalNotificationResponse } from "~/shared/lib/notifications";
 
 jest.mock("expo-router", () => ({

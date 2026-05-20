@@ -8,7 +8,7 @@ import {
   skipHomeFeedOccurrence,
   type SyncAfterHomeOccurrenceMutation,
 } from "~/features/home-feed-occurrence-action";
-import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
+import { recurringQueryKeys } from "~/features/recurring";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 

@@ -7,7 +7,7 @@ const { readFileSync } = require("fs") as {
   readFileSync: (path: string, encoding: "utf8") => string;
 };
 const { mainTabStackScreenOptions, mainTabsRootScreenOptions } =
-  require("~/features/navigation/main-navigation-options") as typeof import("~/features/navigation/main-navigation-options");
+  require("./main-navigation-options") as typeof import("./main-navigation-options");
 
 function readWorkspaceFile(relativePath: string): string {
   return readFileSync(`${process.cwd()}/${relativePath}`, "utf8");

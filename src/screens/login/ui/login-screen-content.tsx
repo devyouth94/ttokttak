@@ -8,10 +8,7 @@ import {
   View,
 } from "react-native";
 
-import {
-  PRIVACY_POLICY_URL,
-  TERMS_OF_SERVICE_URL,
-} from "~/features/legal/legal-links";
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
 import { isAppleSignInAvailable } from "~/features/sign-in";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
