@@ -6,7 +6,10 @@ import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedItemRow } from "./home-feed-item-row";
-import type { HomeFeedCard, HomeFeedSection } from "./home-screen.helpers";
+import type {
+  HomeFeedCard,
+  HomeFeedSection,
+} from "../model/home-feed-sections";
 
 type HomeFeedSectionBlockProps = {
   bottomOverlapInset: number;

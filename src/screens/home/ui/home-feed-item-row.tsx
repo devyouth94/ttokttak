@@ -6,7 +6,7 @@ import type { CompletionAction } from "~/entities/schedule";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
-import type { HomeFeedCard } from "./home-screen.helpers";
+import type { HomeFeedCard } from "../model/home-feed-sections";
 
 const FEED_ITEM_ACTION_BORDER_WIDTH = 1;
 const FEED_ITEM_ACTION_STROKE_WIDTH = 2;

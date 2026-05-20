@@ -3,15 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import type { CompletionAction, CompletionLog } from "~/entities/schedule";
 import { createCompletionLog } from "~/entities/schedule/api";
+import {
+  completeHomeFeedOccurrence,
+  skipHomeFeedOccurrence,
+  type SyncAfterHomeOccurrenceMutation,
+} from "~/features/home-feed-occurrence-action";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
-import type { HomeFeedCard } from "../components/home-screen.helpers";
-import {
-  processHomeFeedOccurrenceAction,
-  type SyncAfterHomeOccurrenceMutation,
-} from "../domain/home-occurrence-action-flow";
+import type { HomeFeedCard } from "./home-feed-sections";
 
 type UseHomeOccurrenceActionsOptions = {
   completionLogs: CompletionLog[];
@@ -62,8 +63,12 @@ export function useHomeOccurrenceActions({
       setActionErrorMessage(null);
 
       try {
-        await processHomeFeedOccurrenceAction({
-          action,
+        const processOccurrence =
+          action === "completed"
+            ? completeHomeFeedOccurrence
+            : skipHomeFeedOccurrence;
+
+        await processOccurrence({
           captureException: Sentry.captureException,
           completionLogs,
           createCompletionLog,

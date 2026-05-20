@@ -10,9 +10,10 @@ import {
 } from "~/entities/schedule/testing";
 
 import {
+  completeHomeFeedOccurrence,
   type HomeFeedOccurrenceLogInput,
-  processHomeFeedOccurrenceAction,
-} from "./home-occurrence-action-flow";
+  skipHomeFeedOccurrence,
+} from "../index";
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return createRecurringItemFixture({
@@ -46,7 +47,7 @@ function getTodayOccurrence(item: RecurringItem) {
   )[0]!;
 }
 
-describe("processHomeFeedOccurrenceAction", () => {
+describe("home feed occurrence action use cases", () => {
   it("scheduled occurrence를 완료하면 completion log 생성 후 알림과 홈 피드를 새로 맞춘다", async () => {
     const item = createItem({ id: "scheduled-item" });
     const occurrence = getTodayOccurrence(item);
@@ -58,8 +59,7 @@ describe("processHomeFeedOccurrenceAction", () => {
     const invalidateRecurringUserQueries = jest.fn(async () => undefined);
     const refetchFeed = jest.fn(async () => undefined);
 
-    await processHomeFeedOccurrenceAction({
-      action: "completed",
+    await completeHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
       invalidateRecurringUserQueries,
@@ -117,8 +117,7 @@ describe("processHomeFeedOccurrenceAction", () => {
 
     expect(occurrence).toBeDefined();
 
-    await processHomeFeedOccurrenceAction({
-      action: "completed",
+    await completeHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
       invalidateRecurringUserQueries: jest.fn(async () => undefined),
@@ -164,8 +163,7 @@ describe("processHomeFeedOccurrenceAction", () => {
 
     expect(occurrence).toBeDefined();
 
-    await processHomeFeedOccurrenceAction({
-      action: "completed",
+    await completeHomeFeedOccurrence({
       completionLogs,
       createCompletionLog,
       invalidateRecurringUserQueries: jest.fn(async () => undefined),
@@ -194,8 +192,7 @@ describe("processHomeFeedOccurrenceAction", () => {
     const invalidateRecurringUserQueries = jest.fn(async () => undefined);
     const refetchFeed = jest.fn(async () => undefined);
 
-    await processHomeFeedOccurrenceAction({
-      action: "completed",
+    await completeHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
       invalidateRecurringUserQueries,
@@ -226,8 +223,7 @@ describe("processHomeFeedOccurrenceAction", () => {
     );
     const syncAfterMutation = jest.fn(async () => undefined);
 
-    await processHomeFeedOccurrenceAction({
-      action: "skipped",
+    await skipHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
       invalidateRecurringUserQueries: jest.fn(async () => undefined),
@@ -281,8 +277,7 @@ describe("processHomeFeedOccurrenceAction", () => {
     const captureException = jest.fn();
 
     await expect(
-      processHomeFeedOccurrenceAction({
-        action: "completed",
+      completeHomeFeedOccurrence({
         captureException,
         completionLogs: [],
         createCompletionLog,

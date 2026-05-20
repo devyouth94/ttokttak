@@ -30,9 +30,10 @@
 
 - `app`: Expo Router route.
 - `src/application`: provider, bootstrap, route params wiring.
+- `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
 - `src/screens/login`: 로그인 화면.
 - `src/screens/settings`: 설정 화면.
-- `src/features/*/components`: 화면과 화면 전용 UI.
+- `src/features/*/components`: 아직 screen slice로 옮기지 않은 화면과 화면 전용 UI.
 - `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
 
 ### Application
@@ -47,6 +48,7 @@
 - `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
+- `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
 - `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
@@ -176,7 +178,7 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 
 ### Complete / Skip
 
-홈 action은 `completion_logs`에 기록을 만든다.
+홈 피드 occurrence 처리 feature는 `completion_logs`에 기록을 만든다.
 지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
 

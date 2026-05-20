@@ -10,7 +10,7 @@ import { colors } from "~/shared/ui/tokens";
 import { HomeFeedErrorCard } from "./home-feed-error-card";
 import { HomeFeedSectionList } from "./home-feed-section-list";
 import { HomeTopPanel } from "./home-top-panel";
-import { useHomeScreenController } from "../hooks/use-home-screen-controller";
+import { useHomeScreenController } from "../model/use-home-screen-controller";
 
 export function HomeScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();

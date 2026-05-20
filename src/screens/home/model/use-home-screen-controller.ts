@@ -10,13 +10,13 @@ import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurrin
 import { useSession } from "~/features/session/session-provider";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
-import { useHomeOccurrenceActions } from "./use-home-occurrence-actions";
 import {
   buildHomeFeedSections,
   getProfileName,
   type HomeFeedCard,
   type HomeFeedSection,
-} from "../components/home-screen.helpers";
+} from "./home-feed-sections";
+import { useHomeOccurrenceActions } from "./use-home-occurrence-actions";
 
 let hasShownNotificationPermissionPrompt = false;
 

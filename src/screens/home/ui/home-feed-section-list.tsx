@@ -4,7 +4,10 @@ import type { CompletionAction } from "~/entities/schedule";
 import { spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedSectionBlock } from "./home-feed-section-block";
-import type { HomeFeedCard, HomeFeedSection } from "./home-screen.helpers";
+import type {
+  HomeFeedCard,
+  HomeFeedSection,
+} from "../model/home-feed-sections";
 
 const FEED_SECTION_STACK_OVERLAP = spacing.lg;
 

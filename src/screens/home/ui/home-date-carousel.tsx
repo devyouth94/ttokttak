@@ -6,7 +6,7 @@ import { Undo2 } from "lucide-react-native";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
-import { createHomeDateOptions } from "./home-screen.helpers";
+import { createHomeDateOptions } from "../model/home-feed-sections";
 
 type HomeDateCarouselProps = {
   onSelectDate: (dateId: string) => void;

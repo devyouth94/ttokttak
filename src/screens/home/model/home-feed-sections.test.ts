@@ -9,11 +9,12 @@ import {
   createScheduleVersionFixture,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
-import { getFeedItemMetaLine } from "~/features/home/components/home-feed-item-row";
+
 import {
   buildHomeFeedSections,
   createHomeDateOptions,
-} from "~/features/home/components/home-screen.helpers";
+} from "./home-feed-sections";
+import { getFeedItemMetaLine } from "../ui/home-feed-item-row";
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return createRecurringItemFixture({

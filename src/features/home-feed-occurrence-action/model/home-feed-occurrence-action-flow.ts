@@ -45,7 +45,30 @@ export type ProcessHomeFeedOccurrenceActionOptions = {
   userId: string | null;
 };
 
-export async function processHomeFeedOccurrenceAction({
+export type HomeFeedOccurrenceUseCaseOptions = Omit<
+  ProcessHomeFeedOccurrenceActionOptions,
+  "action"
+>;
+
+export async function completeHomeFeedOccurrence(
+  options: HomeFeedOccurrenceUseCaseOptions
+): Promise<void> {
+  await processHomeFeedOccurrenceAction({
+    ...options,
+    action: "completed",
+  });
+}
+
+export async function skipHomeFeedOccurrence(
+  options: HomeFeedOccurrenceUseCaseOptions
+): Promise<void> {
+  await processHomeFeedOccurrenceAction({
+    ...options,
+    action: "skipped",
+  });
+}
+
+async function processHomeFeedOccurrenceAction({
   action,
   captureException,
   completionLogs,

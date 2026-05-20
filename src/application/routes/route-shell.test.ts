@@ -40,6 +40,16 @@ describe("route shell", () => {
     expect(settingsRoute).not.toContain("Alert");
   });
 
+  it("홈 route는 home screen만 연결한다", () => {
+    const homeRoute = readWorkspaceFile("app/(tabs)/home/index.tsx");
+
+    expect(homeRoute).toContain("<HomeScreen />");
+    expect(homeRoute).toContain("~/screens/home");
+    expect(homeRoute).not.toContain("~/features/home");
+    expect(homeRoute).not.toContain("useOccurrenceProjectionQuery");
+    expect(homeRoute).not.toContain("useNotifications");
+  });
+
   it("index route는 login screen만 연결한다", () => {
     const indexRoute = readWorkspaceFile("app/index.tsx");
 
