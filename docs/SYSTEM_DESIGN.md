@@ -60,13 +60,15 @@
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
 - `src/features/sign-in`: Apple/Google 로그인 use case와 provider adapter.
 - `src/features/delete-account`: 계정 삭제 use case와 Apple 계정 삭제 재인증 adapter.
+- `src/features/sync-local-notifications`: 기기 로컬 알림 예약, 재동기화 정책, lifecycle.
+- `src/features/notifications`: 알림 권한 context와 알림 tap payload 판정.
 - `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Infrastructure
 
-- `src/shared/lib/privacy`: content key 복구 저장소와 privacy 공통 helper.
-- `src/features/notifications`: 기기 로컬 알림 예약, 권한, lifecycle, 알림 tap routing.
+- `src/shared/lib/notifications`: Expo Notifications adapter, 알림 권한 adapter, 로컬 reminder identifier/payload helper.
+- `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
 - `src/shared/api`: Supabase client와 schema type.
 - `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.

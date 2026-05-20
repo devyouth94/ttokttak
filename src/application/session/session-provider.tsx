@@ -11,12 +11,12 @@ import {
   deleteAccount as deleteAccountWithCleanup,
   requestAppleAuthorizationCodeForAccountDeletion,
 } from "~/features/delete-account";
-import { cancelAllTtokttakLocalReminderNotifications } from "~/features/notifications/local-notification-sync";
 import {
   signInWithApple,
   signInWithGoogle,
   signOutFromGoogle,
 } from "~/features/sign-in";
+import { cancelAllTtokttakLocalReminderNotifications } from "~/features/sync-local-notifications";
 import { isSupabaseConfigured, supabase } from "~/shared/api/supabase";
 
 type SessionContextValue = {

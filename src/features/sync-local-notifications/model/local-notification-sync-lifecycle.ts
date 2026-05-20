@@ -1,7 +1,7 @@
 import type {
   NotificationSyncReason,
   NotificationSyncScope,
-} from "~/features/notifications/notification-sync.types";
+} from "~/features/sync-local-notifications/model/notification-sync.types";
 
 type LocalNotificationSyncContext = {
   timezone: string;

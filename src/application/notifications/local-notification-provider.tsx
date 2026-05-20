@@ -1,45 +1,26 @@
 import type { PropsWithChildren } from "react";
-import {
-  createContext,
-  use,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { AppState, Platform } from "react-native";
-import * as Notifications from "expo-notifications";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 
 import {
-  cancelAllTtokttakLocalReminderNotifications,
-  syncLocalReminderNotifications,
-} from "~/features/notifications/local-notification-sync";
+  NotificationContextProvider,
+  type NotificationContextValue,
+} from "~/features/notifications";
 import {
+  cancelAllTtokttakLocalReminderNotifications,
+  createLocalNotificationSyncLifecycle,
+  type NotificationSyncReason,
+  type NotificationSyncScope,
+  syncLocalReminderNotifications,
+} from "~/features/sync-local-notifications";
+import { Sentry } from "~/shared/config/sentry";
+import {
+  ensureAndroidLocalNotificationChannel,
   getNotificationPermissionState,
   type NotificationPermissionState,
   openNotificationSettings,
   requestNotificationPermission,
-} from "~/features/notifications/notification-permission";
-import {
-  type NotificationSyncReason,
-  type NotificationSyncScope,
-} from "~/features/notifications/notification-sync.types";
-import { createLocalNotificationSyncLifecycle } from "~/features/notifications/notification-sync-lifecycle";
-import { Sentry } from "~/shared/config/sentry";
-
-type NotificationContextValue = {
-  isPermissionLoading: boolean;
-  isRequestingPermission: boolean;
-  openSettings: () => Promise<void>;
-  permission: NotificationPermissionState;
-  refreshPermission: () => Promise<NotificationPermissionState>;
-  requestPermission: () => Promise<NotificationPermissionState>;
-  syncAfterMutation: (params: {
-    reason: NotificationSyncReason;
-    scope: NotificationSyncScope;
-  }) => Promise<void>;
-  syncAfterNotificationTap: () => Promise<void>;
-};
+} from "~/shared/lib/notifications";
 
 const initialPermissionState: NotificationPermissionState = {
   canOpenSettings: false,
@@ -50,37 +31,16 @@ const initialPermissionState: NotificationPermissionState = {
 
 const ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 
-const NotificationContext = createContext<NotificationContextValue | null>(
-  null
-);
-
-type NotificationProviderProps = PropsWithChildren<{
+type LocalNotificationProviderProps = PropsWithChildren<{
   timezone: string;
   userId: string | null | undefined;
 }>;
 
-async function ensureAndroidReminderNotificationChannel(): Promise<void> {
-  if (Platform.OS !== "android") {
-    return;
-  }
-
-  await Notifications.setNotificationChannelAsync(
-    ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
-    {
-      enableVibrate: true,
-      importance: Notifications.AndroidImportance.HIGH,
-      name: "일정 알림",
-      showBadge: true,
-      vibrationPattern: [0, 250, 250, 250],
-    }
-  );
-}
-
-export function NotificationProvider({
+export function LocalNotificationProvider({
   children,
   timezone,
   userId,
-}: NotificationProviderProps): React.JSX.Element {
+}: LocalNotificationProviderProps): React.JSX.Element {
   const [permission, setPermission] = useState<NotificationPermissionState>(
     initialPermissionState
   );
@@ -105,7 +65,10 @@ export function NotificationProvider({
   const notificationSyncLifecycle = notificationSyncLifecycleRef.current;
 
   useEffect(() => {
-    void ensureAndroidReminderNotificationChannel().catch((error) => {
+    void ensureAndroidLocalNotificationChannel({
+      channelId: ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
+      name: "일정 알림",
+    }).catch((error) => {
       Sentry.captureException(error, {
         tags: {
           feature: "notification-channel-bootstrap",
@@ -212,17 +175,9 @@ export function NotificationProvider({
     syncAfterNotificationTap,
   };
 
-  return <NotificationContext value={value}>{children}</NotificationContext>;
-}
-
-export function useNotifications(): NotificationContextValue {
-  const context = use(NotificationContext);
-
-  if (!context) {
-    throw new Error(
-      "useNotifications는 NotificationProvider 안에서만 사용할 수 있습니다."
-    );
-  }
-
-  return context;
+  return (
+    <NotificationContextProvider value={value}>
+      {children}
+    </NotificationContextProvider>
+  );
 }

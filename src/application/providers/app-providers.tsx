@@ -4,8 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
+import { LocalNotificationProvider } from "~/application/notifications/local-notification-provider";
 import { SessionProvider, useSession } from "~/application/session";
-import { NotificationProvider } from "~/features/notifications/notification-provider";
 import { queryClient } from "~/shared/lib/query/query-client";
 
 export function AppProviders({
@@ -34,8 +34,8 @@ function SessionNotificationProvider({
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return (
-    <NotificationProvider timezone={timezone} userId={user?.id}>
+    <LocalNotificationProvider timezone={timezone} userId={user?.id}>
       {children}
-    </NotificationProvider>
+    </LocalNotificationProvider>
   );
 }

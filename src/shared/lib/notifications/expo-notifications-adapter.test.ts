@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 
-import { toNotificationPermissionState } from "~/features/notifications/notification-permission";
+import { toNotificationPermissionState } from "~/shared/lib/notifications";
 
 describe("toNotificationPermissionState", () => {
   it("허용 상태를 granted로 해석한다", () => {

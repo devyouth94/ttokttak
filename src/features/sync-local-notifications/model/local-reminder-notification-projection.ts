@@ -12,13 +12,11 @@ import {
   getNextOccurrence,
   getOccurrencesInRange,
 } from "~/entities/schedule";
-
-const LOCAL_REMINDER_IDENTIFIER_PREFIX = "ttokttak:reminder";
-
-type LocalReminderNotificationPayload = {
-  notificationKind: "reminder";
-  source: "recurring-item";
-};
+import { createLocalReminderIdentifier } from "~/shared/lib/notifications/local-reminder-identifier";
+import {
+  createLocalReminderPayload,
+  type LocalReminderNotificationPayload,
+} from "~/shared/lib/notifications/local-reminder-payload";
 
 export type DesiredLocalReminderNotification = {
   body: string;
@@ -38,58 +36,6 @@ export type ExistingLocalReminderNotification = {
 type LocalReminderNotificationProjection = {
   notifications: DesiredLocalReminderNotification[];
 };
-
-function createLocalReminderIdentifier(params: {
-  itemId: string;
-  scheduledAtUtc: string;
-  userId: string;
-}): string {
-  const { itemId, scheduledAtUtc, userId } = params;
-
-  return `${LOCAL_REMINDER_IDENTIFIER_PREFIX}:${userId}:${itemId}:${scheduledAtUtc}`;
-}
-
-function createLocalReminderPayload(): LocalReminderNotificationPayload {
-  return {
-    notificationKind: "reminder",
-    source: "recurring-item",
-  };
-}
-
-export function parseLocalReminderIdentifier(
-  identifier: string,
-  userId: string
-): ExistingLocalReminderNotification | null {
-  const userPrefix = `${LOCAL_REMINDER_IDENTIFIER_PREFIX}:${userId}:`;
-
-  if (!identifier.startsWith(userPrefix)) {
-    return null;
-  }
-
-  const remainder = identifier.slice(userPrefix.length);
-  const itemIdSeparatorIndex = remainder.indexOf(":");
-
-  if (itemIdSeparatorIndex < 1) {
-    return null;
-  }
-
-  const itemId = remainder.slice(0, itemIdSeparatorIndex);
-  const scheduledAtUtc = remainder.slice(itemIdSeparatorIndex + 1);
-
-  if (!itemId || !scheduledAtUtc) {
-    return null;
-  }
-
-  return {
-    identifier,
-    itemId,
-    scheduledAtUtc,
-  };
-}
-
-export function isTtokttakLocalReminderIdentifier(identifier: string): boolean {
-  return identifier.startsWith(`${LOCAL_REMINDER_IDENTIFIER_PREFIX}:`);
-}
 
 function canScheduleItem(item: RecurringItem): boolean {
   return (

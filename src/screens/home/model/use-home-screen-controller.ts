@@ -6,7 +6,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { useRecurringFeedContext } from "~/application/recurring";
 import { useSession } from "~/application/session";
 import type { CompletionAction } from "~/entities/schedule";
-import { useNotifications } from "~/features/notifications/notification-provider";
+import { useNotifications } from "~/features/notifications";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 

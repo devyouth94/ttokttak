@@ -1,15 +1,7 @@
-import { router } from "expo-router";
-
-import { navigateFromNotificationResponse } from "~/features/notifications/notification-response-navigation";
+import { shouldNavigateHomeFromNotificationResponse } from "~/features/notifications/notification-response-navigation";
 
 jest.mock("expo-notifications", () => ({
   DEFAULT_ACTION_IDENTIFIER: "default",
-}));
-
-jest.mock("expo-router", () => ({
-  router: {
-    replace: jest.fn(),
-  },
 }));
 
 describe("notification response navigation", () => {
@@ -28,7 +20,7 @@ describe("notification response navigation", () => {
   });
 
   it("로컬 reminder 알림 tap은 홈 피드로 이동한다", () => {
-    const didNavigate = navigateFromNotificationResponse({
+    const didNavigate = shouldNavigateHomeFromNotificationResponse({
       actionIdentifier: "default",
       notification: {
         date: new Date("2026-04-23T09:00:00.000Z").getTime(),
@@ -52,6 +44,5 @@ describe("notification response navigation", () => {
     });
 
     expect(didNavigate).toBe(true);
-    expect(router.replace).toHaveBeenCalledWith("/home");
   });
 });

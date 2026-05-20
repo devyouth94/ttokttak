@@ -13,8 +13,8 @@ import {
   cancelAllTtokttakLocalReminderNotifications,
   createLocalReminderNotificationSyncPlan,
   syncLocalReminderNotifications,
-} from "~/features/notifications/local-notification-sync";
-import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
+} from "~/features/sync-local-notifications";
+import { getNotificationPermissionState } from "~/shared/lib/notifications";
 
 jest.mock("expo-notifications", () => ({
   AndroidNotificationPriority: {
@@ -28,7 +28,8 @@ jest.mock("expo-notifications", () => ({
   scheduleNotificationAsync: jest.fn(),
 }));
 
-jest.mock("~/features/notifications/notification-permission", () => ({
+jest.mock("~/shared/lib/notifications", () => ({
+  ...jest.requireActual("~/shared/lib/notifications"),
   getNotificationPermissionState: jest.fn(),
 }));
 

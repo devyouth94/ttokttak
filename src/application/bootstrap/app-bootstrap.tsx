@@ -1,24 +1,57 @@
 import { useEffect, useRef } from "react";
-import * as Notifications from "expo-notifications";
-import { SplashScreen } from "expo-router";
+import { router, SplashScreen } from "expo-router";
 
 import { useSession } from "~/application/session";
-import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   getNotificationNavigationKey,
-  navigateFromNotificationResponse,
-} from "~/features/notifications/notification-response-navigation";
+  shouldNavigateHomeFromNotificationResponse,
+  useNotifications,
+} from "~/features/notifications";
+import {
+  addLocalNotificationResponseReceivedListener,
+  clearLastLocalNotificationResponse,
+  configureDefaultLocalNotificationHandler,
+  getLastLocalNotificationResponse,
+  type LocalNotificationResponse,
+} from "~/shared/lib/notifications";
 
 void SplashScreen.preventAutoHideAsync();
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+configureDefaultLocalNotificationHandler();
+
+type HandleNotificationResponseInput = {
+  handledResponseKeys: Set<string>;
+  navigateToHome: () => void;
+  response: LocalNotificationResponse | null;
+  syncAfterNotificationTap: () => void;
+};
+
+export function handleLocalNotificationResponse({
+  handledResponseKeys,
+  navigateToHome,
+  response,
+  syncAfterNotificationTap,
+}: HandleNotificationResponseInput): boolean {
+  if (!response) {
+    return false;
+  }
+
+  const responseKey = getNotificationNavigationKey(response);
+
+  if (handledResponseKeys.has(responseKey)) {
+    return false;
+  }
+
+  if (!shouldNavigateHomeFromNotificationResponse(response)) {
+    return false;
+  }
+
+  navigateToHome();
+  handledResponseKeys.add(responseKey);
+  syncAfterNotificationTap();
+
+  return true;
+}
 
 export function AppBootstrap(): React.JSX.Element {
   return (
@@ -47,34 +80,26 @@ function NotificationResponseController(): null {
 
   useEffect(() => {
     const handleResponse = (
-      response: Notifications.NotificationResponse | null
+      response: LocalNotificationResponse | null
     ): void => {
-      if (!response) {
-        return;
-      }
-
-      const responseKey = getNotificationNavigationKey(response);
-
-      if (handledResponseKeysRef.current.has(responseKey)) {
-        return;
-      }
-
-      const didNavigate = navigateFromNotificationResponse(response);
-
-      if (!didNavigate) {
-        return;
-      }
-
-      handledResponseKeysRef.current.add(responseKey);
-      void syncAfterNotificationTap();
+      handleLocalNotificationResponse({
+        handledResponseKeys: handledResponseKeysRef.current,
+        navigateToHome: () => {
+          router.replace("/home");
+        },
+        response,
+        syncAfterNotificationTap: () => {
+          void syncAfterNotificationTap();
+        },
+      });
     };
 
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
+    void getLastLocalNotificationResponse().then((response) => {
       handleResponse(response);
-      void Notifications.clearLastNotificationResponseAsync();
+      void clearLastLocalNotificationResponse();
     });
 
-    const subscription = Notifications.addNotificationResponseReceivedListener(
+    const subscription = addLocalNotificationResponseReceivedListener(
       (response) => {
         handleResponse(response);
       }

@@ -1,28 +1,12 @@
-import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
-
-type ReminderNotificationPayload = {
-  notificationKind: "reminder";
-  source: "recurring-item";
-};
-
-function isReminderNotificationPayload(
-  value: unknown
-): value is ReminderNotificationPayload {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-
-  return (
-    candidate.notificationKind === "reminder" &&
-    candidate.source === "recurring-item"
-  );
-}
+import {
+  defaultNotificationActionIdentifier,
+  isLocalReminderNotificationPayload,
+  type LocalNotificationResponse,
+  type LocalReminderNotificationPayload,
+} from "~/shared/lib/notifications";
 
 function extractPayloadCandidate(
-  response: Notifications.NotificationResponse
+  response: LocalNotificationResponse
 ): unknown[] {
   const candidates: unknown[] = [response.notification.request.content.data];
   const trigger = response.notification.request.trigger;
@@ -47,10 +31,10 @@ function extractPayloadCandidate(
 }
 
 function resolveReminderNotificationPayload(
-  response: Notifications.NotificationResponse
-): ReminderNotificationPayload | null {
+  response: LocalNotificationResponse
+): LocalReminderNotificationPayload | null {
   for (const candidate of extractPayloadCandidate(response)) {
-    if (isReminderNotificationPayload(candidate)) {
+    if (isLocalReminderNotificationPayload(candidate)) {
       return candidate;
     }
   }
@@ -59,25 +43,19 @@ function resolveReminderNotificationPayload(
 }
 
 export function getNotificationNavigationKey(
-  response: Notifications.NotificationResponse
+  response: LocalNotificationResponse
 ): string {
   return response.notification.request.identifier;
 }
 
-export function navigateFromNotificationResponse(
-  response: Notifications.NotificationResponse
+export function shouldNavigateHomeFromNotificationResponse(
+  response: LocalNotificationResponse
 ): boolean {
-  if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+  if (response.actionIdentifier !== defaultNotificationActionIdentifier) {
     return false;
   }
 
   const payload = resolveReminderNotificationPayload(response);
 
-  if (!payload) {
-    return false;
-  }
-
-  router.replace("/home");
-
-  return true;
+  return payload !== null;
 }

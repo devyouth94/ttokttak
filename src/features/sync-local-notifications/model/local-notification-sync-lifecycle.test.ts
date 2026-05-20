@@ -1,4 +1,4 @@
-import { createLocalNotificationSyncLifecycle } from "~/features/notifications/notification-sync-lifecycle";
+import { createLocalNotificationSyncLifecycle } from "~/features/sync-local-notifications/model/local-notification-sync-lifecycle";
 
 const timezone = "Asia/Seoul";
 

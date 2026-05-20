@@ -38,7 +38,7 @@ describe("shared foundation", () => {
     const libEntries = readdirSync(getWorkspacePath("src/shared/lib"));
 
     expect(libEntries).toEqual(
-      expect.arrayContaining(["errors", "privacy", "query"])
+      expect.arrayContaining(["errors", "notifications", "privacy", "query"])
     );
 
     for (const entry of libEntries) {
@@ -74,7 +74,21 @@ describe("shared foundation", () => {
     expect(
       existsSync(
         getWorkspacePath(
-          "src/features/notifications/local-notification-sync.ts"
+          "src/shared/lib/notifications/local-reminder-identifier.ts"
+        )
+      )
+    ).toBe(true);
+    expect(
+      existsSync(
+        getWorkspacePath(
+          "src/shared/lib/notifications/expo-notifications-adapter.ts"
+        )
+      )
+    ).toBe(true);
+    expect(
+      existsSync(
+        getWorkspacePath(
+          "src/features/sync-local-notifications/model/local-notification-sync.ts"
         )
       )
     ).toBe(true);

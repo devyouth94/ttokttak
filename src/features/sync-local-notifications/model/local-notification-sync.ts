@@ -1,5 +1,3 @@
-import * as Notifications from "expo-notifications";
-
 import {
   listCompletionLogs,
   listRecurringItems,
@@ -8,14 +6,20 @@ import {
   createLocalReminderNotificationProjection,
   type DesiredLocalReminderNotification,
   type ExistingLocalReminderNotification,
-  isTtokttakLocalReminderIdentifier,
-  parseLocalReminderIdentifier,
-} from "~/features/notifications/local-reminder-notification-projection";
-import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
+} from "~/features/sync-local-notifications/model/local-reminder-notification-projection";
 import type {
   NotificationSyncReason,
   NotificationSyncScope,
-} from "~/features/notifications/notification-sync.types";
+} from "~/features/sync-local-notifications/model/notification-sync.types";
+import {
+  cancelScheduledLocalNotification,
+  getAllScheduledLocalNotifications,
+  getNotificationPermissionState,
+  isTtokttakLocalReminderIdentifier,
+  type LocalNotificationRequest,
+  parseLocalReminderIdentifier,
+  scheduleDateLocalNotification,
+} from "~/shared/lib/notifications";
 
 const REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 const MAX_PENDING_LOCAL_NOTIFICATIONS = 60;
@@ -138,7 +142,7 @@ export function createLocalReminderNotificationSyncPlan(params: {
 }
 
 function parseExistingLocalReminderNotifications(params: {
-  scheduledNotificationRequests: Notifications.NotificationRequest[];
+  scheduledNotificationRequests: LocalNotificationRequest[];
   userId: string;
 }): ExistingLocalReminderNotification[] {
   const { scheduledNotificationRequests, userId } = params;
@@ -154,26 +158,17 @@ async function applyLocalReminderNotificationSyncPlan(
   plan: LocalReminderNotificationSyncPlan
 ): Promise<void> {
   for (const notification of plan.notificationsToCancel) {
-    await Notifications.cancelScheduledNotificationAsync(
-      notification.identifier
-    );
+    await cancelScheduledLocalNotification(notification.identifier);
   }
 
   for (const notification of plan.notificationsToSchedule) {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        body: notification.body,
-        data: notification.payload,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-        sound: "default",
-        title: notification.title,
-      },
+    await scheduleDateLocalNotification({
+      body: notification.body,
+      channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
+      data: notification.payload,
       identifier: notification.identifier,
-      trigger: {
-        channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
-        date: new Date(notification.scheduledAtUtc),
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-      },
+      scheduledAtUtc: notification.scheduledAtUtc,
+      title: notification.title,
     });
   }
 }
@@ -218,7 +213,7 @@ export async function syncLocalReminderNotifications(
       now,
     });
   const scheduledNotificationRequests =
-    await Notifications.getAllScheduledNotificationsAsync();
+    await getAllScheduledLocalNotifications();
   const existingNotifications = parseExistingLocalReminderNotifications({
     scheduledNotificationRequests,
     userId,
@@ -241,15 +236,13 @@ export async function syncLocalReminderNotifications(
 
 export async function cancelAllTtokttakLocalReminderNotifications(): Promise<LocalReminderNotificationCancellationResult> {
   const scheduledNotificationRequests =
-    await Notifications.getAllScheduledNotificationsAsync();
+    await getAllScheduledLocalNotifications();
   const reminderNotifications = scheduledNotificationRequests.filter(
     (notification) => isTtokttakLocalReminderIdentifier(notification.identifier)
   );
 
   for (const notification of reminderNotifications) {
-    await Notifications.cancelScheduledNotificationAsync(
-      notification.identifier
-    );
+    await cancelScheduledLocalNotification(notification.identifier);
   }
 
   return {

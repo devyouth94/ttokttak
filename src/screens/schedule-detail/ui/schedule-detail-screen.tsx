@@ -10,7 +10,7 @@ import { useRecurringFeedContext } from "~/application/recurring";
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/archive-schedule";
-import { useNotifications } from "~/features/notifications/notification-provider";
+import { useNotifications } from "~/features/notifications";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";

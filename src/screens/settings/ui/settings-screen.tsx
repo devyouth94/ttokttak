@@ -24,7 +24,7 @@ import {
   TERMS_OF_SERVICE_URL,
 } from "~/features/legal/legal-links";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
-import { useNotifications } from "~/features/notifications/notification-provider";
+import { useNotifications } from "~/features/notifications";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
