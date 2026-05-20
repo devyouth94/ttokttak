@@ -4,11 +4,11 @@ import {
   getRecurringItemById,
   listRecurringItems,
   updateRecurringItem,
-} from "~/features/recurring/repositories/recurring-items-repository";
+} from "~/entities/schedule/api/recurring-items-repository";
 import {
   createRecurringItemsPersistenceDouble,
   createStoredRecurringItemFixture,
-} from "~/features/recurring/repositories/repository-test-helpers";
+} from "~/entities/schedule/api/repository-test-helpers";
 
 const contentCipher = {
   decryptRecurringItemContent: jest.fn().mockResolvedValue({

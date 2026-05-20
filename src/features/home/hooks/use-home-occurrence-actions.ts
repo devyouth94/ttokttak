@@ -2,8 +2,8 @@ import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { CompletionAction, CompletionLog } from "~/entities/schedule";
+import { createCompletionLog } from "~/entities/schedule/api";
 import { recurringQueryKeys } from "~/features/recurring/hooks/recurring-query-keys";
-import { createCompletionLog } from "~/features/recurring/repositories/completion-logs-repository";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 

@@ -1,7 +1,7 @@
 import {
   getRepositoryClient,
   type RepositoryClient,
-} from "~/features/recurring/repositories/repository-client";
+} from "~/shared/api/repository-client";
 
 import type {
   UserContentEncryptionKeyInsert,

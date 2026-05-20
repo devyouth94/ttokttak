@@ -11,7 +11,7 @@ import {
   recoverUserContentKey,
   upsertUserContentEncryptionKey,
   wrapUserContentKeyForRecovery,
-} from "~/features/privacy/user-content-encryption-keys-repository";
+} from "~/shared/lib/privacy/user-content-encryption-keys-repository";
 
 export type RecurringItemContentEncryptionMetadata = Record<string, unknown>;
 

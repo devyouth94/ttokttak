@@ -8,6 +8,7 @@ import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
+import { archiveRecurringItem } from "~/entities/schedule/api";
 import { useNotifications } from "~/features/notifications/notification-provider";
 import {
   buildOccurrenceStatusCard,
@@ -21,7 +22,6 @@ import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
 import { useRecurringItemByIdQuery } from "~/features/recurring/hooks/use-recurring-items-query";
-import { archiveRecurringItem } from "~/features/recurring/repositories/recurring-items-repository";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";

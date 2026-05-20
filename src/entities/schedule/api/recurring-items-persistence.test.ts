@@ -1,5 +1,5 @@
-import { createSupabaseRecurringItemsPersistence } from "~/features/recurring/repositories/recurring-items-persistence";
-import { createAwaitableQuery } from "~/features/recurring/repositories/repository-test-helpers";
+import { createSupabaseRecurringItemsPersistence } from "~/entities/schedule/api/recurring-items-persistence";
+import { createAwaitableQuery } from "~/entities/schedule/api/repository-test-helpers";
 
 const recurringItemRow = {
   color_key: "blue",

@@ -1,7 +1,7 @@
 import type {
   RecurringItemsPersistence,
   StoredRecurringItem,
-} from "~/features/recurring/repositories/recurring-items-persistence";
+} from "~/entities/schedule/api/recurring-items-persistence";
 
 type AwaitableQuery<T> = Record<string, jest.Mock> & {
   then: PromiseLike<T>["then"];

@@ -30,6 +30,9 @@ function listSourceFiles(relativePath: string): string[] {
 describe("schedule entity", () => {
   it("일정 도메인 계산은 schedule entity segment에 둔다", () => {
     expect(existsSync(getWorkspacePath("src/entities/schedule"))).toBe(true);
+    expect(existsSync(getWorkspacePath("src/entities/schedule/api"))).toBe(
+      true
+    );
     expect(existsSync(getWorkspacePath("src/entities/schedule/model"))).toBe(
       true
     );
@@ -43,6 +46,9 @@ describe("schedule entity", () => {
     expect(existsSync(getWorkspacePath("src/features/recurring/utils"))).toBe(
       false
     );
+    expect(
+      existsSync(getWorkspacePath("src/features/recurring/repositories"))
+    ).toBe(false);
   });
 
   it("entity 외부는 schedule public API만 import한다", () => {
@@ -53,7 +59,17 @@ describe("schedule entity", () => {
     for (const file of externalFiles) {
       const source = readFileSync(getWorkspacePath(file), "utf8");
 
-      expect(source).not.toMatch(/entities\/schedule\/(model|lib|ui)\//);
+      expect(source).not.toMatch(/entities\/schedule\/(api|lib|model|ui)\//);
+    }
+  });
+
+  it("schedule entity는 feature layer에 의존하지 않는다", () => {
+    const scheduleFiles = listSourceFiles("src/entities/schedule");
+
+    for (const file of scheduleFiles) {
+      const source = readFileSync(getWorkspacePath(file), "utf8");
+
+      expect(source).not.toMatch(/~\/features\//);
     }
   });
 });

@@ -12,14 +12,14 @@ import {
   type RecurringItemColorKey,
 } from "~/entities/schedule";
 import { supportsCompletionBased } from "~/entities/schedule";
-import { useNotifications } from "~/features/notifications/notification-provider";
-import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import {
   archiveRecurringItem,
   createRecurringItem,
   getRecurringItemById,
   updateRecurringItem,
-} from "~/features/recurring/repositories/recurring-items-repository";
+} from "~/entities/schedule/api";
+import { useNotifications } from "~/features/notifications/notification-provider";
+import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useSession } from "~/features/session/session-provider";
 import { Sentry } from "~/shared/config/sentry";
 

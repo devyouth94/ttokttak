@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getRecurringItemById,
   listRecurringItems,
-} from "~/features/recurring/repositories/recurring-items-repository";
+} from "~/entities/schedule/api";
 
 import { recurringQueryKeys } from "./recurring-query-keys";
 

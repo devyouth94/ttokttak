@@ -1,7 +1,7 @@
 import {
   getUserContentEncryptionKey,
   upsertUserContentEncryptionKey,
-} from "~/features/privacy/user-content-encryption-keys-repository";
+} from "~/shared/lib/privacy/user-content-encryption-keys-repository";
 
 const row = {
   user_id: "user-1",

@@ -15,14 +15,14 @@ import {
 import {
   recurringContentCipher,
   type RecurringItemContentCipher,
-} from "~/features/privacy/recurring-content-cipher";
+} from "~/entities/schedule/api/recurring-content-cipher";
 import {
   createSupabaseRecurringItemsPersistence,
   type RecurringItemsPersistence,
   type StoredRecurringItem,
   type StoredRecurringItemScheduleVersion,
-} from "~/features/recurring/repositories/recurring-items-persistence";
-import { type RepositoryClient } from "~/features/recurring/repositories/repository-client";
+} from "~/entities/schedule/api/recurring-items-persistence";
+import { type RepositoryClient } from "~/shared/api/repository-client";
 
 type RecurringItemPatch = RecurringItemEditPatch;
 

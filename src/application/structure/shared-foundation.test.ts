@@ -61,9 +61,16 @@ describe("shared foundation", () => {
     );
     expect(
       existsSync(
-        getWorkspacePath("src/features/privacy/recurring-content-cipher.ts")
+        getWorkspacePath(
+          "src/shared/lib/privacy/user-content-encryption-keys-repository.ts"
+        )
       )
     ).toBe(true);
+    expect(
+      existsSync(
+        getWorkspacePath("src/shared/lib/privacy/recurring-content-cipher.ts")
+      )
+    ).toBe(false);
     expect(
       existsSync(
         getWorkspacePath(

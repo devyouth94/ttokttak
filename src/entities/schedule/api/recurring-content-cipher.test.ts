@@ -1,10 +1,10 @@
-import { recurringContentCipher } from "~/features/privacy/recurring-content-cipher";
+import { recurringContentCipher } from "~/entities/schedule/api/recurring-content-cipher";
 import {
   getUserContentEncryptionKey,
   recoverUserContentKey,
   upsertUserContentEncryptionKey,
   wrapUserContentKeyForRecovery,
-} from "~/features/privacy/user-content-encryption-keys-repository";
+} from "~/shared/lib/privacy/user-content-encryption-keys-repository";
 
 const mockGetItemAsync = jest.fn();
 const mockSetItemAsync = jest.fn();
@@ -45,12 +45,15 @@ jest.mock("expo-crypto", () => ({
   })),
 }));
 
-jest.mock("~/features/privacy/user-content-encryption-keys-repository", () => ({
-  getUserContentEncryptionKey: jest.fn(),
-  recoverUserContentKey: jest.fn(),
-  upsertUserContentEncryptionKey: jest.fn(),
-  wrapUserContentKeyForRecovery: jest.fn(),
-}));
+jest.mock(
+  "~/shared/lib/privacy/user-content-encryption-keys-repository",
+  () => ({
+    getUserContentEncryptionKey: jest.fn(),
+    recoverUserContentKey: jest.fn(),
+    upsertUserContentEncryptionKey: jest.fn(),
+    wrapUserContentKeyForRecovery: jest.fn(),
+  })
+);
 
 describe("recurringContentCipher", () => {
   beforeEach(() => {

@@ -235,8 +235,9 @@ constants
 3. Shared 정리.
    디자인 시스템, QueryClient, error helper, Supabase client, Sentry config를 `shared` 기준으로 옮긴다.
 4. `entities/schedule` 생성.
-   일정 도메인 타입, 반복 규칙, occurrence 계산, projection, validation, 수정 정책, display logic을 먼저 옮긴다.
-   저장소는 privacy cipher 의존 방향을 정리한 뒤 `api` segment로 옮긴다.
+   일정 도메인 타입, 반복 규칙, occurrence 계산, projection, validation, 수정 정책, display logic을 옮긴다.
+   일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback은 `api` segment로 옮긴다.
+   schedule을 모르는 content key 복구 저장소는 `shared/lib/privacy`에 둔다.
 5. Features 추출.
    일정 생성/수정/보관, occurrence 완료/건너뛰기, 로그인, 계정 삭제, 알림 동기화를 use case 단위로 나눈다.
 6. Application wiring 보강.

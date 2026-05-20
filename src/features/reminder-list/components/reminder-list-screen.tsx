@@ -9,8 +9,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
+import { RecurringItemSummaryRow } from "~/entities/schedule/ui";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
-import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";

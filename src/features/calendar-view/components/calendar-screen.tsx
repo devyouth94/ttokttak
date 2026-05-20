@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
+import { RecurringItemSummaryRow } from "~/entities/schedule/ui";
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
@@ -28,7 +29,6 @@ import {
   CalendarDayCell,
 } from "~/features/calendar-view/components/calendar-day-cell";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation/constants/main-bottom-nav-layout";
-import { RecurringItemSummaryRow } from "~/features/recurring/components/recurring-item-summary-row";
 import { useOccurrenceProjectionNow } from "~/features/recurring/hooks/use-occurrence-projection-now";
 import { useOccurrenceProjectionQuery } from "~/features/recurring/hooks/use-occurrence-projection-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";

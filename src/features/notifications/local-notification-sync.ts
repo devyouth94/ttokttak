@@ -1,6 +1,10 @@
 import * as Notifications from "expo-notifications";
 
 import {
+  listCompletionLogs,
+  listRecurringItems,
+} from "~/entities/schedule/api";
+import {
   createLocalReminderNotificationProjection,
   type DesiredLocalReminderNotification,
   type ExistingLocalReminderNotification,
@@ -12,8 +16,6 @@ import type {
   NotificationSyncReason,
   NotificationSyncScope,
 } from "~/features/notifications/notification-sync.types";
-import { listCompletionLogs } from "~/features/recurring/repositories/completion-logs-repository";
-import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
 
 const REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 const MAX_PENDING_LOCAL_NOTIFICATIONS = 60;

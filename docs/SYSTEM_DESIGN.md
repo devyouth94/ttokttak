@@ -45,14 +45,14 @@
 
 - `src/entities/schedule/model`: 일정 타입, 반복 규칙, occurrence 계산, occurrence projection, validation, 수정 정책.
 - `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
-- `src/entities/schedule/ui`: 일정 색상 표시 palette.
+- `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
+- `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
 - `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Infrastructure
 
-- `src/features/recurring/repositories`: Supabase table/RPC 접근.
-- `src/features/privacy`: 일정 제목/설명 암호화와 content key 복구.
+- `src/shared/lib/privacy`: content key 복구 저장소와 privacy 공통 helper.
 - `src/features/notifications`: 기기 로컬 알림 예약, 권한, lifecycle, 알림 tap routing.
 - `src/features/session`: Supabase Auth 세션과 profile 복원.
 - `src/shared/api`: Supabase client와 schema type.

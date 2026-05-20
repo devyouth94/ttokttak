@@ -4,8 +4,8 @@ import {
   listCompletionLogs,
   listCompletionLogsForItemHistory,
   listCompletionLogsInRange,
-} from "~/features/recurring/repositories/completion-logs-repository";
-import { createAwaitableQuery } from "~/features/recurring/repositories/repository-test-helpers";
+} from "~/entities/schedule/api/completion-logs-repository";
+import { createAwaitableQuery } from "~/entities/schedule/api/repository-test-helpers";
 
 describe("completion logs repository", () => {
   it("item 기준으로 completion log 전체 목록을 조회한다", async () => {

@@ -1,6 +1,10 @@
 import * as Notifications from "expo-notifications";
 
 import {
+  listCompletionLogs,
+  listRecurringItems,
+} from "~/entities/schedule/api";
+import {
   createCompletionLogFixture as createCompletionLog,
   createRecurringItemFixture as createRecurringItem,
   recurringTestTimezone as timezone,
@@ -11,8 +15,6 @@ import {
   syncLocalReminderNotifications,
 } from "~/features/notifications/local-notification-sync";
 import { getNotificationPermissionState } from "~/features/notifications/notification-permission";
-import { listCompletionLogs } from "~/features/recurring/repositories/completion-logs-repository";
-import { listRecurringItems } from "~/features/recurring/repositories/recurring-items-repository";
 
 jest.mock("expo-notifications", () => ({
   AndroidNotificationPriority: {
@@ -30,19 +32,10 @@ jest.mock("~/features/notifications/notification-permission", () => ({
   getNotificationPermissionState: jest.fn(),
 }));
 
-jest.mock(
-  "~/features/recurring/repositories/completion-logs-repository",
-  () => ({
-    listCompletionLogs: jest.fn(),
-  })
-);
-
-jest.mock(
-  "~/features/recurring/repositories/recurring-items-repository",
-  () => ({
-    listRecurringItems: jest.fn(),
-  })
-);
+jest.mock("~/entities/schedule/api", () => ({
+  listCompletionLogs: jest.fn(),
+  listRecurringItems: jest.fn(),
+}));
 
 describe("syncLocalReminderNotifications", () => {
   beforeEach(() => {

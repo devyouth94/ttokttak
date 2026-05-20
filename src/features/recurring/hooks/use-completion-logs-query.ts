@@ -6,7 +6,7 @@ import {
   listCompletionLogs,
   listCompletionLogsForItemHistory,
   listCompletionLogsInRange,
-} from "~/features/recurring/repositories/completion-logs-repository";
+} from "~/entities/schedule/api";
 
 import { recurringQueryKeys } from "./recurring-query-keys";
 

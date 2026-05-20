@@ -4,15 +4,15 @@ import type {
   RecurrenceType,
   RecurringItemColorKey,
 } from "~/entities/schedule";
-import type { RecurringItemContentEncryptionMetadata } from "~/features/privacy/recurring-content-cipher";
 import {
   listCompletionLogsForItem,
   listCompletionLogsForItemHistory,
-} from "~/features/recurring/repositories/completion-logs-repository";
+} from "~/entities/schedule/api/completion-logs-repository";
+import type { RecurringItemContentEncryptionMetadata } from "~/entities/schedule/api/recurring-content-cipher";
 import {
   getRepositoryClient,
   type RepositoryClient,
-} from "~/features/recurring/repositories/repository-client";
+} from "~/shared/api/repository-client";
 
 import type {
   RecurringItemRow,

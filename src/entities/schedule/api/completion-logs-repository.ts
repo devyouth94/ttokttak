@@ -2,7 +2,7 @@ import type { CompletionLog } from "~/entities/schedule";
 import {
   getRepositoryClient,
   type RepositoryClient,
-} from "~/features/recurring/repositories/repository-client";
+} from "~/shared/api/repository-client";
 
 import type {
   CompletionLogInsert,
