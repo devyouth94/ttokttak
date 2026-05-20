@@ -100,11 +100,14 @@ src/screens/settings/
 src/screens/schedule-detail/
 src/screens/schedule-create/
 src/screens/schedule-edit/
+src/screens/schedule-form/
 src/screens/login/
 ```
 
 screen 내부에는 화면 전용 `ui`, `model`, `api` segment를 둘 수 있다.
 화면 전용 controller, loading state, error state, helper는 해당 screen slice 안에 둔다.
+`schedule-form`은 생성과 수정 화면이 공유하는 form 구현을 담는다.
+route는 `schedule-create`와 `schedule-edit`만 직접 연결한다.
 
 ### `src/features/`
 

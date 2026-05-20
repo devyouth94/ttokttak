@@ -66,11 +66,58 @@ describe("schedule screens", () => {
     expect(publicApi).toContain("CalendarScreen");
   });
 
+  it("일정 상세, 생성, 수정 화면은 screen slice에 둔다", () => {
+    const screenSlices = [
+      {
+        exportedName: "ScheduleDetailScreen",
+        path: "src/screens/schedule-detail",
+      },
+      {
+        exportedName: "ScheduleCreateScreen",
+        path: "src/screens/schedule-create",
+      },
+      {
+        exportedName: "ScheduleEditScreen",
+        path: "src/screens/schedule-edit",
+      },
+    ];
+
+    for (const screenSlice of screenSlices) {
+      const publicApi = readFileSync(
+        getWorkspacePath(`${screenSlice.path}/index.ts`),
+        "utf8"
+      );
+
+      expect(existsSync(getWorkspacePath(screenSlice.path))).toBe(true);
+      expect(existsSync(getWorkspacePath(`${screenSlice.path}/ui`))).toBe(true);
+      expect(publicApi).toContain(screenSlice.exportedName);
+    }
+
+    expect(existsSync(getWorkspacePath("src/screens/schedule-form"))).toBe(
+      true
+    );
+    expect(
+      existsSync(getWorkspacePath("src/screens/schedule-form/model"))
+    ).toBe(true);
+    expect(existsSync(getWorkspacePath("src/screens/schedule-form/ui"))).toBe(
+      true
+    );
+    expect(
+      existsSync(getWorkspacePath("src/features/recurring/components"))
+    ).toBe(false);
+  });
+
   it("screen 외부는 schedule screen public API만 import한다", () => {
+    const scheduleScreenPaths = [
+      "src/screens/schedule-list/",
+      "src/screens/calendar/",
+      "src/screens/schedule-detail/",
+      "src/screens/schedule-create/",
+      "src/screens/schedule-edit/",
+      "src/screens/schedule-form/",
+    ];
     const externalFiles = listSourceFiles("src").filter(
-      (file) =>
-        !file.startsWith("src/screens/schedule-list/") &&
-        !file.startsWith("src/screens/calendar/")
+      (file) => !scheduleScreenPaths.some((path) => file.startsWith(path))
     );
 
     for (const file of externalFiles) {
@@ -78,6 +125,10 @@ describe("schedule screens", () => {
 
       expect(source).not.toMatch(/screens\/schedule-list\/(model|ui)\//);
       expect(source).not.toMatch(/screens\/calendar\/(model|ui)\//);
+      expect(source).not.toMatch(/screens\/schedule-detail\/(model|ui)\//);
+      expect(source).not.toMatch(/screens\/schedule-create\/(model|ui)\//);
+      expect(source).not.toMatch(/screens\/schedule-edit\/(model|ui)\//);
+      expect(source).not.toMatch(/screens\/schedule-form\/(model|ui)\//);
     }
   });
 });

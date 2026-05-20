@@ -4,21 +4,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "~/shared/ui/app-text";
 import { colors } from "~/shared/ui/tokens";
 
-import { useRecurringItemFormScreenController } from "./recurring-item-form-screen.controller";
-import { getIosPickerChangeHandler } from "./recurring-item-form-screen.helpers";
-import { styles } from "./recurring-item-form-screen.styles";
-import { RecurringItemFormScreenContent } from "./recurring-item-form-screen-content";
+import { ScheduleFormScreenContent } from "./schedule-form-screen-content";
+import { styles } from "./schedule-form-screen-styles";
+import { getIosPickerChangeHandler } from "../model/schedule-form-screen-model";
+import { useScheduleFormScreenController } from "../model/use-schedule-form-screen-controller";
 
-type RecurringItemFormScreenProps = {
+type ScheduleFormScreenProps = {
   itemId?: string;
   returnTo?: string;
 };
 
-export function RecurringItemFormScreen({
+export function ScheduleFormScreen({
   itemId,
   returnTo,
-}: RecurringItemFormScreenProps): React.JSX.Element {
-  const screenModel = useRecurringItemFormScreenController({
+}: ScheduleFormScreenProps): React.JSX.Element {
+  const screenModel = useScheduleFormScreenController({
     itemId,
     returnTo,
   });
@@ -33,18 +33,18 @@ export function RecurringItemFormScreen({
   );
 
   if (screenModel.view.isBootstrapping) {
-    return <RecurringItemFormScreenLoading />;
+    return <ScheduleFormScreenLoading />;
   }
 
   return (
-    <RecurringItemFormScreenContent
+    <ScheduleFormScreenContent
       {...screenModel}
       iosPickerChangeHandler={iosPickerChangeHandler}
     />
   );
 }
 
-function RecurringItemFormScreenLoading(): React.JSX.Element {
+function ScheduleFormScreenLoading(): React.JSX.Element {
   return (
     <SafeAreaView
       edges={["top", "left", "right", "bottom"]}

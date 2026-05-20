@@ -25,6 +25,7 @@ import {
 import { AppText } from "~/shared/ui/app-text";
 import { colors } from "~/shared/ui/tokens";
 
+import { styles } from "./schedule-form-screen-styles";
 import {
   customRecurrenceUnitOptions,
   getAdvancedOptionsState,
@@ -33,9 +34,8 @@ import {
   quickRecurrenceOptions,
   recurringItemColorOptions,
   weekdayOptions,
-} from "./recurring-item-form-screen.helpers";
-import { styles } from "./recurring-item-form-screen.styles";
-import { type CustomRecurrenceUnit } from "./recurring-item-form-state";
+} from "../model/schedule-form-screen-model";
+import { type CustomRecurrenceUnit } from "../model/schedule-form-state";
 
 type WeekdaySelectorProps = {
   errorMessage?: string;

@@ -24,26 +24,26 @@ import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { colors } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
-import { type RecurringItemFormScreenContentProps } from "./recurring-item-form-screen.contracts";
-import {
-  type FormErrorTarget,
-  getRecurringItemFormDisplayValues,
-  getRecurringItemFormEndDateControlState,
-  getRecurringItemFormFirstErrorTarget,
-  getRecurringItemFormScreenTitle,
-} from "./recurring-item-form-screen.helpers";
 import {
   AdvancedOptionsSection,
   ColorPickerSection,
   IosPickerModal,
   NotificationSection,
   RecurrenceSection,
-} from "./recurring-item-form-screen.sections";
-import { styles } from "./recurring-item-form-screen.styles";
+} from "./schedule-form-screen-sections";
+import { styles } from "./schedule-form-screen-styles";
+import { type ScheduleFormScreenContentProps } from "../model/schedule-form-contracts";
+import {
+  type FormErrorTarget,
+  getRecurringItemFormDisplayValues,
+  getRecurringItemFormEndDateControlState,
+  getRecurringItemFormFirstErrorTarget,
+  getScheduleFormScreenTitle,
+} from "../model/schedule-form-screen-model";
 import {
   parseLocalDateToDate,
   parseLocalTimeToDate,
-} from "./recurring-item-form-state";
+} from "../model/schedule-form-state";
 
 type ScreenErrorCardProps = {
   message: string | null;
@@ -88,7 +88,7 @@ type PickerFieldProps = {
 
 type FormSectionOffsets = Partial<Record<FormErrorTarget, number>>;
 
-export function RecurringItemFormScreenContent({
+export function ScheduleFormScreenContent({
   actions,
   control,
   errors,
@@ -96,7 +96,7 @@ export function RecurringItemFormScreenContent({
   picker,
   values,
   view,
-}: RecurringItemFormScreenContentProps): React.JSX.Element {
+}: ScheduleFormScreenContentProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -113,7 +113,7 @@ export function RecurringItemFormScreenContent({
   const scrollViewRef = useRef<ScrollView>(null);
   const titleInputRef = useRef<TextInput>(null);
 
-  const screenTitle = getRecurringItemFormScreenTitle(view.isEditMode);
+  const screenTitle = getScheduleFormScreenTitle(view.isEditMode);
   const {
     endDateDisplayValue,
     firstReminderHelperText,

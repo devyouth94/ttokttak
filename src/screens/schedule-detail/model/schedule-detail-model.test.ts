@@ -9,6 +9,7 @@ import {
   createScheduleVersionFixture,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
+
 import {
   buildHistoryPreview,
   buildOccurrenceStatusCard,
@@ -16,7 +17,7 @@ import {
   buildSummarySettingBadges,
   getItemDetailBasisOccurrence,
   getRecurringItemDetailDeleteReturnPath,
-} from "~/features/recurring/components/recurring-item-detail-screen.helpers";
+} from "./schedule-detail-model";
 
 function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
   return createRecurringItemFixture({

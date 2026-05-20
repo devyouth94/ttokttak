@@ -7,13 +7,13 @@ import {
   type RecurringItemColorKey,
 } from "~/entities/schedule";
 
-import { type PickerChangeHandler } from "./recurring-item-form-screen.helpers";
+import { type PickerChangeHandler } from "./schedule-form-screen-model";
 import {
   type CustomRecurrenceUnit,
   type DatePickerTarget,
   type PickerMode,
   type RecurringItemFormValues,
-} from "./recurring-item-form-state";
+} from "./schedule-form-state";
 
 type RecurringItemFormErrors = {
   anchor?: string;
@@ -58,7 +58,7 @@ type RecurringItemFormViewState = {
   submitCount: number;
 };
 
-type RecurringItemFormScreenActions = {
+type ScheduleFormScreenActions = {
   onBack: () => void;
   onDelete: () => void;
   onSubmit: () => void;
@@ -104,10 +104,10 @@ type RecurringItemFormActions = {
   field: RecurringItemFormFieldActions;
   picker: RecurringItemFormPickerActions;
   recurrence: RecurringItemFormRecurrenceActions;
-  screen: RecurringItemFormScreenActions;
+  screen: ScheduleFormScreenActions;
 };
 
-export type RecurringItemFormScreenModel = {
+export type ScheduleFormScreenModel = {
   actions: RecurringItemFormActions;
   control: Control<RecurringItemFormValues>;
   errors: RecurringItemFormErrors;
@@ -116,7 +116,6 @@ export type RecurringItemFormScreenModel = {
   view: RecurringItemFormViewState;
 };
 
-export type RecurringItemFormScreenContentProps =
-  RecurringItemFormScreenModel & {
-    iosPickerChangeHandler: PickerChangeHandler;
-  };
+export type ScheduleFormScreenContentProps = ScheduleFormScreenModel & {
+  iosPickerChangeHandler: PickerChangeHandler;
+};

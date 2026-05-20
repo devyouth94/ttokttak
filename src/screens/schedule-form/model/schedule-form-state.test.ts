@@ -1,4 +1,5 @@
 import { type RecurringItem } from "~/entities/schedule";
+
 import {
   createDefaultFormState,
   createRecurringItemFormSchema,
@@ -13,7 +14,7 @@ import {
   type RecurringItemFormValues,
   toDraft,
   toFormState,
-} from "~/features/recurring/components/recurring-item-form-state";
+} from "./schedule-form-state";
 
 function getValidationMessages(
   overrides: Partial<RecurringItemFormValues>,

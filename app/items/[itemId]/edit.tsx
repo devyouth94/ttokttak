@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 
 import { getFirstRouteParam } from "~/application/routes/route-params";
-import { RecurringItemFormScreen } from "~/features/recurring/components/recurring-item-form-screen";
+import { ScheduleEditScreen } from "~/screens/schedule-edit";
 
 export default function EditRecurringItemRoute(): React.JSX.Element {
   const { itemId, returnTo } = useLocalSearchParams<{
@@ -10,7 +10,7 @@ export default function EditRecurringItemRoute(): React.JSX.Element {
   }>();
 
   return (
-    <RecurringItemFormScreen
+    <ScheduleEditScreen
       itemId={getFirstRouteParam(itemId)}
       returnTo={getFirstRouteParam(returnTo)}
     />

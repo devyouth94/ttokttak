@@ -12,18 +12,16 @@ import {
   type RecurringItemColorKey,
 } from "~/entities/schedule";
 import { supportsCompletionBased } from "~/entities/schedule";
-import {
-  archiveRecurringItem,
-  createRecurringItem,
-  getRecurringItemById,
-  updateRecurringItem,
-} from "~/entities/schedule/api";
+import { getRecurringItemById } from "~/entities/schedule/api";
+import { archiveSchedule } from "~/features/archive-schedule";
+import { createSchedule } from "~/features/create-schedule";
 import { useNotifications } from "~/features/notifications/notification-provider";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useSession } from "~/features/session/session-provider";
+import { updateSchedule } from "~/features/update-schedule";
 import { Sentry } from "~/shared/config/sentry";
 
-import { type RecurringItemFormScreenModel } from "./recurring-item-form-screen.contracts";
+import { type ScheduleFormScreenModel } from "./schedule-form-contracts";
 import {
   createDefaultFormState,
   createRecurringItemFormSchema,
@@ -46,17 +44,17 @@ import {
   toDraft,
   toFormState,
   toggleWeekdayMask,
-} from "./recurring-item-form-state";
+} from "./schedule-form-state";
 
-type UseRecurringItemFormScreenControllerParams = {
+type UseScheduleFormScreenControllerParams = {
   itemId?: string;
   returnTo?: string;
 };
 
-export function useRecurringItemFormScreenController({
+export function useScheduleFormScreenController({
   itemId,
   returnTo,
-}: UseRecurringItemFormScreenControllerParams): RecurringItemFormScreenModel {
+}: UseScheduleFormScreenControllerParams): ScheduleFormScreenModel {
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
   const queryClient = useQueryClient();
@@ -530,11 +528,10 @@ export function useRecurringItemFormScreenController({
     }));
 
     try {
-      const effectiveFromUtc = new Date().toISOString();
-
       if (isEditMode && itemId) {
-        await updateRecurringItem({
-          id: itemId,
+        await updateSchedule({
+          completeMutation: mutationPostprocess.completeItemMutation,
+          itemId,
           patch: {
             anchorType: draft.anchorType,
             colorKey: draft.colorKey,
@@ -551,21 +548,10 @@ export function useRecurringItemFormScreenController({
           timezone,
           userId: user.id,
         });
-        await mutationPostprocess.completeItemMutation({
-          effectiveFromUtc,
-          itemId,
-          reason: "item-updated",
-          userId: user.id,
-        });
       } else {
-        const createdItem = await createRecurringItem({
-          ...draft,
-          userId: user.id,
-        });
-        await mutationPostprocess.completeItemMutation({
-          effectiveFromUtc,
-          itemId: createdItem.id,
-          reason: "item-created",
+        await createSchedule({
+          completeMutation: mutationPostprocess.completeItemMutation,
+          draft,
           userId: user.id,
         });
       }
@@ -595,16 +581,9 @@ export function useRecurringItemFormScreenController({
     }));
 
     try {
-      const effectiveFromUtc = new Date().toISOString();
-
-      await archiveRecurringItem({
-        id: currentItemId,
-        userId,
-      });
-      await mutationPostprocess.completeItemMutation({
-        effectiveFromUtc,
+      await archiveSchedule({
+        completeMutation: mutationPostprocess.completeItemMutation,
         itemId: currentItemId,
-        reason: "item-archived",
         userId,
       });
 

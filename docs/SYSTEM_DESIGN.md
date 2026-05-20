@@ -33,9 +33,12 @@
 - `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
 - `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
 - `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
+- `src/screens/schedule-detail`: 일정 상세 화면, 요약, 히스토리, 보관 진입점.
+- `src/screens/schedule-create`: 일정 생성 route-facing 화면.
+- `src/screens/schedule-edit`: 일정 수정 route-facing 화면.
+- `src/screens/schedule-form`: 생성/수정이 공유하는 form 화면 구현.
 - `src/screens/login`: 로그인 화면.
 - `src/screens/settings`: 설정 화면.
-- `src/features/*/components`: 아직 screen slice로 옮기지 않은 화면과 화면 전용 UI.
 - `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
 
 ### Application
@@ -50,6 +53,9 @@
 - `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
+- `src/features/create-schedule`: 일정 생성 use case.
+- `src/features/update-schedule`: 일정 수정 use case.
+- `src/features/archive-schedule`: 일정 보관 use case.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
 - `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
@@ -160,8 +166,8 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 1. form 입력을 검증한다.
 2. 제목과 설명을 암호화한다.
 3. `create_recurring_item_with_initial_version` RPC로 item과 초기 schedule version을 함께 만든다.
-4. query를 무효화한다.
-5. 생성된 일정 범위의 로컬 알림을 다시 맞춘다.
+4. 기기 로컬 알림을 전체 재동기화한다.
+5. query를 무효화한다.
 
 ### Update
 
@@ -170,13 +176,13 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 3. 제목과 설명을 다시 암호화한다.
 4. `update_recurring_item_with_edit_policy` RPC로 item을 갱신한다.
 5. 규칙 변경이면 새 schedule version을 추가한다.
-6. query를 무효화한다.
-7. 수정 시점 이후 로컬 알림을 다시 맞춘다.
+6. 기기 로컬 알림을 전체 재동기화한다.
+7. query를 무효화한다.
 
 ### Archive
 
 삭제 UX는 `archive_recurring_item` RPC로 `is_archived = true`를 저장한다.
-보관 후 현재 기기의 해당 일정 future local notification을 취소한다.
+보관 후 기기 로컬 알림을 전체 재동기화하고 query를 무효화한다.
 
 ### Complete / Skip
 

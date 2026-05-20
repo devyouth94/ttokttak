@@ -8,16 +8,8 @@ import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
-import { archiveRecurringItem } from "~/entities/schedule/api";
+import { archiveSchedule } from "~/features/archive-schedule";
 import { useNotifications } from "~/features/notifications/notification-provider";
-import {
-  buildOccurrenceStatusCard,
-  buildRecurringItemDetailViewModel,
-  getItemDetailBasisOccurrence,
-  getRecurringItemDetailDeleteReturnPath,
-  type ItemDetailHistoryEntry,
-  type ItemDetailSummaryBadge,
-} from "~/features/recurring/components/recurring-item-detail-screen.helpers";
 import { createRecurringMutationPostprocessAdapter } from "~/features/recurring/hooks/recurring-mutation-postprocess";
 import { useCompletionLogsForItemQuery } from "~/features/recurring/hooks/use-completion-logs-query";
 import { useRecurringFeedContext } from "~/features/recurring/hooks/use-recurring-feed-context";
@@ -31,6 +23,15 @@ import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { IconButton } from "~/shared/ui/icon-button";
 import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
+
+import {
+  buildOccurrenceStatusCard,
+  buildRecurringItemDetailViewModel,
+  getItemDetailBasisOccurrence,
+  getRecurringItemDetailDeleteReturnPath,
+  type ItemDetailHistoryEntry,
+  type ItemDetailSummaryBadge,
+} from "../model/schedule-detail-model";
 
 const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
@@ -365,7 +366,7 @@ function DetailNotFoundCard(): React.JSX.Element {
   );
 }
 
-export function RecurringItemDetailScreen({
+export function ScheduleDetailScreen({
   itemId,
   returnTo,
   scheduledAtUtc,
@@ -492,16 +493,9 @@ export function RecurringItemDetailScreen({
     setIsArchiving(true);
 
     try {
-      const effectiveFromUtc = new Date().toISOString();
-
-      await archiveRecurringItem({
-        id: item.id,
-        userId,
-      });
-      await mutationPostprocess.completeItemMutation({
-        effectiveFromUtc,
+      await archiveSchedule({
+        completeMutation: mutationPostprocess.completeItemMutation,
         itemId: item.id,
-        reason: "item-archived",
         userId,
       });
 

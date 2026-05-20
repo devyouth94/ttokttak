@@ -4,7 +4,7 @@ import {
   getRecurringItemFormEndDateControlState,
   getRecurringItemFormFirstErrorTarget,
   recurringItemColorOptions,
-} from "~/features/recurring/components/recurring-item-form-screen.helpers";
+} from "./schedule-form-screen-model";
 
 describe("recurring item form first reminder helper", () => {
   it("weekly 시작일과 첫 알림일이 다르면 보조 문구를 만든다", () => {

@@ -18,7 +18,7 @@ import {
   parseLocalDateToDate,
   parseLocalTimeToDate,
   type PickerMode,
-} from "./recurring-item-form-state";
+} from "./schedule-form-state";
 export { recurringItemColorOptions } from "~/entities/schedule";
 
 export type FormErrorTarget = "options" | "recurrence" | "schedule" | "title";
@@ -87,7 +87,7 @@ export function formatLocalTimeForDisplay(localTime: string): string {
   });
 }
 
-export function getRecurringItemFormScreenTitle(isEditMode: boolean): string {
+export function getScheduleFormScreenTitle(isEditMode: boolean): string {
   return isEditMode ? "일정 수정" : "일정 추가";
 }
 

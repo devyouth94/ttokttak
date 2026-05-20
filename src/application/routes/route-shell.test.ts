@@ -68,6 +68,36 @@ describe("route shell", () => {
     expect(calendarRoute).not.toContain("useOccurrenceProjectionQuery");
   });
 
+  it("일정 생성 route는 schedule create screen만 연결한다", () => {
+    const createRoute = readWorkspaceFile("app/items/new.tsx");
+
+    expect(createRoute).toContain("<ScheduleCreateScreen");
+    expect(createRoute).toContain("~/screens/schedule-create");
+    expect(createRoute).not.toContain("~/features/recurring");
+    expect(createRoute).not.toContain("useSession");
+    expect(createRoute).not.toContain("useNotifications");
+  });
+
+  it("일정 상세 route는 schedule detail screen만 연결한다", () => {
+    const detailRoute = readWorkspaceFile("app/items/[itemId]/index.tsx");
+
+    expect(detailRoute).toContain("<ScheduleDetailScreen");
+    expect(detailRoute).toContain("~/screens/schedule-detail");
+    expect(detailRoute).not.toContain("~/features/recurring");
+    expect(detailRoute).not.toContain("useRecurringItemByIdQuery");
+    expect(detailRoute).not.toContain("useNotifications");
+  });
+
+  it("일정 수정 route는 schedule edit screen만 연결한다", () => {
+    const editRoute = readWorkspaceFile("app/items/[itemId]/edit.tsx");
+
+    expect(editRoute).toContain("<ScheduleEditScreen");
+    expect(editRoute).toContain("~/screens/schedule-edit");
+    expect(editRoute).not.toContain("~/features/recurring");
+    expect(editRoute).not.toContain("useSession");
+    expect(editRoute).not.toContain("useNotifications");
+  });
+
   it("index route는 login screen만 연결한다", () => {
     const indexRoute = readWorkspaceFile("app/index.tsx");
 
