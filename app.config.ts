@@ -62,6 +62,7 @@ export default function getAppConfig(): ExpoConfig {
     },
     plugins: [
       "expo-router",
+      "expo-localization",
       [
         "expo-font",
         {

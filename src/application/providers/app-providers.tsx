@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 
 import { LocalNotificationProvider } from "~/application/notifications";
 import { SessionProvider, useSession } from "~/application/session";
+import { AppI18nProvider } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
 
 export function AppProviders({
@@ -13,15 +14,17 @@ export function AppProviders({
 }: PropsWithChildren): React.JSX.Element {
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <SessionProvider>
-          <SessionNotificationProvider>
-            <StatusBar style="dark" />
-            {children}
-            <PortalHost />
-          </SessionNotificationProvider>
-        </SessionProvider>
-      </QueryClientProvider>
+      <AppI18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <SessionProvider>
+            <SessionNotificationProvider>
+              <StatusBar style="dark" />
+              {children}
+              <PortalHost />
+            </SessionNotificationProvider>
+          </SessionProvider>
+        </QueryClientProvider>
+      </AppI18nProvider>
     </SafeAreaProvider>
   );
 }
