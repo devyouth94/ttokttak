@@ -104,6 +104,6 @@ Supabase Edge Function secret:
 - 제품 범위: [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md)
 - 도메인 규칙: [docs/DOMAIN_LOGIC.md](docs/DOMAIN_LOGIC.md)
 - 시스템 설계: [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md)
-- 스키마 기준: [docs/DATABASE.sql](docs/DATABASE.sql)
+- 스키마 기준: [docs/database/DATABASE.sql](docs/database/DATABASE.sql)
 - 설계 결정: [docs/adr/](docs/adr/)
 - 에이전트 작업 규칙: [AGENTS.md](AGENTS.md)

@@ -34,7 +34,7 @@
 - `docs/DOMAIN_LOGIC.md`: 반복 규칙, occurrence 계산, 상태 판정.
 - `docs/SYSTEM_DESIGN.md`: 구현 구조, 데이터 흐름, Supabase, 알림, 암호화 경계.
 - `docs/adr/`: 되돌리기 어렵고 맥락 없이는 놀라운 설계 결정.
-- `docs/DATABASE.sql`: 현재 기준 스키마 설명.
+- `docs/database/DATABASE.sql`: 현재 기준 스키마 설명.
 
 도메인 용어를 새로 만들거나 바꿀 때는 `grill-with-docs` 흐름으로 `CONTEXT.md`와 필요한 ADR을 먼저 확인한다.
 

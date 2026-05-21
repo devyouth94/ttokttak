@@ -1,7 +1,7 @@
 # iOS Release
 
 이 문서는 iOS production 빌드와 App Store Connect 제출 절차를 기록한다.
-Android 배포 절차는 `docs/ANDROID_RELEASE.md`를 따른다.
+Android 배포 절차는 `docs/release/ANDROID_RELEASE.md`를 따른다.
 
 ## 기준 설정
 

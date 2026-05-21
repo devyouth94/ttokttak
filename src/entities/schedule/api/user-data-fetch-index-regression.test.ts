@@ -36,7 +36,7 @@ describe("사용자 데이터 조회 인덱스 회귀 가드", () => {
   });
 
   it("DATABASE 문서에도 조회 경계용 복합 인덱스를 반영한다", () => {
-    const databaseSql = readWorkspaceFile("docs/DATABASE.sql");
+    const databaseSql = readWorkspaceFile("docs/database/DATABASE.sql");
 
     for (const indexName of requiredIndexes) {
       expect(databaseSql).toContain(indexName);

@@ -17,7 +17,7 @@ const readDoc = (path: string): string =>
 
 describe("반복 일정 스키마 정책 정합성", () => {
   it("DB 문서와 마이그레이션은 완료일 기준 반복 조합 제약을 가진다", () => {
-    const databaseDoc = readDoc("docs/DATABASE.sql");
+    const databaseDoc = readDoc("docs/database/DATABASE.sql");
     const migrations = readdirSync(join(process.cwd(), "supabase/migrations"))
       .filter((path) => path.endsWith(".sql"))
       .map((path) => readDoc(`supabase/migrations/${path}`))

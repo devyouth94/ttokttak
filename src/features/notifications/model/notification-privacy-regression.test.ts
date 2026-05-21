@@ -16,7 +16,12 @@ function joinPath(...parts: string[]): string {
 }
 
 const sourceRoot = joinPath(process.cwd(), "src");
-const databaseSchemaPath = joinPath(process.cwd(), "docs", "DATABASE.sql");
+const databaseSchemaPath = joinPath(
+  process.cwd(),
+  "docs",
+  "database",
+  "DATABASE.sql"
+);
 const sourceFileExtensions = new Set([".ts", ".tsx"]);
 const disallowedActiveFlowTerms = [
   "원격 푸시 토큰 등록",
