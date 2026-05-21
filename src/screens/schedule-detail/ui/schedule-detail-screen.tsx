@@ -5,14 +5,14 @@ import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
-import { useRecurringFeedContext } from "~/application/recurring";
+import { useScheduleReadContext } from "~/application/schedule-read";
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/archive-schedule";
 import {
-  useCompletionLogsForItemQuery,
-  useRecurringItemByIdQuery,
-} from "~/features/recurring";
+  useScheduleByIdQuery,
+  useScheduleCompletionLogsQuery,
+} from "~/features/read-schedule";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
@@ -373,7 +373,7 @@ export function ScheduleDetailScreen({
   returnTo?: string;
   scheduledAtUtc?: string;
 }): React.JSX.Element {
-  const { isReady, timezone, userId } = useRecurringFeedContext();
+  const { isReady, timezone, userId } = useScheduleReadContext();
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -387,13 +387,13 @@ export function ScheduleDetailScreen({
   );
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const itemQuery = useRecurringItemByIdQuery({
+  const itemQuery = useScheduleByIdQuery({
     enabled: isReady,
     itemId: itemId ?? null,
     timezone,
     userId,
   });
-  const completionLogsQuery = useCompletionLogsForItemQuery({
+  const completionLogsQuery = useScheduleCompletionLogsQuery({
     enabled: isReady,
     itemId: itemId ?? null,
     userId,

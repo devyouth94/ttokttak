@@ -8,7 +8,7 @@ import {
   skipHomeFeedOccurrence,
   type SyncAfterHomeOccurrenceMutation,
 } from "~/features/home-feed-occurrence-action";
-import { recurringQueryKeys } from "~/features/recurring";
+import { invalidateScheduleReadQueries } from "~/features/read-schedule";
 import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
@@ -72,10 +72,8 @@ export function useHomeOccurrenceActions({
           captureException: Sentry.captureException,
           completionLogs,
           createCompletionLog,
-          invalidateRecurringUserQueries: async (readyUserId) => {
-            await queryClient.invalidateQueries({
-              queryKey: recurringQueryKeys.user(readyUserId),
-            });
+          invalidateScheduleReadQueries: async (readyUserId) => {
+            await invalidateScheduleReadQueries(queryClient, readyUserId);
           },
           now: new Date(),
           refetchFeed,

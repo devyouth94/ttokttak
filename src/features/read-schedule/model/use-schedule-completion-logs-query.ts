@@ -8,7 +8,7 @@ import {
   listCompletionLogsInRange,
 } from "~/entities/schedule/api";
 
-import { recurringQueryKeys } from "./recurring-query-keys";
+import { scheduleReadQueryKeys } from "./schedule-read-query-keys";
 
 async function listCompletionLogsForProjection({
   anchorItemIds = [],
@@ -56,7 +56,7 @@ async function listCompletionLogsForProjection({
   ];
 }
 
-export function useCompletionLogsQuery({
+export function useScheduleCompletionLogsRangeQuery({
   anchorItemIds,
   enabled,
   itemIds,
@@ -81,7 +81,7 @@ export function useCompletionLogsQuery({
         rangeStartUtc,
         userId: userId!,
       }),
-    queryKey: recurringQueryKeys.completionLogs(
+    queryKey: scheduleReadQueryKeys.completionLogs(
       userId ?? "anonymous",
       itemIds,
       anchorItemIds,
@@ -91,7 +91,7 @@ export function useCompletionLogsQuery({
   });
 }
 
-export function useCompletionLogsForItemQuery({
+export function useScheduleCompletionLogsQuery({
   enabled,
   itemId,
   userId,
@@ -107,7 +107,7 @@ export function useCompletionLogsForItemQuery({
         itemId: itemId!,
         userId: userId!,
       }),
-    queryKey: recurringQueryKeys.completionLogsForItem(
+    queryKey: scheduleReadQueryKeys.completionLogsForItem(
       userId ?? "anonymous",
       itemId ?? "unknown"
     ),

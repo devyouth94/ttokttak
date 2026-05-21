@@ -14,9 +14,9 @@ import type {
 } from "~/entities/schedule";
 import { getOccurrenceProjectionRequirement } from "~/entities/schedule";
 
-import type { RecurringFeedContext } from "./recurring-feed-context";
-import { useCompletionLogsQuery } from "./use-completion-logs-query";
-import { useRecurringItemsQuery } from "./use-recurring-items-query";
+import type { ScheduleReadContext } from "./schedule-read-context";
+import { useScheduleCompletionLogsRangeQuery } from "./use-schedule-completion-logs-query";
+import { useScheduleItemsQuery } from "./use-schedule-items-query";
 
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
 const EMPTY_ITEMS: RecurringItem[] = [];
@@ -39,32 +39,32 @@ export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context: RecurringFeedContext;
+  context: ScheduleReadContext;
   purpose: HomeFeedOccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<HomeFeedOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context: RecurringFeedContext;
+  context: ScheduleReadContext;
   purpose: ReminderListOccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<ReminderListOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context: RecurringFeedContext;
+  context: ScheduleReadContext;
   purpose: CalendarMonthOccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<CalendarMonthOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,
 }: {
-  context: RecurringFeedContext;
+  context: ScheduleReadContext;
   purpose: OccurrenceProjectionPurpose;
 }): UseOccurrenceProjectionQueryResult<OccurrenceProjectionRequirement> {
   const { isReady, timezone, userId } = context;
-  const itemsQuery = useRecurringItemsQuery({
+  const itemsQuery = useScheduleItemsQuery({
     enabled: isReady,
     timezone,
     userId,
@@ -80,7 +80,7 @@ export function useOccurrenceProjectionQuery({
       }),
     [items, purpose, timezone]
   );
-  const completionLogsQuery = useCompletionLogsQuery({
+  const completionLogsQuery = useScheduleCompletionLogsRangeQuery({
     anchorItemIds: projectionRequirement.completionLogQuery.anchorItemIds,
     enabled: isReady,
     itemIds,

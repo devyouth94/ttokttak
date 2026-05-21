@@ -84,7 +84,7 @@ describe("route shell", () => {
     expect(detailRoute).toContain("<ScheduleDetailScreen");
     expect(detailRoute).toContain("~/screens/schedule-detail");
     expect(detailRoute).not.toContain("~/features/recurring");
-    expect(detailRoute).not.toContain("useRecurringItemByIdQuery");
+    expect(detailRoute).not.toContain("useScheduleByIdQuery");
     expect(detailRoute).not.toContain("useNotifications");
   });
 

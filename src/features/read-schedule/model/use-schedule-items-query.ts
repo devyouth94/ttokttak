@@ -5,9 +5,9 @@ import {
   listRecurringItems,
 } from "~/entities/schedule/api";
 
-import { recurringQueryKeys } from "./recurring-query-keys";
+import { scheduleReadQueryKeys } from "./schedule-read-query-keys";
 
-export function useRecurringItemsQuery({
+export function useScheduleItemsQuery({
   enabled,
   timezone,
   userId,
@@ -23,11 +23,11 @@ export function useRecurringItemsQuery({
         timezone,
         userId: userId!,
       }),
-    queryKey: recurringQueryKeys.items(userId ?? "anonymous", timezone),
+    queryKey: scheduleReadQueryKeys.items(userId ?? "anonymous", timezone),
   });
 }
 
-export function useRecurringItemByIdQuery({
+export function useScheduleByIdQuery({
   enabled,
   itemId,
   timezone,
@@ -46,7 +46,7 @@ export function useRecurringItemByIdQuery({
         timezone,
         userId: userId!,
       }),
-    queryKey: recurringQueryKeys.item(
+    queryKey: scheduleReadQueryKeys.item(
       userId ?? "anonymous",
       timezone,
       itemId ?? "unknown"

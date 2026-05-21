@@ -7,7 +7,6 @@ import { completeScheduleMutation } from "~/features/complete-schedule-mutation"
 
 export type UpdateScheduleInput = {
   itemId: string;
-  now?: () => Date;
   patch: UpdateRecurringItemInput["patch"];
   timezone: string;
   updateItem?: (input: UpdateRecurringItemInput) => Promise<RecurringItem>;
@@ -16,13 +15,11 @@ export type UpdateScheduleInput = {
 
 export async function updateSchedule({
   itemId,
-  now = () => new Date(),
   patch,
   timezone,
   updateItem = updateRecurringItem,
   userId,
 }: UpdateScheduleInput): Promise<RecurringItem> {
-  const effectiveFromUtc = now().toISOString();
   const updatedItem = await updateItem({
     id: itemId,
     patch,
@@ -31,8 +28,6 @@ export async function updateSchedule({
   });
 
   await completeScheduleMutation({
-    effectiveFromUtc,
-    itemId,
     reason: "item-updated",
     timezone,
     userId,

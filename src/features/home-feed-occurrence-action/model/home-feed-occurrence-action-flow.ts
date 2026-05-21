@@ -5,10 +5,16 @@ import type {
   RecurringItem,
 } from "~/entities/schedule";
 import { createItemOccurrenceProjection } from "~/entities/schedule";
-import {
-  type CaptureRecurringMutationPostprocessException,
-  completeRecurringMutationPostprocessFlow,
-} from "~/features/recurring";
+
+type CaptureHomeFeedOccurrenceActionException = (
+  error: unknown,
+  context: {
+    tags: {
+      feature: string;
+      reason: "occurrence-completed" | "occurrence-skipped";
+    };
+  }
+) => void;
 
 export type HomeFeedOccurrenceLogInput = {
   action: CompletionAction;
@@ -33,10 +39,10 @@ export type HomeFeedOccurrenceActionTarget = {
 
 export type ProcessHomeFeedOccurrenceActionOptions = {
   action: CompletionAction;
-  captureException?: CaptureRecurringMutationPostprocessException;
+  captureException?: CaptureHomeFeedOccurrenceActionException;
   completionLogs: CompletionLog[];
   createCompletionLog: (input: HomeFeedOccurrenceLogInput) => Promise<unknown>;
-  invalidateRecurringUserQueries: (userId: string) => Promise<void>;
+  invalidateScheduleReadQueries: (userId: string) => Promise<void>;
   now: Date;
   refetchFeed: () => Promise<void>;
   syncAfterMutation: SyncAfterHomeOccurrenceMutation;
@@ -73,7 +79,7 @@ async function processHomeFeedOccurrenceAction({
   captureException,
   completionLogs,
   createCompletionLog,
-  invalidateRecurringUserQueries,
+  invalidateScheduleReadQueries,
   now,
   refetchFeed,
   syncAfterMutation,
@@ -114,20 +120,30 @@ async function processHomeFeedOccurrenceAction({
     );
   }
 
-  await completeRecurringMutationPostprocessFlow({
-    captureException,
-    invalidateRecurringUserQueries,
-    reason:
-      action === "completed" ? "occurrence-completed" : "occurrence-skipped",
-    refetchFeed,
-    scope: {
-      effectiveFromUtc: now.toISOString(),
-      itemId: target.item.id,
-      type: "item",
-    },
-    syncAfterMutation,
-    userId,
-  });
+  const reason =
+    action === "completed" ? "occurrence-completed" : "occurrence-skipped";
+  const scope = {
+    effectiveFromUtc: now.toISOString(),
+    itemId: target.item.id,
+    type: "item",
+  } as const;
+
+  try {
+    await syncAfterMutation({
+      reason,
+      scope,
+    });
+  } catch (error) {
+    captureException?.(error, {
+      tags: {
+        feature: "home-feed-occurrence-notification-sync",
+        reason,
+      },
+    });
+  }
+
+  await invalidateScheduleReadQueries(userId);
+  await refetchFeed();
 }
 
 function getHomeFeedOccurrencesToResolve({

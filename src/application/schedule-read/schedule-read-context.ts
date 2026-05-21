@@ -1,7 +1,7 @@
 import { useSession } from "~/application/session";
-import type { RecurringFeedContext } from "~/features/recurring";
+import type { ScheduleReadContext } from "~/features/read-schedule";
 
-export function useRecurringFeedContext(): RecurringFeedContext {
+export function useScheduleReadContext(): ScheduleReadContext {
   const { isAuthenticated, profile, user } = useSession();
 
   return {

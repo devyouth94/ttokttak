@@ -1,7 +1,4 @@
-import {
-  completeRecurringItemMutationFlow,
-  recurringQueryKeys,
-} from "~/features/recurring";
+import { invalidateScheduleReadQueries } from "~/features/read-schedule";
 import type { NotificationSyncReason } from "~/features/sync-local-notifications";
 import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
 import { Sentry } from "~/shared/config/sentry";
@@ -13,40 +10,31 @@ type ScheduleMutationReason = Extract<
 >;
 
 type CompleteScheduleMutationInput = {
-  effectiveFromUtc: string;
-  itemId: string;
   reason: ScheduleMutationReason;
   timezone: string;
   userId: string;
 };
 
 export async function completeScheduleMutation({
-  effectiveFromUtc,
-  itemId,
   reason,
   timezone,
   userId,
 }: CompleteScheduleMutationInput): Promise<void> {
-  await completeRecurringItemMutationFlow({
-    captureException: (error, context) => {
-      Sentry.captureException(error, context);
-    },
-    effectiveFromUtc,
-    invalidateRecurringUserQueries: async (readyUserId) => {
-      await queryClient.invalidateQueries({
-        queryKey: recurringQueryKeys.user(readyUserId),
-      });
-    },
-    itemId,
-    reason,
-    syncAfterMutation: async ({ reason: syncReason, scope }) => {
-      await syncLocalReminderNotifications({
-        reason: syncReason,
-        scope,
-        timezone,
-        userId,
-      });
-    },
-    userId,
-  });
+  try {
+    await syncLocalReminderNotifications({
+      reason,
+      scope: { type: "all" },
+      timezone,
+      userId,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: {
+        feature: "schedule-mutation-notification-sync",
+        reason,
+      },
+    });
+  }
+
+  await invalidateScheduleReadQueries(queryClient, userId);
 }

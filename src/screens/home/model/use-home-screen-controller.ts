@@ -3,11 +3,11 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { useRecurringFeedContext } from "~/application/recurring";
+import { useScheduleReadContext } from "~/application/schedule-read";
 import { useSession } from "~/application/session";
 import type { CompletionAction } from "~/entities/schedule";
 import { useNotifications } from "~/features/notifications";
-import { useOccurrenceProjectionQuery } from "~/features/recurring";
+import { useOccurrenceProjectionQuery } from "~/features/read-schedule";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
 import {
@@ -67,17 +67,17 @@ export function useHomeScreenController(): HomeScreenController {
   const { profile } = useSession();
   const { permission, requestPermission, syncAfterMutation } =
     useNotifications();
-  const recurringFeedContext = useRecurringFeedContext();
+  const scheduleReadContext = useScheduleReadContext();
   const isFocused = useIsFocused();
 
   const [selectedDateId, setSelectedDateId] = useState(() =>
-    formatInTimeZone(new Date(), recurringFeedContext.timezone, "yyyy-MM-dd")
+    formatInTimeZone(new Date(), scheduleReadContext.timezone, "yyyy-MM-dd")
   );
   const hasFocusedOnceRef = useRef(false);
-  const previousTimezoneRef = useRef(recurringFeedContext.timezone);
+  const previousTimezoneRef = useRef(scheduleReadContext.timezone);
   const now = new Date();
   const projectionQuery = useOccurrenceProjectionQuery({
-    context: recurringFeedContext,
+    context: scheduleReadContext,
     purpose: {
       now,
       selectedDateId,

@@ -9,13 +9,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-import { useRecurringFeedContext } from "~/application/recurring";
+import { useScheduleReadContext } from "~/application/schedule-read";
 import { RecurringItemSummaryRow } from "~/entities/schedule";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation";
 import {
   useOccurrenceProjectionNow,
   useOccurrenceProjectionQuery,
-} from "~/features/recurring";
+} from "~/features/read-schedule";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { colors, spacing } from "~/shared/ui/tokens";
@@ -36,7 +36,7 @@ import {
 
 export function ScheduleListScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  const recurringFeedContext = useRecurringFeedContext();
+  const scheduleReadContext = useScheduleReadContext();
   const now = useOccurrenceProjectionNow();
   const {
     headerAnimatedStyle,
@@ -49,7 +49,7 @@ export function ScheduleListScreen(): React.JSX.Element {
     DEFAULT_SCHEDULE_LIST_SORT_MODE
   );
   const projectionQuery = useOccurrenceProjectionQuery({
-    context: recurringFeedContext,
+    context: scheduleReadContext,
     purpose: {
       now,
       type: "reminderList",

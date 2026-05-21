@@ -73,21 +73,21 @@ describe("session boundary", () => {
       getWorkspacePath("src/entities/profile/index.ts"),
       "utf8"
     );
-    const recurringPublicApi = readFileSync(
-      getWorkspacePath("src/application/recurring/index.ts"),
+    const scheduleReadPublicApi = readFileSync(
+      getWorkspacePath("src/application/schedule-read/index.ts"),
       "utf8"
     );
 
     expect(existsSync(getWorkspacePath("src/application/session"))).toBe(true);
-    expect(existsSync(getWorkspacePath("src/application/recurring"))).toBe(
+    expect(existsSync(getWorkspacePath("src/application/schedule-read"))).toBe(
       true
     );
     expect(appProviders).toContain("~/application/session");
     expect(appProviders).not.toContain("~/features/session");
     expect(sessionPublicApi).toContain("SessionProvider");
     expect(sessionPublicApi).toContain("useSession");
-    expect(sessionPublicApi).not.toContain("useRecurringFeedContext");
-    expect(recurringPublicApi).toContain("useRecurringFeedContext");
+    expect(sessionPublicApi).not.toContain("useScheduleReadContext");
+    expect(scheduleReadPublicApi).toContain("useScheduleReadContext");
     expect(existsSync(getWorkspacePath("src/entities/profile"))).toBe(true);
     expect(profilePublicApi).toContain("ensureProfile");
     expect(profilePublicApi).toContain("updateProfileDisplayName");

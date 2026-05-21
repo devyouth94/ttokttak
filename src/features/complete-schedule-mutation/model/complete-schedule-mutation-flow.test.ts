@@ -1,7 +1,6 @@
 import { createRecurringItemFixture } from "~/entities/schedule/testing";
 import { archiveSchedule } from "~/features/archive-schedule";
 import { createSchedule } from "~/features/create-schedule";
-import { recurringQueryKeys } from "~/features/recurring";
 import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
 import { updateSchedule } from "~/features/update-schedule";
 import { Sentry } from "~/shared/config/sentry";
@@ -17,7 +16,6 @@ jest.mock("~/shared/config/sentry", () => ({
   },
 }));
 
-const now = () => new Date("2026-05-20T00:00:00.000Z");
 const userId = "user-1";
 
 const draft = {
@@ -60,7 +58,6 @@ describe("일정 변경 mutation 흐름", () => {
           await createSchedule({
             createItem,
             draft,
-            now,
             userId,
           });
 
@@ -85,7 +82,6 @@ describe("일정 변경 mutation 흐름", () => {
 
           await updateSchedule({
             itemId: "updated-item",
-            now,
             patch: {
               title: "수정한 일정",
             },
@@ -110,7 +106,6 @@ describe("일정 변경 mutation 흐름", () => {
           await archiveSchedule({
             archiveItem,
             itemId: "archived-item",
-            now,
             timezone: "Asia/Seoul",
             userId,
           });
@@ -154,7 +149,7 @@ describe("일정 변경 mutation 흐름", () => {
         userId,
       });
       expect(invalidateQueries).toHaveBeenCalledWith({
-        queryKey: recurringQueryKeys.user(userId),
+        queryKey: ["schedule-read", "user", userId],
       });
       expect(events).toEqual(["sync", "invalidate"]);
       invalidateQueries.mockRestore();
@@ -174,7 +169,6 @@ describe("일정 변경 mutation 흐름", () => {
     await expect(
       updateSchedule({
         itemId: "updated-item",
-        now,
         patch: {
           title: "수정한 일정",
         },
@@ -186,12 +180,12 @@ describe("일정 변경 mutation 흐름", () => {
 
     expect(Sentry.captureException).toHaveBeenCalledWith(syncError, {
       tags: {
-        feature: "recurring-mutation-notification-sync",
+        feature: "schedule-mutation-notification-sync",
         reason: "item-updated",
       },
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: recurringQueryKeys.user(userId),
+      queryKey: ["schedule-read", "user", userId],
     });
   });
 });

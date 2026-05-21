@@ -56,13 +56,13 @@ describe("home feed occurrence action use cases", () => {
       createLog({ itemId: item.id, scheduledAtUtc: occurrence.scheduledAtUtc })
     );
     const syncAfterMutation = jest.fn(async () => undefined);
-    const invalidateRecurringUserQueries = jest.fn(async () => undefined);
+    const invalidateScheduleReadQueries = jest.fn(async () => undefined);
     const refetchFeed = jest.fn(async () => undefined);
 
     await completeHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
-      invalidateRecurringUserQueries,
+      invalidateScheduleReadQueries,
       now,
       refetchFeed,
       syncAfterMutation,
@@ -85,7 +85,7 @@ describe("home feed occurrence action use cases", () => {
         type: "item",
       },
     });
-    expect(invalidateRecurringUserQueries).toHaveBeenCalledWith("user-1");
+    expect(invalidateScheduleReadQueries).toHaveBeenCalledWith("user-1");
     expect(refetchFeed).toHaveBeenCalledTimes(1);
   });
 
@@ -120,7 +120,7 @@ describe("home feed occurrence action use cases", () => {
     await completeHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
-      invalidateRecurringUserQueries: jest.fn(async () => undefined),
+      invalidateScheduleReadQueries: jest.fn(async () => undefined),
       now,
       refetchFeed: jest.fn(async () => undefined),
       syncAfterMutation: jest.fn(async () => undefined),
@@ -166,7 +166,7 @@ describe("home feed occurrence action use cases", () => {
     await completeHomeFeedOccurrence({
       completionLogs,
       createCompletionLog,
-      invalidateRecurringUserQueries: jest.fn(async () => undefined),
+      invalidateScheduleReadQueries: jest.fn(async () => undefined),
       now,
       refetchFeed: jest.fn(async () => undefined),
       syncAfterMutation: jest.fn(async () => undefined),
@@ -189,13 +189,13 @@ describe("home feed occurrence action use cases", () => {
     const occurrence = getTodayOccurrence(item);
     const createCompletionLog = jest.fn(async () => createLog());
     const syncAfterMutation = jest.fn(async () => undefined);
-    const invalidateRecurringUserQueries = jest.fn(async () => undefined);
+    const invalidateScheduleReadQueries = jest.fn(async () => undefined);
     const refetchFeed = jest.fn(async () => undefined);
 
     await completeHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
-      invalidateRecurringUserQueries,
+      invalidateScheduleReadQueries,
       now: new Date("2026-04-10T03:00:00.000Z"),
       refetchFeed,
       syncAfterMutation,
@@ -206,7 +206,7 @@ describe("home feed occurrence action use cases", () => {
 
     expect(createCompletionLog).not.toHaveBeenCalled();
     expect(syncAfterMutation).not.toHaveBeenCalled();
-    expect(invalidateRecurringUserQueries).not.toHaveBeenCalled();
+    expect(invalidateScheduleReadQueries).not.toHaveBeenCalled();
     expect(refetchFeed).not.toHaveBeenCalled();
   });
 
@@ -226,7 +226,7 @@ describe("home feed occurrence action use cases", () => {
     await skipHomeFeedOccurrence({
       completionLogs: [],
       createCompletionLog,
-      invalidateRecurringUserQueries: jest.fn(async () => undefined),
+      invalidateScheduleReadQueries: jest.fn(async () => undefined),
       now,
       refetchFeed: jest.fn(async () => undefined),
       syncAfterMutation,
@@ -268,7 +268,7 @@ describe("home feed occurrence action use cases", () => {
       events.push("sync");
       throw syncError;
     });
-    const invalidateRecurringUserQueries = jest.fn(async () => {
+    const invalidateScheduleReadQueries = jest.fn(async () => {
       events.push("invalidate");
     });
     const refetchFeed = jest.fn(async () => {
@@ -281,7 +281,7 @@ describe("home feed occurrence action use cases", () => {
         captureException,
         completionLogs: [],
         createCompletionLog,
-        invalidateRecurringUserQueries,
+        invalidateScheduleReadQueries,
         now: new Date("2026-04-10T03:00:00.000Z"),
         refetchFeed,
         syncAfterMutation,
@@ -293,7 +293,7 @@ describe("home feed occurrence action use cases", () => {
 
     expect(captureException).toHaveBeenCalledWith(syncError, {
       tags: {
-        feature: "recurring-mutation-notification-sync",
+        feature: "home-feed-occurrence-notification-sync",
         reason: "occurrence-completed",
       },
     });
