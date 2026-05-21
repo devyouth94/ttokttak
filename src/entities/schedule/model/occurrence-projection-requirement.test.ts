@@ -1,9 +1,9 @@
-import { getOccurrenceProjectionRequirement } from "~/entities/schedule";
+import { getOccurrenceProjectionRequirement } from "./occurrence-projection-requirement";
 import {
   createRecurringItemFixture as createItem,
   createScheduleVersionFixture as createVersion,
   recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+} from "./test-fixtures";
 
 describe("occurrence projection requirement", () => {
   it("홈 피드 오늘 선택 시 projection과 completion log 조회 조건을 함께 정한다", () => {

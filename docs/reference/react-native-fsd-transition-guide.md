@@ -226,6 +226,7 @@ constants
 `~/entities/<slice>/api`는 저장 adapter 공개 surface다.
 `~/entities/<slice>/testing`은 테스트 fixture 공개 surface다.
 그 아래 내부 파일 직접 참조는 같은 entity slice 안에서만 허용한다.
+entity 공개 진입점은 `export *`를 쓰지 않고 외부에 필요한 symbol만 명시 export한다.
 
 `application`은 segment root를 공개 진입점으로 쓴다.
 route와 screen은 `~/application/session`, `~/application/recurring`처럼 segment 공개 진입점을 사용한다.

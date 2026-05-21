@@ -1,10 +1,10 @@
-import type { RecurringItem } from "~/entities/schedule";
-import { resolveRecurringItemEditPolicy } from "~/entities/schedule";
+import { resolveRecurringItemEditPolicy } from "./edit-policy";
 import {
   createRecurringItemFixture,
   createScheduleVersionFixture,
   recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+} from "./test-fixtures";
+import type { RecurringItem } from "./types";
 
 const now = new Date("2026-05-07T03:00:00.000Z");
 

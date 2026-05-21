@@ -1,4 +1,3 @@
-import type { CompletionLog } from "~/entities/schedule";
 import {
   getRepositoryClient,
   type RepositoryClient,
@@ -8,6 +7,7 @@ import type {
   CompletionLogInsert,
   CompletionLogRow,
 } from "./recurring-database.types";
+import type { CompletionLog } from "../model/types";
 
 export type CreateCompletionLogInput = {
   actedAtUtc?: string;

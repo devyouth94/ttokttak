@@ -1,1 +1,6 @@
-export * from "./model/test-fixtures";
+export {
+  createCompletionLogFixture,
+  createRecurringItemFixture,
+  createScheduleVersionFixture,
+  recurringTestTimezone,
+} from "./model/test-fixtures";

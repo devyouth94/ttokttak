@@ -1,28 +1,27 @@
 import { fromZonedTime } from "date-fns-tz";
 
-import type {
-  RecurringItem,
-  RecurringItemColorKey,
-  RecurringItemDraft,
-  RecurringItemEditPatch,
-  RecurringItemScheduleVersion,
-} from "~/entities/schedule";
-import {
-  defaultRecurringItemColorKey,
-  resolveRecurringItemEditPolicy,
-  validateRecurringItemDraft,
-} from "~/entities/schedule";
+import { type RepositoryClient } from "~/shared/api/repository-client";
+
 import {
   recurringContentCipher,
   type RecurringItemContentCipher,
-} from "~/entities/schedule/api/recurring-content-cipher";
+} from "./recurring-content-cipher";
 import {
   createSupabaseRecurringItemsPersistence,
   type RecurringItemsPersistence,
   type StoredRecurringItem,
   type StoredRecurringItemScheduleVersion,
-} from "~/entities/schedule/api/recurring-items-persistence";
-import { type RepositoryClient } from "~/shared/api/repository-client";
+} from "./recurring-items-persistence";
+import type { RecurringItemEditPatch } from "../model/edit-policy";
+import { resolveRecurringItemEditPolicy } from "../model/edit-policy";
+import type {
+  RecurringItem,
+  RecurringItemColorKey,
+  RecurringItemDraft,
+  RecurringItemScheduleVersion,
+} from "../model/types";
+import { defaultRecurringItemColorKey } from "../model/types";
+import { validateRecurringItemDraft } from "../model/validation";
 
 type RecurringItemPatch = RecurringItemEditPatch;
 

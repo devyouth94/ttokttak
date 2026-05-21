@@ -63,6 +63,7 @@ const sourceImportPattern =
 const bareImportPattern = /\bimport\s+["']~\/([^"']+)["']/g;
 const requirePattern = /\brequire\(\s*["']~\/([^"']+)["']\s*\)/g;
 const dynamicImportPattern = /\bimport\(\s*["']~\/([^"']+)["']\s*\)/g;
+const wildcardExportPattern = /^\s*export\s+\*\s+from\s+["'][^"']+["'];/m;
 
 function getWorkspacePath(relativePath: string): string {
   return `${process.cwd()}/${relativePath}`;
@@ -91,6 +92,22 @@ function listFiles(relativePath: string): string[] {
   return readdirSync(getWorkspacePath(relativePath)).filter((entry) =>
     statSync(getWorkspacePath(`${relativePath}/${entry}`)).isFile()
   );
+}
+
+function getEntityPublicApiFiles(): string[] {
+  return listDirectories("src/entities").flatMap((slice) => {
+    const slicePath = `src/entities/${slice}`;
+    const rootFiles = listFiles(slicePath);
+    const segmentDirectories = listDirectories(slicePath);
+
+    return [
+      `${slicePath}/index.ts`,
+      ...(rootFiles.includes("testing.ts") ? [`${slicePath}/testing.ts`] : []),
+      ...(segmentDirectories.includes("api")
+        ? [`${slicePath}/api/index.ts`]
+        : []),
+    ];
+  });
 }
 
 function getSourceOwner(relativePath: string): SourceOwner | null {
@@ -332,6 +349,14 @@ describe("FSD import rules", () => {
 
           return missingIndex.concat(extraRootFiles);
         })
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  it("entity 공개 진입점은 명시 export만 사용한다", () => {
+    const violations = getEntityPublicApiFiles().filter((file) =>
+      wildcardExportPattern.test(readFileSync(getWorkspacePath(file), "utf8"))
     );
 
     expect(violations).toEqual([]);

@@ -4,13 +4,13 @@ import {
   getOccurrencesInRange,
   hasOccurrenceBetweenLocalDates,
   resolveOccurrenceStatus,
-} from "~/entities/schedule";
+} from "./occurrence";
 import {
   createCompletionLogFixture as createLog,
   createRecurringItemFixture as createItem,
   createScheduleVersionFixture as createVersion,
   recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+} from "./test-fixtures";
 
 describe("getOccurrencesInRange", () => {
   it("첫 weekly occurrence local date를 계산한다", () => {

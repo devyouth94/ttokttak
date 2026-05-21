@@ -1,23 +1,23 @@
-import type {
-  AnchorType,
-  CompletionLog,
-  RecurrenceType,
-  RecurringItemColorKey,
-} from "~/entities/schedule";
-import {
-  listCompletionLogsForItem,
-  listCompletionLogsForItemHistory,
-} from "~/entities/schedule/api/completion-logs-repository";
-import type { RecurringItemContentEncryptionMetadata } from "~/entities/schedule/api/recurring-content-cipher";
 import {
   getRepositoryClient,
   type RepositoryClient,
 } from "~/shared/api/repository-client";
 
+import {
+  listCompletionLogsForItem,
+  listCompletionLogsForItemHistory,
+} from "./completion-logs-repository";
+import type { RecurringItemContentEncryptionMetadata } from "./recurring-content-cipher";
 import type {
   RecurringItemRow,
   RecurringItemScheduleVersionRow,
 } from "./recurring-database.types";
+import type {
+  AnchorType,
+  CompletionLog,
+  RecurrenceType,
+  RecurringItemColorKey,
+} from "../model/types";
 
 export type StoredRecurringItemScheduleVersion = {
   anchorType: AnchorType;
