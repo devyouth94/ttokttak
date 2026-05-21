@@ -4,7 +4,6 @@ import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { useSession } from "~/application/session";
 import {
@@ -16,10 +15,7 @@ import { supportsCompletionBased } from "~/entities/schedule";
 import { getRecurringItemById } from "~/entities/schedule/api";
 import { archiveSchedule } from "~/features/archive-schedule";
 import { createSchedule } from "~/features/create-schedule";
-import { useNotifications } from "~/features/notifications";
-import { createRecurringMutationPostprocessAdapter } from "~/features/recurring";
 import { updateSchedule } from "~/features/update-schedule";
-import { Sentry } from "~/shared/config/sentry";
 
 import { type ScheduleFormScreenModel } from "./schedule-form-contracts";
 import {
@@ -57,14 +53,7 @@ export function useScheduleFormScreenController({
 }: UseScheduleFormScreenControllerParams): ScheduleFormScreenModel {
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
-  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, profile, user } = useSession();
-  const { syncAfterMutation } = useNotifications();
-  const mutationPostprocess = createRecurringMutationPostprocessAdapter({
-    captureException: Sentry.captureException,
-    queryClient,
-    syncAfterMutation,
-  });
   const [requestState, setRequestState] = useState({
     isBootstrapping: isEditMode,
     isDeleting: false,
@@ -530,7 +519,6 @@ export function useScheduleFormScreenController({
     try {
       if (isEditMode && itemId) {
         await updateSchedule({
-          completeMutation: mutationPostprocess.completeItemMutation,
           itemId,
           patch: {
             anchorType: draft.anchorType,
@@ -550,7 +538,6 @@ export function useScheduleFormScreenController({
         });
       } else {
         await createSchedule({
-          completeMutation: mutationPostprocess.completeItemMutation,
           draft,
           userId: user.id,
         });
@@ -582,8 +569,8 @@ export function useScheduleFormScreenController({
 
     try {
       await archiveSchedule({
-        completeMutation: mutationPostprocess.completeItemMutation,
         itemId: currentItemId,
+        timezone,
         userId,
       });
 

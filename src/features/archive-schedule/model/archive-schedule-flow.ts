@@ -2,27 +2,21 @@ import {
   archiveRecurringItem,
   type ArchiveRecurringItemOptions,
 } from "~/entities/schedule/api";
-
-export type CompleteArchiveScheduleMutation = (input: {
-  effectiveFromUtc: string;
-  itemId: string;
-  reason: "item-archived";
-  userId: string;
-}) => Promise<void>;
+import { completeScheduleMutation } from "~/features/complete-schedule-mutation";
 
 export type ArchiveScheduleInput = {
   archiveItem?: (input: ArchiveRecurringItemOptions) => Promise<void>;
-  completeMutation: CompleteArchiveScheduleMutation;
   itemId: string;
   now?: () => Date;
+  timezone: string;
   userId: string;
 };
 
 export async function archiveSchedule({
   archiveItem = archiveRecurringItem,
-  completeMutation,
   itemId,
   now = () => new Date(),
+  timezone,
   userId,
 }: ArchiveScheduleInput): Promise<void> {
   const effectiveFromUtc = now().toISOString();
@@ -32,10 +26,11 @@ export async function archiveSchedule({
     userId,
   });
 
-  await completeMutation({
+  await completeScheduleMutation({
     effectiveFromUtc,
     itemId,
     reason: "item-archived",
+    timezone,
     userId,
   });
 }

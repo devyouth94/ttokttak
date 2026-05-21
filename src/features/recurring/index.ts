@@ -1,12 +1,9 @@
 export type { RecurringFeedContext } from "./model/recurring-feed-context";
+export { completeRecurringItemMutationFlow } from "./model/recurring-item-mutation-flow";
 export {
   completeRecurringMutationPostprocessFlow,
   type CaptureRecurringMutationPostprocessException,
 } from "./model/recurring-mutation-postprocess-flow";
-export {
-  createRecurringMutationPostprocessAdapter,
-  type RecurringMutationPostprocessAdapter,
-} from "./model/recurring-mutation-postprocess";
 export { recurringQueryKeys } from "./model/recurring-query-keys";
 export { useCompletionLogsForItemQuery } from "./model/use-completion-logs-query";
 export { useOccurrenceProjectionNow } from "./model/use-occurrence-projection-now";

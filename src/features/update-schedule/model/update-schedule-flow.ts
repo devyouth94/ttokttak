@@ -3,16 +3,9 @@ import {
   updateRecurringItem,
   type UpdateRecurringItemInput,
 } from "~/entities/schedule/api";
-
-export type CompleteUpdateScheduleMutation = (input: {
-  effectiveFromUtc: string;
-  itemId: string;
-  reason: "item-updated";
-  userId: string;
-}) => Promise<void>;
+import { completeScheduleMutation } from "~/features/complete-schedule-mutation";
 
 export type UpdateScheduleInput = {
-  completeMutation: CompleteUpdateScheduleMutation;
   itemId: string;
   now?: () => Date;
   patch: UpdateRecurringItemInput["patch"];
@@ -22,7 +15,6 @@ export type UpdateScheduleInput = {
 };
 
 export async function updateSchedule({
-  completeMutation,
   itemId,
   now = () => new Date(),
   patch,
@@ -38,10 +30,11 @@ export async function updateSchedule({
     userId,
   });
 
-  await completeMutation({
+  await completeScheduleMutation({
     effectiveFromUtc,
     itemId,
     reason: "item-updated",
+    timezone,
     userId,
   });
 

@@ -3,20 +3,16 @@ import { Alert, Animated, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
-import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import { useRecurringFeedContext } from "~/application/recurring";
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/archive-schedule";
-import { useNotifications } from "~/features/notifications";
 import {
-  createRecurringMutationPostprocessAdapter,
   useCompletionLogsForItemQuery,
   useRecurringItemByIdQuery,
 } from "~/features/recurring";
-import { Sentry } from "~/shared/config/sentry";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
@@ -378,13 +374,6 @@ export function ScheduleDetailScreen({
   scheduledAtUtc?: string;
 }): React.JSX.Element {
   const { isReady, timezone, userId } = useRecurringFeedContext();
-  const { syncAfterMutation } = useNotifications();
-  const queryClient = useQueryClient();
-  const mutationPostprocess = createRecurringMutationPostprocessAdapter({
-    captureException: Sentry.captureException,
-    queryClient,
-    syncAfterMutation,
-  });
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -496,8 +485,8 @@ export function ScheduleDetailScreen({
 
     try {
       await archiveSchedule({
-        completeMutation: mutationPostprocess.completeItemMutation,
         itemId: item.id,
+        timezone,
         userId,
       });
 

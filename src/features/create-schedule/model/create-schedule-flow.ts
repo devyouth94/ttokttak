@@ -3,16 +3,9 @@ import {
   createRecurringItem,
   type CreateRecurringItemInput,
 } from "~/entities/schedule/api";
-
-export type CompleteCreateScheduleMutation = (input: {
-  effectiveFromUtc: string;
-  itemId: string;
-  reason: "item-created";
-  userId: string;
-}) => Promise<void>;
+import { completeScheduleMutation } from "~/features/complete-schedule-mutation";
 
 export type CreateScheduleInput = {
-  completeMutation: CompleteCreateScheduleMutation;
   createItem?: (input: CreateRecurringItemInput) => Promise<RecurringItem>;
   draft: Omit<CreateRecurringItemInput, "userId">;
   now?: () => Date;
@@ -20,7 +13,6 @@ export type CreateScheduleInput = {
 };
 
 export async function createSchedule({
-  completeMutation,
   createItem = createRecurringItem,
   draft,
   now = () => new Date(),
@@ -32,10 +24,11 @@ export async function createSchedule({
     userId,
   });
 
-  await completeMutation({
+  await completeScheduleMutation({
     effectiveFromUtc,
     itemId: createdItem.id,
     reason: "item-created",
+    timezone: draft.timezone,
     userId,
   });
 
