@@ -200,10 +200,7 @@ function isLayerImportAllowed({
   targetLayer: SourceLayer;
 }): boolean {
   if (sourceLayer === "app") {
-    return (
-      ["application", "screens", "shared"].includes(targetLayer) ||
-      importPath === "features/navigation"
-    );
+    return ["application", "screens", "shared"].includes(targetLayer);
   }
 
   if (sourceLayer === "application") {

@@ -11,9 +11,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { useScheduleReadContext } from "~/application/schedule-read";
 import { RecurringItemSummaryRow } from "~/entities/schedule";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/features/navigation";
 import {
   useOccurrenceProjectionNow,
   useOccurrenceProjectionQuery,

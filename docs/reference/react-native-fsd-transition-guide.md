@@ -229,7 +229,7 @@ constants
 entity 공개 진입점은 `export *`를 쓰지 않고 외부에 필요한 symbol만 명시 export한다.
 
 `application`은 segment root를 공개 진입점으로 쓴다.
-route와 screen은 `~/application/session`, `~/application/recurring`처럼 segment 공개 진입점을 사용한다.
+route와 screen은 `~/application/session`, `~/application/navigation`처럼 segment 공개 진입점을 사용한다.
 `application` 내부 segment의 파일 직접 참조는 같은 application segment 안에서만 사용한다.
 
 `shared`는 slice가 아니다.
@@ -248,7 +248,7 @@ route와 screen은 `~/application/session`, `~/application/recurring`처럼 segm
 - `features`는 feature 공개 API, `entities`, `shared`를 import한다.
 - `screens`는 screen 공개 API, `features`, `entities`, `shared`, 필요한 `application` context 공개 API를 import한다.
 - `application`은 앱 조립을 위해 `features`, `entities`, `shared`, 같은 `application` 공개 API를 import한다.
-- `app` route는 thin shell로 `application`, `screens`, navigation feature, `shared`만 import한다.
+- `app` route는 thin shell로 `application`, `screens`, `shared`만 import한다.
 
 자동 검사는 다음을 실패로 본다.
 

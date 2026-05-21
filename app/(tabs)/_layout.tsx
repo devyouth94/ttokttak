@@ -1,8 +1,11 @@
 import { StyleSheet, View } from "react-native";
 import { Redirect, Tabs, usePathname } from "expo-router";
 
+import {
+  MainBottomNav,
+  shouldShowMainBottomNav,
+} from "~/application/navigation";
 import { useSession } from "~/application/session";
-import { MainBottomNav, shouldShowMainBottomNav } from "~/features/navigation";
 import { colors } from "~/shared/ui/tokens";
 
 export default function TabsLayout(): React.JSX.Element {

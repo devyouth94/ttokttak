@@ -1,8 +1,8 @@
 import { Stack } from "expo-router";
 
 import { AppBootstrap } from "~/application/bootstrap";
+import { mainTabsRootScreenOptions } from "~/application/navigation";
 import { AppProviders } from "~/application/providers";
-import { mainTabsRootScreenOptions } from "~/features/navigation";
 import { Sentry } from "~/shared/config/sentry";
 
 function RootLayout() {

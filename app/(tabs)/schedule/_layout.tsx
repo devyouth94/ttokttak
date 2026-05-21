@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-import { mainTabStackScreenOptions } from "~/features/navigation";
+import { mainTabStackScreenOptions } from "~/application/navigation";
 
 export default function ScheduleStackLayout(): React.JSX.Element {
   return <Stack screenOptions={mainTabStackScreenOptions} />;
