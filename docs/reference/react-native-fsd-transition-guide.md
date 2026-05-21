@@ -256,6 +256,17 @@ route와 screen은 `~/application/session`, `~/application/recurring`처럼 segm
 - slice root의 `index.ts` 또는 entity `testing.ts` 외 root 파일.
 - `components`, `hooks`, `types`, `utils`, `helpers`, `constants` segment.
 
+## 구조 테스트 기준
+
+일반 FSD 규칙은 `fsd-import-rules.test.ts`에 둔다.
+특정 screen, feature, entity 이름을 반복해서 잠그지 않는다.
+
+제품 또는 보안 의미가 있는 구조 정책은 별도 structure test로 둘 수 있다.
+예를 들어 session, 알림, privacy 위치처럼 잘못 옮기면 제품 의미나 보안 경계가 흐려지는 경우다.
+
+레거시 구조 deny-list 테스트는 장기 유지하지 않는다.
+현재 코드 경로가 없고, 일반 FSD 규칙과 route shell 검증이 의미 있는 회귀를 잡으면 제거한다.
+
 ## Widgets
 
 초기 전환에서는 `widgets` layer를 만들지 않는다.
