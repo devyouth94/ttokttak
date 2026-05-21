@@ -24,12 +24,19 @@
 
 ## Architecture
 
-현재 앱은 기능 단위 모듈과 얇은 repository 계층을 사용한다.
+현재 앱은 React Native와 Expo Router에 맞춘 FSD 계열 구조를 사용한다.
+코드 위치는 폴더 템플릿보다 재사용 범위와 제품 의미를 기준으로 정한다.
+
+- 루트 `app`: Expo Router route 파일.
+- `src/application`: provider, bootstrap, session, navigation 같은 앱 조립.
+- `src/screens`: route가 렌더링하는 화면 slice.
+- `src/features`: 화면이 사용하는 제품 기능 흐름, 조회 흐름, 권한, 외부 링크.
+- `src/entities`: 핵심 도메인 slice와 저장 adapter.
+- `src/shared`: 도메인을 모르는 공통 기반 코드.
 
 ### Presentation
 
-- `app`: Expo Router route.
-- `src/application`: provider, bootstrap, session wiring, route params wiring.
+- `app`: route params를 읽고 screen을 연결하는 thin route shell.
 - `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
 - `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
 - `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
@@ -43,6 +50,14 @@
 
 ### Application
 
+- `src/application/providers`: provider 조립.
+- `src/application/bootstrap`: 앱 시작 후 session과 알림 lifecycle 연결.
+- `src/application/session`: Supabase session, profile 복원, 표시 이름 갱신 wiring.
+- `src/application/navigation`: 탭 layout, 집중 화면 하단 탭 표시 정책.
+- `src/application/notifications`: 알림 권한 context provider 연결.
+- `src/application/routes`: route params 정규화와 route shell 회귀 테스트.
+- `src/application/schedule-read`: schedule read context wiring.
+- `src/application/structure`: FSD, session, notification/privacy boundary guard.
 - 화면 controller hook이 query, mutation, navigation, 알림 후속 처리를 조합한다.
 - React Query가 서버 데이터 조회와 무효화를 담당한다.
 - mutation 성공 뒤에는 관련 query를 무효화하고 로컬 알림을 다시 맞춘다.
@@ -57,12 +72,15 @@
 - `src/features/create-schedule`: 일정 생성 use case.
 - `src/features/update-schedule`: 일정 수정 use case.
 - `src/features/archive-schedule`: 일정 보관 use case.
+- `src/features/complete-schedule-mutation`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
+- `src/features/read-schedule`: 일정 조회 query, occurrence projection query, query key.
+- `src/features/settings`: 설정 화면의 표시 이름 입력 규칙.
+- `src/features/legal`: 이용약관과 개인정보처리방침 공개 링크.
 - `src/features/sign-in`: Apple/Google 로그인 use case와 provider adapter.
 - `src/features/delete-account`: 계정 삭제 use case와 Apple 계정 삭제 재인증 adapter.
 - `src/features/sync-local-notifications`: 기기 로컬 알림 예약, 재동기화 정책, lifecycle.
 - `src/features/notifications`: 알림 권한 context와 알림 tap payload 판정.
-- `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Infrastructure
@@ -79,10 +97,14 @@
 - `screens`, `features`, `entities` slice 외부 호출자는 root `index.ts` 공개 진입점을 사용한다.
 - `entities/<slice>/api`는 저장 adapter 공개 진입점이다.
 - `entities/<slice>/testing`은 테스트 fixture 공개 진입점이다.
+- `application`은 segment root를 공개 진입점으로 사용한다.
 - 같은 slice 내부에서는 segment 파일을 직접 import할 수 있다.
 - `shared`는 작은 foundation이므로 `shared/ui`, `shared/api`, `shared/config` 파일 직접 import를 허용한다.
 - `shared/lib/<topic>`은 주제 경계다. Barrel import가 side effect나 bundle coupling을 만들면 leaf 파일 직접 import를 허용한다.
+- slice segment 이름은 `api`, `assets`, `config`, `i18n`, `lib`, `model`, `routes`, `ui`만 사용한다.
+- `shared` 최상위 segment 이름은 `api`, `config`, `i18n`, `lib`, `routes`, `ui`만 사용한다.
 - `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
+- `widgets` layer는 현재 만들지 않는다. 여러 화면에서 재사용되고 feature와 entity를 조합하는 큰 UI 블록이 생기면 별도 결정으로 추가한다.
 
 ## Routing
 

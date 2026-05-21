@@ -108,6 +108,7 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - 계산 결과 중 `scheduledAtUtc < effectiveFromUtc`인 occurrence는 버린다.
 - 일정 수정은 과거 occurrence를 다시 쓰지 않고 future occurrence에만 반영한다.
 - 시작일은 생성 후 수정하지 않는다.
+- 알림 켜기/끄기는 occurrence 생성과 상태를 바꾸지 않는다.
 - 규칙 영향 필드가 바뀌면 새 schedule version을 추가한다.
 
 규칙 영향 필드는 다음과 같다.
@@ -258,4 +259,4 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - 과거 completion log는 유지한다.
 
 삭제는 물리 삭제가 아니라 `isArchived = true`로 저장한다.
-보관된 일정은 활성 화면과 future local notification 후보에서 제외한다.
+보관된 일정은 활성 화면과 기기 로컬 알림 후보에서 제외한다.
