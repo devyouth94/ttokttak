@@ -106,4 +106,5 @@ Supabase Edge Function secret:
 - 시스템 설계: [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md)
 - 스키마 기준: [docs/DATABASE.sql](docs/DATABASE.sql)
 - 설계 결정: [docs/adr/](docs/adr/)
+- FSD 전환 가이드: [docs/reference/react-native-fsd-transition-guide.md](docs/reference/react-native-fsd-transition-guide.md)
 - 에이전트 작업 규칙: [AGENTS.md](AGENTS.md)

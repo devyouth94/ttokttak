@@ -1,0 +1,183 @@
+import type { PropsWithChildren } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
+
+import {
+  NotificationContextProvider,
+  type NotificationContextValue,
+} from "~/features/notifications";
+import {
+  cancelAllTtokttakLocalReminderNotifications,
+  createLocalNotificationSyncLifecycle,
+  type NotificationSyncReason,
+  type NotificationSyncScope,
+  syncLocalReminderNotifications,
+} from "~/features/sync-local-notifications";
+import { Sentry } from "~/shared/config/sentry";
+import {
+  ensureAndroidLocalNotificationChannel,
+  getNotificationPermissionState,
+  type NotificationPermissionState,
+  openNotificationSettings,
+  requestNotificationPermission,
+} from "~/shared/lib/notifications";
+
+const initialPermissionState: NotificationPermissionState = {
+  canOpenSettings: false,
+  canRequest: false,
+  label: "확인 중",
+  status: "undetermined",
+};
+
+const ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
+
+type LocalNotificationProviderProps = PropsWithChildren<{
+  timezone: string;
+  userId: string | null | undefined;
+}>;
+
+export function LocalNotificationProvider({
+  children,
+  timezone,
+  userId,
+}: LocalNotificationProviderProps): React.JSX.Element {
+  const [permission, setPermission] = useState<NotificationPermissionState>(
+    initialPermissionState
+  );
+  const [isPermissionLoading, setIsPermissionLoading] = useState(true);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const notificationSyncLifecycleRef = useRef<ReturnType<
+    typeof createLocalNotificationSyncLifecycle
+  > | null>(null);
+
+  if (!notificationSyncLifecycleRef.current) {
+    notificationSyncLifecycleRef.current = createLocalNotificationSyncLifecycle(
+      {
+        cancelAllTtokttakLocalReminderNotifications,
+        captureException: (error, context) => {
+          Sentry.captureException(error, context);
+        },
+        syncLocalReminderNotifications,
+      }
+    );
+  }
+
+  const notificationSyncLifecycle = notificationSyncLifecycleRef.current;
+
+  useEffect(() => {
+    void ensureAndroidLocalNotificationChannel({
+      channelId: ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
+      name: "일정 알림",
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: {
+          feature: "notification-channel-bootstrap",
+        },
+      });
+    });
+  }, []);
+
+  const refreshPermission =
+    useCallback(async (): Promise<NotificationPermissionState> => {
+      setIsPermissionLoading(true);
+
+      try {
+        const nextPermission = await getNotificationPermissionState();
+
+        setPermission(nextPermission);
+
+        return nextPermission;
+      } finally {
+        setIsPermissionLoading(false);
+      }
+    }, []);
+
+  const requestPermission =
+    useCallback(async (): Promise<NotificationPermissionState> => {
+      setIsRequestingPermission(true);
+
+      try {
+        const nextPermission = await requestNotificationPermission();
+
+        setPermission(nextPermission);
+
+        return nextPermission;
+      } finally {
+        setIsRequestingPermission(false);
+      }
+    }, []);
+
+  useEffect(() => {
+    void refreshPermission();
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void refreshPermission();
+        void notificationSyncLifecycle.syncAfterAppForegrounded({
+          timezone,
+          userId,
+        });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [notificationSyncLifecycle, refreshPermission, timezone, userId]);
+
+  useEffect(() => {
+    void notificationSyncLifecycle.syncAfterSessionRestored({
+      timezone,
+      userId,
+    });
+  }, [notificationSyncLifecycle, timezone, userId]);
+
+  useEffect(() => {
+    void notificationSyncLifecycle.flushPendingNotificationTapSync({
+      timezone,
+      userId,
+    });
+  }, [notificationSyncLifecycle, timezone, userId]);
+
+  const syncAfterMutation = useCallback(
+    async ({
+      reason,
+      scope,
+    }: {
+      reason: NotificationSyncReason;
+      scope: NotificationSyncScope;
+    }): Promise<void> => {
+      await notificationSyncLifecycle.syncAfterMutation({
+        reason,
+        scope,
+        timezone,
+        userId,
+      });
+    },
+    [notificationSyncLifecycle, timezone, userId]
+  );
+
+  const syncAfterNotificationTap = useCallback(async (): Promise<void> => {
+    await notificationSyncLifecycle.syncAfterNotificationTapped({
+      timezone,
+      userId,
+    });
+  }, [notificationSyncLifecycle, timezone, userId]);
+
+  const value: NotificationContextValue = {
+    isPermissionLoading,
+    isRequestingPermission,
+    openSettings: openNotificationSettings,
+    permission,
+    refreshPermission,
+    requestPermission,
+    syncAfterMutation,
+    syncAfterNotificationTap,
+  };
+
+  return (
+    <NotificationContextProvider value={value}>
+      {children}
+    </NotificationContextProvider>
+  );
+}

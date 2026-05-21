@@ -28,9 +28,18 @@
 
 ### Presentation
 
-- `src/app`: Expo Router route.
-- `src/features/*/components`: 화면과 화면 전용 UI.
-- `src/design-system`: 공통 텍스트, 화면, 카드, 버튼, token.
+- `app`: Expo Router route.
+- `src/application`: provider, bootstrap, session wiring, route params wiring.
+- `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
+- `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
+- `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
+- `src/screens/schedule-detail`: 일정 상세 화면, 요약, 히스토리, 보관 진입점.
+- `src/screens/schedule-create`: 일정 생성 route-facing 화면.
+- `src/screens/schedule-edit`: 일정 수정 route-facing 화면.
+- `src/screens/schedule-form`: 생성/수정이 공유하는 form 화면 구현.
+- `src/screens/login`: 로그인 화면.
+- `src/screens/settings`: 설정 화면.
+- `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
 
 ### Application
 
@@ -40,16 +49,40 @@
 
 ### Domain
 
-- `src/features/recurring/domain`: 반복 계산, occurrence projection, 상태 판정, 수정 정책, mutation 후속 흐름.
+- `src/entities/schedule/model`: 일정 타입, 반복 규칙, occurrence 계산, occurrence projection, validation, 수정 정책.
+- `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
+- `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
+- `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
+- `src/entities/profile`: profile 복원과 표시 이름 저장.
+- `src/features/create-schedule`: 일정 생성 use case.
+- `src/features/update-schedule`: 일정 수정 use case.
+- `src/features/archive-schedule`: 일정 보관 use case.
+- `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
+- `src/features/sign-in`: Apple/Google 로그인 use case와 provider adapter.
+- `src/features/delete-account`: 계정 삭제 use case와 Apple 계정 삭제 재인증 adapter.
+- `src/features/sync-local-notifications`: 기기 로컬 알림 예약, 재동기화 정책, lifecycle.
+- `src/features/notifications`: 알림 권한 context와 알림 tap payload 판정.
+- `src/features/recurring/model`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Infrastructure
 
-- `src/features/recurring/repositories`: Supabase table/RPC 접근.
-- `src/features/privacy`: 일정 제목/설명 암호화와 content key 복구.
-- `src/features/notifications`: 기기 로컬 알림 예약, 권한, lifecycle, 알림 tap routing.
-- `src/features/session`: Supabase Auth 세션과 profile 복원.
-- `src/lib`: Supabase client, Sentry, QueryClient, 공통 error helper.
+- `src/shared/lib/notifications`: Expo Notifications adapter, 알림 권한 adapter, 로컬 reminder identifier/payload helper.
+- `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
+- `src/shared/api`: Supabase client와 schema type.
+- `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
+- `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
+
+### Architecture Guard
+
+- `src/application/structure/fsd-import-rules.test.ts`가 FSD import rule과 public API rule을 검증한다.
+- `screens`, `features`, `entities` slice 외부 호출자는 root `index.ts` 공개 진입점을 사용한다.
+- `entities/<slice>/api`는 저장 adapter 공개 진입점이다.
+- `entities/<slice>/testing`은 테스트 fixture 공개 진입점이다.
+- 같은 slice 내부에서는 segment 파일을 직접 import할 수 있다.
+- `shared`는 작은 foundation이므로 `shared/ui`, `shared/api`, `shared/config` 파일 직접 import를 허용한다.
+- `shared/lib/<topic>`은 주제 경계다. Barrel import가 side effect나 bundle coupling을 만들면 leaf 파일 직접 import를 허용한다.
+- `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
 
 ## Routing
 
@@ -148,8 +181,8 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 1. form 입력을 검증한다.
 2. 제목과 설명을 암호화한다.
 3. `create_recurring_item_with_initial_version` RPC로 item과 초기 schedule version을 함께 만든다.
-4. query를 무효화한다.
-5. 생성된 일정 범위의 로컬 알림을 다시 맞춘다.
+4. 기기 로컬 알림을 전체 재동기화한다.
+5. query를 무효화한다.
 
 ### Update
 
@@ -158,17 +191,17 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 3. 제목과 설명을 다시 암호화한다.
 4. `update_recurring_item_with_edit_policy` RPC로 item을 갱신한다.
 5. 규칙 변경이면 새 schedule version을 추가한다.
-6. query를 무효화한다.
-7. 수정 시점 이후 로컬 알림을 다시 맞춘다.
+6. 기기 로컬 알림을 전체 재동기화한다.
+7. query를 무효화한다.
 
 ### Archive
 
 삭제 UX는 `archive_recurring_item` RPC로 `is_archived = true`를 저장한다.
-보관 후 현재 기기의 해당 일정 future local notification을 취소한다.
+보관 후 기기 로컬 알림을 전체 재동기화하고 query를 무효화한다.
 
 ### Complete / Skip
 
-홈 action은 `completion_logs`에 기록을 만든다.
+홈 피드 occurrence 처리 feature는 `completion_logs`에 기록을 만든다.
 지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
 

@@ -1,0 +1,179 @@
+import {
+  getFirstReminderHelperText,
+  getIosPickerChangeHandler,
+  getRecurringItemFormEndDateControlState,
+  getRecurringItemFormFirstErrorTarget,
+  recurringItemColorOptions,
+} from "./schedule-form-screen-model";
+
+describe("recurring item form first reminder helper", () => {
+  it("weekly 시작일과 첫 알림일이 다르면 보조 문구를 만든다", () => {
+    expect(
+      getFirstReminderHelperText({
+        intervalValue: "",
+        recurrenceType: "weekly",
+        startDateLocal: "2026-04-22",
+        weekdayMask: [5],
+      })
+    ).toBe("첫 알림일은 4월 24일 금요일입니다.");
+  });
+
+  it("weekly 시작일과 첫 알림일이 같으면 보조 문구를 숨긴다", () => {
+    expect(
+      getFirstReminderHelperText({
+        intervalValue: "",
+        recurrenceType: "weekly",
+        startDateLocal: "2026-04-24",
+        weekdayMask: [5],
+      })
+    ).toBeNull();
+  });
+
+  it("주 단위가 아니면 첫 알림일 보조 문구를 숨긴다", () => {
+    expect(
+      getFirstReminderHelperText({
+        intervalValue: "3",
+        recurrenceType: "interval_days",
+        startDateLocal: "2026-04-22",
+        weekdayMask: [],
+      })
+    ).toBeNull();
+  });
+
+  it("interval_weeks도 주차 간격을 반영해서 보조 문구를 만든다", () => {
+    expect(
+      getFirstReminderHelperText({
+        intervalValue: "2",
+        recurrenceType: "interval_weeks",
+        startDateLocal: "2026-04-25",
+        weekdayMask: [1],
+      })
+    ).toBe("첫 알림일은 5월 4일 월요일입니다.");
+  });
+});
+
+describe("recurring item form color options", () => {
+  it("일정 색상 선택지는 정해진 7개 한국어 라벨만 제공한다", () => {
+    expect(
+      recurringItemColorOptions.map((option) => ({
+        label: option.label,
+        value: option.value,
+      }))
+    ).toEqual([
+      { label: "빨강", value: "red" },
+      { label: "주황", value: "orange" },
+      { label: "노랑", value: "yellow" },
+      { label: "초록", value: "green" },
+      { label: "파랑", value: "blue" },
+      { label: "남색", value: "indigo" },
+      { label: "보라", value: "purple" },
+    ]);
+  });
+});
+
+describe("recurring item form end date display", () => {
+  it("한 번 일정에서는 종료일 control을 숨긴다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState({
+        endDateLocal: "2026-05-10",
+        recurrenceType: "once",
+      })
+    ).toEqual({
+      displayValue: null,
+      isEnabled: false,
+      isVisible: false,
+    });
+  });
+
+  it("반복 일정에서 종료일이 없으면 switch만 보이고 날짜 값은 숨긴다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState({
+        endDateLocal: null,
+        recurrenceType: "daily",
+      })
+    ).toEqual({
+      displayValue: null,
+      isEnabled: false,
+      isVisible: true,
+    });
+  });
+
+  it("반복 일정에서 종료일이 있으면 switch와 날짜 값을 함께 보여준다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState({
+        endDateLocal: "2026-05-10",
+        recurrenceType: "daily",
+      })
+    ).toEqual({
+      displayValue: "2026년 5월 10일",
+      isEnabled: true,
+      isVisible: true,
+    });
+  });
+});
+
+describe("recurring item form picker routing", () => {
+  it("iOS 시작일 picker 변경은 시작일 handler로 전달한다", () => {
+    const onStartDateChange = jest.fn();
+    const onEndDateChange = jest.fn();
+    const onTimeChange = jest.fn();
+    const event = { type: "set" } as never;
+    const selectedDate = new Date("2026-05-10T00:00:00.000Z");
+
+    getIosPickerChangeHandler("date", "startDate", {
+      onEndDateChange,
+      onStartDateChange,
+      onTimeChange,
+    })(event, selectedDate);
+
+    expect(onStartDateChange).toHaveBeenCalledWith(event, selectedDate);
+    expect(onEndDateChange).not.toHaveBeenCalled();
+    expect(onTimeChange).not.toHaveBeenCalled();
+  });
+
+  it("iOS 종료일 picker 변경은 종료일 handler로 전달한다", () => {
+    const onStartDateChange = jest.fn();
+    const onEndDateChange = jest.fn();
+    const onTimeChange = jest.fn();
+    const event = { type: "set" } as never;
+    const selectedDate = new Date("2026-05-10T00:00:00.000Z");
+
+    getIosPickerChangeHandler("date", "endDate", {
+      onEndDateChange,
+      onStartDateChange,
+      onTimeChange,
+    })(event, selectedDate);
+
+    expect(onEndDateChange).toHaveBeenCalledWith(event, selectedDate);
+    expect(onStartDateChange).not.toHaveBeenCalled();
+    expect(onTimeChange).not.toHaveBeenCalled();
+  });
+
+  it("iOS 시간 picker 변경은 시간 handler로 전달한다", () => {
+    const onStartDateChange = jest.fn();
+    const onEndDateChange = jest.fn();
+    const onTimeChange = jest.fn();
+    const event = { type: "set" } as never;
+    const selectedDate = new Date("2026-05-10T09:00:00.000Z");
+
+    getIosPickerChangeHandler("time", null, {
+      onEndDateChange,
+      onStartDateChange,
+      onTimeChange,
+    })(event, selectedDate);
+
+    expect(onTimeChange).toHaveBeenCalledWith(event, selectedDate);
+    expect(onStartDateChange).not.toHaveBeenCalled();
+    expect(onEndDateChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("recurring item form error target", () => {
+  it("종료일 오류는 schedule 섹션으로 이동한다", () => {
+    expect(
+      getRecurringItemFormFirstErrorTarget({
+        endDate: "종료일을 확인해 주세요.",
+      })
+    ).toBe("schedule");
+  });
+});
