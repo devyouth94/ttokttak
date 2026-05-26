@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { useTranslation } from "react-i18next";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import type { CompletionAction } from "~/entities/schedule";
@@ -30,7 +31,8 @@ export function HomeFeedSectionBlock({
   section,
   style,
 }: HomeFeedSectionBlockProps): React.JSX.Element {
-  const summary = getFeedSectionSummary(section, isLoading);
+  const { t } = useTranslation();
+  const summary = getFeedSectionSummary(section, isLoading, t);
   const showsActions =
     section.id === "overdue" ||
     (section.id === "selected-date" && selectedDateIsToday);
@@ -50,7 +52,9 @@ export function HomeFeedSectionBlock({
           </AppText>
         </View>
         <AppText style={styles.feedSectionText} variant="body">
-          {isLoading ? "-" : `${section.items.length}개`}
+          {isLoading
+            ? "-"
+            : t("home.feed.sectionCount", { count: section.items.length })}
         </AppText>
       </View>
       {section.caption ? (
@@ -94,7 +98,9 @@ export function HomeFeedSectionBlock({
                       style={styles.feedDateSeparatorCount}
                       variant="body3"
                     >
-                      {getDateSeparatorItemCount(section.items, card)}개
+                      {t("home.feed.dateSeparatorCount", {
+                        count: getDateSeparatorItemCount(section.items, card),
+                      })}
                     </AppText>
                   </View>
                 ) : null}
@@ -125,14 +131,15 @@ export function HomeFeedSectionBlock({
 
 function getFeedSectionSummary(
   section: HomeFeedSection,
-  isLoading: boolean
+  isLoading: boolean,
+  t: (key: string, options?: Record<string, unknown>) => string
 ): string {
   if (isLoading) {
-    return "불러오고 있어요";
+    return t("home.feed.loading");
   }
 
   if (section.items.length > 0) {
-    return `${section.items.length}개의 일정이 있어요`;
+    return t("home.feed.sectionSummary", { count: section.items.length });
   }
 
   return section.emptyMessage;

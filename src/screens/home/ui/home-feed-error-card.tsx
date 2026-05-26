@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { RotateCw } from "lucide-react-native";
 
@@ -13,16 +14,18 @@ export function HomeFeedErrorCard({
   message,
   onRetry,
 }: HomeFeedErrorCardProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <AppRetryStatePanel
       description={message}
       minHeight={112}
       onRetry={onRetry}
       panelStyle={styles.errorCard}
-      retryAccessibilityHint="일정을 다시 불러와요."
-      retryAccessibilityLabel="일정 다시 시도"
+      retryAccessibilityHint={t("home.feed.retryHint")}
+      retryAccessibilityLabel={t("home.feed.retryLabel")}
       retryIcon={<RotateCw color={colors.text} size={16} />}
-      title="일정을 불러오지 못했어요"
+      title={t("home.feed.errorTitle")}
       variant="surface"
     />
   );

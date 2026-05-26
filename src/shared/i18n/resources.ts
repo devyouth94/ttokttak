@@ -4,6 +4,51 @@ export const appI18nResources = {
       app: {
         name: "ttokttak",
       },
+      home: {
+        date: {
+          optionHint: "Show items for {{date}}.",
+          optionLabel: "Select {{date}}",
+          returnTodayHint: "Return to today's items.",
+          returnTodayLabel: "Return to today",
+          returnTodayShort: "Today",
+          today: "Today",
+        },
+        feed: {
+          actionErrorDescription:
+            "Could not update the item. Please try again.",
+          completeHint: "Complete this item.",
+          completeLabel: "Complete {{title}}",
+          dateSeparatorCount: "{{count}} items",
+          dateSeparatorCount_one: "{{count}} item",
+          dateSeparatorCount_other: "{{count}} items",
+          errorDescription: "Could not load the home feed. Please try again.",
+          errorTitle: "Could not load items",
+          itemDetailHint: "Open the item detail screen.",
+          itemDetailLabel: "View {{title}} details",
+          loading: "Loading",
+          loadingA11yLabel: "Loading home feed",
+          retryHint: "Load items again.",
+          retryLabel: "Retry loading items",
+          sectionCount: "{{count}} items",
+          sectionCount_one: "{{count}} item",
+          sectionCount_other: "{{count}} items",
+          sectionSummary: "{{count}} items scheduled",
+          sectionSummary_one: "{{count}} item scheduled",
+          sectionSummary_other: "{{count}} items scheduled",
+          skipHint: "Skip this item.",
+          skipLabel: "Skip {{title}}",
+        },
+        header: {
+          greeting: "Hello,\n{{name}}!",
+        },
+        notificationPermission: {
+          cancel: "Later",
+          errorTitle: "Could not request permission",
+          message: "Notifications need permission to remind you on time.",
+          request: "Allow",
+          title: "Turn on notifications?",
+        },
+      },
       login: {
         appleButton: "Continue with Apple",
         appleHint: "Sign in with your Apple account.",
@@ -39,6 +84,45 @@ export const appI18nResources = {
     translation: {
       app: {
         name: "똑딱",
+      },
+      home: {
+        date: {
+          optionHint: "{{date}} 기준으로 일정을 보여줘요.",
+          optionLabel: "{{date}} 선택",
+          returnTodayHint: "오늘 기준 일정으로 돌아가요.",
+          returnTodayLabel: "오늘로 돌아가기",
+          returnTodayShort: "오늘로",
+          today: "오늘",
+        },
+        feed: {
+          actionErrorDescription:
+            "일정 처리를 완료하지 못했어요. 다시 시도해주세요.",
+          completeHint: "이 일정을 완료 처리해요.",
+          completeLabel: "{{title}} 완료",
+          dateSeparatorCount: "{{count}}개",
+          errorDescription: "홈 피드를 불러오지 못했어요. 다시 시도해주세요.",
+          errorTitle: "일정을 불러오지 못했어요",
+          itemDetailHint: "반복 항목 상세 화면으로 이동해요.",
+          itemDetailLabel: "{{title}} 상세 보기",
+          loading: "불러오고 있어요",
+          loadingA11yLabel: "홈 피드를 불러오는 중",
+          retryHint: "일정을 다시 불러와요.",
+          retryLabel: "일정 다시 시도",
+          sectionCount: "{{count}}개",
+          sectionSummary: "{{count}}개의 일정이 있어요",
+          skipHint: "이 일정을 건너뛰어요.",
+          skipLabel: "{{title}} 건너뛰기",
+        },
+        header: {
+          greeting: "안녕하세요,\n{{name}}님!",
+        },
+        notificationPermission: {
+          cancel: "나중에",
+          errorTitle: "권한을 요청하지 못했어요",
+          message: "정해둔 시간에 알려드리려면 알림 권한이 필요해요.",
+          request: "허용하기",
+          title: "알림을 켤까요?",
+        },
       },
       login: {
         appleButton: "Apple로 로그인",

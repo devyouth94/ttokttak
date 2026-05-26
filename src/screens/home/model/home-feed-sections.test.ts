@@ -90,6 +90,48 @@ describe("buildHomeFeedSections", () => {
     expect(sections[2]?.items[0]?.metaLabel).toBe("오전 9:00");
   });
 
+  it("English 앱 표시 언어에서는 홈 섹션과 날짜/시간 문구를 English로 만든다", () => {
+    const sections = buildHomeFeedSections({
+      completionLogs: [],
+      items: [
+        createItem({
+          id: "overdue-item",
+          startDateLocal: "2026-04-08",
+          title: "지난 영양제",
+        }),
+        createItem({
+          id: "today-item",
+          reminderTimeLocal: "18:00",
+          title: "오늘 운동",
+        }),
+        createItem({
+          id: "upcoming-item",
+          startDateLocal: "2026-04-13",
+          title: "다가오는 필터 교체",
+        }),
+      ],
+      language: "en",
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      selectedDateId: "2026-04-10",
+      timezone,
+    });
+
+    expect(sections.map((section) => section.title)).toEqual([
+      "Overdue",
+      "Today",
+      "Upcoming",
+    ]);
+    expect(sections[0]?.emptyMessage).toBe("No overdue items");
+    expect(sections[1]?.emptyMessage).toBe("Nothing scheduled for today");
+    expect(sections[2]?.caption).toBe("Home shows items for the next 14 days");
+    expect(sections[0]?.items[0]?.item.title).toBe("지난 영양제");
+    expect(sections[0]?.items[0]?.metaLabel).toBe("2 days overdue");
+    expect(sections[0]?.items[0]?.recurrenceLabel).toBe("Once");
+    expect(sections[1]?.items[0]?.metaLabel).toBe("6:00 PM");
+    expect(sections[2]?.items[0]?.dateSeparatorLabel).toBe("Apr 13");
+    expect(sections[2]?.items[0]?.metaLabel).toBe("9:00 AM");
+  });
+
   it("지난 일정 row meta는 지난 날짜와 알림 시간 사이에 점을 넣는다", () => {
     const sections = buildHomeFeedSections({
       completionLogs: [],
@@ -163,6 +205,26 @@ describe("buildHomeFeedSections", () => {
     expect(sections[0]?.title).toBe("4월 13일");
     expect(sections[0]?.items).toHaveLength(1);
     expect(sections[0]?.items[0]?.item.title).toBe("복용 체크");
+  });
+
+  it("English 앱 표시 언어에서는 날짜 캐러셀 라벨을 English로 만든다", () => {
+    const options = createHomeDateOptions(
+      new Date("2026-04-10T03:00:00.000Z"),
+      "en"
+    );
+
+    expect(options[0]).toMatchObject({
+      dayLabel: "Fri",
+      id: "2026-04-10",
+      title: "Today",
+      value: "10",
+    });
+    expect(options[1]).toMatchObject({
+      dayLabel: "Sat",
+      id: "2026-04-11",
+      title: "Apr 11",
+      value: "11",
+    });
   });
 
   it("다가오는 일정은 14일 안의 일정을 10개 제한 없이 노출한다", () => {

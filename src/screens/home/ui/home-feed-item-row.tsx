@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
@@ -28,6 +29,7 @@ export function HomeFeedItemRow({
   showsActions,
   usesLightContent,
 }: HomeFeedItemRowProps): React.JSX.Element {
+  const { t } = useTranslation();
   const textStyle = usesLightContent
     ? styles.feedSectionTextLight
     : styles.feedSectionTextDark;
@@ -42,8 +44,10 @@ export function HomeFeedItemRow({
   return (
     <View style={[styles.feedItemRow, !isLast && dividerStyle]}>
       <Pressable
-        accessibilityHint="반복 항목 상세 화면으로 이동해요."
-        accessibilityLabel={`${card.item.title} 상세 보기`}
+        accessibilityHint={t("home.feed.itemDetailHint")}
+        accessibilityLabel={t("home.feed.itemDetailLabel", {
+          title: card.item.title,
+        })}
         accessibilityRole="button"
         onPress={() => {
           openHomeFeedCard(card);
@@ -70,8 +74,10 @@ export function HomeFeedItemRow({
       {showsActions ? (
         <View style={styles.feedItemActions}>
           <Pressable
-            accessibilityHint="이 일정을 건너뛰어요."
-            accessibilityLabel={`${card.item.title} 건너뛰기`}
+            accessibilityHint={t("home.feed.skipHint")}
+            accessibilityLabel={t("home.feed.skipLabel", {
+              title: card.item.title,
+            })}
             accessibilityRole="button"
             accessibilityState={{ disabled: isProcessing }}
             disabled={isProcessing}
@@ -92,8 +98,10 @@ export function HomeFeedItemRow({
             />
           </Pressable>
           <Pressable
-            accessibilityHint="이 일정을 완료 처리해요."
-            accessibilityLabel={`${card.item.title} 완료`}
+            accessibilityHint={t("home.feed.completeHint")}
+            accessibilityLabel={t("home.feed.completeLabel", {
+              title: card.item.title,
+            })}
             accessibilityRole="button"
             accessibilityState={{ disabled: isProcessing }}
             disabled={isProcessing}

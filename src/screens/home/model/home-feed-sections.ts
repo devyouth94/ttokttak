@@ -5,7 +5,7 @@ import {
   isSameDay,
   parse,
 } from "date-fns";
-import { ko } from "date-fns/locale";
+import { enUS, ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
@@ -25,8 +25,53 @@ import {
   getRecurrenceLabel,
   getScheduledItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
+import type { AppLanguage } from "~/shared/i18n";
 
 const HOME_DATE_RANGE_DAYS = 15;
+
+const dateLocaleByLanguage = {
+  en: enUS,
+  ko,
+} as const;
+
+const homeFeedCopyByLanguage = {
+  en: {
+    empty: {
+      overdue: "No overdue items",
+      selectedDate: (title: string, isToday: boolean) =>
+        isToday
+          ? "Nothing scheduled for today"
+          : `Nothing scheduled for ${title}`,
+      upcoming: "No upcoming items",
+    },
+    overdueToday: "Overdue today",
+    overdueDays: (days: number) => `${days} days overdue`,
+    sections: {
+      overdue: "Overdue",
+      today: "Today",
+      upcoming: "Upcoming",
+    },
+    tomorrow: "Tomorrow",
+    upcomingCaption: "Home shows items for the next 14 days",
+  },
+  ko: {
+    empty: {
+      overdue: "지난 일정은 없어요",
+      selectedDate: (title: string, isToday: boolean) =>
+        isToday ? "오늘은 비어 있어요" : `${title}은 비어 있어요`,
+      upcoming: "다가오는 일정은 없어요",
+    },
+    overdueToday: "오늘 지남",
+    overdueDays: (days: number) => `${days}일 지남`,
+    sections: {
+      overdue: "지난 일정",
+      today: "오늘",
+      upcoming: "다가오는 일정",
+    },
+    tomorrow: "내일",
+    upcomingCaption: "홈에서는 앞으로 14일간의 일정만 보여요",
+  },
+} as const;
 
 export type HomeDateOption = {
   dayLabel: string;
@@ -58,6 +103,7 @@ export type HomeFeedSection = {
 type BuildHomeFeedSectionsOptions = {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
+  language?: AppLanguage;
   now: Date;
   projection?: HomeFeedOccurrenceProjectionRequirement["projection"];
   selectedDateId: string;
@@ -67,6 +113,7 @@ type BuildHomeFeedSectionsOptions = {
 type BuildSectionCardsOptions = {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
+  language?: AppLanguage;
   now: Date;
   range: LocalDateUtcRange;
   sectionId: HomeFeedSection["id"];
@@ -98,18 +145,24 @@ export function getProfileName(profile: ProfileNameSource | null): string {
   return profile?.display_name?.trim() || "사용자";
 }
 
-export function createHomeDateOptions(today: Date): HomeDateOption[] {
+export function createHomeDateOptions(
+  today: Date,
+  language: AppLanguage = "ko"
+): HomeDateOption[] {
+  const locale = dateLocaleByLanguage[language];
+  const copy = homeFeedCopyByLanguage[language];
+
   return Array.from({ length: HOME_DATE_RANGE_DAYS }, (_, index) => {
     const date = addDays(today, index);
     const id = format(date, "yyyy-MM-dd");
 
     return {
-      dayLabel: format(date, "EEE", { locale: ko }),
+      dayLabel: format(date, "EEE", { locale }),
       id,
       isToday: index === 0,
       title: isSameDay(date, today)
-        ? "오늘"
-        : format(date, "M월 d일", { locale: ko }),
+        ? copy.sections.today
+        : format(date, language === "en" ? "MMM d" : "M월 d일", { locale }),
       value: format(date, "d"),
     };
   });
@@ -118,6 +171,7 @@ export function createHomeDateOptions(today: Date): HomeDateOption[] {
 export function buildHomeFeedSections({
   completionLogs,
   items,
+  language = "ko",
   now,
   projection,
   selectedDateId,
@@ -126,8 +180,10 @@ export function buildHomeFeedSections({
   const todayLocalDate = formatInTimeZone(now, timezone, "yyyy-MM-dd");
   const selectedDateTitle = getSelectedDateTitle(
     selectedDateId,
-    todayLocalDate
+    todayLocalDate,
+    language
   );
+  const copy = homeFeedCopyByLanguage[language];
   const projectionRequirement =
     projection ??
     getOccurrenceProjectionRequirement({
@@ -143,6 +199,7 @@ export function buildHomeFeedSections({
     completionLogs,
     items,
     now,
+    language,
     selectedDateTitle,
     selectedRange: projectionRequirement.selectedDateRange,
     timezone,
@@ -155,33 +212,35 @@ export function buildHomeFeedSections({
 
   return [
     {
-      emptyMessage: "지난 일정은 없어요",
+      emptyMessage: copy.empty.overdue,
       id: "overdue",
       items: buildOverdueCards({
         completionLogs,
         items,
+        language,
         now,
         overdueLookbackStartLocalDate:
           projectionRequirement.overdueLookbackStartLocalDate,
         timezone,
         todayLocalDate,
       }),
-      title: "지난 일정",
+      title: copy.sections.overdue,
     },
     selectedSection,
     {
-      caption: "홈에서는 앞으로 14일간의 일정만 보여요",
-      emptyMessage: "다가오는 일정은 없어요",
+      caption: copy.upcomingCaption,
+      emptyMessage: copy.empty.upcoming,
       id: "upcoming",
       items: buildUpcomingCards({
         completionLogs,
         items,
+        language,
         now,
         upcomingRange: projectionRequirement.upcomingRange ?? undefined,
         timezone,
         todayLocalDate,
       }),
-      title: "다가오는 일정",
+      title: copy.sections.upcoming,
     },
   ];
 }
@@ -189,21 +248,23 @@ export function buildHomeFeedSections({
 function buildSelectedDateSection({
   completionLogs,
   items,
+  language = "ko",
   now,
   selectedDateTitle,
   selectedRange,
   timezone,
   todayLocalDate,
 }: BuildSelectedDateSectionOptions): HomeFeedSection {
+  const copy = homeFeedCopyByLanguage[language];
+  const isToday = selectedDateTitle === copy.sections.today;
+
   return {
-    emptyMessage:
-      selectedDateTitle === "오늘"
-        ? "오늘은 비어 있어요"
-        : `${selectedDateTitle}은 비어 있어요`,
+    emptyMessage: copy.empty.selectedDate(selectedDateTitle, isToday),
     id: "selected-date",
     items: buildScheduledCards({
       completionLogs,
       items,
+      language,
       now,
       range: selectedRange,
       sectionId: "selected-date",
@@ -217,6 +278,7 @@ function buildSelectedDateSection({
 function buildOverdueCards({
   completionLogs,
   items,
+  language = "ko",
   now,
   overdueLookbackStartLocalDate,
   timezone,
@@ -230,7 +292,7 @@ function buildOverdueCards({
     timezone,
   })
     .map(({ item, occurrence }) =>
-      toHomeFeedCard(item, occurrence, "overdue", todayLocalDate)
+      toHomeFeedCard(item, occurrence, "overdue", todayLocalDate, language)
     )
     .sort(compareByScheduledAtUtcDesc);
 }
@@ -238,6 +300,7 @@ function buildOverdueCards({
 function buildUpcomingCards({
   completionLogs,
   items,
+  language = "ko",
   now,
   upcomingRange,
   timezone,
@@ -250,6 +313,7 @@ function buildUpcomingCards({
   return buildScheduledCards({
     completionLogs,
     items,
+    language,
     now,
     range: upcomingRange,
     sectionId: "upcoming",
@@ -261,6 +325,7 @@ function buildUpcomingCards({
 function buildScheduledCards({
   completionLogs,
   items,
+  language = "ko",
   now,
   range,
   sectionId,
@@ -275,42 +340,51 @@ function buildScheduledCards({
     timezone,
   })
     .map(({ item, occurrence }) =>
-      toHomeFeedCard(item, occurrence, sectionId, todayLocalDate)
+      toHomeFeedCard(item, occurrence, sectionId, todayLocalDate, language)
     )
     .sort(compareByScheduledAtUtcAsc);
 }
 
 function getSelectedDateTitle(
   selectedDateId: string,
-  todayLocalDate: string
+  todayLocalDate: string,
+  language: AppLanguage
 ): string {
   if (selectedDateId === todayLocalDate) {
-    return "오늘";
+    return homeFeedCopyByLanguage[language].sections.today;
   }
 
-  return formatLocalDateTitle(selectedDateId);
+  return formatLocalDateTitle(selectedDateId, language);
 }
 
 function toHomeFeedCard(
   item: RecurringItem,
   occurrence: DerivedOccurrence,
   sectionId: HomeFeedSection["id"],
-  todayLocalDate: string
+  todayLocalDate: string,
+  language: AppLanguage
 ): HomeFeedCard {
   const reminderTimeLocal = getReminderTimeLocal(item);
-  const timeLabel = formatLocalTimeLabel(reminderTimeLocal);
+  const timeLabel = formatLocalTimeLabel(reminderTimeLocal, language);
 
   return {
     dateSeparatorLabel: getDateSeparatorLabel(
       sectionId,
       occurrence,
-      todayLocalDate
+      todayLocalDate,
+      language
     ),
     id: getOccurrenceIdentity(item.id, occurrence.scheduledAtUtc),
     item,
-    metaLabel: getMetaLabel(sectionId, occurrence, todayLocalDate, timeLabel),
+    metaLabel: getMetaLabel(
+      sectionId,
+      occurrence,
+      todayLocalDate,
+      timeLabel,
+      language
+    ),
     occurrence,
-    recurrenceLabel: getRecurrenceLabel(item),
+    recurrenceLabel: getRecurrenceLabel(item, language),
     sectionId,
     timeLabel: sectionId === "overdue" ? timeLabel : null,
   };
@@ -320,7 +394,8 @@ function getMetaLabel(
   sectionId: HomeFeedSection["id"],
   occurrence: DerivedOccurrence,
   todayLocalDate: string,
-  timeLabel: string
+  timeLabel: string,
+  language: AppLanguage
 ): string {
   if (sectionId === "selected-date") {
     return timeLabel;
@@ -335,13 +410,16 @@ function getMetaLabel(
     parse(occurrence.localDate, "yyyy-MM-dd", new Date())
   );
 
-  return overdueDays === 0 ? "오늘 지남" : `${overdueDays}일 지남`;
+  const copy = homeFeedCopyByLanguage[language];
+
+  return overdueDays === 0 ? copy.overdueToday : copy.overdueDays(overdueDays);
 }
 
 function getDateSeparatorLabel(
   sectionId: HomeFeedSection["id"],
   occurrence: DerivedOccurrence,
-  todayLocalDate: string
+  todayLocalDate: string,
+  language: AppLanguage
 ): string | null {
   if (sectionId !== "upcoming") {
     return null;
@@ -352,7 +430,9 @@ function getDateSeparatorLabel(
     parse(todayLocalDate, "yyyy-MM-dd", new Date())
   );
 
-  return dayDiff === 1 ? "내일" : formatLocalDateTitle(occurrence.localDate);
+  return dayDiff === 1
+    ? homeFeedCopyByLanguage[language].tomorrow
+    : formatLocalDateTitle(occurrence.localDate, language);
 }
 
 function getReminderTimeLocal(item: RecurringItem): string {

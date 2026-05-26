@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
@@ -8,7 +9,7 @@ import { useSession } from "~/application/session";
 import type { CompletionAction } from "~/entities/schedule";
 import { useNotifications } from "~/features/notifications";
 import { useOccurrenceProjectionQuery } from "~/features/read-schedule";
-import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
+import { useAppLanguage } from "~/shared/i18n";
 
 import {
   buildHomeFeedSections,
@@ -19,6 +20,14 @@ import {
 import { useHomeOccurrenceActions } from "./use-home-occurrence-actions";
 
 let hasShownNotificationPermissionPrompt = false;
+
+type NotificationPermissionPromptCopy = {
+  cancelText: string;
+  errorTitle: string;
+  message: string;
+  requestText: string;
+  title: string;
+};
 
 type HomeScreenController = {
   errorMessage: string | null;
@@ -38,32 +47,31 @@ type HomeScreenController = {
 };
 
 function showNotificationPermissionPrompt(
-  requestPermission: () => Promise<unknown>
+  requestPermission: () => Promise<unknown>,
+  copy: NotificationPermissionPromptCopy
 ): void {
-  Alert.alert(
-    "알림을 켤까요?",
-    "정해둔 시간에 알려드리려면 알림 권한이 필요해요.",
-    [
-      {
-        style: "cancel",
-        text: "나중에",
+  Alert.alert(copy.title, copy.message, [
+    {
+      style: "cancel",
+      text: copy.cancelText,
+    },
+    {
+      onPress: () => {
+        void requestPermission().catch((error) => {
+          Alert.alert(
+            copy.errorTitle,
+            error instanceof Error ? error.message : String(error)
+          );
+        });
       },
-      {
-        onPress: () => {
-          void requestPermission().catch((error) => {
-            Alert.alert(
-              "권한을 요청하지 못했어요",
-              error instanceof Error ? error.message : String(error)
-            );
-          });
-        },
-        text: "허용하기",
-      },
-    ]
-  );
+      text: copy.requestText,
+    },
+  ]);
 }
 
 export function useHomeScreenController(): HomeScreenController {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const { profile } = useSession();
   const { permission, requestPermission, syncAfterMutation } =
     useNotifications();
@@ -114,10 +122,11 @@ export function useHomeScreenController(): HomeScreenController {
   const isLoading = projectionQuery.isLoading;
   const errorMessage =
     actionErrorMessage ??
-    (projectionQuery.error ? getErrorMessage(projectionQuery.error) : null);
+    (projectionQuery.error ? t("home.feed.errorDescription") : null);
   const feedSections = buildHomeFeedSections({
     completionLogs,
     items,
+    language,
     now,
     projection: projectionRequirement.projection,
     selectedDateId,
@@ -188,13 +197,20 @@ export function useHomeScreenController(): HomeScreenController {
     }
 
     hasShownNotificationPermissionPrompt = true;
-    showNotificationPermissionPrompt(requestPermission);
+    showNotificationPermissionPrompt(requestPermission, {
+      cancelText: t("home.notificationPermission.cancel"),
+      errorTitle: t("home.notificationPermission.errorTitle"),
+      message: t("home.notificationPermission.message"),
+      requestText: t("home.notificationPermission.request"),
+      title: t("home.notificationPermission.title"),
+    });
   }, [
     isFocused,
     isReady,
     permission.canRequest,
     permission.status,
     requestPermission,
+    t,
     userId,
   ]);
 

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { AppText } from "~/shared/ui/app-text";
@@ -10,6 +11,8 @@ type HomeHeaderProps = {
 export function HomeHeader({
   profileName,
 }: HomeHeaderProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.header}>
       <View style={styles.headerCopy}>
@@ -19,9 +22,7 @@ export function HomeHeader({
           style={styles.headerTitle}
           variant="display"
         >
-          {"안녕하세요,\n"}
-          {profileName}
-          {"님!"}
+          {t("home.header.greeting", { name: profileName })}
         </AppText>
       </View>
     </View>

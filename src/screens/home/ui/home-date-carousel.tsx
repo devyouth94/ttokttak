@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
+import { useAppLanguage } from "~/shared/i18n";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 
@@ -17,8 +19,10 @@ export function HomeDateCarousel({
   onSelectDate,
   selectedDateId,
 }: HomeDateCarouselProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const dateScrollRef = useRef<ScrollView>(null);
-  const dateOptions = createHomeDateOptions(startOfDay(new Date()));
+  const dateOptions = createHomeDateOptions(startOfDay(new Date()), language);
   const todayOption = dateOptions[0];
   const selectedDateOption =
     dateOptions.find((option) => option.id === selectedDateId) ?? todayOption;
@@ -68,12 +72,18 @@ export function HomeDateCarousel({
         >
           {dateOptions.map((option) => {
             const isSelected = option.id === selectedDateOption.id;
-            const chipLabel = option.isToday ? "오늘" : option.dayLabel;
+            const chipLabel = option.isToday
+              ? t("home.date.today")
+              : option.dayLabel;
 
             return (
               <Pressable
-                accessibilityHint={`${option.title} 기준으로 일정을 보여줘요.`}
-                accessibilityLabel={`${option.title} 선택`}
+                accessibilityHint={t("home.date.optionHint", {
+                  date: option.title,
+                })}
+                accessibilityLabel={t("home.date.optionLabel", {
+                  date: option.title,
+                })}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isSelected }}
                 key={option.id}
@@ -113,8 +123,8 @@ export function HomeDateCarousel({
 
         {!selectedDateOption.isToday ? (
           <Pressable
-            accessibilityHint="오늘 기준 일정으로 돌아가요."
-            accessibilityLabel="오늘로 돌아가기"
+            accessibilityHint={t("home.date.returnTodayHint")}
+            accessibilityLabel={t("home.date.returnTodayLabel")}
             accessibilityRole="button"
             onPress={selectToday}
             style={({ pressed }) => [
@@ -124,7 +134,7 @@ export function HomeDateCarousel({
           >
             <Undo2 color={colors.text} size={13} />
             <AppText style={styles.todayShortcutText} variant="caption">
-              오늘로
+              {t("home.date.returnTodayShort")}
             </AppText>
           </Pressable>
         ) : null}

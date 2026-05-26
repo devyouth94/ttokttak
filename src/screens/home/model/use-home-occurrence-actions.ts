@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { CompletionAction, CompletionLog } from "~/entities/schedule";
@@ -10,7 +11,6 @@ import {
 } from "~/features/home-feed-occurrence-action";
 import { invalidateScheduleReadQueries } from "~/features/read-schedule";
 import { Sentry } from "~/shared/config/sentry";
-import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 
 import type { HomeFeedCard } from "./home-feed-sections";
 
@@ -39,6 +39,7 @@ export function useHomeOccurrenceActions({
   timezone,
   userId,
 }: UseHomeOccurrenceActionsOptions): HomeOccurrenceActions {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
     null
@@ -83,7 +84,8 @@ export function useHomeOccurrenceActions({
           userId,
         });
       } catch (error) {
-        setActionErrorMessage(getErrorMessage(error));
+        Sentry.captureException(error);
+        setActionErrorMessage(t("home.feed.actionErrorDescription"));
       } finally {
         setProcessingOccurrenceIds((current) =>
           current.filter((occurrenceId) => occurrenceId !== card.id)
@@ -95,6 +97,7 @@ export function useHomeOccurrenceActions({
       queryClient,
       refetchFeed,
       syncAfterMutation,
+      t,
       timezone,
       userId,
     ]

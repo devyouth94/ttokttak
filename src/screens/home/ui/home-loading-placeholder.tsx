@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
@@ -5,9 +6,11 @@ import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 const HOME_LOADING_PLACEHOLDER_ROW_COUNT = 3;
 
 export function HomeLoadingPlaceholder(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View
-      accessibilityLabel="홈 피드를 불러오는 중"
+      accessibilityLabel={t("home.feed.loadingA11yLabel")}
       accessibilityRole="progressbar"
       style={styles.placeholder}
     >
