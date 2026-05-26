@@ -36,15 +36,21 @@ const englishRecurringItemColorLabelByKey = {
   yellow: "Yellow",
 } as const satisfies Record<RecurringItemColorKey, string>;
 
+const recurringItemColorLabelByLanguage = {
+  en: englishRecurringItemColorLabelByKey,
+  ko: Object.fromEntries(
+    Object.entries(recurringItemColorOptionByKey).map(([key, option]) => [
+      key,
+      option.label,
+    ])
+  ),
+} as Record<AppLanguage, Record<RecurringItemColorKey, string>>;
+
 export function getRecurringItemColorLabel(
   colorKey: RecurringItemColorKey,
   language: AppLanguage = "ko"
 ): string {
-  if (language === "en") {
-    return englishRecurringItemColorLabelByKey[colorKey];
-  }
-
-  return recurringItemColorOptionByKey[colorKey].label;
+  return recurringItemColorLabelByLanguage[language][colorKey];
 }
 
 export function getRecurringItemColorOptions(language: AppLanguage = "ko") {

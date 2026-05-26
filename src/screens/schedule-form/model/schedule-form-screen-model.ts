@@ -69,6 +69,27 @@ const localTimeFormatByLanguage = {
   ko: "a h:mm",
 } as const satisfies Record<AppLanguage, string>;
 
+const scheduleFormScreenTitleByLanguage = {
+  en: {
+    create: "Add item",
+    edit: "Edit item",
+  },
+  ko: {
+    create: "일정 추가",
+    edit: "일정 수정",
+  },
+} as const satisfies Record<AppLanguage, Record<"create" | "edit", string>>;
+
+const firstReminderHelperFormatters = {
+  en: (dateLabel: string) => `First reminder is ${dateLabel}.`,
+  ko: (dateLabel: string) => `첫 알림일은 ${dateLabel}입니다.`,
+} as const satisfies Record<AppLanguage, (dateLabel: string) => string>;
+
+const completionBasedInfoTextByLanguage = {
+  en: "Recalculates the next item from the date you complete it. Disabled for once and weekly settings.",
+  ko: "완료한 날짜를 기준으로 다음 일정을 다시 계산합니다. 한 번 설정과 주 단위 설정에서는 비활성화됩니다.",
+} as const satisfies Record<AppLanguage, string>;
+
 const weekdayOptionsByLanguage = {
   en: [
     { label: "Mon", value: 1 },
@@ -191,11 +212,9 @@ export function getScheduleFormScreenTitle(
   isEditMode: boolean,
   language: AppLanguage = "ko"
 ): string {
-  if (language === "en") {
-    return isEditMode ? "Edit item" : "Add item";
-  }
+  const copy = scheduleFormScreenTitleByLanguage[language];
 
-  return isEditMode ? "일정 수정" : "일정 추가";
+  return isEditMode ? copy.edit : copy.create;
 }
 
 export function getRecurringItemFormDisplayValues(
@@ -289,9 +308,7 @@ export function getFirstReminderHelperText(
     { locale: formDateLocaleByLanguage[language] }
   );
 
-  return language === "en"
-    ? `First reminder is ${dateLabel}.`
-    : `첫 알림일은 ${dateLabel}입니다.`;
+  return firstReminderHelperFormatters[language](dateLabel);
 }
 
 function getFirstWeeklyOccurrenceLocalDate(formState: {
@@ -395,9 +412,5 @@ export function getAdvancedOptionsState(params: {
 export function getCompletionBasedInfoText(
   language: AppLanguage = "ko"
 ): string {
-  if (language === "en") {
-    return "Recalculates the next item from the date you complete it. Disabled for once and weekly settings.";
-  }
-
-  return "완료한 날짜를 기준으로 다음 일정을 다시 계산합니다. 한 번 설정과 주 단위 설정에서는 비활성화됩니다.";
+  return completionBasedInfoTextByLanguage[language];
 }

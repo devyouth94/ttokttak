@@ -2,6 +2,17 @@ import type { AppLanguage } from "~/shared/i18n";
 
 const MAX_PROFILE_DISPLAY_NAME_LENGTH = 30;
 
+const profileDisplayNameValidationMessages = {
+  en: {
+    empty: "Enter a name.",
+    tooLong: "Enter a name with 30 characters or fewer.",
+  },
+  ko: {
+    empty: "이름을 입력해 주세요.",
+    tooLong: "이름은 30자 이하로 입력해 주세요.",
+  },
+} as const satisfies Record<AppLanguage, Record<"empty" | "tooLong", string>>;
+
 export function normalizeProfileDisplayName(value: string): string {
   return value.trim();
 }
@@ -48,21 +59,18 @@ export function validateProfileDisplayName(
   language: AppLanguage = "ko"
 ): ProfileDisplayNameValidationResult {
   const normalizedValue = normalizeProfileDisplayName(value);
+  const messages = profileDisplayNameValidationMessages[language];
 
   if (!normalizedValue) {
     return {
-      errorMessage:
-        language === "en" ? "Enter a name." : "이름을 입력해 주세요.",
+      errorMessage: messages.empty,
       value: null,
     };
   }
 
   if (normalizedValue.length > MAX_PROFILE_DISPLAY_NAME_LENGTH) {
     return {
-      errorMessage:
-        language === "en"
-          ? "Enter a name with 30 characters or fewer."
-          : "이름은 30자 이하로 입력해 주세요.",
+      errorMessage: messages.tooLong,
       value: null,
     };
   }

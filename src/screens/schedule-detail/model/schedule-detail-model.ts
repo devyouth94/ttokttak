@@ -37,6 +37,102 @@ const summaryDateFormatByLanguage = {
   ko: "yyyy년 M월 d일",
 } as const satisfies Record<AppLanguage, string>;
 
+const contentRecoveryCopyByLanguage = {
+  en: {
+    description:
+      "There is a problem with the encryption key or saved content. You can delete this item if needed.",
+    title: "Could not recover item content",
+  },
+  ko: {
+    description:
+      "암호화 키 또는 저장된 내용에 문제가 있어 내용을 열 수 없어요. 필요하면 이 일정을 삭제할 수 있어요.",
+    title: "일정 내용을 복구하지 못했어요",
+  },
+} as const satisfies Record<AppLanguage, ItemDetailContentRecovery>;
+
+const summaryBadgeCopyByLanguage = {
+  en: {
+    anchorTypeLabel: "Schedule",
+    completionBasedValue: "Completion-based",
+    endDateLabel: "End date",
+    startDateLabel: "Start",
+  },
+  ko: {
+    anchorTypeLabel: "계산",
+    completionBasedValue: "완료일 기준",
+    endDateLabel: "종료",
+    startDateLabel: "시작",
+  },
+} as const satisfies Record<
+  AppLanguage,
+  Record<
+    | "anchorTypeLabel"
+    | "completionBasedValue"
+    | "endDateLabel"
+    | "startDateLabel",
+    string
+  >
+>;
+
+const statusCardCopyByLanguage = {
+  en: {
+    completed: "Completed item",
+    noFollowingItem: "No following item",
+    noUpcomingDate: "None",
+    noUpcomingTitle: "No upcoming item",
+    overdue: "Overdue",
+    scheduled: "Scheduled item",
+    skipped: "Skipped item",
+    nextItem: "Next item",
+    today: "Today",
+    tomorrow: "Tomorrow",
+  },
+  ko: {
+    completed: "완료한 일정",
+    noFollowingItem: "후속 일정 없음",
+    noUpcomingDate: "없음",
+    noUpcomingTitle: "다음 일정 없음",
+    overdue: "지난 일정",
+    scheduled: "예정 일정",
+    skipped: "건너뛴 일정",
+    nextItem: "다음 일정",
+    today: "오늘",
+    tomorrow: "내일",
+  },
+} as const satisfies Record<
+  AppLanguage,
+  Record<
+    | "completed"
+    | "nextItem"
+    | "noFollowingItem"
+    | "noUpcomingDate"
+    | "noUpcomingTitle"
+    | "overdue"
+    | "scheduled"
+    | "skipped"
+    | "today"
+    | "tomorrow",
+    string
+  >
+>;
+
+const relativeDayLabelFormatters = {
+  en: (dayDiff: number) => `In ${dayDiff} days`,
+  ko: (dayDiff: number) => `${dayDiff}일 후`,
+} as const satisfies Record<AppLanguage, (dayDiff: number) => string>;
+
+const overdueDaysLabelFormatters = {
+  en: (overdueDays: number) =>
+    overdueDays === 1 ? "1 day overdue" : `${overdueDays} days overdue`,
+  ko: (overdueDays: number) => `${overdueDays}일 지남`,
+} as const satisfies Record<AppLanguage, (overdueDays: number) => string>;
+
+const overdueCountLabelFormatters = {
+  en: (count: number) =>
+    count === 1 ? "1 overdue item" : `${count} overdue items`,
+  ko: (count: number) => `지난 일정 ${count}건`,
+} as const satisfies Record<AppLanguage, (count: number) => string>;
+
 type RecurringItemDetailReturnPath = "/" | "/calendar" | "/home" | "/schedule";
 
 export type ItemDetailHistoryEntry = {
@@ -214,16 +310,7 @@ function getContentRecoveryState(
     return undefined;
   }
 
-  return {
-    description:
-      language === "en"
-        ? "There is a problem with the encryption key or saved content. You can delete this item if needed."
-        : "암호화 키 또는 저장된 내용에 문제가 있어 내용을 열 수 없어요. 필요하면 이 일정을 삭제할 수 있어요.",
-    title:
-      language === "en"
-        ? "Could not recover item content"
-        : "일정 내용을 복구하지 못했어요",
-  };
+  return contentRecoveryCopyByLanguage[language];
 }
 
 export function buildHistoryPreview(
@@ -257,10 +344,11 @@ export function buildSummarySettingBadges(
   const endDateLocal = currentSchedule
     ? (currentSchedule.endDateLocal ?? null)
     : (item.endDateLocal ?? null);
+  const copy = summaryBadgeCopyByLanguage[language];
   const badges: ItemDetailSummaryBadge[] = [
     {
       id: "start-date",
-      label: language === "en" ? "Start" : "시작",
+      label: copy.startDateLabel,
       value: formatSummaryDate(item.startDateLocal, language),
     },
   ];
@@ -268,7 +356,7 @@ export function buildSummarySettingBadges(
   if (endDateLocal) {
     badges.push({
       id: "end-date",
-      label: language === "en" ? "End date" : "종료",
+      label: copy.endDateLabel,
       value: formatSummaryDate(endDateLocal, language),
     });
   }
@@ -276,8 +364,8 @@ export function buildSummarySettingBadges(
   if (anchorType === "completion_based") {
     badges.push({
       id: "anchor-type",
-      label: language === "en" ? "Schedule" : "계산",
-      value: language === "en" ? "Completion-based" : "완료일 기준",
+      label: copy.anchorTypeLabel,
+      value: copy.completionBasedValue,
     });
   }
 
@@ -307,6 +395,8 @@ function buildStatusCard({
   overdueOccurrences: DerivedOccurrence[];
   timezone: string;
 }): ItemDetailStatusCard {
+  const copy = statusCardCopyByLanguage[language];
+
   if (overdueOccurrences.length > 0) {
     const latestOverdueOccurrence = overdueOccurrences[0];
     const overdueDays = differenceInCalendarDays(
@@ -334,16 +424,16 @@ function buildStatusCard({
         timezone,
         language
       ),
-      title: language === "en" ? "Overdue" : "지난 일정",
+      title: copy.overdue,
     };
   }
 
   if (!nextOccurrence) {
     return {
-      dateLabel: language === "en" ? "None" : "없음",
-      metaLabel: language === "en" ? "No following item" : "후속 일정 없음",
+      dateLabel: copy.noUpcomingDate,
+      metaLabel: copy.noFollowingItem,
       timeLabel: null,
-      title: language === "en" ? "No upcoming item" : "다음 일정 없음",
+      title: copy.noUpcomingTitle,
     };
   }
 
@@ -365,7 +455,7 @@ function buildStatusCard({
       timezone,
       language
     ),
-    title: language === "en" ? "Next item" : "다음 일정",
+    title: copy.nextItem,
   };
 }
 
@@ -443,14 +533,14 @@ function getRelativeDayLabel(
   );
 
   if (dayDiff === 0) {
-    return language === "en" ? "Today" : "오늘";
+    return statusCardCopyByLanguage[language].today;
   }
 
   if (dayDiff === 1) {
-    return language === "en" ? "Tomorrow" : "내일";
+    return statusCardCopyByLanguage[language].tomorrow;
   }
 
-  return language === "en" ? `In ${dayDiff} days` : `${dayDiff}일 후`;
+  return relativeDayLabelFormatters[language](dayDiff);
 }
 
 function getOccurrenceStatusMetaLabel({
@@ -496,19 +586,14 @@ function getOccurrenceStatusMetaLabel({
 function getOccurrenceStatusTitleByStatus(
   language: AppLanguage
 ): Record<DerivedOccurrence["status"], string> {
-  return language === "en"
-    ? {
-        completed: "Completed item",
-        overdue: "Overdue",
-        scheduled: "Scheduled item",
-        skipped: "Skipped item",
-      }
-    : {
-        completed: "완료한 일정",
-        overdue: "지난 일정",
-        scheduled: "예정 일정",
-        skipped: "건너뛴 일정",
-      };
+  const copy = statusCardCopyByLanguage[language];
+
+  return {
+    completed: copy.completed,
+    overdue: copy.overdue,
+    scheduled: copy.scheduled,
+    skipped: copy.skipped,
+  };
 }
 
 function getOverdueDaysLabel(
@@ -516,20 +601,12 @@ function getOverdueDaysLabel(
   language: AppLanguage
 ): string {
   if (overdueDays === 0) {
-    return language === "en" ? "Today" : "오늘";
+    return statusCardCopyByLanguage[language].today;
   }
 
-  return language === "en"
-    ? overdueDays === 1
-      ? "1 day overdue"
-      : `${overdueDays} days overdue`
-    : `${overdueDays}일 지남`;
+  return overdueDaysLabelFormatters[language](overdueDays);
 }
 
 function getOverdueCountLabel(count: number, language: AppLanguage): string {
-  if (language === "en") {
-    return count === 1 ? "1 overdue item" : `${count} overdue items`;
-  }
-
-  return `지난 일정 ${count}건`;
+  return overdueCountLabelFormatters[language](count);
 }

@@ -47,6 +47,11 @@ const selectedDateSectionTitleFormatByLanguage = {
   ko: "M월 d일 EEEE",
 } as const satisfies Record<AppLanguage, string>;
 
+const calendarDayEntryCountFormatters = {
+  en: (count: number) => (count === 1 ? "1 item" : `${count} items`),
+  ko: (count: number) => `${count}개`,
+} as const satisfies Record<AppLanguage, (count: number) => string>;
+
 export type CalendarDaySummary = {
   localDate: string;
   markerColorKeys: RecurringItemColorKey[];
@@ -134,11 +139,7 @@ export function formatCalendarDayEntryCount(
   count: number,
   language: AppLanguage = "ko"
 ): string {
-  if (language === "en") {
-    return count === 1 ? "1 item" : `${count} items`;
-  }
-
-  return `${count}개`;
+  return calendarDayEntryCountFormatters[language](count);
 }
 
 export function getCalendarLocaleName(language: AppLanguage): string {

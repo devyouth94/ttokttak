@@ -24,6 +24,11 @@ export type ScheduleListSortMode = "createdDesc" | "titleAsc";
 
 export const DEFAULT_SCHEDULE_LIST_SORT_MODE: ScheduleListSortMode = "titleAsc";
 
+const noNextOccurrenceLabelByLanguage = {
+  en: "No upcoming time",
+  ko: "예정 없음",
+} as const satisfies Record<AppLanguage, string>;
+
 export function buildScheduleListEntries({
   completionLogs,
   items,
@@ -72,7 +77,7 @@ export function formatScheduleListNextOccurrenceTimeLabel(
 }
 
 function getNoNextOccurrenceLabel(language: AppLanguage): string {
-  return language === "en" ? "No upcoming time" : "예정 없음";
+  return noNextOccurrenceLabelByLanguage[language];
 }
 
 function compareScheduleListEntries(

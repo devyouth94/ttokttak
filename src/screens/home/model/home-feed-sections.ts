@@ -73,6 +73,11 @@ const homeFeedCopyByLanguage = {
   },
 } as const;
 
+const homeDateTitleFormatByLanguage = {
+  en: "MMM d",
+  ko: "M월 d일",
+} as const satisfies Record<AppLanguage, string>;
+
 export type HomeDateOption = {
   dayLabel: string;
   id: string;
@@ -162,7 +167,7 @@ export function createHomeDateOptions(
       isToday: index === 0,
       title: isSameDay(date, today)
         ? copy.sections.today
-        : format(date, language === "en" ? "MMM d" : "M월 d일", { locale }),
+        : format(date, homeDateTitleFormatByLanguage[language], { locale }),
       value: format(date, "d"),
     };
   });

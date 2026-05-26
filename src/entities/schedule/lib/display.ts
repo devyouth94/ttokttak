@@ -23,6 +23,54 @@ const localTimeFormatByLanguage = {
   ko: "a h:mm",
 } as const satisfies Record<AppLanguage, string>;
 
+const completionActionLabelByLanguage = {
+  en: {
+    completed: "Complete",
+    skipped: "Skip",
+  },
+  ko: {
+    completed: "완료",
+    skipped: "건너뜀",
+  },
+} as const satisfies Record<AppLanguage, Record<CompletionAction, string>>;
+
+const recurrenceCopyByLanguage = {
+  en: {
+    daily: "Daily",
+    fallback: "Repeats",
+    monthly: "Monthly",
+    once: "Once",
+    weekly: "Weekly",
+  },
+  ko: {
+    daily: "매일",
+    fallback: "반복",
+    monthly: "매달",
+    once: "한 번",
+    weekly: "매주",
+  },
+} as const satisfies Record<
+  AppLanguage,
+  Record<"daily" | "fallback" | "monthly" | "once" | "weekly", string>
+>;
+
+const intervalLabelFormatters = {
+  en: (
+    intervalValue: number | null | undefined,
+    unit: "day" | "month" | "week"
+  ) => getEnglishIntervalLabel(intervalValue, unit),
+  ko: (
+    intervalValue: number | null | undefined,
+    unit: "day" | "month" | "week"
+  ) => `${intervalValue ?? 1}${getKoreanIntervalUnitLabel(unit)}마다`,
+} as const satisfies Record<
+  AppLanguage,
+  (
+    intervalValue: number | null | undefined,
+    unit: "day" | "month" | "week"
+  ) => string
+>;
+
 const weekdayLabelByValue = new Map<number, string>([
   [0, "일"],
   [1, "월"],
@@ -42,6 +90,11 @@ const englishWeekdayLabelByValue = new Map<number, string>([
   [5, "Fri"],
   [6, "Sat"],
 ]);
+
+const weekdayLabelMapByLanguage = {
+  en: englishWeekdayLabelByValue,
+  ko: weekdayLabelByValue,
+} as const satisfies Record<AppLanguage, Map<number, string>>;
 
 export function formatLocalDateTitle(
   localDate: string,
@@ -88,11 +141,7 @@ export function getCompletionActionLabel(
   action: CompletionAction,
   language: AppLanguage = "ko"
 ): string {
-  if (language === "en") {
-    return action === "completed" ? "Complete" : "Skip";
-  }
-
-  return action === "completed" ? "완료" : "건너뜀";
+  return completionActionLabelByLanguage[language][action];
 }
 
 export function getRecurrenceLabel(
@@ -103,49 +152,29 @@ export function getRecurrenceLabel(
   const recurrenceType = currentSchedule?.recurrenceType ?? item.recurrenceType;
   const intervalValue = currentSchedule?.intervalValue ?? item.intervalValue;
   const weekdayMask = currentSchedule?.weekdayMask ?? item.weekdayMask;
-
-  if (language === "en") {
-    switch (recurrenceType) {
-      case "once":
-        return "Once";
-      case "daily":
-        return "Daily";
-      case "interval_days":
-        return getEnglishIntervalLabel(intervalValue, "day");
-      case "weekly":
-        return getWeeklyLabel("Weekly", weekdayMask, language);
-      case "interval_weeks":
-        return getWeeklyLabel(
-          getEnglishIntervalLabel(intervalValue, "week"),
-          weekdayMask,
-          language
-        );
-      case "monthly":
-        return "Monthly";
-      case "interval_months":
-        return getEnglishIntervalLabel(intervalValue, "month");
-      default:
-        return "Repeats";
-    }
-  }
+  const copy = recurrenceCopyByLanguage[language];
 
   switch (recurrenceType) {
     case "once":
-      return "한 번";
+      return copy.once;
     case "daily":
-      return "매일";
+      return copy.daily;
     case "interval_days":
-      return `${intervalValue ?? 1}일마다`;
+      return intervalLabelFormatters[language](intervalValue, "day");
     case "weekly":
-      return getWeeklyLabel("매주", weekdayMask);
+      return getWeeklyLabel(copy.weekly, weekdayMask, language);
     case "interval_weeks":
-      return getWeeklyLabel(`${intervalValue ?? 1}주마다`, weekdayMask);
+      return getWeeklyLabel(
+        intervalLabelFormatters[language](intervalValue, "week"),
+        weekdayMask,
+        language
+      );
     case "monthly":
-      return "매달";
+      return copy.monthly;
     case "interval_months":
-      return `${intervalValue ?? 1}달마다`;
+      return intervalLabelFormatters[language](intervalValue, "month");
     default:
-      return "반복";
+      return copy.fallback;
   }
 }
 
@@ -158,6 +187,17 @@ function getEnglishIntervalLabel(
   return value === 1 ? `Every ${unit}` : `Every ${value} ${unit}s`;
 }
 
+function getKoreanIntervalUnitLabel(unit: "day" | "month" | "week"): string {
+  switch (unit) {
+    case "day":
+      return "일";
+    case "month":
+      return "달";
+    case "week":
+      return "주";
+  }
+}
+
 function getWeeklyLabel(
   baseLabel: string,
   weekdayMask?: number[] | null,
@@ -167,8 +207,7 @@ function getWeeklyLabel(
     return baseLabel;
   }
 
-  const labelsByValue =
-    language === "en" ? englishWeekdayLabelByValue : weekdayLabelByValue;
+  const labelsByValue = weekdayLabelMapByLanguage[language];
   const labels = weekdayMask
     .slice()
     .sort((left, right) => left - right)
