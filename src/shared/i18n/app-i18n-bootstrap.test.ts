@@ -33,16 +33,20 @@ describe("bootstrapAppI18n", () => {
     expect(applyLanguage).toHaveBeenNthCalledWith(2, "ko");
   });
 
-  it("fallback 적용도 실패하면 한국어로 간주하고 앱 시작을 계속한다", async () => {
+  it("fallback 적용도 실패하면 초기화 실패를 caller에게 돌려준다", async () => {
+    const error = new Error("초기화 오류");
     const applyLanguage = jest
       .fn<Promise<void>, ["ko" | "en"]>()
-      .mockRejectedValue(new Error("초기화 오류"));
+      .mockRejectedValue(error);
 
     await expect(
       bootstrapAppI18n({
         applyLanguage,
         resolveInitialLanguage: async () => "en",
       })
-    ).resolves.toBe("ko");
+    ).rejects.toThrow(error);
+
+    expect(applyLanguage).toHaveBeenNthCalledWith(1, "en");
+    expect(applyLanguage).toHaveBeenNthCalledWith(2, "ko");
   });
 });

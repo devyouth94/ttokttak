@@ -16,11 +16,7 @@ export async function bootstrapAppI18n({
 
     return language;
   } catch {
-    try {
-      await applyLanguage(fallbackAppLanguage);
-    } catch {
-      // fallback 적용까지 실패해도 앱 시작은 막지 않는다.
-    }
+    await applyLanguage(fallbackAppLanguage);
 
     return fallbackAppLanguage;
   }

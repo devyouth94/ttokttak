@@ -2,7 +2,6 @@ import { type PropsWithChildren, useEffect, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 
 import { appI18n, ensureAppI18nInitialized } from "./app-i18n";
-import { shouldRenderI18nContent } from "./i18n-gate";
 
 export function AppI18nProvider({
   children,
@@ -12,18 +11,20 @@ export function AppI18nProvider({
   useEffect(() => {
     let isMounted = true;
 
-    void ensureAppI18nInitialized().finally(() => {
-      if (isMounted) {
-        setIsReady(true);
-      }
-    });
+    void ensureAppI18nInitialized()
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) {
+          setIsReady(appI18n.isInitialized);
+        }
+      });
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (!shouldRenderI18nContent(isReady)) {
+  if (!isReady) {
     return null;
   }
 
