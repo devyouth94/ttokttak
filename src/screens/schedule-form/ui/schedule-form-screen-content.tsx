@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Controller } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -19,6 +20,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
+import { useAppLanguage } from "~/shared/i18n";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { colors } from "~/shared/ui/tokens";
@@ -52,6 +54,8 @@ type ScreenErrorCardProps = {
 function ScreenErrorCard({
   message,
 }: ScreenErrorCardProps): React.JSX.Element | null {
+  const { t } = useTranslation();
+
   if (!message) {
     return null;
   }
@@ -59,7 +63,7 @@ function ScreenErrorCard({
   return (
     <View style={styles.errorCard}>
       <AppText style={styles.errorTitle} variant="title">
-        확인 필요
+        {t("scheduleForm.error.title")}
       </AppText>
       <AppText style={styles.errorText} variant="body">
         {message}
@@ -97,6 +101,8 @@ export function ScheduleFormScreenContent({
   values,
   view,
 }: ScheduleFormScreenContentProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -113,14 +119,17 @@ export function ScheduleFormScreenContent({
   const scrollViewRef = useRef<ScrollView>(null);
   const titleInputRef = useRef<TextInput>(null);
 
-  const screenTitle = getScheduleFormScreenTitle(view.isEditMode);
+  const screenTitle = getScheduleFormScreenTitle(view.isEditMode, language);
   const {
     endDateDisplayValue,
     firstReminderHelperText,
     reminderTimeDisplayValue,
     startDateDisplayValue,
-  } = getRecurringItemFormDisplayValues(values);
-  const endDateControlState = getRecurringItemFormEndDateControlState(values);
+  } = getRecurringItemFormDisplayValues(values, language);
+  const endDateControlState = getRecurringItemFormEndDateControlState(
+    values,
+    language
+  );
   const firstReminderHelperMessage = view.isStartDateEditable
     ? firstReminderHelperText
     : null;
@@ -140,10 +149,10 @@ export function ScheduleFormScreenContent({
     picker.iosDateTarget === "endDate" ? minimumEndDate : minimumStartDate;
   const iosPickerTitle =
     picker.iosMode === "time"
-      ? "알림 시간 선택"
+      ? t("scheduleForm.picker.reminderTimeTitle")
       : picker.iosDateTarget === "endDate"
-        ? "종료일 선택"
-        : "시작일 선택";
+        ? t("scheduleForm.picker.endDateTitle")
+        : t("scheduleForm.picker.startDateTitle");
 
   function handleSectionLayout(
     target: FormErrorTarget,
@@ -223,14 +232,14 @@ export function ScheduleFormScreenContent({
               style={styles.field}
             >
               <AppText style={styles.fieldLabel} variant="body2">
-                제목
+                {t("scheduleForm.fields.title")}
               </AppText>
               <Controller
                 control={control}
                 name="title"
                 render={({ field }) => (
                   <TextInput
-                    accessibilityLabel="제목"
+                    accessibilityLabel={t("scheduleForm.fields.title")}
                     ref={titleInputRef}
                     onBlur={() => {
                       field.onBlur();
@@ -238,7 +247,7 @@ export function ScheduleFormScreenContent({
                     }}
                     onChangeText={actions.field.onChangeTitle}
                     onFocus={() => setFocusedTextInput("title")}
-                    placeholder="예: 아침 영양제 챙기기"
+                    placeholder={t("scheduleForm.placeholders.title")}
                     placeholderTextColor={colors.textMuted}
                     style={[
                       styles.textInput,
@@ -261,14 +270,16 @@ export function ScheduleFormScreenContent({
 
             <View style={styles.field}>
               <AppText style={styles.fieldLabel} variant="body2">
-                메모
+                {t("scheduleForm.fields.description")}
               </AppText>
               <Controller
                 control={control}
                 name="description"
                 render={({ field }) => (
                   <TextInput
-                    accessibilityLabel="설명"
+                    accessibilityLabel={t(
+                      "scheduleForm.fields.descriptionA11y"
+                    )}
                     multiline
                     onBlur={() => {
                       field.onBlur();
@@ -276,7 +287,7 @@ export function ScheduleFormScreenContent({
                     }}
                     onChangeText={actions.field.onChangeDescription}
                     onFocus={() => setFocusedTextInput("description")}
-                    placeholder="선택 입력"
+                    placeholder={t("scheduleForm.placeholders.description")}
                     placeholderTextColor={colors.textMuted}
                     style={[
                       styles.textInput,
@@ -323,7 +334,7 @@ export function ScheduleFormScreenContent({
                 <PickerField
                   description={
                     view.isEditMode
-                      ? "시작일은 생성 후 변경할 수 없습니다."
+                      ? t("scheduleForm.fields.startDateLocked")
                       : undefined
                   }
                   disabled={!view.isStartDateEditable}
@@ -336,9 +347,9 @@ export function ScheduleFormScreenContent({
                       strokeWidth={1.2}
                     />
                   }
-                  label="시작일"
-                  accessibilityHint="일정의 시작일을 선택해요."
-                  accessibilityLabel="시작일 선택"
+                  label={t("scheduleForm.fields.startDate")}
+                  accessibilityHint={t("scheduleForm.picker.startDateHint")}
+                  accessibilityLabel={t("scheduleForm.picker.startDateLabel")}
                   onPress={actions.picker.onOpenDatePicker}
                   value={startDateDisplayValue}
                   variantStyle={styles.dateField}
@@ -354,9 +365,11 @@ export function ScheduleFormScreenContent({
                       strokeWidth={1.2}
                     />
                   }
-                  label="알림 시간"
-                  accessibilityHint="알림 시간을 선택해요."
-                  accessibilityLabel="알림 시간 선택"
+                  label={t("scheduleForm.fields.reminderTime")}
+                  accessibilityHint={t("scheduleForm.picker.reminderTimeHint")}
+                  accessibilityLabel={t(
+                    "scheduleForm.picker.reminderTimeLabel"
+                  )}
                   onPress={actions.picker.onOpenTimePicker}
                   value={reminderTimeDisplayValue}
                   variantStyle={styles.timeField}
@@ -424,7 +437,7 @@ export function ScheduleFormScreenContent({
               style={styles.field}
             >
               <AppText style={styles.fieldLabel} variant="body2">
-                옵션
+                {t("scheduleForm.sections.options")}
               </AppText>
               <View style={styles.optionRows}>
                 <NotificationSection
@@ -468,8 +481,8 @@ export function ScheduleFormScreenContent({
 
               {view.isEditMode ? (
                 <Pressable
-                  accessibilityHint="이 일정을 삭제합니다."
-                  accessibilityLabel="일정 삭제"
+                  accessibilityHint={t("scheduleForm.deleteButton.hint")}
+                  accessibilityLabel={t("scheduleForm.deleteButton.label")}
                   accessibilityRole="button"
                   disabled={view.isDeleting || view.isSaving}
                   onPress={actions.screen.onDelete}
@@ -507,7 +520,10 @@ function SaveButtonContent({
   isEditMode,
   isSaving,
 }: SaveButtonContentProps): React.JSX.Element {
-  const buttonLabel = isEditMode ? "수정" : "저장";
+  const { t } = useTranslation();
+  const buttonLabel = isEditMode
+    ? t("scheduleForm.actions.update")
+    : t("scheduleForm.actions.save");
 
   if (isSaving) {
     return <ActivityIndicator color={colors.primaryForeground} />;
@@ -589,6 +605,7 @@ function EndDateControl({
   onEnable,
   onOpenPicker,
 }: EndDateControlProps): React.JSX.Element {
+  const { t } = useTranslation();
   const handleToggle = (nextValue: boolean): void => {
     if (nextValue) {
       onEnable();
@@ -602,11 +619,11 @@ function EndDateControl({
     <View style={styles.endDateControl}>
       <View style={styles.optionToggleRow}>
         <AppText style={styles.optionToggleLabel} variant="body2">
-          종료일
+          {t("scheduleForm.fields.endDate")}
         </AppText>
         <Switch
-          accessibilityHint="반복 일정의 종료일 설정을 켜거나 꺼요."
-          accessibilityLabel="종료일 사용"
+          accessibilityHint={t("scheduleForm.endDate.toggleHint")}
+          accessibilityLabel={t("scheduleForm.endDate.toggleLabel")}
           onValueChange={handleToggle}
           style={styles.optionToggleSwitch}
           thumbColor={colors.primaryForeground}
@@ -617,8 +634,8 @@ function EndDateControl({
 
       {isEnabled && displayValue ? (
         <PickerField
-          accessibilityHint="반복 일정의 종료일을 선택해요."
-          accessibilityLabel="종료일 선택"
+          accessibilityHint={t("scheduleForm.picker.endDateHint")}
+          accessibilityLabel={t("scheduleForm.picker.endDateLabel")}
           error={error}
           icon={
             <CalendarDays

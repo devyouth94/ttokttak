@@ -20,13 +20,17 @@ function getValidationMessages(
   overrides: Partial<RecurringItemFormValues>,
   options: {
     isEditMode?: boolean;
+    language?: "en" | "ko";
     todayLocalDate?: string;
   } = {}
 ): string[] {
   const schema =
-    options.todayLocalDate || options.isEditMode !== undefined
+    options.todayLocalDate ||
+    options.isEditMode !== undefined ||
+    options.language
       ? createRecurringItemFormSchema({
           isEditMode: options.isEditMode ?? false,
+          language: options.language,
           todayLocalDate: options.todayLocalDate ?? "2026-05-06",
         })
       : recurringItemFormSchema;
@@ -190,6 +194,30 @@ describe("recurring item form validation messages", () => {
         weekdayMask: [5],
       })
     ).toContain("선택한 기간 안에 알림일이 없어요.");
+  });
+
+  it("English 모드에서는 validation 문구를 English로 보여준다", () => {
+    expect(
+      getValidationMessages(
+        {
+          anchorType: "completion_based",
+          endDateLocal: "2026-05-05",
+          intervalValue: "",
+          recurrenceType: "interval_days",
+          startDateLocal: "2026-05-06",
+          title: "   ",
+        },
+        {
+          language: "en",
+        }
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        "Enter a title.",
+        "Enter a repeat interval.",
+        "Choose an end date after the start date.",
+      ])
+    );
   });
 });
 

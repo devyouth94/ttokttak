@@ -64,6 +64,8 @@ export {
   supportsCompletionBased,
 } from "./model/validation";
 export {
+  getRecurringItemColorLabel,
+  getRecurringItemColorOptions,
   recurringItemColorOptionByKey,
   recurringItemColorOptions,
   RecurringItemSummaryRow,

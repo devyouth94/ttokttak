@@ -1,3 +1,5 @@
+import type { AppLanguage } from "~/shared/i18n";
+
 import type { RecurringItemColorKey } from "../model/types";
 
 type RecurringItemColorOption<Key extends RecurringItemColorKey> = {
@@ -23,3 +25,31 @@ export const recurringItemColorOptionByKey = {
 export const recurringItemColorOptions = Object.values(
   recurringItemColorOptionByKey
 );
+
+const englishRecurringItemColorLabelByKey = {
+  blue: "Blue",
+  green: "Green",
+  indigo: "Indigo",
+  orange: "Orange",
+  purple: "Purple",
+  red: "Red",
+  yellow: "Yellow",
+} as const satisfies Record<RecurringItemColorKey, string>;
+
+export function getRecurringItemColorLabel(
+  colorKey: RecurringItemColorKey,
+  language: AppLanguage = "ko"
+): string {
+  if (language === "en") {
+    return englishRecurringItemColorLabelByKey[colorKey];
+  }
+
+  return recurringItemColorOptionByKey[colorKey].label;
+}
+
+export function getRecurringItemColorOptions(language: AppLanguage = "ko") {
+  return recurringItemColorOptions.map((option) => ({
+    ...option,
+    label: getRecurringItemColorLabel(option.value, language),
+  }));
+}

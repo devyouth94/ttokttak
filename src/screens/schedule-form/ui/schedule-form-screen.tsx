@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,6 +46,8 @@ export function ScheduleFormScreen({
 }
 
 function ScheduleFormScreenLoading(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView
       edges={["top", "left", "right", "bottom"]}
@@ -53,7 +56,7 @@ function ScheduleFormScreenLoading(): React.JSX.Element {
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} size="large" />
         <AppText style={styles.loadingText}>
-          항목 정보를 불러오는 중입니다.
+          {t("scheduleForm.loading")}
         </AppText>
       </View>
     </SafeAreaView>

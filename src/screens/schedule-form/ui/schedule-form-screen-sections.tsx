@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Modal,
@@ -18,6 +19,7 @@ import {
   type RecurrenceType,
   type RecurringItemColorKey,
 } from "~/entities/schedule";
+import { useAppLanguage } from "~/shared/i18n";
 import {
   AppSelectMenu,
   type AppSelectMenuOption,
@@ -27,13 +29,13 @@ import { colors } from "~/shared/ui/tokens";
 
 import { styles } from "./schedule-form-screen-styles";
 import {
-  customRecurrenceUnitOptions,
   getAdvancedOptionsState,
   getCompletionBasedInfoText,
+  getCustomRecurrenceUnitOptions,
+  getFormColorOptions,
+  getQuickRecurrenceOptions,
   getRecurrenceSectionState,
-  quickRecurrenceOptions,
-  recurringItemColorOptions,
-  weekdayOptions,
+  getWeekdayOptions,
 } from "../model/schedule-form-screen-model";
 import { type CustomRecurrenceUnit } from "../model/schedule-form-state";
 
@@ -88,6 +90,8 @@ export function RecurrenceSection({
   onSelectRecurrence,
   onToggleWeekday,
 }: RecurrenceSectionProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const [isCustomIntervalFocused, setIsCustomIntervalFocused] = useState(false);
 
   const {
@@ -100,31 +104,33 @@ export function RecurrenceSection({
     showsWeekdaysInsideCustomPanel,
   } = getRecurrenceSectionState(recurrenceType);
 
-  const quickRecurrenceButtons = quickRecurrenceOptions.map((option) => {
-    return (
-      <RecurrenceOptionButton
-        key={option.value}
-        label={option.label}
-        onPress={() => onSelectRecurrence(option.value)}
-        selected={recurrenceType === option.value}
-        variant="primary"
-      />
-    );
-  });
-
-  const customRecurrenceUnitButtons = customRecurrenceUnitOptions.map(
+  const quickRecurrenceButtons = getQuickRecurrenceOptions(language).map(
     (option) => {
       return (
         <RecurrenceOptionButton
           key={option.value}
           label={option.label}
-          onPress={() => onChangeUnit(option.value)}
-          selected={customUnit === option.value}
-          variant="unit"
+          onPress={() => onSelectRecurrence(option.value)}
+          selected={recurrenceType === option.value}
+          variant="primary"
         />
       );
     }
   );
+
+  const customRecurrenceUnitButtons = getCustomRecurrenceUnitOptions(
+    language
+  ).map((option) => {
+    return (
+      <RecurrenceOptionButton
+        key={option.value}
+        label={option.label}
+        onPress={() => onChangeUnit(option.value)}
+        selected={customUnit === option.value}
+        variant="unit"
+      />
+    );
+  });
 
   const weekdaySelector = showsWeekdaySelector ? (
     <WeekdaySelector
@@ -138,11 +144,11 @@ export function RecurrenceSection({
     <View style={styles.quickRecurrenceContent}>
       <View style={styles.customRecurrenceControlGroup}>
         <AppText style={styles.subFieldLabel} variant="body2">
-          반복 간격
+          {t("scheduleForm.recurrence.intervalLabel")}
         </AppText>
         <View style={styles.customRecurrenceControls}>
           <TextInput
-            accessibilityLabel="간격값"
+            accessibilityLabel={t("scheduleForm.recurrence.intervalA11y")}
             keyboardType="number-pad"
             onBlur={() => setIsCustomIntervalFocused(false)}
             onChangeText={onChangeIntervalValue}
@@ -175,19 +181,19 @@ export function RecurrenceSection({
   return (
     <View style={styles.field}>
       <AppText style={styles.fieldLabel} variant="body2">
-        반복
+        {t("scheduleForm.sections.recurrence")}
       </AppText>
 
       <View style={styles.recurrenceSettingsStack}>
         <View style={styles.recurrenceModeTabs}>
           <RecurrenceModeTabButton
-            label="기본 설정"
+            label={t("scheduleForm.recurrence.basicTab")}
             onPress={onCloseCustom}
             selected={!isCustomSelected}
           />
 
           <RecurrenceModeTabButton
-            label="직접 설정"
+            label={t("scheduleForm.recurrence.customTab")}
             onPress={onOpenCustom}
             selected={isCustomSelected}
           />
@@ -200,7 +206,7 @@ export function RecurrenceSection({
             <View style={styles.quickRecurrenceGrid}>
               {quickRecurrenceButtons}
               <RecurrenceOptionButton
-                label="한 번"
+                label={t("scheduleForm.recurrence.once")}
                 onPress={() => onSelectRecurrence("once")}
                 selected={isOnceSelected}
                 variant="primary"
@@ -219,8 +225,12 @@ export function ColorPickerSection({
   selectedColorKey,
   onSelectColorKey,
 }: ColorPickerSectionProps): React.JSX.Element {
-  const colorOptions = recurringItemColorOptions.map((option) => ({
-    accessibilityHint: `${option.label} 일정 색상으로 설정해요.`,
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
+  const colorOptions = getFormColorOptions(language).map((option) => ({
+    accessibilityHint: t("scheduleForm.color.optionHint", {
+      color: option.label,
+    }),
     label: option.label,
     leading: (
       <View
@@ -236,11 +246,13 @@ export function ColorPickerSection({
   return (
     <View style={styles.field}>
       <AppText style={styles.fieldLabel} variant="body2">
-        색상
+        {t("scheduleForm.fields.color")}
       </AppText>
       <AppSelectMenu
-        accessibilityHint="일정 색상 선택 메뉴를 열어요."
-        accessibilityLabel={`일정 색상: ${selectedOption.label}`}
+        accessibilityHint={t("scheduleForm.color.menuHint")}
+        accessibilityLabel={t("scheduleForm.color.menuLabel", {
+          color: selectedOption.label,
+        })}
         options={colorOptions}
         value={selectedOption.value}
         onChange={onSelectColorKey}
@@ -337,8 +349,10 @@ function WeekdaySelector({
   selectedDays,
   onToggle,
 }: WeekdaySelectorProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const selectedWeekdaySet = new Set(selectedDays);
-  const weekdayButtons = weekdayOptions.map((weekday) => {
+  const weekdayButtons = getWeekdayOptions(language).map((weekday) => {
     return (
       <WeekdayChipButton
         isSelected={selectedWeekdaySet.has(weekday.value)}
@@ -352,7 +366,7 @@ function WeekdaySelector({
   return (
     <View style={styles.field}>
       <AppText style={styles.subFieldLabel} variant="body2">
-        반복할 요일
+        {t("scheduleForm.recurrence.weekdayLabel")}
       </AppText>
       <View style={styles.weekdayGroup}>{weekdayButtons}</View>
       {errorMessage ? (
@@ -400,10 +414,12 @@ export function NotificationSection({
   enabled,
   onToggle,
 }: NotificationSectionProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.optionToggleRow}>
       <AppText style={styles.optionToggleLabel} variant="body2">
-        알림 사용
+        {t("scheduleForm.fields.notificationsEnabled")}
       </AppText>
       <Switch
         onValueChange={onToggle}
@@ -429,6 +445,8 @@ export function AdvancedOptionsSection({
   recurrenceType,
   onSelectAnchorType,
 }: AdvancedOptionsSectionProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const { isCompletionBasedSwitchEnabled } = getAdvancedOptionsState({
     recurrenceType,
   });
@@ -445,7 +463,10 @@ export function AdvancedOptionsSection({
   };
 
   const handlePressInfo = (): void => {
-    Alert.alert("완료일 기준", getCompletionBasedInfoText());
+    Alert.alert(
+      t("scheduleForm.completionBased.title"),
+      getCompletionBasedInfoText(language)
+    );
   };
 
   return (
@@ -453,11 +474,11 @@ export function AdvancedOptionsSection({
       <View style={styles.optionToggleRow}>
         <View style={styles.optionToggleLabelGroup}>
           <AppText style={styles.optionToggleLabel} variant="body2">
-            완료일 기준
+            {t("scheduleForm.completionBased.title")}
           </AppText>
           <Pressable
-            accessibilityHint="완료일 기준 설명을 확인해요."
-            accessibilityLabel="완료일 기준 설명"
+            accessibilityHint={t("scheduleForm.completionBased.infoHint")}
+            accessibilityLabel={t("scheduleForm.completionBased.infoLabel")}
             accessibilityRole="button"
             hitSlop={8}
             onPress={handlePressInfo}
@@ -512,6 +533,8 @@ export function IosPickerModal({
   onClose,
   onConfirm,
 }: IosPickerModalProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Modal
       animationType="fade"
@@ -531,7 +554,7 @@ export function IosPickerModal({
               ]}
             >
               <AppText style={styles.pickerModalCancelText} variant="body2">
-                취소
+                {t("scheduleForm.actions.cancel")}
               </AppText>
             </Pressable>
             <AppText style={styles.pickerModalTitle} variant="body2">
@@ -546,7 +569,7 @@ export function IosPickerModal({
               ]}
             >
               <AppText style={styles.pickerModalConfirmText} variant="body2">
-                확인
+                {t("scheduleForm.actions.confirm")}
               </AppText>
             </Pressable>
           </View>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
@@ -16,6 +17,7 @@ import { getRecurringItemById } from "~/entities/schedule/api";
 import { archiveSchedule } from "~/features/archive-schedule";
 import { createSchedule } from "~/features/create-schedule";
 import { updateSchedule } from "~/features/update-schedule";
+import { useAppLanguage } from "~/shared/i18n";
 
 import { type ScheduleFormScreenModel } from "./schedule-form-contracts";
 import {
@@ -51,6 +53,8 @@ export function useScheduleFormScreenController({
   itemId,
   returnTo,
 }: UseScheduleFormScreenControllerParams): ScheduleFormScreenModel {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
   const { isAuthenticated, isLoading, profile, user } = useSession();
@@ -91,9 +95,10 @@ export function useScheduleFormScreenController({
     () =>
       createRecurringItemFormSchema({
         isEditMode,
+        language,
         todayLocalDate,
       }),
-    [isEditMode, todayLocalDate]
+    [isEditMode, language, todayLocalDate]
   );
 
   const {
@@ -471,7 +476,7 @@ export function useScheduleFormScreenController({
     void handleSubmit(handleValidSubmit, () => {
       setRequestState((current) => ({
         ...current,
-        screenError: "입력한 내용을 확인해 주세요.",
+        screenError: t("scheduleForm.error.checkInput"),
       }));
     })();
   }
@@ -481,19 +486,23 @@ export function useScheduleFormScreenController({
       return;
     }
 
-    Alert.alert("일정 삭제", "이 일정을 삭제할까요?", [
-      {
-        style: "cancel",
-        text: "취소",
-      },
-      {
-        style: "destructive",
-        text: "삭제",
-        onPress: () => {
-          void handleDeleteConfirm(itemId, user.id);
+    Alert.alert(
+      t("scheduleForm.deleteAlert.title"),
+      t("scheduleForm.deleteAlert.message"),
+      [
+        {
+          style: "cancel",
+          text: t("scheduleForm.deleteAlert.cancel"),
         },
-      },
-    ]);
+        {
+          style: "destructive",
+          text: t("scheduleForm.deleteAlert.confirm"),
+          onPress: () => {
+            void handleDeleteConfirm(itemId, user.id);
+          },
+        },
+      ]
+    );
   }
 
   function handleToggleNotifications(value: boolean): void {
@@ -504,7 +513,10 @@ export function useScheduleFormScreenController({
     values: RecurringItemFormValues
   ): Promise<void> {
     if (!profile || !user) {
-      Alert.alert("저장 불가", "세션 정보를 먼저 확인해주세요.");
+      Alert.alert(
+        t("scheduleForm.saveUnavailable.title"),
+        t("scheduleForm.saveUnavailable.message")
+      );
       return;
     }
 
@@ -601,7 +613,7 @@ export function useScheduleFormScreenController({
       setRequestState((current) => ({
         ...current,
         isBootstrapping: false,
-        screenError: "수정할 항목을 불러올 수 없습니다.",
+        screenError: t("scheduleForm.error.editLoadFailed"),
       }));
       return;
     }
@@ -653,6 +665,7 @@ export function useScheduleFormScreenController({
     itemId,
     profile,
     reset,
+    t,
     todayLocalDate,
     user,
   ]);

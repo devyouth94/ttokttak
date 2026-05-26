@@ -48,6 +48,10 @@ describe("app i18n resources", () => {
     expect(i18n.t("scheduleDetail.history.title")).toBe("Recent history");
     expect(i18n.t("calendar.headerTitle")).toBe("Calendar");
     expect(i18n.t("calendar.emptyTitle")).toBe("No items on this date");
+    expect(i18n.t("scheduleForm.fields.color")).toBe("Item color");
+    expect(i18n.t("scheduleForm.fields.endDate")).toBe("End date");
+    expect(i18n.t("scheduleForm.recurrence.once")).toBe("Once");
+    expect(i18n.t("scheduleForm.actions.save")).toBe("Save");
   });
 
   it("기존 한국어 로그인과 shell 문구를 유지한다", async () => {
@@ -73,5 +77,8 @@ describe("app i18n resources", () => {
     expect(i18n.t("scheduleDetail.summary.itemColor")).toBe("색상");
     expect(i18n.t("scheduleDetail.history.title")).toBe("최근 히스토리");
     expect(i18n.t("calendar.headerTitle")).toBe("캘린더");
+    expect(i18n.t("scheduleForm.fields.color")).toBe("색상");
+    expect(i18n.t("scheduleForm.fields.endDate")).toBe("종료일");
+    expect(i18n.t("scheduleForm.actions.save")).toBe("저장");
   });
 });

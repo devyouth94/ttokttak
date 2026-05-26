@@ -1,8 +1,15 @@
 import {
+  getCompletionBasedInfoText,
+  getCustomRecurrenceUnitOptions,
   getFirstReminderHelperText,
+  getFormColorOptions,
   getIosPickerChangeHandler,
+  getQuickRecurrenceOptions,
+  getRecurringItemFormDisplayValues,
   getRecurringItemFormEndDateControlState,
   getRecurringItemFormFirstErrorTarget,
+  getScheduleFormScreenTitle,
+  getWeekdayOptions,
   recurringItemColorOptions,
 } from "./schedule-form-screen-model";
 
@@ -50,6 +57,38 @@ describe("recurring item form first reminder helper", () => {
       })
     ).toBe("첫 알림일은 5월 4일 월요일입니다.");
   });
+
+  it("English 모드에서는 첫 알림일 보조 문구와 날짜/시간 표시를 English로 만든다", () => {
+    expect(
+      getFirstReminderHelperText(
+        {
+          intervalValue: "",
+          recurrenceType: "weekly",
+          startDateLocal: "2026-04-22",
+          weekdayMask: [5],
+        },
+        "en"
+      )
+    ).toBe("First reminder is Friday, Apr 24.");
+
+    expect(
+      getRecurringItemFormDisplayValues(
+        {
+          endDateLocal: "2026-05-10",
+          intervalValue: "",
+          recurrenceType: "daily",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-22",
+          weekdayMask: [],
+        },
+        "en"
+      )
+    ).toMatchObject({
+      endDateDisplayValue: "May 10, 2026",
+      reminderTimeDisplayValue: "9:00 AM",
+      startDateDisplayValue: "Apr 22, 2026",
+    });
+  });
 });
 
 describe("recurring item form color options", () => {
@@ -67,6 +106,38 @@ describe("recurring item form color options", () => {
       { label: "파랑", value: "blue" },
       { label: "남색", value: "indigo" },
       { label: "보라", value: "purple" },
+    ]);
+  });
+
+  it("English 모드에서는 일정 색상과 반복 선택지를 English 라벨로 제공한다", () => {
+    expect(
+      getFormColorOptions("en").map((option) => ({
+        label: option.label,
+        value: option.value,
+      }))
+    ).toEqual([
+      { label: "Red", value: "red" },
+      { label: "Orange", value: "orange" },
+      { label: "Yellow", value: "yellow" },
+      { label: "Green", value: "green" },
+      { label: "Blue", value: "blue" },
+      { label: "Indigo", value: "indigo" },
+      { label: "Purple", value: "purple" },
+    ]);
+    expect(
+      getQuickRecurrenceOptions("en").map((option) => option.label)
+    ).toEqual(["Daily", "Weekly", "Monthly"]);
+    expect(
+      getCustomRecurrenceUnitOptions("en").map((option) => option.label)
+    ).toEqual(["days", "weeks", "months"]);
+    expect(getWeekdayOptions("en").map((option) => option.label)).toEqual([
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
     ]);
   });
 });
@@ -109,6 +180,32 @@ describe("recurring item form end date display", () => {
       isEnabled: true,
       isVisible: true,
     });
+  });
+
+  it("English 모드에서는 종료일 control 날짜 값을 English로 보여준다", () => {
+    expect(
+      getRecurringItemFormEndDateControlState(
+        {
+          endDateLocal: "2026-05-10",
+          recurrenceType: "daily",
+        },
+        "en"
+      )
+    ).toEqual({
+      displayValue: "May 10, 2026",
+      isEnabled: true,
+      isVisible: true,
+    });
+  });
+});
+
+describe("recurring item form screen copy", () => {
+  it("English 모드에서는 화면 제목과 완료일 기준 설명을 English로 제공한다", () => {
+    expect(getScheduleFormScreenTitle(false, "en")).toBe("Add item");
+    expect(getScheduleFormScreenTitle(true, "en")).toBe("Edit item");
+    expect(getCompletionBasedInfoText("en")).toBe(
+      "Recalculates the next item from the date you complete it. Disabled for once and weekly settings."
+    );
   });
 });
 
