@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { Redirect, Tabs, usePathname } from "expo-router";
 
@@ -10,6 +11,7 @@ import { colors } from "~/shared/ui/tokens";
 
 export default function TabsLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useSession();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const showBottomNav = shouldShowMainBottomNav(pathname);
 
@@ -31,10 +33,19 @@ export default function TabsLayout(): React.JSX.Element {
       }}
       tabBar={(props) => <MainBottomNav {...props} isVisible={showBottomNav} />}
     >
-      <Tabs.Screen name="home" options={{ title: "홈" }} />
-      <Tabs.Screen name="schedule" options={{ title: "목록" }} />
-      <Tabs.Screen name="calendar" options={{ title: "캘린더" }} />
-      <Tabs.Screen name="settings" options={{ title: "설정" }} />
+      <Tabs.Screen name="home" options={{ title: t("navigation.tabs.home") }} />
+      <Tabs.Screen
+        name="schedule"
+        options={{ title: t("navigation.tabs.schedule") }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{ title: t("navigation.tabs.calendar") }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{ title: t("navigation.tabs.settings") }}
+      />
     </Tabs>
   );
 }

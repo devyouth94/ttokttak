@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Linking,
@@ -27,6 +28,8 @@ export function LoginScreenContent({
   onApplePress,
   onGooglePress,
 }: LoginScreenContentProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const legalSuffix = t("login.legalSuffix");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export function LoginScreenContent({
       await onGooglePress();
     } catch (error) {
       Alert.alert(
-        "Google 로그인 실패",
+        t("login.googleSignInErrorTitle"),
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -59,7 +62,7 @@ export function LoginScreenContent({
       await onApplePress();
     } catch (error) {
       Alert.alert(
-        "Apple 로그인 실패",
+        t("login.appleSignInErrorTitle"),
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -70,8 +73,8 @@ export function LoginScreenContent({
       await Linking.openURL(PRIVACY_POLICY_URL);
     } catch {
       Alert.alert(
-        "개인정보처리방침 열기 실패",
-        "개인정보처리방침을 열 수 없습니다."
+        t("login.privacyOpenErrorTitle"),
+        t("login.privacyOpenErrorMessage")
       );
     }
   };
@@ -80,7 +83,10 @@ export function LoginScreenContent({
     try {
       await Linking.openURL(TERMS_OF_SERVICE_URL);
     } catch {
-      Alert.alert("이용약관 열기 실패", "이용약관을 열 수 없습니다.");
+      Alert.alert(
+        t("login.termsOpenErrorTitle"),
+        t("login.termsOpenErrorMessage")
+      );
     }
   };
 
@@ -93,13 +99,13 @@ export function LoginScreenContent({
         <View style={styles.content}>
           <View style={styles.header}>
             <AppLogoIcon size={48} />
-            <AppText style={styles.brand}>똑딱</AppText>
+            <AppText style={styles.brand}>{t("app.name")}</AppText>
           </View>
 
           <View style={styles.loginArea}>
             <View style={styles.actions}>
               <Pressable
-                accessibilityHint="Google 계정으로 로그인"
+                accessibilityHint={t("login.googleHint")}
                 accessibilityRole="button"
                 disabled={!isConfigured}
                 onPress={handleGooglePress}
@@ -112,13 +118,13 @@ export function LoginScreenContent({
               >
                 <GoogleLogoIcon />
                 <AppText style={styles.googleButtonText}>
-                  Google로 로그인
+                  {t("login.googleButton")}
                 </AppText>
               </Pressable>
 
               {isAppleAvailable ? (
                 <Pressable
-                  accessibilityHint="Apple 계정으로 로그인"
+                  accessibilityHint={t("login.appleHint")}
                   accessibilityRole="button"
                   disabled={!isConfigured}
                   onPress={handleApplePress}
@@ -131,14 +137,16 @@ export function LoginScreenContent({
                 >
                   <AppleLogoIcon size={17} />
                   <AppText style={styles.appleButtonText}>
-                    Apple로 로그인
+                    {t("login.appleButton")}
                   </AppText>
                 </Pressable>
               ) : null}
             </View>
 
             <View style={styles.legalRow}>
-              <AppText style={styles.legalText}>로그인하면</AppText>
+              <AppText style={styles.legalText}>
+                {t("login.legalPrefix")}
+              </AppText>
               <Pressable
                 accessibilityRole="link"
                 hitSlop={8}
@@ -151,10 +159,10 @@ export function LoginScreenContent({
                 ]}
               >
                 <AppText style={[styles.legalText, styles.legalLink]}>
-                  이용약관
+                  {t("login.legalTerms")}
                 </AppText>
               </Pressable>
-              <AppText style={styles.legalText}>및</AppText>
+              <AppText style={styles.legalText}>{t("login.legalAnd")}</AppText>
               <Pressable
                 accessibilityRole="link"
                 hitSlop={8}
@@ -167,17 +175,17 @@ export function LoginScreenContent({
                 ]}
               >
                 <AppText style={[styles.legalText, styles.legalLink]}>
-                  개인정보처리방침
+                  {t("login.legalPrivacy")}
                 </AppText>
               </Pressable>
-              <AppText style={styles.legalText}>에 동의하게 됩니다.</AppText>
+              {legalSuffix ? (
+                <AppText style={styles.legalText}>{legalSuffix}</AppText>
+              ) : null}
             </View>
           </View>
 
           {!isConfigured ? (
-            <AppText style={styles.notice}>
-              로그인 연결을 위해 Supabase 설정이 먼저 필요합니다.
-            </AppText>
+            <AppText style={styles.notice}>{t("login.noticeSupabase")}</AppText>
           ) : null}
         </View>
       </View>

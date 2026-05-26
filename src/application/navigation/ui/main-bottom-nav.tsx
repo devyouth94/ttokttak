@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { router, usePathname } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -79,6 +80,7 @@ export function MainBottomNav({
   state,
 }: MainBottomNavProps): React.JSX.Element | null {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const routes = state.routes.filter(isMainTabRoute);
 
   if (!isVisible) {
@@ -129,8 +131,8 @@ export function MainBottomNav({
         })}
       </View>
       <Pressable
-        accessibilityHint="일정 만들기 화면으로 이동해요."
-        accessibilityLabel="일정 추가"
+        accessibilityHint={t("navigation.createItemHint")}
+        accessibilityLabel={t("navigation.createItemLabel")}
         accessibilityRole="button"
         onPress={() => {
           router.push({

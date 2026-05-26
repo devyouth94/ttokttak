@@ -31,6 +31,16 @@ describe("route shell", () => {
     expect(rootLayout).not.toContain("NotificationProvider");
   });
 
+  it("메인 탭 shell 제목은 앱 표시 언어 리소스를 사용한다", () => {
+    const tabsLayout = readWorkspaceFile("app/(tabs)/_layout.tsx");
+
+    expect(tabsLayout).toContain("useTranslation()");
+    expect(tabsLayout).toContain('t("navigation.tabs.home")');
+    expect(tabsLayout).toContain('t("navigation.tabs.schedule")');
+    expect(tabsLayout).toContain('t("navigation.tabs.calendar")');
+    expect(tabsLayout).toContain('t("navigation.tabs.settings")');
+  });
+
   it("설정 route는 settings screen만 연결한다", () => {
     const settingsRoute = readWorkspaceFile("app/(tabs)/settings/index.tsx");
 
