@@ -14,6 +14,7 @@ import {
   syncLocalReminderNotifications,
 } from "~/features/sync-local-notifications";
 import { Sentry } from "~/shared/config/sentry";
+import { useAppLanguage } from "~/shared/i18n";
 import {
   ensureAndroidLocalNotificationChannel,
   getNotificationPermissionState,
@@ -41,6 +42,7 @@ export function LocalNotificationProvider({
   timezone,
   userId,
 }: LocalNotificationProviderProps): React.JSX.Element {
+  const { language } = useAppLanguage();
   const [permission, setPermission] = useState<NotificationPermissionState>(
     initialPermissionState
   );
@@ -114,6 +116,7 @@ export function LocalNotificationProvider({
       if (nextState === "active") {
         void refreshPermission();
         void notificationSyncLifecycle.syncAfterAppForegrounded({
+          language,
           timezone,
           userId,
         });
@@ -123,21 +126,29 @@ export function LocalNotificationProvider({
     return () => {
       subscription.remove();
     };
-  }, [notificationSyncLifecycle, refreshPermission, timezone, userId]);
+  }, [
+    language,
+    notificationSyncLifecycle,
+    refreshPermission,
+    timezone,
+    userId,
+  ]);
 
   useEffect(() => {
     void notificationSyncLifecycle.syncAfterSessionRestored({
+      language,
       timezone,
       userId,
     });
-  }, [notificationSyncLifecycle, timezone, userId]);
+  }, [language, notificationSyncLifecycle, timezone, userId]);
 
   useEffect(() => {
     void notificationSyncLifecycle.flushPendingNotificationTapSync({
+      language,
       timezone,
       userId,
     });
-  }, [notificationSyncLifecycle, timezone, userId]);
+  }, [language, notificationSyncLifecycle, timezone, userId]);
 
   const syncAfterMutation = useCallback(
     async ({
@@ -148,8 +159,20 @@ export function LocalNotificationProvider({
       scope: NotificationSyncScope;
     }): Promise<void> => {
       await notificationSyncLifecycle.syncAfterMutation({
+        language,
         reason,
         scope,
+        timezone,
+        userId,
+      });
+    },
+    [language, notificationSyncLifecycle, timezone, userId]
+  );
+
+  const syncAfterAppLanguageChanged = useCallback(
+    async (nextLanguage: typeof language): Promise<void> => {
+      await notificationSyncLifecycle.syncAfterAppLanguageChanged({
+        language: nextLanguage,
         timezone,
         userId,
       });
@@ -159,10 +182,11 @@ export function LocalNotificationProvider({
 
   const syncAfterNotificationTap = useCallback(async (): Promise<void> => {
     await notificationSyncLifecycle.syncAfterNotificationTapped({
+      language,
       timezone,
       userId,
     });
-  }, [notificationSyncLifecycle, timezone, userId]);
+  }, [language, notificationSyncLifecycle, timezone, userId]);
 
   const value: NotificationContextValue = {
     isPermissionLoading,
@@ -171,6 +195,7 @@ export function LocalNotificationProvider({
     permission,
     refreshPermission,
     requestPermission,
+    syncAfterAppLanguageChanged,
     syncAfterMutation,
     syncAfterNotificationTap,
   };

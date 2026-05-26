@@ -1,5 +1,6 @@
 export type NotificationSyncReason =
   | "app-foregrounded"
+  | "app-language-changed"
   | "notification-tapped"
   | "session-restored"
   | "item-archived"

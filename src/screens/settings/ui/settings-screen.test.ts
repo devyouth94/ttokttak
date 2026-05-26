@@ -27,6 +27,18 @@ describe("SettingsScreen 앱 표시 언어", () => {
     expect(settingsScreen).toContain("handleChangeAppLanguage(nextLanguage)");
   });
 
+  it("앱 표시 언어 저장 성공 뒤 현재 기기의 로컬 알림을 재동기화한다", () => {
+    const settingsScreen = readWorkspaceFile(
+      "src/screens/settings/ui/settings-screen.tsx"
+    );
+
+    expect(settingsScreen).toContain("syncAfterAppLanguageChanged");
+    expect(settingsScreen).toContain(
+      "await syncAfterAppLanguageChanged(nextLanguage)"
+    );
+    expect(settingsScreen).toContain('"알림 동기화 실패"');
+  });
+
   it("앱 표시 언어 저장 실패 시 실패 안내를 보여준다", () => {
     const settingsScreen = readWorkspaceFile(
       "src/screens/settings/ui/settings-screen.tsx"

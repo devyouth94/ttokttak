@@ -2,13 +2,16 @@ import type {
   NotificationSyncReason,
   NotificationSyncScope,
 } from "~/features/sync-local-notifications/model/notification-sync.types";
+import type { AppLanguage } from "~/shared/i18n";
 
 type LocalNotificationSyncContext = {
+  language?: AppLanguage;
   timezone: string;
   userId: string | null | undefined;
 };
 
 type SyncLocalReminderNotifications = (params: {
+  language?: AppLanguage;
   reason: NotificationSyncReason;
   scope: NotificationSyncScope;
   timezone: string;
@@ -35,6 +38,9 @@ type LocalNotificationSyncLifecycle = {
       reason: NotificationSyncReason;
       scope: NotificationSyncScope;
     }
+  ) => Promise<void>;
+  syncAfterAppLanguageChanged: (
+    context: LocalNotificationSyncContext
   ) => Promise<void>;
   syncAfterAppForegrounded: (
     context: LocalNotificationSyncContext
@@ -76,6 +82,7 @@ export function createLocalNotificationSyncLifecycle({
 
     try {
       await syncLocalReminderNotifications({
+        ...(context.language ? { language: context.language } : {}),
         reason,
         scope: { type: "all" },
         timezone: context.timezone,
@@ -87,6 +94,35 @@ export function createLocalNotificationSyncLifecycle({
           feature,
         },
       });
+    }
+  }
+
+  async function syncAllForUserAction(params: {
+    context: LocalNotificationSyncContext;
+    feature: string;
+    reason: NotificationSyncReason;
+  }): Promise<void> {
+    const { context, feature, reason } = params;
+
+    if (!context.userId) {
+      return;
+    }
+
+    try {
+      await syncLocalReminderNotifications({
+        ...(context.language ? { language: context.language } : {}),
+        reason,
+        scope: { type: "all" },
+        timezone: context.timezone,
+        userId: context.userId,
+      });
+    } catch (error) {
+      captureException(error, {
+        tags: {
+          feature,
+        },
+      });
+      throw error;
     }
   }
 
@@ -128,16 +164,25 @@ export function createLocalNotificationSyncLifecycle({
       await syncAfterNotificationTapped(context);
     },
 
-    async syncAfterMutation({ reason, scope, timezone, userId }) {
+    async syncAfterMutation({ language, reason, scope, timezone, userId }) {
       if (!userId) {
         return;
       }
 
       await syncLocalReminderNotifications({
+        ...(language ? { language } : {}),
         reason,
         scope,
         timezone,
         userId,
+      });
+    },
+
+    async syncAfterAppLanguageChanged(context) {
+      await syncAllForUserAction({
+        context,
+        feature: "local-notification-language-sync",
+        reason: "app-language-changed",
       });
     },
 
@@ -151,7 +196,7 @@ export function createLocalNotificationSyncLifecycle({
 
     syncAfterNotificationTapped,
 
-    async syncAfterSessionRestored({ timezone, userId }) {
+    async syncAfterSessionRestored({ language, timezone, userId }) {
       if (!userId) {
         if (lastObservedUserId || !hasCheckedSignedOutSessionCleanup) {
           hasCheckedSignedOutSessionCleanup = true;
@@ -170,7 +215,7 @@ export function createLocalNotificationSyncLifecycle({
 
       lastObservedUserId = userId;
 
-      const syncKey = `${userId}:${timezone}`;
+      const syncKey = `${userId}:${timezone}:${language ?? ""}`;
 
       if (lastSessionSyncKey === syncKey) {
         return;
@@ -180,6 +225,7 @@ export function createLocalNotificationSyncLifecycle({
 
       await syncAllSafely({
         context: {
+          ...(language ? { language } : {}),
           timezone,
           userId,
         },

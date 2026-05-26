@@ -113,6 +113,35 @@ describe("syncLocalReminderNotifications", () => {
     });
   });
 
+  it("English 앱 표시 언어로 현재 기기 로컬 알림 본문을 예약한다", async () => {
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        id: "item-1",
+        recurrenceType: "once",
+        reminderTimeLocal: "21:00",
+        startDateLocal: "2026-04-21",
+        title: "약 먹기",
+      }),
+    ]);
+
+    await syncLocalReminderNotifications({
+      language: "en",
+      reason: "app-language-changed",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          body: "9:00 PM",
+          title: "약 먹기",
+        }),
+      })
+    );
+  });
+
   it("기본 30일 범위 안의 예정 알림을 예약한다", async () => {
     jest.mocked(listRecurringItems).mockResolvedValue([
       createRecurringItem({
@@ -344,10 +373,12 @@ describe("syncLocalReminderNotifications", () => {
       .mocked(Notifications.getAllScheduledNotificationsAsync)
       .mockResolvedValue([
         createScheduledNotificationRequest({
+          body: "오전 9:00",
           identifier:
             "ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z",
           itemId: "item-1",
           scheduledAtUtc: "2026-04-21T00:00:00.000Z",
+          title: "약 먹기",
         }),
       ]);
     jest.mocked(listRecurringItems).mockResolvedValue([
@@ -372,6 +403,51 @@ describe("syncLocalReminderNotifications", () => {
     expect(
       Notifications.cancelScheduledNotificationAsync
     ).not.toHaveBeenCalled();
+  });
+
+  it("같은 identifier라도 본문이 바뀌면 기존 알림을 취소하고 다시 예약한다", async () => {
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([
+        createScheduledNotificationRequest({
+          body: "오전 9:00",
+          identifier:
+            "ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z",
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-21T00:00:00.000Z",
+          title: "약 먹기",
+        }),
+      ]);
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        id: "item-1",
+        recurrenceType: "once",
+        startDateLocal: "2026-04-21",
+        title: "약 먹기",
+      }),
+    ]);
+
+    const result = await syncLocalReminderNotifications({
+      language: "en",
+      reason: "app-language-changed",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.scheduledCount).toBe(1);
+    expect(result.cancelledCount).toBe(1);
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+      "ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z"
+    );
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          body: "9:00 AM",
+          title: "약 먹기",
+        }),
+      })
+    );
   });
 });
 
@@ -528,13 +604,15 @@ describe("cancelAllTtokttakLocalReminderNotifications", () => {
 });
 
 function createScheduledNotificationRequest(params: {
+  body?: string | null;
   identifier: string;
   itemId: string;
   scheduledAtUtc: string;
+  title?: string | null;
 }): Notifications.NotificationRequest {
   return {
     content: {
-      body: null,
+      body: params.body ?? null,
       categoryIdentifier: null,
       data: {
         notificationKind: "reminder",
@@ -542,7 +620,7 @@ function createScheduledNotificationRequest(params: {
       },
       sound: null,
       subtitle: null,
-      title: null,
+      title: params.title ?? null,
     },
     identifier: params.identifier,
     trigger: null,
@@ -550,13 +628,17 @@ function createScheduledNotificationRequest(params: {
 }
 
 function createExistingNotification(params: {
+  body?: string | null;
   itemId: string;
   scheduledAtUtc: string;
+  title?: string | null;
 }) {
   return {
+    body: params.body ?? "오후 9:00",
     identifier: `ttokttak:reminder:user-1:${params.itemId}:${params.scheduledAtUtc}`,
     itemId: params.itemId,
     scheduledAtUtc: params.scheduledAtUtc,
+    title: params.title ?? "약 먹기",
   };
 }
 

@@ -42,6 +42,45 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
+  it("세션 복원은 앱 표시 언어가 바뀌면 현재 언어로 다시 동기화한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterSessionRestored({
+      language: "ko",
+      timezone,
+      userId: "user-1",
+    });
+    await lifecycle.syncAfterSessionRestored({
+      language: "en",
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
+    expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(1, {
+      language: "ko",
+      reason: "session-restored",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+    expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(2, {
+      language: "en",
+      reason: "session-restored",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+  });
+
   it("앱 foreground 복귀 동기화 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
@@ -73,6 +112,82 @@ describe("createLocalNotificationSyncLifecycle", () => {
     expect(captureException).toHaveBeenCalledWith(syncError, {
       tags: {
         feature: "local-notification-foreground-sync",
+      },
+    });
+  });
+
+  it("앱 표시 언어 변경 뒤 현재 언어로 전체 기기 로컬 알림을 재동기화한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterAppLanguageChanged({
+      language: "en",
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
+      language: "en",
+      reason: "app-language-changed",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+  });
+
+  it("로그인 전처럼 user가 없으면 앱 표시 언어 변경 알림 재동기화를 건너뛴다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterAppLanguageChanged({
+      language: "en",
+      timezone,
+      userId: null,
+    });
+
+    expect(syncLocalReminderNotifications).not.toHaveBeenCalled();
+  });
+
+  it("앱 표시 언어 변경 뒤 알림 재동기화 실패는 기록하고 caller에게 돌려준다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncError = new Error("language sync failed");
+    const captureException = jest.fn();
+    const syncLocalReminderNotifications = jest.fn(async () => {
+      throw syncError;
+    });
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException,
+      syncLocalReminderNotifications,
+    });
+
+    await expect(
+      lifecycle.syncAfterAppLanguageChanged({
+        language: "en",
+        timezone,
+        userId: "user-1",
+      })
+    ).rejects.toThrow(syncError);
+
+    expect(captureException).toHaveBeenCalledWith(syncError, {
+      tags: {
+        feature: "local-notification-language-sync",
       },
     });
   });

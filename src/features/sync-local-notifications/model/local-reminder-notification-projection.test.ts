@@ -55,6 +55,30 @@ describe("createLocalReminderNotificationProjection", () => {
     expect(JSON.stringify(result)).not.toContain("복구 불가");
   });
 
+  it("English 앱 표시 언어에서는 제목은 유지하고 본문 시간만 English로 만든다", () => {
+    const result = createLocalReminderNotificationProjection({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          id: "item-1",
+          recurrenceType: "once",
+          reminderTimeLocal: "21:00",
+          startDateLocal: "2026-04-21",
+          title: "약 먹기",
+        }),
+      ],
+      language: "en",
+      now: new Date("2026-04-21T00:00:00.000Z"),
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(result.notifications[0]).toMatchObject({
+      body: "9:00 PM",
+      title: "약 먹기",
+    });
+  });
+
   it("30일 범위 밖이어도 반복 일정의 다음 occurrence 1개를 후보로 만든다", () => {
     const result = createLocalReminderNotificationProjection({
       completionLogs: [],

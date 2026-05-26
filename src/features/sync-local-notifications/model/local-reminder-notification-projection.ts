@@ -12,6 +12,7 @@ import {
   getNextOccurrence,
   getOccurrencesInRange,
 } from "~/entities/schedule";
+import type { AppLanguage } from "~/shared/i18n";
 import { createLocalReminderIdentifier } from "~/shared/lib/notifications/local-reminder-identifier";
 import {
   createLocalReminderPayload,
@@ -28,9 +29,11 @@ export type DesiredLocalReminderNotification = {
 };
 
 export type ExistingLocalReminderNotification = {
+  body: string | null;
   identifier: string;
   itemId: string;
   scheduledAtUtc: string;
+  title: string | null;
 };
 
 type LocalReminderNotificationProjection = {
@@ -87,14 +90,19 @@ function hasUnresolvedCompletionBasedOccurrence(params: {
 
 function toDesiredLocalReminderNotification(params: {
   item: RecurringItem;
+  language: AppLanguage;
   occurrence: DerivedOccurrence;
   timezone: string;
   userId: string;
 }): DesiredLocalReminderNotification {
-  const { item, occurrence, timezone, userId } = params;
+  const { item, language, occurrence, timezone, userId } = params;
 
   return {
-    body: formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone),
+    body: formatUtcTimeInTimezone(
+      occurrence.scheduledAtUtc,
+      timezone,
+      language
+    ),
     identifier: createLocalReminderIdentifier({
       itemId: item.id,
       scheduledAtUtc: occurrence.scheduledAtUtc,
@@ -141,13 +149,21 @@ function groupCompletionLogsByItemId(
 function createDesiredLocalReminderNotifications(params: {
   completionLogs: CompletionLog[];
   item: RecurringItem;
+  language: AppLanguage;
   rangeEndUtc: string;
   rangeStartUtc: string;
   timezone: string;
   userId: string;
 }) {
-  const { completionLogs, item, rangeEndUtc, rangeStartUtc, timezone, userId } =
-    params;
+  const {
+    completionLogs,
+    item,
+    language,
+    rangeEndUtc,
+    rangeStartUtc,
+    timezone,
+    userId,
+  } = params;
 
   if (!canScheduleItem(item)) {
     return [];
@@ -186,6 +202,7 @@ function createDesiredLocalReminderNotifications(params: {
     candidateOccurrences.map((occurrence) =>
       toDesiredLocalReminderNotification({
         item,
+        language,
         occurrence,
         timezone,
         userId,
@@ -197,11 +214,13 @@ function createDesiredLocalReminderNotifications(params: {
 export function createLocalReminderNotificationProjection(params: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
+  language?: AppLanguage;
   now: Date;
   timezone: string;
   userId: string;
 }): LocalReminderNotificationProjection {
   const { completionLogs, items, now, timezone, userId } = params;
+  const language = params.language ?? "ko";
   const rangeStartUtc = now.toISOString();
   const rangeEndUtc = addDays(now, 30).toISOString();
   const completionLogsByItem = groupCompletionLogsByItemId(completionLogs);
@@ -211,6 +230,7 @@ export function createLocalReminderNotificationProjection(params: {
       createDesiredLocalReminderNotifications({
         completionLogs: completionLogsByItem[item.id] ?? [],
         item,
+        language,
         rangeEndUtc,
         rangeStartUtc,
         timezone,

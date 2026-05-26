@@ -5,6 +5,7 @@ import type {
   NotificationSyncReason,
   NotificationSyncScope,
 } from "~/features/sync-local-notifications";
+import type { AppLanguage } from "~/shared/i18n";
 import type { NotificationPermissionState } from "~/shared/lib/notifications";
 
 export type NotificationContextValue = {
@@ -14,6 +15,7 @@ export type NotificationContextValue = {
   permission: NotificationPermissionState;
   refreshPermission: () => Promise<NotificationPermissionState>;
   requestPermission: () => Promise<NotificationPermissionState>;
+  syncAfterAppLanguageChanged: (language: AppLanguage) => Promise<void>;
   syncAfterMutation: (params: {
     reason: NotificationSyncReason;
     scope: NotificationSyncScope;

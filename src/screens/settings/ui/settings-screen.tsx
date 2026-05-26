@@ -238,6 +238,7 @@ export function SettingsScreen(): React.JSX.Element {
     openSettings,
     permission,
     requestPermission,
+    syncAfterAppLanguageChanged,
   } = useNotifications();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -391,6 +392,14 @@ export function SettingsScreen(): React.JSX.Element {
 
     try {
       await setAppLanguage(nextLanguage);
+      try {
+        await syncAfterAppLanguageChanged(nextLanguage);
+      } catch {
+        Alert.alert(
+          "알림 동기화 실패",
+          "앱 표시 언어는 변경됐지만 예약된 알림을 다시 맞출 수 없습니다. 앱을 다시 열면 알림을 다시 맞춥니다."
+        );
+      }
     } catch {
       Alert.alert(
         "언어 저장 실패",

@@ -11,6 +11,7 @@ import type {
   NotificationSyncReason,
   NotificationSyncScope,
 } from "~/features/sync-local-notifications/model/notification-sync.types";
+import type { AppLanguage } from "~/shared/i18n";
 import {
   cancelScheduledLocalNotification,
   getAllScheduledLocalNotifications,
@@ -25,6 +26,7 @@ const REMINDER_NOTIFICATION_CHANNEL_ID = "reminders";
 const MAX_PENDING_LOCAL_NOTIFICATIONS = 60;
 
 type LocalReminderNotificationSyncParams = {
+  language?: AppLanguage;
   reason: NotificationSyncReason;
   scope: NotificationSyncScope;
   timezone: string;
@@ -105,9 +107,29 @@ export function createLocalReminderNotificationSyncPlan(params: {
       (notification) => notification.identifier
     )
   );
+  const desiredNotificationsByIdentifier = new Map(
+    desiredNotificationsWithinLimit.map((notification) => [
+      notification.identifier,
+      notification,
+    ])
+  );
+  const hasSameContentAsDesiredNotification = (
+    notification: ExistingLocalReminderNotification
+  ): boolean => {
+    const desiredNotification = desiredNotificationsByIdentifier.get(
+      notification.identifier
+    );
+
+    return (
+      desiredNotification !== undefined &&
+      notification.body === desiredNotification.body &&
+      notification.title === desiredNotification.title
+    );
+  };
   const notificationsToCancel = scopedExistingNotifications.filter(
     (notification) =>
-      !desiredIdentifiersWithinLimit.has(notification.identifier)
+      !desiredIdentifiersWithinLimit.has(notification.identifier) ||
+      !hasSameContentAsDesiredNotification(notification)
   );
   const remainingPendingCount =
     pendingNotificationCount - notificationsToCancel.length;
@@ -115,11 +137,16 @@ export function createLocalReminderNotificationSyncPlan(params: {
     0,
     maxPendingLocalNotifications - remainingPendingCount
   );
-  const existingIdentifiers = new Set(
-    scopedExistingNotifications.map((notification) => notification.identifier)
+  const matchingExistingIdentifiers = new Set(
+    scopedExistingNotifications
+      .filter(hasSameContentAsDesiredNotification)
+      .map((notification) => notification.identifier)
   );
   const notificationsReadyToSchedule = desiredNotificationsWithinLimit
-    .filter((notification) => !existingIdentifiers.has(notification.identifier))
+    .filter(
+      (notification) =>
+        !matchingExistingIdentifiers.has(notification.identifier)
+    )
     .sort((left, right) =>
       left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
     );
@@ -148,9 +175,22 @@ function parseExistingLocalReminderNotifications(params: {
   const { scheduledNotificationRequests, userId } = params;
 
   return scheduledNotificationRequests
-    .map((notification) =>
-      parseLocalReminderIdentifier(notification.identifier, userId)
-    )
+    .map((notification) => {
+      const parsedIdentifier = parseLocalReminderIdentifier(
+        notification.identifier,
+        userId
+      );
+
+      if (parsedIdentifier === null) {
+        return null;
+      }
+
+      return {
+        ...parsedIdentifier,
+        body: notification.content.body,
+        title: notification.content.title,
+      };
+    })
     .filter((notification) => notification !== null);
 }
 
@@ -177,6 +217,7 @@ export async function syncLocalReminderNotifications(
   params: LocalReminderNotificationSyncParams
 ): Promise<LocalReminderNotificationSyncResult> {
   const { scope, timezone, userId } = params;
+  const language = params.language ?? "ko";
   const permission = await getNotificationPermissionState();
 
   if (permission.status !== "granted") {
@@ -208,6 +249,7 @@ export async function syncLocalReminderNotifications(
     createLocalReminderNotificationProjection({
       completionLogs,
       items,
+      language,
       timezone,
       userId,
       now,
