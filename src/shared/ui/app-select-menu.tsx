@@ -19,6 +19,7 @@ type AppSelectMenuProps<Value extends string> = {
   accessibilityHint: string;
   accessibilityLabel: string;
   align?: "start" | "center" | "end";
+  isDisabled?: boolean;
   options: AppSelectMenuOption<Value>[];
   value: Value;
   variant?: AppSelectMenuVariant;
@@ -29,6 +30,7 @@ export function AppSelectMenu<Value extends string>({
   accessibilityHint,
   accessibilityLabel,
   align = "start",
+  isDisabled = false,
   options,
   value,
   variant = "field",
@@ -42,7 +44,7 @@ export function AppSelectMenu<Value extends string>({
       onValueChange={(nextOption) => {
         const nextValue = getOptionValue(options, nextOption?.value);
 
-        if (nextValue) {
+        if (nextValue && !isDisabled) {
           onChange(nextValue);
         }
       }}
@@ -53,9 +55,11 @@ export function AppSelectMenu<Value extends string>({
           accessibilityHint={accessibilityHint}
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="button"
+          disabled={isDisabled}
           style={({ pressed }) => [
             styles.trigger,
             isCompact ? styles.compactTrigger : styles.fieldTrigger,
+            isDisabled ? styles.disabledTrigger : undefined,
             pressed
               ? isCompact
                 ? styles.compactPressed
@@ -170,6 +174,9 @@ const styles = StyleSheet.create({
   compactTriggerTextSlot: {
     flexShrink: 1,
     minWidth: 0,
+  },
+  disabledTrigger: {
+    opacity: 0.56,
   },
   fieldContent: {
     backgroundColor: colors.surface,

@@ -26,7 +26,12 @@ import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
 } from "~/features/settings";
+import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
 import { AppScreen } from "~/shared/ui/app-screen";
+import {
+  AppSelectMenu,
+  type AppSelectMenuOption,
+} from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
@@ -59,6 +64,26 @@ type SettingsValueRowProps = {
   title: string;
   value: string;
 };
+
+type SettingsControlRowProps = {
+  accessory: ReactNode;
+  description?: string;
+  isFirst?: boolean;
+  title: string;
+};
+
+const appLanguageOptions = [
+  {
+    accessibilityHint: "앱 표시 언어를 한국어로 설정해요.",
+    label: "한국어",
+    value: "ko",
+  },
+  {
+    accessibilityHint: "앱 표시 언어를 English로 설정해요.",
+    label: "English",
+    value: "en",
+  },
+] satisfies AppSelectMenuOption<AppLanguage>[];
 
 function SectionTitle({ title }: SectionTitleProps): React.JSX.Element {
   return (
@@ -125,6 +150,30 @@ function SettingsRow({
   );
 }
 
+function SettingsControlRow({
+  accessory,
+  description,
+  isFirst = false,
+  title,
+}: SettingsControlRowProps): React.JSX.Element {
+  return (
+    <View style={[styles.row, !isFirst ? styles.rowDivider : undefined]}>
+      <View style={styles.rowContent}>
+        <AppText style={styles.rowTitle} variant="body3">
+          {title}
+        </AppText>
+        {description ? (
+          <AppText style={styles.rowDescription} variant="body3">
+            {description}
+          </AppText>
+        ) : null}
+      </View>
+
+      <View style={styles.rowAccessory}>{accessory}</View>
+    </View>
+  );
+}
+
 function SettingsValueRow({
   isFirst = false,
   isPressable = false,
@@ -181,6 +230,8 @@ export function SettingsScreen(): React.JSX.Element {
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const { deleteAccount, profile, signOut, updateDisplayName, user } =
     useSession();
+  const { language: appLanguage, setLanguage: setAppLanguage } =
+    useAppLanguage();
   const {
     isPermissionLoading,
     isRequestingPermission,
@@ -190,6 +241,7 @@ export function SettingsScreen(): React.JSX.Element {
   } = useNotifications();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isSavingAppLanguage, setIsSavingAppLanguage] = useState(false);
   const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
   const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
@@ -328,6 +380,27 @@ export function SettingsScreen(): React.JSX.Element {
     );
   }
 
+  async function handleChangeAppLanguage(
+    nextLanguage: AppLanguage
+  ): Promise<void> {
+    if (isSavingAppLanguage || nextLanguage === appLanguage) {
+      return;
+    }
+
+    setIsSavingAppLanguage(true);
+
+    try {
+      await setAppLanguage(nextLanguage);
+    } catch {
+      Alert.alert(
+        "언어 저장 실패",
+        "앱 표시 언어를 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요."
+      );
+    } finally {
+      setIsSavingAppLanguage(false);
+    }
+  }
+
   async function handleOpenSystemSettings(): Promise<void> {
     try {
       await openSettings();
@@ -397,6 +470,34 @@ export function SettingsScreen(): React.JSX.Element {
             <SettingsValueRow title="이메일" value={email} />
           </SettingsSectionCard>
 
+          <SettingsSectionCard title="환경">
+            <SettingsControlRow
+              accessory={
+                <View style={styles.languageSelectAccessory}>
+                  {isSavingAppLanguage ? (
+                    <ActivityIndicator color={colors.textSoft} size="small" />
+                  ) : null}
+                  <AppSelectMenu
+                    accessibilityHint="현재 기기의 앱 표시 언어를 선택해요."
+                    accessibilityLabel="앱 표시 언어"
+                    align="end"
+                    isDisabled={isSavingAppLanguage}
+                    onChange={(nextLanguage) => {
+                      void handleChangeAppLanguage(nextLanguage);
+                    }}
+                    options={appLanguageOptions}
+                    value={appLanguage}
+                    variant="compact"
+                  />
+                </View>
+              }
+              description="현재 기기에만 저장됩니다."
+              isFirst
+              title="앱 표시 언어"
+            />
+            <SettingsValueRow title="시간대" value={timezone} />
+          </SettingsSectionCard>
+
           <SettingsSectionCard title="알림">
             <SettingsValueRow
               isFirst
@@ -438,8 +539,11 @@ export function SettingsScreen(): React.JSX.Element {
           </SettingsSectionCard>
 
           <SettingsSectionCard title="앱 정보">
-            <SettingsValueRow isFirst title="시간대" value={timezone} />
-            <SettingsValueRow title="앱 버전" value={`v${appVersion}`} />
+            <SettingsValueRow
+              isFirst
+              title="앱 버전"
+              value={`v${appVersion}`}
+            />
             <SettingsRow
               accessory={<ExternalLink color={colors.textSoft} size={16} />}
               isPressable
@@ -572,6 +676,11 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     zIndex: 10,
+  },
+  languageSelectAccessory: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
   },
   modalBackdrop: {
     alignItems: "center",
