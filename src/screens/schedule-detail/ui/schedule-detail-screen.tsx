@@ -8,7 +8,10 @@ import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import { useScheduleReadContext } from "~/application/schedule-read";
 import type { RecurringItemColorKey } from "~/entities/schedule";
-import { recurringItemColorOptionByKey } from "~/entities/schedule";
+import {
+  getRecurringItemColorLabel,
+  recurringItemColorOptionByKey,
+} from "~/entities/schedule";
 import { archiveSchedule } from "~/features/archive-schedule";
 import {
   useScheduleByIdQuery,
@@ -79,8 +82,10 @@ function DetailSummarySection({
   title: string;
 }): React.JSX.Element {
   const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
   const colorOption = recurringItemColorOptionByKey[colorKey];
+  const colorLabel = getRecurringItemColorLabel(colorKey, language);
   const notificationStatusLabel = notificationsEnabled
     ? t("scheduleDetail.summary.notificationEnabled")
     : t("scheduleDetail.summary.notificationDisabled");
@@ -133,7 +138,7 @@ function DetailSummarySection({
             />
           ))}
           <DetailSummaryColorRow
-            colorLabel={colorOption.label}
+            colorLabel={colorLabel}
             swatchColor={colorOption.swatchColor}
           />
         </View>
