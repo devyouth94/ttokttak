@@ -15,6 +15,7 @@ import {
   buildCalendarDaySummaries,
   clampVisibleMonth,
   createCalendarScreenState,
+  formatCalendarDayEntryCount,
   formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
@@ -132,6 +133,15 @@ describe("calendar-screen-model", () => {
     );
   });
 
+  it("English 모드에서는 월, 선택 날짜, 개수 라벨을 English로 만든다", () => {
+    expect(formatVisibleMonthTitle("2026-04", "en")).toBe("April 2026");
+    expect(formatSelectedDateSectionTitle("2026-04-16", "en")).toBe(
+      "Thursday, Apr 16"
+    );
+    expect(formatCalendarDayEntryCount(1, "en")).toBe("1 item");
+    expect(formatCalendarDayEntryCount(2, "en")).toBe("2 items");
+  });
+
   it("월 이동 버튼은 같은 상태 규칙으로 이전과 다음 달을 계산한다", () => {
     expect(shiftVisibleMonth("2026-01", -1)).toBe("2025-12");
     expect(shiftVisibleMonth("2026-12", 1)).toBe("2027-01");
@@ -208,7 +218,7 @@ describe("calendar-screen-model", () => {
           startDateLocal: "2026-04-12",
         }),
       ],
-      now: new Date("2026-04-13T00:30:00.000Z"),
+      now: new Date("2026-04-12T00:30:00.000Z"),
       timezone,
       visibleMonth: "2026-04",
     });
@@ -342,6 +352,63 @@ describe("calendar-screen-model", () => {
       "완료 일정",
       "건너뜀 일정",
       "예정 일정 B",
+    ]);
+  });
+
+  it("English 모드에서는 선택 날짜 entry 상태와 시간을 English로 표시한다", () => {
+    const entries = buildCalendarDayEntries({
+      completionLogs: [
+        createLog({
+          action: "completed",
+          id: "completed-log",
+          itemId: "item-completed",
+          scheduledAtUtc: "2026-04-12T00:00:00.000Z",
+        }),
+        createLog({
+          action: "skipped",
+          id: "skipped-log",
+          itemId: "item-skipped",
+          scheduledAtUtc: "2026-04-12T01:00:00.000Z",
+        }),
+      ],
+      items: [
+        createItem({
+          id: "item-completed",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-12",
+          title: "완료 일정",
+        }),
+        createItem({
+          id: "item-skipped",
+          reminderTimeLocal: "10:00",
+          startDateLocal: "2026-04-12",
+          title: "건너뜀 일정",
+        }),
+        createItem({
+          id: "item-overdue",
+          reminderTimeLocal: "08:00",
+          startDateLocal: "2026-04-12",
+          title: "지난 일정",
+        }),
+      ],
+      language: "en",
+      now: new Date("2026-04-13T00:30:00.000Z"),
+      selectedDate: "2026-04-12",
+      timezone,
+    });
+
+    expect(entries.map((entry) => entry.statusLabel)).toEqual([
+      "Overdue",
+      "Complete",
+      "Skip",
+    ]);
+    expect(formatCalendarDayEntryMetaLine(entries[1]!)).toBe(
+      "9:00 AM · Complete"
+    );
+    expect(entries.map((entry) => entry.title)).toEqual([
+      "지난 일정",
+      "완료 일정",
+      "건너뜀 일정",
     ]);
   });
 

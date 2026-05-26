@@ -41,6 +41,13 @@ describe("app i18n resources", () => {
     expect(i18n.t("home.feed.errorTitle")).toBe("Could not load items");
     expect(i18n.t("home.feed.sectionCount", { count: 1 })).toBe("1 item");
     expect(i18n.t("home.feed.sectionCount", { count: 2 })).toBe("2 items");
+    expect(i18n.t("scheduleList.headerTitle")).toBe("Items");
+    expect(i18n.t("scheduleList.sort.titleAsc")).toBe("Title");
+    expect(i18n.t("scheduleDetail.summary.itemColor")).toBe("Item color");
+    expect(i18n.t("scheduleDetail.summary.notification")).toBe("Notification");
+    expect(i18n.t("scheduleDetail.history.title")).toBe("Recent history");
+    expect(i18n.t("calendar.headerTitle")).toBe("Calendar");
+    expect(i18n.t("calendar.emptyTitle")).toBe("No items on this date");
   });
 
   it("기존 한국어 로그인과 shell 문구를 유지한다", async () => {
@@ -61,5 +68,10 @@ describe("app i18n resources", () => {
       "비타민 완료"
     );
     expect(i18n.t("home.feed.errorTitle")).toBe("일정을 불러오지 못했어요");
+    expect(i18n.t("scheduleList.headerTitle")).toBe("일정 목록");
+    expect(i18n.t("scheduleList.sort.titleAsc")).toBe("제목순");
+    expect(i18n.t("scheduleDetail.summary.itemColor")).toBe("색상");
+    expect(i18n.t("scheduleDetail.history.title")).toBe("최근 히스토리");
+    expect(i18n.t("calendar.headerTitle")).toBe("캘린더");
   });
 });

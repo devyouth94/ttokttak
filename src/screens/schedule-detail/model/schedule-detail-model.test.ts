@@ -396,4 +396,84 @@ describe("recurring item detail helpers", () => {
       value: "2026년 5월 1일",
     });
   });
+
+  it("English 모드에서는 상세 상태, 설정, 히스토리 라벨을 English 용어로 만든다", () => {
+    const item = createItem({
+      anchorType: "completion_based",
+      endDateLocal: "2026-05-10",
+      recurrenceType: "interval_days",
+      intervalValue: 2,
+      title: "영양제",
+    });
+    const viewModel = buildRecurringItemDetailViewModel({
+      completionLogs: [
+        createLog({
+          action: "skipped",
+          id: "log-1",
+          scheduledAtUtc: "2026-04-09T00:00:00.000Z",
+        }),
+      ],
+      item,
+      language: "en",
+      now: new Date("2026-04-10T03:00:00.000Z"),
+      timezone,
+    });
+
+    expect(viewModel.statusCard).toMatchObject({
+      dateLabel: "Apr 8",
+      metaLabel: "2 days overdue",
+      timeLabel: "9:00 AM",
+      title: "Overdue",
+    });
+    expect(viewModel.summary.title).toBe("영양제");
+    expect(viewModel.summary.notificationLabel).toBe("9:00 AM");
+    expect(viewModel.summary.recurrenceLabel).toBe("Every 2 days");
+    expect(viewModel.summary.settingBadges).toEqual([
+      { id: "start-date", label: "Start", value: "Apr 8, 2026" },
+      { id: "end-date", label: "End date", value: "May 10, 2026" },
+      {
+        id: "anchor-type",
+        label: "Schedule",
+        value: "Completion-based",
+      },
+    ]);
+    expect(viewModel.historyPreview[0]).toMatchObject({
+      statusLabel: "Skip",
+      timeLabel: "Apr 9 9:00 AM",
+    });
+  });
+
+  it("English 상세 진입 맥락 상태 카드는 action glossary를 따른다", () => {
+    const item = createItem();
+    const completionLogs = [
+      createLog({
+        action: "completed",
+        scheduledAtUtc: "2026-04-13T00:00:00.000Z",
+      }),
+    ];
+    const basisOccurrence = getItemDetailBasisOccurrence({
+      completionLogs,
+      item,
+      now: new Date("2026-04-14T03:00:00.000Z"),
+      primaryOccurrence: null,
+      scheduledAtUtc: "2026-04-13T00:00:00.000Z",
+      timezone,
+    });
+
+    if (!basisOccurrence) {
+      throw new Error("상세 진입 맥락 occurrence를 찾지 못했어요.");
+    }
+
+    expect(
+      buildOccurrenceStatusCard({
+        language: "en",
+        now: new Date("2026-04-14T03:00:00.000Z"),
+        occurrence: basisOccurrence,
+        timezone,
+      })
+    ).toMatchObject({
+      metaLabel: "Complete",
+      title: "Completed item",
+    });
+  });
 });

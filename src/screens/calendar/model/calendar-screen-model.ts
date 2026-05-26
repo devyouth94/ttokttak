@@ -1,5 +1,5 @@
 import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
-import { ko } from "date-fns/locale";
+import { enUS, ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
@@ -13,15 +13,39 @@ import {
   formatUtcTimeInTimezone,
   getItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
+import type { AppLanguage } from "~/shared/i18n";
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
-const calendarStatusLabelByStatus: Record<OccurrenceStatus, string> = {
-  completed: "완료",
-  overdue: "지남",
-  scheduled: "예정",
-  skipped: "건너뜀",
-};
+const calendarStatusLabelByStatus = {
+  en: {
+    completed: "Complete",
+    overdue: "Overdue",
+    scheduled: "Scheduled",
+    skipped: "Skip",
+  },
+  ko: {
+    completed: "완료",
+    overdue: "지남",
+    scheduled: "예정",
+    skipped: "건너뜀",
+  },
+} as const satisfies Record<AppLanguage, Record<OccurrenceStatus, string>>;
+
+const calendarLocaleByLanguage = {
+  en: enUS,
+  ko,
+} as const;
+
+const visibleMonthTitleFormatByLanguage = {
+  en: "MMMM yyyy",
+  ko: "yyyy년 M월",
+} as const satisfies Record<AppLanguage, string>;
+
+const selectedDateSectionTitleFormatByLanguage = {
+  en: "EEEE, MMM d",
+  ko: "M월 d일 EEEE",
+} as const satisfies Record<AppLanguage, string>;
 
 export type CalendarDaySummary = {
   localDate: string;
@@ -80,17 +104,140 @@ function createVisibleMonthDate(visibleMonth: string): Date {
   return parse(`${visibleMonth}-01`, "yyyy-MM-dd", new Date());
 }
 
-export function formatVisibleMonthTitle(visibleMonth: string): string {
-  return format(createVisibleMonthDate(visibleMonth), "yyyy년 M월", {
-    locale: ko,
-  });
+export function formatVisibleMonthTitle(
+  visibleMonth: string,
+  language: AppLanguage = "ko"
+): string {
+  return format(
+    createVisibleMonthDate(visibleMonth),
+    visibleMonthTitleFormatByLanguage[language],
+    {
+      locale: calendarLocaleByLanguage[language],
+    }
+  );
 }
 
-export function formatSelectedDateSectionTitle(selectedDate: string): string {
-  return format(parse(selectedDate, "yyyy-MM-dd", new Date()), "M월 d일 EEEE", {
-    locale: ko,
-  });
+export function formatSelectedDateSectionTitle(
+  selectedDate: string,
+  language: AppLanguage = "ko"
+): string {
+  return format(
+    parse(selectedDate, "yyyy-MM-dd", new Date()),
+    selectedDateSectionTitleFormatByLanguage[language],
+    {
+      locale: calendarLocaleByLanguage[language],
+    }
+  );
 }
+
+export function formatCalendarDayEntryCount(
+  count: number,
+  language: AppLanguage = "ko"
+): string {
+  if (language === "en") {
+    return count === 1 ? "1 item" : `${count} items`;
+  }
+
+  return `${count}개`;
+}
+
+export function getCalendarLocaleName(language: AppLanguage): string {
+  return language;
+}
+
+export const calendarLocaleConfigByLanguage = {
+  en: {
+    dayNames: [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ],
+    dayNamesShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    monthNames: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ],
+    monthNamesShort: [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ],
+    today: "Today",
+  },
+  ko: {
+    dayNames: [
+      "일요일",
+      "월요일",
+      "화요일",
+      "수요일",
+      "목요일",
+      "금요일",
+      "토요일",
+    ],
+    dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
+    monthNames: [
+      "1월",
+      "2월",
+      "3월",
+      "4월",
+      "5월",
+      "6월",
+      "7월",
+      "8월",
+      "9월",
+      "10월",
+      "11월",
+      "12월",
+    ],
+    monthNamesShort: [
+      "1월",
+      "2월",
+      "3월",
+      "4월",
+      "5월",
+      "6월",
+      "7월",
+      "8월",
+      "9월",
+      "10월",
+      "11월",
+      "12월",
+    ],
+    today: "오늘",
+  },
+} as const satisfies Record<
+  AppLanguage,
+  {
+    dayNames: string[];
+    dayNamesShort: string[];
+    monthNames: string[];
+    monthNamesShort: string[];
+    today: string;
+  }
+>;
 
 export function formatCalendarDayEntryMetaLine(
   entry: CalendarDayEntry
@@ -192,12 +339,14 @@ export function buildCalendarDaySummaries({
 export function buildCalendarDayEntries({
   completionLogs,
   items,
+  language = "ko",
   now,
   selectedDate,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
+  language?: AppLanguage;
   now: Date;
   selectedDate: string;
   timezone: string;
@@ -220,8 +369,12 @@ export function buildCalendarDayEntries({
       itemId: item.id,
       scheduledAtUtc: occurrence.scheduledAtUtc,
       status: occurrence.status,
-      statusLabel: calendarStatusLabelByStatus[occurrence.status],
-      timeLabel: formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone),
+      statusLabel: calendarStatusLabelByStatus[language][occurrence.status],
+      timeLabel: formatUtcTimeInTimezone(
+        occurrence.scheduledAtUtc,
+        timezone,
+        language
+      ),
       title: item.title,
     }))
     .sort(compareCalendarEntries);

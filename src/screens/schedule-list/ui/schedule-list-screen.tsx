@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   FlatList,
@@ -16,6 +17,7 @@ import {
   useOccurrenceProjectionNow,
   useOccurrenceProjectionQuery,
 } from "~/features/read-schedule";
+import { useAppLanguage } from "~/shared/i18n";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { colors, spacing } from "~/shared/ui/tokens";
@@ -35,6 +37,8 @@ import {
 } from "../model/schedule-list-entries";
 
 export function ScheduleListScreen(): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const insets = useSafeAreaInsets();
   const scheduleReadContext = useScheduleReadContext();
   const now = useOccurrenceProjectionNow();
@@ -61,6 +65,7 @@ export function ScheduleListScreen(): React.JSX.Element {
       buildScheduleListEntries({
         completionLogs: projectionQuery.completionLogs,
         items,
+        language,
         now,
         sortMode,
         timezone: projectionQuery.timezone,
@@ -68,6 +73,7 @@ export function ScheduleListScreen(): React.JSX.Element {
     [
       projectionQuery.completionLogs,
       items,
+      language,
       now,
       sortMode,
       projectionQuery.timezone,
@@ -89,7 +95,10 @@ export function ScheduleListScreen(): React.JSX.Element {
   return (
     <AppScreen contentStyle={styles.screenContent}>
       <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-        <ScreenHeader onHeightChange={onHeaderHeightChange} title="일정 목록" />
+        <ScreenHeader
+          onHeightChange={onHeaderHeightChange}
+          title={t("scheduleList.headerTitle")}
+        />
       </Animated.View>
 
       {isInitialLoading ? (
@@ -138,7 +147,10 @@ export function ScheduleListScreen(): React.JSX.Element {
           }
           renderItem={({ index, item }) => (
             <RecurringItemSummaryRow
-              accessibilityHint="일정 상세 화면으로 이동해요."
+              accessibilityHint={t("scheduleList.row.detailHint")}
+              accessibilityLabel={t("scheduleList.row.detailLabel", {
+                title: item.title,
+              })}
               colorKey={item.colorKey}
               isLast={index === entries.length - 1}
               metaLine={[

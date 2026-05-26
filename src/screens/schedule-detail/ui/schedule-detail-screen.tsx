@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Animated, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -13,6 +14,7 @@ import {
   useScheduleByIdQuery,
   useScheduleCompletionLogsQuery,
 } from "~/features/read-schedule";
+import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
@@ -76,9 +78,12 @@ function DetailSummarySection({
   settingBadges: ItemDetailSummaryBadge[];
   title: string;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
   const colorOption = recurringItemColorOptionByKey[colorKey];
-  const notificationStatusLabel = notificationsEnabled ? "사용" : "중지";
+  const notificationStatusLabel = notificationsEnabled
+    ? t("scheduleDetail.summary.notificationEnabled")
+    : t("scheduleDetail.summary.notificationDisabled");
   const scheduleBadges = settingBadges.filter((badge) =>
     ["end-date", "start-date"].includes(badge.id)
   );
@@ -94,11 +99,17 @@ function DetailSummarySection({
 
       <View style={styles.summaryBadgeStack}>
         <View style={styles.summaryOutlineGroup}>
-          <DetailSummaryOutlineRow label="반복" value={recurrenceLabel} />
+          <DetailSummaryOutlineRow
+            label={t("scheduleDetail.summary.recurrence")}
+            value={recurrenceLabel}
+          />
 
           <DetailSummaryOutlineRow
-            accessibilityLabel={`알림 ${notificationLabel} ${notificationStatusLabel}`}
-            label="알림"
+            accessibilityLabel={t("scheduleDetail.summary.notificationA11y", {
+              label: notificationLabel,
+              status: notificationStatusLabel,
+            })}
+            label={t("scheduleDetail.summary.notification")}
             trailingIcon={
               <View style={styles.summaryNotificationIconSlot}>
                 <NotificationIcon
@@ -150,14 +161,18 @@ function DetailSummaryColorRow({
   colorLabel: string;
   swatchColor: string;
 }): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View
-      accessibilityLabel={`색상 ${colorLabel}`}
+      accessibilityLabel={t("scheduleDetail.summary.itemColorA11y", {
+        color: colorLabel,
+      })}
       accessible
       style={styles.summaryOutlineRow}
     >
       <AppText style={styles.summaryOutlineLabel} variant="caption">
-        색상
+        {t("scheduleDetail.summary.itemColor")}
       </AppText>
       <View style={styles.summaryOutlineContent}>
         <View
@@ -206,9 +221,11 @@ function DetailSummaryOutlineRow({
 }
 
 function DetailLoadingPlaceholder(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View
-      accessibilityLabel="일정 상세를 불러오는 중"
+      accessibilityLabel={t("scheduleDetail.loadingA11yLabel")}
       accessibilityRole="progressbar"
       style={styles.detailPlaceholder}
     >
@@ -262,26 +279,36 @@ function DetailErrorCard({
   message: string;
   onRetry: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <AppRetryStatePanel
       description={message}
       minHeight={120}
       onRetry={onRetry}
-      retryAccessibilityHint="상세 화면 데이터를 다시 불러와요."
-      retryAccessibilityLabel="상세 화면 다시 시도"
-      title="일정을 불러오지 못했어요"
+      retryAccessibilityHint={t("scheduleDetail.error.retryHint")}
+      retryAccessibilityLabel={t("scheduleDetail.error.retryLabel")}
+      title={t("scheduleDetail.error.title")}
     />
   );
 }
 
 function DetailInlineErrorCard({
   message,
-  title = "처리를 완료하지 못했어요",
+  title,
 }: {
   message: string;
   title?: string;
 }): React.JSX.Element {
-  return <AppStatePanel description={message} minHeight={96} title={title} />;
+  const { t } = useTranslation();
+
+  return (
+    <AppStatePanel
+      description={message}
+      minHeight={96}
+      title={title ?? t("scheduleDetail.inlineErrorTitle")}
+    />
+  );
 }
 
 function DetailHistorySection({
@@ -289,10 +316,12 @@ function DetailHistorySection({
 }: {
   entries: ItemDetailHistoryEntry[];
 }): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.historySection}>
       <AppText style={styles.historySectionLabel} variant="caption">
-        최근 히스토리
+        {t("scheduleDetail.history.title")}
       </AppText>
 
       <View>
@@ -306,7 +335,7 @@ function DetailHistorySection({
           ))
         ) : (
           <AppText style={styles.historyEmptyText} variant="body3">
-            아직 완료 기록이 없어요
+            {t("scheduleDetail.history.empty")}
           </AppText>
         )}
       </View>
@@ -347,19 +376,21 @@ function DetailHistoryCard({
 }
 
 function DetailNotFoundCard(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <AppStatePanel
       action={{
-        accessibilityHint: "홈 화면으로 이동해요.",
-        accessibilityLabel: "홈으로 이동",
-        label: "홈으로 이동",
+        accessibilityHint: t("scheduleDetail.notFound.homeHint"),
+        accessibilityLabel: t("scheduleDetail.notFound.homeLabel"),
+        label: t("scheduleDetail.notFound.homeLabel"),
         onPress: () => {
           router.replace("/");
         },
       }}
-      description="이미 삭제되었거나 접근할 수 없는 일정이에요."
+      description={t("scheduleDetail.notFound.description")}
       minHeight={120}
-      title="일정을 찾을 수 없어요"
+      title={t("scheduleDetail.notFound.title")}
     />
   );
 }
@@ -373,6 +404,8 @@ export function ScheduleDetailScreen({
   returnTo?: string;
   scheduledAtUtc?: string;
 }): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const { isReady, timezone, userId } = useScheduleReadContext();
   const insets = useSafeAreaInsets();
   const {
@@ -404,7 +437,7 @@ export function ScheduleDetailScreen({
     itemQuery.isPending ||
     (Boolean(itemQuery.data) && completionLogsQuery.isPending);
   const queryErrorMessage = !itemId
-    ? "일정 경로를 확인할 수 없어요."
+    ? t("scheduleDetail.error.missingPath")
     : itemQuery.error
       ? getErrorMessage(itemQuery.error)
       : completionLogsQuery.error
@@ -418,6 +451,7 @@ export function ScheduleDetailScreen({
     ? buildRecurringItemDetailViewModel({
         completionLogs,
         item,
+        language,
         now,
         timezone,
       })
@@ -438,6 +472,7 @@ export function ScheduleDetailScreen({
       ? buildOccurrenceStatusCard({
           now,
           occurrence: basisOccurrence,
+          language,
           timezone,
         })
       : viewModel?.statusCard;
@@ -503,19 +538,23 @@ export function ScheduleDetailScreen({
       return;
     }
 
-    Alert.alert("일정 삭제", "이 일정을 삭제할까요?", [
-      {
-        style: "cancel",
-        text: "취소",
-      },
-      {
-        style: "destructive",
-        text: "삭제",
-        onPress: () => {
-          void handleDeleteConfirm();
+    Alert.alert(
+      t("scheduleDetail.deleteAlert.title"),
+      t("scheduleDetail.deleteAlert.message"),
+      [
+        {
+          style: "cancel",
+          text: t("scheduleDetail.deleteAlert.cancel"),
         },
-      },
-    ]);
+        {
+          style: "destructive",
+          text: t("scheduleDetail.deleteAlert.confirm"),
+          onPress: () => {
+            void handleDeleteConfirm();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -532,8 +571,12 @@ export function ScheduleDetailScreen({
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
                     <IconButton
-                      accessibilityHint="일정 관리 메뉴를 열어요."
-                      accessibilityLabel="일정 관리"
+                      accessibilityHint={t(
+                        "scheduleDetail.management.menuHint"
+                      )}
+                      accessibilityLabel={t(
+                        "scheduleDetail.management.menuLabel"
+                      )}
                       disabled={isMutating}
                       icon={<EllipsisVertical color={colors.text} size={20} />}
                       size="lg"
@@ -560,7 +603,9 @@ export function ScheduleDetailScreen({
                     >
                       {isContentUnrecoverable ? null : (
                         <DropdownMenu.Item
-                          accessibilityHint="현재 일정 수정 화면으로 이동해요."
+                          accessibilityHint={t(
+                            "scheduleDetail.management.editHint"
+                          )}
                           closeOnPress
                           style={styles.managementMenuItem}
                           onPress={handleEdit}
@@ -570,13 +615,15 @@ export function ScheduleDetailScreen({
                             style={styles.managementMenuText}
                             variant="label"
                           >
-                            수정
+                            {t("scheduleDetail.management.edit")}
                           </AppText>
                         </DropdownMenu.Item>
                       )}
 
                       <DropdownMenu.Item
-                        accessibilityHint="현재 일정을 삭제해요."
+                        accessibilityHint={t(
+                          "scheduleDetail.management.deleteHint"
+                        )}
                         closeOnPress
                         style={styles.managementMenuItem}
                         onPress={handleDelete}
@@ -589,7 +636,7 @@ export function ScheduleDetailScreen({
                           ]}
                           variant="label"
                         >
-                          삭제
+                          {t("scheduleDetail.management.delete")}
                         </AppText>
                       </DropdownMenu.Item>
                     </DropdownMenu.Content>
@@ -597,7 +644,7 @@ export function ScheduleDetailScreen({
                 </DropdownMenu.Root>
               ) : undefined
             }
-            title="일정 상세"
+            title={t("scheduleDetail.headerTitle")}
           />
         </Animated.View>
 

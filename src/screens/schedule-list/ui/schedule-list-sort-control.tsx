@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import {
   AppSelectMenu,
   type AppSelectMenuOption,
@@ -10,29 +12,31 @@ type ScheduleListSortControlProps = {
   value: ScheduleListSortMode;
 };
 
-const sortOptions: AppSelectMenuOption<ScheduleListSortMode>[] = [
-  {
-    accessibilityHint: "제목순으로 정렬해요.",
-    label: "제목순",
-    value: "titleAsc",
-  },
-  {
-    accessibilityHint: "생성순으로 정렬해요.",
-    label: "생성순",
-    value: "createdDesc",
-  },
-];
-
 export function ScheduleListSortControl({
   onChange,
   value,
 }: ScheduleListSortControlProps): React.JSX.Element {
-  const selectedOption = getSortOption(value);
+  const { t } = useTranslation();
+  const sortOptions: AppSelectMenuOption<ScheduleListSortMode>[] = [
+    {
+      accessibilityHint: t("scheduleList.sort.titleAscHint"),
+      label: t("scheduleList.sort.titleAsc"),
+      value: "titleAsc",
+    },
+    {
+      accessibilityHint: t("scheduleList.sort.createdDescHint"),
+      label: t("scheduleList.sort.createdDesc"),
+      value: "createdDesc",
+    },
+  ];
+  const selectedOption = getSortOption(value, sortOptions);
 
   return (
     <AppSelectMenu
-      accessibilityHint="일정 목록 정렬 메뉴를 열어요."
-      accessibilityLabel={`정렬: ${selectedOption.label}`}
+      accessibilityHint={t("scheduleList.sort.menuHint")}
+      accessibilityLabel={t("scheduleList.sort.menuLabel", {
+        label: selectedOption.label,
+      })}
       align="end"
       options={sortOptions}
       value={selectedOption.value}
@@ -42,7 +46,10 @@ export function ScheduleListSortControl({
   );
 }
 
-function getSortOption(value: ScheduleListSortMode): {
+function getSortOption(
+  value: ScheduleListSortMode,
+  sortOptions: AppSelectMenuOption<ScheduleListSortMode>[]
+): {
   accessibilityHint?: string;
   label: string;
   value: ScheduleListSortMode;

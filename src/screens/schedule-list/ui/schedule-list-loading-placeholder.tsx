@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
@@ -5,8 +6,13 @@ import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
 const PLACEHOLDER_ROW_COUNT = 4;
 
 export function ScheduleListLoadingPlaceholder(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
-    <View>
+    <View
+      accessibilityLabel={t("scheduleList.loadingA11yLabel")}
+      accessibilityRole="progressbar"
+    >
       <View style={styles.sortControlPlaceholder} />
       {Array.from({ length: PLACEHOLDER_ROW_COUNT }).map((_, index) => (
         <View

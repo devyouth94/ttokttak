@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   Pressable,
@@ -18,6 +19,7 @@ import {
   useOccurrenceProjectionNow,
   useOccurrenceProjectionQuery,
 } from "~/features/read-schedule";
+import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppEmptyStateView, AppRetryStatePanel } from "~/shared/ui/app-state";
@@ -30,58 +32,22 @@ import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
+  calendarLocaleConfigByLanguage,
   clampVisibleMonth,
   createCalendarScreenState,
+  formatCalendarDayEntryCount,
   formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
+  getCalendarLocaleName,
   getMinimumVisibleMonth,
   shiftVisibleMonth,
   syncCalendarScreenStateToTimezone,
 } from "../model/calendar-screen-model";
 
-LocaleConfig.locales.ko = {
-  dayNames: [
-    "일요일",
-    "월요일",
-    "화요일",
-    "수요일",
-    "목요일",
-    "금요일",
-    "토요일",
-  ],
-  dayNamesShort: ["일", "월", "화", "수", "목", "금", "토"],
-  monthNames: [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
-  ],
-  monthNamesShort: [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
-  ],
-  today: "오늘",
-};
-LocaleConfig.defaultLocale = "ko";
+LocaleConfig.locales.ko = calendarLocaleConfigByLanguage.ko;
+LocaleConfig.locales.en = calendarLocaleConfigByLanguage.en;
+LocaleConfig.defaultLocale = getCalendarLocaleName("ko");
 
 const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
 
@@ -137,6 +103,9 @@ const calendarTheme = {
 };
 
 export function CalendarScreen(): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
+  LocaleConfig.defaultLocale = getCalendarLocaleName(language);
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -167,9 +136,13 @@ export function CalendarScreen(): React.JSX.Element {
     [items]
   );
   const selectedDateTitle = formatSelectedDateSectionTitle(
-    screenState.selectedDate
+    screenState.selectedDate,
+    language
   );
-  const visibleMonthTitle = formatVisibleMonthTitle(screenState.visibleMonth);
+  const visibleMonthTitle = formatVisibleMonthTitle(
+    screenState.visibleMonth,
+    language
+  );
   const isLoading = projectionQuery.isLoading;
   const errorMessage = projectionQuery.error
     ? getErrorMessage(projectionQuery.error)
@@ -190,11 +163,12 @@ export function CalendarScreen(): React.JSX.Element {
       buildCalendarDayEntries({
         completionLogs,
         items,
+        language,
         now,
         selectedDate: screenState.selectedDate,
         timezone,
       }),
-    [completionLogs, items, now, screenState.selectedDate, timezone]
+    [completionLogs, items, language, now, screenState.selectedDate, timezone]
   );
   const isPreviousMonthDisabled =
     minimumVisibleMonth !== null &&
@@ -210,6 +184,10 @@ export function CalendarScreen(): React.JSX.Element {
   const handleRetry = () => {
     void projectionQuery.refetch();
   };
+
+  useEffect(() => {
+    LocaleConfig.defaultLocale = getCalendarLocaleName(language);
+  }, [language]);
 
   useEffect(() => {
     const previousTimezone = previousTimezoneRef.current;
@@ -242,7 +220,10 @@ export function CalendarScreen(): React.JSX.Element {
   return (
     <AppScreen contentStyle={styles.screenContent}>
       <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-        <ScreenHeader onHeightChange={onHeaderHeightChange} title="캘린더" />
+        <ScreenHeader
+          onHeightChange={onHeaderHeightChange}
+          title={t("calendar.headerTitle")}
+        />
       </Animated.View>
 
       <ScrollView
@@ -259,7 +240,7 @@ export function CalendarScreen(): React.JSX.Element {
       >
         <View style={styles.monthHeader}>
           <MonthArrowButton
-            accessibilityLabel="이전 달 보기"
+            accessibilityLabel={t("calendar.previousMonthLabel")}
             disabled={isPreviousMonthDisabled}
             icon={<ChevronLeft color={colors.primaryForeground} size={18} />}
             onPress={() => {
@@ -270,7 +251,7 @@ export function CalendarScreen(): React.JSX.Element {
             {visibleMonthTitle}
           </AppText>
           <MonthArrowButton
-            accessibilityLabel="다음 달 보기"
+            accessibilityLabel={t("calendar.nextMonthLabel")}
             icon={<ChevronRight color={colors.primaryForeground} size={18} />}
             onPress={() => {
               shiftMonth(1);
@@ -315,7 +296,7 @@ export function CalendarScreen(): React.JSX.Element {
               {selectedDateTitle}
             </AppText>
             <AppText style={styles.selectedDateCount} variant="body3">
-              {selectedEntries.length}개
+              {formatCalendarDayEntryCount(selectedEntries.length, language)}
             </AppText>
           </View>
 
@@ -327,21 +308,24 @@ export function CalendarScreen(): React.JSX.Element {
               minHeight={96}
               onRetry={handleRetry}
               panelStyle={styles.emptyCard}
-              retryAccessibilityHint="캘린더 조회를 다시 시도해요."
-              retryAccessibilityLabel="캘린더 다시 불러오기"
-              title="캘린더를 불러오지 못했어요"
+              retryAccessibilityHint={t("calendar.error.retryHint")}
+              retryAccessibilityLabel={t("calendar.error.retryLabel")}
+              title={t("calendar.error.title")}
               variant="dashed"
             />
           ) : selectedEntries.length === 0 ? (
             <AppEmptyStateView
               style={styles.selectedDateState}
-              title="선택한 날짜에 일정이 없어요"
+              title={t("calendar.emptyTitle")}
             />
           ) : (
             <View>
               {selectedEntries.map((entry, index) => (
                 <RecurringItemSummaryRow
-                  accessibilityHint="반복 항목 상세 화면으로 이동해요."
+                  accessibilityHint={t("calendar.row.detailHint")}
+                  accessibilityLabel={t("calendar.row.detailLabel", {
+                    title: entry.title,
+                  })}
                   colorKey={entry.colorKey}
                   isLast={index === selectedEntries.length - 1}
                   key={`${entry.itemId}:${entry.scheduledAtUtc}`}
@@ -378,9 +362,11 @@ function MonthArrowButton({
   icon: React.JSX.Element;
   onPress: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Pressable
-      accessibilityHint="보이는 월을 이동해요."
+      accessibilityHint={t("calendar.monthArrowHint")}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       disabled={disabled}
@@ -398,9 +384,11 @@ function MonthArrowButton({
 }
 
 function CalendarEntryListPlaceholder(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View
-      accessibilityLabel="일정을 불러오는 중"
+      accessibilityLabel={t("calendar.loadingA11yLabel")}
       accessibilityRole="progressbar"
     >
       {Array.from({ length: CALENDAR_ENTRY_PLACEHOLDER_COUNT }).map(

@@ -1,15 +1,14 @@
-import { ko } from "date-fns/locale";
-import { formatInTimeZone } from "date-fns-tz";
-
 import type {
   CompletionLog,
   RecurringItem,
   RecurringItemColorKey,
 } from "~/entities/schedule";
 import {
+  formatUtcTimeInTimezone,
   getNextItemOccurrenceEntries,
   getRecurrenceLabel,
 } from "~/entities/schedule";
+import type { AppLanguage } from "~/shared/i18n";
 
 export type ScheduleListEntry = {
   colorKey: RecurringItemColorKey;
@@ -28,12 +27,14 @@ export const DEFAULT_SCHEDULE_LIST_SORT_MODE: ScheduleListSortMode = "titleAsc";
 export function buildScheduleListEntries({
   completionLogs,
   items,
+  language = "ko",
   now,
   sortMode = DEFAULT_SCHEDULE_LIST_SORT_MODE,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
+  language?: AppLanguage;
   now: Date;
   sortMode?: ScheduleListSortMode;
   timezone: string;
@@ -51,11 +52,12 @@ export function buildScheduleListEntries({
       nextOccurrenceTimeLabel: occurrence
         ? formatScheduleListNextOccurrenceTimeLabel(
             occurrence.scheduledAtUtc,
-            timezone
+            timezone,
+            language
           )
-        : "예정 없음",
+        : getNoNextOccurrenceLabel(language),
       nextScheduledAtUtc: occurrence?.scheduledAtUtc ?? null,
-      recurrenceLabel: getRecurrenceLabel(item),
+      recurrenceLabel: getRecurrenceLabel(item, language),
       title: item.title,
     }))
     .sort((left, right) => compareScheduleListEntries(left, right, sortMode));
@@ -63,11 +65,14 @@ export function buildScheduleListEntries({
 
 export function formatScheduleListNextOccurrenceTimeLabel(
   scheduledAtUtc: string,
-  timezone: string
+  timezone: string,
+  language: AppLanguage = "ko"
 ): string {
-  return formatInTimeZone(scheduledAtUtc, timezone, "a h:mm", {
-    locale: ko,
-  });
+  return formatUtcTimeInTimezone(scheduledAtUtc, timezone, language);
+}
+
+function getNoNextOccurrenceLabel(language: AppLanguage): string {
+  return language === "en" ? "No upcoming time" : "예정 없음";
 }
 
 function compareScheduleListEntries(

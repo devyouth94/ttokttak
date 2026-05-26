@@ -9,6 +9,7 @@ import type { RecurringItemColorKey } from "../model/types";
 
 type RecurringItemSummaryRowProps = {
   accessibilityHint: string;
+  accessibilityLabel?: string;
   colorKey: RecurringItemColorKey;
   isLast: boolean;
   metaLine: string;
@@ -18,6 +19,7 @@ type RecurringItemSummaryRowProps = {
 
 export function RecurringItemSummaryRow({
   accessibilityHint,
+  accessibilityLabel,
   colorKey,
   isLast,
   metaLine,
@@ -29,7 +31,7 @@ export function RecurringItemSummaryRow({
   return (
     <Pressable
       accessibilityHint={accessibilityHint}
-      accessibilityLabel={`${title} 상세 보기`}
+      accessibilityLabel={accessibilityLabel ?? `${title} 상세 보기`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [

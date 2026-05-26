@@ -52,6 +52,41 @@ describe("schedule-list entries", () => {
     ).toBe("오전 8:00");
   });
 
+  it("English 모드에서는 다음 예정 시간, 반복, 예정 없음 라벨을 English로 표시한다", () => {
+    const entries = buildScheduleListEntries({
+      completionLogs: [],
+      items: [
+        createRecurringItem({
+          id: "weekly",
+          recurrenceType: "weekly",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-22",
+          title: "한국어 제목",
+          weekdayMask: [1, 3],
+        }),
+        createRecurringItem({
+          id: "past-once",
+          recurrenceType: "once",
+          reminderTimeLocal: "09:00",
+          startDateLocal: "2026-04-21",
+          title: "지난 한 번",
+        }),
+      ],
+      language: "en",
+      now: new Date("2026-04-22T03:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    });
+
+    expect(entries.find((entry) => entry.id === "weekly")).toMatchObject({
+      nextOccurrenceTimeLabel: "9:00 AM",
+      recurrenceLabel: "Weekly Mon·Wed",
+      title: "한국어 제목",
+    });
+    expect(
+      entries.find((entry) => entry.id === "past-once")?.nextOccurrenceTimeLabel
+    ).toBe("No upcoming time");
+  });
+
   it("오늘 시간이 지난 반복 일정은 다음 발생을 표시한다", () => {
     const entries = buildScheduleListEntries({
       completionLogs: [],
