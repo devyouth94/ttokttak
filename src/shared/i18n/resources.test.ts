@@ -52,6 +52,11 @@ describe("app i18n resources", () => {
     expect(i18n.t("scheduleForm.fields.endDate")).toBe("End date");
     expect(i18n.t("scheduleForm.recurrence.once")).toBe("Once");
     expect(i18n.t("scheduleForm.actions.save")).toBe("Save");
+    expect(i18n.t("settings.headerTitle")).toBe("Settings");
+    expect(i18n.t("settings.environment.appLanguage")).toBe(
+      "App display language"
+    );
+    expect(i18n.t("settings.accountManagement.delete")).toBe("Delete account");
   });
 
   it("기존 한국어 로그인과 shell 문구를 유지한다", async () => {
@@ -80,5 +85,8 @@ describe("app i18n resources", () => {
     expect(i18n.t("scheduleForm.fields.color")).toBe("색상");
     expect(i18n.t("scheduleForm.fields.endDate")).toBe("종료일");
     expect(i18n.t("scheduleForm.actions.save")).toBe("저장");
+    expect(i18n.t("settings.headerTitle")).toBe("설정");
+    expect(i18n.t("settings.environment.appLanguage")).toBe("앱 표시 언어");
+    expect(i18n.t("settings.accountManagement.delete")).toBe("계정 삭제");
   });
 });

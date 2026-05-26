@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -71,19 +72,6 @@ type SettingsControlRowProps = {
   isFirst?: boolean;
   title: string;
 };
-
-const appLanguageOptions = [
-  {
-    accessibilityHint: "앱 표시 언어를 한국어로 설정해요.",
-    label: "한국어",
-    value: "ko",
-  },
-  {
-    accessibilityHint: "앱 표시 언어를 English로 설정해요.",
-    label: "English",
-    value: "en",
-  },
-] satisfies AppSelectMenuOption<AppLanguage>[];
 
 function SectionTitle({ title }: SectionTitleProps): React.JSX.Element {
   return (
@@ -205,21 +193,8 @@ function SettingsValueRow({
   );
 }
 
-function getNotificationStatusText(
-  status: ReturnType<typeof useNotifications>["permission"]["status"]
-): string {
-  if (status === "granted") {
-    return "사용 중";
-  }
-
-  if (status === "unsupported") {
-    return "지원 안 됨";
-  }
-
-  return "꺼짐";
-}
-
 export function SettingsScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -247,6 +222,18 @@ export function SettingsScreen(): React.JSX.Element {
   const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+  const appLanguageOptions = [
+    {
+      accessibilityHint: t("settings.environment.languageKoreanHint"),
+      label: "한국어",
+      value: "ko",
+    },
+    {
+      accessibilityHint: t("settings.environment.languageEnglishHint"),
+      label: "English",
+      value: "en",
+    },
+  ] satisfies AppSelectMenuOption<AppLanguage>[];
 
   const profileName = profile?.display_name?.trim();
   const metadataName = user?.user_metadata?.full_name;
@@ -256,12 +243,36 @@ export function SettingsScreen(): React.JSX.Element {
       ? metadataName.trim()
       : null) ||
     user?.email ||
-    "사용자";
+    t("settings.account.name");
 
-  const email = user?.email ?? "로그인된 계정 이메일이 없습니다.";
+  const email = user?.email ?? t("settings.account.missingEmail");
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+  const getNotificationPermissionStatusText = (
+    status: typeof permission.status
+  ): string => {
+    switch (status) {
+      case "granted":
+        return t("settings.notifications.statusGranted");
+      case "denied":
+        return t("settings.notifications.statusDenied");
+      case "unsupported":
+        return t("settings.notifications.statusUnsupported");
+      case "undetermined":
+        return t("settings.notifications.statusUndetermined");
+      default:
+        return t("settings.notifications.statusDenied");
+    }
+  };
+  const getNotificationStatusText = (
+    status: typeof permission.status
+  ): string =>
+    status === "granted"
+      ? t("settings.notifications.statusGranted")
+      : status === "unsupported"
+        ? t("settings.notifications.statusUnsupported")
+        : t("settings.notifications.statusDenied");
 
   function openNameEditor(): void {
     setDisplayNameDraft(
@@ -290,7 +301,10 @@ export function SettingsScreen(): React.JSX.Element {
       return;
     }
 
-    const validationResult = validateProfileDisplayName(displayNameDraft);
+    const validationResult = validateProfileDisplayName(
+      displayNameDraft,
+      appLanguage
+    );
 
     if (validationResult.value === null) {
       setDisplayNameError(validationResult.errorMessage);
@@ -307,7 +321,7 @@ export function SettingsScreen(): React.JSX.Element {
       setDisplayNameError(null);
     } catch (error) {
       Alert.alert(
-        "이름 저장 실패",
+        t("settings.nameEditor.saveErrorTitle"),
         error instanceof Error ? error.message : String(error)
       );
     } finally {
@@ -326,7 +340,7 @@ export function SettingsScreen(): React.JSX.Element {
       await signOut();
     } catch (error) {
       Alert.alert(
-        "로그아웃 실패",
+        t("settings.accountManagement.signOutErrorTitle"),
         error instanceof Error ? error.message : String(error)
       );
     } finally {
@@ -346,12 +360,14 @@ export function SettingsScreen(): React.JSX.Element {
     } catch (error) {
       const message =
         error instanceof AccountDeletionAppleAuthorizationRequiredError
-          ? "Apple 인증을 완료한 뒤 다시 시도해 주세요."
+          ? t(
+              "settings.accountManagement.deleteError.appleAuthorizationRequired"
+            )
           : error instanceof AccountDeletionSessionRequiredError
-            ? "다시 로그인한 뒤 시도해 주세요."
-            : "계정 삭제에 실패했어요. 잠시 뒤 다시 시도해 주세요.";
+            ? t("settings.accountManagement.deleteError.sessionRequired")
+            : t("settings.accountManagement.deleteError.unknown");
 
-      Alert.alert("계정 삭제 실패", message);
+      Alert.alert(t("settings.accountManagement.deleteError.title"), message);
     } finally {
       setIsDeletingAccount(false);
     }
@@ -363,19 +379,19 @@ export function SettingsScreen(): React.JSX.Element {
     }
 
     Alert.alert(
-      "계정 삭제",
-      "계정과 저장된 일정이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      t("settings.accountManagement.deleteAlert.title"),
+      t("settings.accountManagement.deleteAlert.message"),
       [
         {
           style: "cancel",
-          text: "취소",
+          text: t("settings.accountManagement.deleteAlert.cancel"),
         },
         {
           onPress: () => {
             void handleDeleteAccount();
           },
           style: "destructive",
-          text: "계정 삭제",
+          text: t("settings.accountManagement.deleteAlert.confirm"),
         },
       ]
     );
@@ -396,14 +412,14 @@ export function SettingsScreen(): React.JSX.Element {
         await syncAfterAppLanguageChanged(nextLanguage);
       } catch {
         Alert.alert(
-          "알림 동기화 실패",
-          "앱 표시 언어는 변경됐지만 예약된 알림을 다시 맞출 수 없습니다. 앱을 다시 열면 알림을 다시 맞춥니다."
+          t("settings.environment.syncErrorTitle"),
+          t("settings.environment.syncErrorMessage")
         );
       }
     } catch {
       Alert.alert(
-        "언어 저장 실패",
-        "앱 표시 언어를 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요."
+        t("settings.environment.saveErrorTitle"),
+        t("settings.environment.saveErrorMessage")
       );
     } finally {
       setIsSavingAppLanguage(false);
@@ -414,7 +430,10 @@ export function SettingsScreen(): React.JSX.Element {
     try {
       await openSettings();
     } catch {
-      Alert.alert("설정 열기 실패", "기기 설정을 열 수 없습니다.");
+      Alert.alert(
+        t("settings.notifications.openSettingsErrorTitle"),
+        t("settings.notifications.openSettingsErrorMessage")
+      );
     }
   }
 
@@ -423,8 +442,8 @@ export function SettingsScreen(): React.JSX.Element {
       await Linking.openURL(PRIVACY_POLICY_URL);
     } catch {
       Alert.alert(
-        "개인정보처리방침 열기 실패",
-        "개인정보처리방침을 열 수 없습니다."
+        t("settings.appInfo.privacyOpenErrorTitle"),
+        t("settings.appInfo.privacyOpenErrorMessage")
       );
     }
   }
@@ -433,7 +452,10 @@ export function SettingsScreen(): React.JSX.Element {
     try {
       await Linking.openURL(TERMS_OF_SERVICE_URL);
     } catch {
-      Alert.alert("이용약관 열기 실패", "이용약관을 열 수 없습니다.");
+      Alert.alert(
+        t("settings.appInfo.termsOpenErrorTitle"),
+        t("settings.appInfo.termsOpenErrorMessage")
+      );
     }
   }
 
@@ -442,7 +464,7 @@ export function SettingsScreen(): React.JSX.Element {
       await requestPermission();
     } catch (error) {
       Alert.alert(
-        "권한 요청 실패",
+        t("settings.notifications.permissionRequestErrorTitle"),
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -451,7 +473,10 @@ export function SettingsScreen(): React.JSX.Element {
   return (
     <AppScreen contentStyle={styles.screenContent}>
       <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-        <ScreenHeader onHeightChange={onHeaderHeightChange} title="설정" />
+        <ScreenHeader
+          onHeightChange={onHeaderHeightChange}
+          title={t("settings.headerTitle")}
+        />
       </Animated.View>
 
       <Animated.ScrollView
@@ -468,18 +493,21 @@ export function SettingsScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.sections}>
-          <SettingsSectionCard title="계정">
+          <SettingsSectionCard title={t("settings.account.section")}>
             <SettingsValueRow
               isFirst
               isPressable
               onPress={openNameEditor}
-              title="이름"
+              title={t("settings.account.name")}
               value={displayName}
             />
-            <SettingsValueRow title="이메일" value={email} />
+            <SettingsValueRow
+              title={t("settings.account.email")}
+              value={email}
+            />
           </SettingsSectionCard>
 
-          <SettingsSectionCard title="환경">
+          <SettingsSectionCard title={t("settings.environment.section")}>
             <SettingsControlRow
               accessory={
                 <View style={styles.languageSelectAccessory}>
@@ -487,8 +515,10 @@ export function SettingsScreen(): React.JSX.Element {
                     <ActivityIndicator color={colors.textSoft} size="small" />
                   ) : null}
                   <AppSelectMenu
-                    accessibilityHint="현재 기기의 앱 표시 언어를 선택해요."
-                    accessibilityLabel="앱 표시 언어"
+                    accessibilityHint={t(
+                      "settings.environment.appLanguageHint"
+                    )}
+                    accessibilityLabel={t("settings.environment.appLanguage")}
                     align="end"
                     isDisabled={isSavingAppLanguage}
                     onChange={(nextLanguage) => {
@@ -500,22 +530,29 @@ export function SettingsScreen(): React.JSX.Element {
                   />
                 </View>
               }
-              description="현재 기기에만 저장됩니다."
+              description={t("settings.environment.appLanguageLocalOnly")}
               isFirst
-              title="앱 표시 언어"
+              title={t("settings.environment.appLanguage")}
             />
-            <SettingsValueRow title="시간대" value={timezone} />
+            <SettingsValueRow
+              title={t("settings.environment.timezone")}
+              value={timezone}
+            />
           </SettingsSectionCard>
 
-          <SettingsSectionCard title="알림">
+          <SettingsSectionCard title={t("settings.notifications.section")}>
             <SettingsValueRow
               isFirst
-              title="앱 알림"
+              title={t("settings.notifications.appNotification")}
               value={getNotificationStatusText(permission.status)}
             />
             <SettingsValueRow
-              title="권한 상태"
-              value={isPermissionLoading ? "확인 중" : permission.label}
+              title={t("settings.notifications.permissionStatus")}
+              value={
+                isPermissionLoading
+                  ? t("settings.notifications.statusChecking")
+                  : getNotificationPermissionStatusText(permission.status)
+              }
             />
             {permission.canRequest ? (
               <SettingsRow
@@ -526,31 +563,35 @@ export function SettingsScreen(): React.JSX.Element {
                     <ExternalLink color={colors.textSoft} size={16} />
                   )
                 }
-                description="정해둔 시간에 현재 기기에서 알려드리려면 알림 권한이 필요합니다."
+                description={t(
+                  "settings.notifications.permissionRequestDescription"
+                )}
                 isPressable
                 onPress={() => {
                   void handleRequestNotificationPermission();
                 }}
-                title="권한 요청"
+                title={t("settings.notifications.permissionRequest")}
               />
             ) : null}
             {permission.canOpenSettings ? (
               <SettingsRow
                 accessory={<ExternalLink color={colors.textSoft} size={16} />}
-                description="권한이 꺼져 있으면 시스템 설정에서 다시 허용해야 합니다."
+                description={t(
+                  "settings.notifications.openSettingsDescription"
+                )}
                 isPressable
                 onPress={() => {
                   void handleOpenSystemSettings();
                 }}
-                title="시스템 설정 열기"
+                title={t("settings.notifications.openSettings")}
               />
             ) : null}
           </SettingsSectionCard>
 
-          <SettingsSectionCard title="앱 정보">
+          <SettingsSectionCard title={t("settings.appInfo.section")}>
             <SettingsValueRow
               isFirst
-              title="앱 버전"
+              title={t("settings.appInfo.version")}
               value={`v${appVersion}`}
             />
             <SettingsRow
@@ -559,7 +600,7 @@ export function SettingsScreen(): React.JSX.Element {
               onPress={() => {
                 void handleOpenTermsOfService();
               }}
-              title="이용약관"
+              title={t("settings.appInfo.terms")}
             />
             <SettingsRow
               accessory={<ExternalLink color={colors.textSoft} size={16} />}
@@ -567,11 +608,11 @@ export function SettingsScreen(): React.JSX.Element {
               onPress={() => {
                 void handleOpenPrivacyPolicy();
               }}
-              title="개인정보처리방침"
+              title={t("settings.appInfo.privacyPolicy")}
             />
           </SettingsSectionCard>
 
-          <SettingsSectionCard title="계정 관리">
+          <SettingsSectionCard title={t("settings.accountManagement.section")}>
             <SettingsRow
               accessory={
                 isSigningOut ? (
@@ -584,7 +625,7 @@ export function SettingsScreen(): React.JSX.Element {
               onPress={() => {
                 void handleSignOut();
               }}
-              title="로그아웃"
+              title={t("settings.accountManagement.signOut")}
             />
             <SettingsRow
               accessory={
@@ -595,7 +636,7 @@ export function SettingsScreen(): React.JSX.Element {
               isDisabled={isDeletingAccount || isSigningOut}
               isPressable
               onPress={requestDeleteAccount}
-              title="계정 삭제"
+              title={t("settings.accountManagement.delete")}
               tone="danger"
             />
           </SettingsSectionCard>
@@ -611,7 +652,7 @@ export function SettingsScreen(): React.JSX.Element {
         <View style={styles.modalBackdrop}>
           <View style={styles.nameEditor}>
             <AppText style={styles.nameEditorTitle} variant="body2">
-              이름 수정
+              {t("settings.nameEditor.title")}
             </AppText>
             <TextInput
               autoCapitalize="none"
@@ -622,7 +663,7 @@ export function SettingsScreen(): React.JSX.Element {
                 setDisplayNameDraft(value);
                 setDisplayNameError(null);
               }}
-              placeholder="이름"
+              placeholder={t("settings.nameEditor.placeholder")}
               placeholderTextColor={colors.textSoft}
               style={styles.nameInput}
               value={displayNameDraft}
@@ -644,7 +685,7 @@ export function SettingsScreen(): React.JSX.Element {
                 ]}
               >
                 <AppText style={styles.nameEditorCancelText} variant="body3">
-                  취소
+                  {t("settings.nameEditor.cancel")}
                 </AppText>
               </Pressable>
               <Pressable
@@ -663,7 +704,7 @@ export function SettingsScreen(): React.JSX.Element {
                   <ActivityIndicator color={colors.primaryForeground} />
                 ) : (
                   <AppText style={styles.nameEditorSaveText} variant="body3">
-                    저장
+                    {t("settings.nameEditor.save")}
                   </AppText>
                 )}
               </Pressable>

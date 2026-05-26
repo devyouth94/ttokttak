@@ -17,11 +17,14 @@ describe("SettingsScreen 앱 표시 언어", () => {
       "src/screens/settings/ui/settings-screen.tsx"
     );
 
+    expect(settingsScreen).toContain("useTranslation()");
     expect(settingsScreen).toContain("useAppLanguage()");
     expect(settingsScreen).toContain("<AppSelectMenu");
-    expect(settingsScreen).toContain('<SettingsSectionCard title="환경">');
-    expect(settingsScreen).toContain('title="앱 표시 언어"');
-    expect(settingsScreen).toContain('title="시간대"');
+    expect(settingsScreen).toContain(
+      'title={t("settings.environment.section")}'
+    );
+    expect(settingsScreen).toContain('t("settings.environment.appLanguage")');
+    expect(settingsScreen).toContain('t("settings.environment.timezone")');
     expect(settingsScreen).toContain('label: "한국어"');
     expect(settingsScreen).toContain('label: "English"');
     expect(settingsScreen).toContain("handleChangeAppLanguage(nextLanguage)");
@@ -36,7 +39,9 @@ describe("SettingsScreen 앱 표시 언어", () => {
     expect(settingsScreen).toContain(
       "await syncAfterAppLanguageChanged(nextLanguage)"
     );
-    expect(settingsScreen).toContain('"알림 동기화 실패"');
+    expect(settingsScreen).toContain(
+      't("settings.environment.syncErrorTitle")'
+    );
   });
 
   it("앱 표시 언어 저장 실패 시 실패 안내를 보여준다", () => {
@@ -44,10 +49,25 @@ describe("SettingsScreen 앱 표시 언어", () => {
       "src/screens/settings/ui/settings-screen.tsx"
     );
 
-    expect(settingsScreen).toContain('"언어 저장 실패"');
     expect(settingsScreen).toContain(
-      "앱 표시 언어를 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요."
+      't("settings.environment.saveErrorTitle")'
     );
+    expect(settingsScreen).toContain(
+      't("settings.environment.saveErrorMessage")'
+    );
+  });
+
+  it("설정 화면 자체 문구도 i18n resource를 사용한다", () => {
+    const settingsScreen = readWorkspaceFile(
+      "src/screens/settings/ui/settings-screen.tsx"
+    );
+
+    expect(settingsScreen).toContain('t("settings.headerTitle")');
+    expect(settingsScreen).toContain('t("settings.account.section")');
+    expect(settingsScreen).toContain('t("settings.notifications.section")');
+    expect(settingsScreen).toContain('t("settings.appInfo.section")');
+    expect(settingsScreen).toContain('t("settings.accountManagement.section")');
+    expect(settingsScreen).toContain('t("settings.nameEditor.title")');
   });
 
   it("앱 표시 언어를 서버 profile 저장 흐름에 추가하지 않는다", () => {

@@ -23,6 +23,13 @@ describe("settings profile display name", () => {
     });
   });
 
+  it("English 앱 표시 언어에서는 English 검증 문구를 반환한다", () => {
+    expect(validateProfileDisplayName("   ", "en")).toEqual({
+      errorMessage: "Enter a name.",
+      value: null,
+    });
+  });
+
   it("이메일 fallback은 수정 입력의 기본 이름으로 사용하지 않는다", () => {
     expect(
       getEditableProfileDisplayName({

@@ -1,3 +1,5 @@
+import type { AppLanguage } from "~/shared/i18n";
+
 const MAX_PROFILE_DISPLAY_NAME_LENGTH = 30;
 
 export function normalizeProfileDisplayName(value: string): string {
@@ -42,20 +44,25 @@ export function getEditableProfileDisplayName({
 }
 
 export function validateProfileDisplayName(
-  value: string
+  value: string,
+  language: AppLanguage = "ko"
 ): ProfileDisplayNameValidationResult {
   const normalizedValue = normalizeProfileDisplayName(value);
 
   if (!normalizedValue) {
     return {
-      errorMessage: "이름을 입력해 주세요.",
+      errorMessage:
+        language === "en" ? "Enter a name." : "이름을 입력해 주세요.",
       value: null,
     };
   }
 
   if (normalizedValue.length > MAX_PROFILE_DISPLAY_NAME_LENGTH) {
     return {
-      errorMessage: "이름은 30자 이하로 입력해 주세요.",
+      errorMessage:
+        language === "en"
+          ? "Enter a name with 30 characters or fewer."
+          : "이름은 30자 이하로 입력해 주세요.",
       value: null,
     };
   }
