@@ -88,6 +88,7 @@ export function createLocalNotificationSyncLifecycle({
         timezone: context.timezone,
         userId: context.userId,
       });
+      lastSessionSyncKey = `${context.userId}:${context.timezone}`;
     } catch (error) {
       captureException(error, {
         tags: {
@@ -116,6 +117,7 @@ export function createLocalNotificationSyncLifecycle({
         timezone: context.timezone,
         userId: context.userId,
       });
+      lastSessionSyncKey = `${context.userId}:${context.timezone}`;
     } catch (error) {
       captureException(error, {
         tags: {
@@ -215,7 +217,7 @@ export function createLocalNotificationSyncLifecycle({
 
       lastObservedUserId = userId;
 
-      const syncKey = `${userId}:${timezone}:${language ?? ""}`;
+      const syncKey = `${userId}:${timezone}`;
 
       if (lastSessionSyncKey === syncKey) {
         return;

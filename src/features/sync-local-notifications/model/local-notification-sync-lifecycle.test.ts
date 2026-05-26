@@ -42,7 +42,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
-  it("세션 복원은 앱 표시 언어가 바뀌면 현재 언어로 다시 동기화한다", async () => {
+  it("세션 복원은 앱 표시 언어만 바뀌어도 중복 전체 동기화하지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );
@@ -64,16 +64,9 @@ describe("createLocalNotificationSyncLifecycle", () => {
       userId: "user-1",
     });
 
-    expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
-    expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(1, {
+    expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(1);
+    expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
       language: "ko",
-      reason: "session-restored",
-      scope: { type: "all" },
-      timezone,
-      userId: "user-1",
-    });
-    expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(2, {
-      language: "en",
       reason: "session-restored",
       scope: { type: "all" },
       timezone,
@@ -133,6 +126,38 @@ describe("createLocalNotificationSyncLifecycle", () => {
       userId: "user-1",
     });
 
+    expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
+      language: "en",
+      reason: "app-language-changed",
+      scope: { type: "all" },
+      timezone,
+      userId: "user-1",
+    });
+  });
+
+  it("앱 표시 언어 변경 전체 동기화 뒤 세션 복원 effect가 이어져도 중복 실행하지 않는다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncLocalReminderNotifications = jest.fn(async () => undefined);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException: jest.fn(),
+      syncLocalReminderNotifications,
+    });
+
+    await lifecycle.syncAfterAppLanguageChanged({
+      language: "en",
+      timezone,
+      userId: "user-1",
+    });
+    await lifecycle.syncAfterSessionRestored({
+      language: "en",
+      timezone,
+      userId: "user-1",
+    });
+
+    expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(1);
     expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
       language: "en",
       reason: "app-language-changed",

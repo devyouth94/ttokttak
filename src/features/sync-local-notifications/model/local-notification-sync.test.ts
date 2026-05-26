@@ -449,6 +449,66 @@ describe("syncLocalReminderNotifications", () => {
       })
     );
   });
+
+  it("본문 변경 재예약 실패 시 기존 알림 복구를 시도한다", async () => {
+    const scheduleError = new Error("schedule failed");
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([
+        createScheduledNotificationRequest({
+          body: "오전 9:00",
+          identifier:
+            "ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z",
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-21T00:00:00.000Z",
+          title: "약 먹기",
+        }),
+      ]);
+    jest
+      .mocked(Notifications.scheduleNotificationAsync)
+      .mockRejectedValueOnce(scheduleError)
+      .mockResolvedValueOnce("restored");
+    jest.mocked(listRecurringItems).mockResolvedValue([
+      createRecurringItem({
+        id: "item-1",
+        recurrenceType: "once",
+        startDateLocal: "2026-04-21",
+        title: "약 먹기",
+      }),
+    ]);
+
+    await expect(
+      syncLocalReminderNotifications({
+        language: "en",
+        reason: "app-language-changed",
+        scope: { type: "all" },
+        timezone,
+        userId: "user-1",
+      })
+    ).rejects.toThrow(scheduleError);
+
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+      "ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z"
+    );
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        content: expect.objectContaining({
+          body: "9:00 AM",
+          title: "약 먹기",
+        }),
+      })
+    );
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        content: expect.objectContaining({
+          body: "오전 9:00",
+          title: "약 먹기",
+        }),
+      })
+    );
+  });
 });
 
 describe("createLocalReminderNotificationSyncPlan", () => {

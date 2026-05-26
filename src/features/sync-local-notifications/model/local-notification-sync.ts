@@ -14,10 +14,12 @@ import type {
 import type { AppLanguage } from "~/shared/i18n";
 import {
   cancelScheduledLocalNotification,
+  createLocalReminderPayload,
   getAllScheduledLocalNotifications,
   getNotificationPermissionState,
   isTtokttakLocalReminderIdentifier,
   type LocalNotificationRequest,
+  type LocalReminderNotificationPayload,
   parseLocalReminderIdentifier,
   scheduleDateLocalNotification,
 } from "~/shared/lib/notifications";
@@ -50,6 +52,10 @@ type LocalReminderNotificationCancellationResult = {
 type LocalReminderNotificationSyncPlan = {
   diagnostics: LocalReminderNotificationSyncResult["diagnostics"];
   notificationsToCancel: ExistingLocalReminderNotification[];
+  notificationsToReplace: {
+    existing: ExistingLocalReminderNotification;
+    next: DesiredLocalReminderNotification;
+  }[];
   notificationsToSchedule: DesiredLocalReminderNotification[];
 };
 
@@ -126,13 +132,35 @@ export function createLocalReminderNotificationSyncPlan(params: {
       notification.title === desiredNotification.title
     );
   };
+  const notificationsToReplace = scopedExistingNotifications
+    .filter(
+      (notification) =>
+        desiredIdentifiersWithinLimit.has(notification.identifier) &&
+        !hasSameContentAsDesiredNotification(notification)
+    )
+    .map((notification) => ({
+      existing: notification,
+      next: desiredNotificationsByIdentifier.get(notification.identifier),
+    }))
+    .filter(
+      (
+        replacement
+      ): replacement is {
+        existing: ExistingLocalReminderNotification;
+        next: DesiredLocalReminderNotification;
+      } => replacement.next !== undefined
+    );
+  const identifiersToReplace = new Set(
+    notificationsToReplace.map(({ existing }) => existing.identifier)
+  );
   const notificationsToCancel = scopedExistingNotifications.filter(
     (notification) =>
-      !desiredIdentifiersWithinLimit.has(notification.identifier) ||
-      !hasSameContentAsDesiredNotification(notification)
+      !desiredIdentifiersWithinLimit.has(notification.identifier)
   );
   const remainingPendingCount =
-    pendingNotificationCount - notificationsToCancel.length;
+    pendingNotificationCount -
+    notificationsToCancel.length -
+    notificationsToReplace.length;
   const availableScheduleSlots = Math.max(
     0,
     maxPendingLocalNotifications - remainingPendingCount
@@ -145,7 +173,8 @@ export function createLocalReminderNotificationSyncPlan(params: {
   const notificationsReadyToSchedule = desiredNotificationsWithinLimit
     .filter(
       (notification) =>
-        !matchingExistingIdentifiers.has(notification.identifier)
+        !matchingExistingIdentifiers.has(notification.identifier) &&
+        !identifiersToReplace.has(notification.identifier)
     )
     .sort((left, right) =>
       left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
@@ -161,9 +190,11 @@ export function createLocalReminderNotificationSyncPlan(params: {
       omittedDistantCount:
         scopedDesiredNotifications.length -
         desiredNotificationsWithinLimit.length,
-      scheduledCount: notificationsToSchedule.length,
+      scheduledCount:
+        notificationsToSchedule.length + notificationsToReplace.length,
     },
     notificationsToCancel,
+    notificationsToReplace,
     notificationsToSchedule,
   };
 }
@@ -197,19 +228,61 @@ function parseExistingLocalReminderNotifications(params: {
 async function applyLocalReminderNotificationSyncPlan(
   plan: LocalReminderNotificationSyncPlan
 ): Promise<void> {
+  for (const replacement of plan.notificationsToReplace) {
+    await replaceScheduledLocalNotification(replacement);
+  }
+
   for (const notification of plan.notificationsToCancel) {
     await cancelScheduledLocalNotification(notification.identifier);
   }
 
   for (const notification of plan.notificationsToSchedule) {
-    await scheduleDateLocalNotification({
-      body: notification.body,
-      channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
-      data: notification.payload,
-      identifier: notification.identifier,
-      scheduledAtUtc: notification.scheduledAtUtc,
-      title: notification.title,
-    });
+    await scheduleReminderNotification(notification);
+  }
+}
+
+async function scheduleReminderNotification(params: {
+  body: string;
+  payload: LocalReminderNotificationPayload;
+  scheduledAtUtc: string;
+  title: string;
+  identifier: string;
+}): Promise<void> {
+  await scheduleDateLocalNotification({
+    body: params.body,
+    channelId: REMINDER_NOTIFICATION_CHANNEL_ID,
+    data: params.payload,
+    identifier: params.identifier,
+    scheduledAtUtc: params.scheduledAtUtc,
+    title: params.title,
+  });
+}
+
+async function replaceScheduledLocalNotification({
+  existing,
+  next,
+}: {
+  existing: ExistingLocalReminderNotification;
+  next: DesiredLocalReminderNotification;
+}): Promise<void> {
+  await cancelScheduledLocalNotification(existing.identifier);
+
+  try {
+    await scheduleReminderNotification(next);
+  } catch (error) {
+    try {
+      await scheduleReminderNotification({
+        body: existing.body ?? "",
+        identifier: existing.identifier,
+        payload: createLocalReminderPayload(),
+        scheduledAtUtc: existing.scheduledAtUtc,
+        title: existing.title ?? "",
+      });
+    } catch {
+      // 복구 실패는 원래 재예약 실패 원인을 가리지 않는다.
+    }
+
+    throw error;
   }
 }
 
@@ -270,9 +343,13 @@ export async function syncLocalReminderNotifications(
   await applyLocalReminderNotificationSyncPlan(syncPlan);
 
   return {
-    cancelledCount: syncPlan.notificationsToCancel.length,
+    cancelledCount:
+      syncPlan.notificationsToCancel.length +
+      syncPlan.notificationsToReplace.length,
     diagnostics: syncPlan.diagnostics,
-    scheduledCount: syncPlan.notificationsToSchedule.length,
+    scheduledCount:
+      syncPlan.notificationsToSchedule.length +
+      syncPlan.notificationsToReplace.length,
   };
 }
 
