@@ -31,6 +31,7 @@ import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";
+import { getCalendarRenderKey } from "./calendar-render-key";
 import {
   buildCalendarDayEntries,
   buildCalendarDaySummaries,
@@ -128,7 +129,10 @@ export function CalendarScreen(): React.JSX.Element {
   const [screenState, setScreenState] = useState(() =>
     createCalendarScreenState(now, scheduleReadContext.timezone)
   );
-  const calendarRenderKey = `${screenState.visibleMonth}:${resolvedTheme}`;
+  const calendarRenderKey = getCalendarRenderKey({
+    resolvedTheme,
+    visibleMonth: screenState.visibleMonth,
+  });
   const previousTimezoneRef = useRef(scheduleReadContext.timezone);
   const projectionQuery = useOccurrenceProjectionQuery({
     context: scheduleReadContext,

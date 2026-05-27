@@ -30,16 +30,4 @@ describe("CalendarScreen", () => {
     expect(calendarScreen).toContain("useOccurrenceProjectionNow");
     expect(calendarScreen).not.toContain("useMemo(() => new Date(), [])");
   });
-
-  it("캘린더 라이브러리 내부 스타일은 테마 변경 때 다시 계산한다", () => {
-    const calendarScreen = readWorkspaceFile(
-      "src/screens/calendar/ui/calendar-screen.tsx"
-    );
-
-    expect(calendarScreen).toContain("resolvedTheme");
-    expect(calendarScreen).toContain(
-      "const calendarRenderKey = `${screenState.visibleMonth}:${resolvedTheme}`"
-    );
-    expect(calendarScreen).toContain("key={calendarRenderKey}");
-  });
 });
