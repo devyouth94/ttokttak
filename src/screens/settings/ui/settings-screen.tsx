@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -7,13 +7,12 @@ import {
   Linking,
   Modal,
   Pressable,
-  StyleSheet,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
-import { ExternalLink, Pencil } from "lucide-react-native";
+import { ExternalLink } from "lucide-react-native";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { useSession } from "~/application/session";
@@ -29,8 +28,7 @@ import {
 } from "~/features/settings";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
 import type { AppThemePreference } from "~/shared/theme/app-theme";
-import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppTheme, useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppTheme } from "~/shared/theme/theme-context";
 import { AppScreen } from "~/shared/ui/app-screen";
 import {
   AppSelectMenu,
@@ -38,174 +36,15 @@ import {
 } from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
-import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
-type SectionTitleProps = {
-  title: string;
-};
-
-type SettingsSectionCardProps = {
-  children: ReactNode;
-  title: string;
-};
-
-type SettingsRowProps = {
-  accessory?: ReactNode;
-  description?: string;
-  isDisabled?: boolean;
-  isFirst?: boolean;
-  isPressable?: boolean;
-  onPress?: () => void;
-  tone?: "default" | "danger";
-  title: string;
-};
-
-type SettingsValueRowProps = {
-  isFirst?: boolean;
-  isPressable?: boolean;
-  onPress?: () => void;
-  title: string;
-  value: string;
-};
-
-type SettingsControlRowProps = {
-  accessory: ReactNode;
-  description?: string;
-  isFirst?: boolean;
-  title: string;
-};
-
-function SectionTitle({ title }: SectionTitleProps): React.JSX.Element {
-  const styles = useSettingsScreenStyles();
-
-  return (
-    <AppText style={styles.sectionTitle} variant="caption">
-      {title}
-    </AppText>
-  );
-}
-
-function SettingsSectionCard({
-  children,
-  title,
-}: SettingsSectionCardProps): React.JSX.Element {
-  const styles = useSettingsScreenStyles();
-
-  return (
-    <View style={styles.sectionCard}>
-      <SectionTitle title={title} />
-
-      <View>{children}</View>
-    </View>
-  );
-}
-
-function SettingsRow({
-  accessory,
-  description,
-  isDisabled = false,
-  isFirst = false,
-  isPressable = false,
-  onPress,
-  tone = "default",
-  title,
-}: SettingsRowProps): React.JSX.Element {
-  const styles = useSettingsScreenStyles();
-
-  return (
-    <Pressable
-      accessibilityRole={isPressable ? "button" : undefined}
-      disabled={!isPressable || isDisabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        !isFirst ? styles.rowDivider : undefined,
-        isDisabled ? styles.rowDisabled : undefined,
-        isPressable && !isDisabled && pressed ? styles.rowPressed : undefined,
-      ]}
-    >
-      <View style={styles.rowContent}>
-        <AppText
-          style={[
-            styles.rowTitle,
-            tone === "danger" ? styles.dangerText : null,
-          ]}
-          variant="body3"
-        >
-          {title}
-        </AppText>
-        {description ? (
-          <AppText style={styles.rowDescription} variant="body3">
-            {description}
-          </AppText>
-        ) : null}
-      </View>
-
-      {accessory ? <View style={styles.rowAccessory}>{accessory}</View> : null}
-    </Pressable>
-  );
-}
-
-function SettingsControlRow({
-  accessory,
-  description,
-  isFirst = false,
-  title,
-}: SettingsControlRowProps): React.JSX.Element {
-  const styles = useSettingsScreenStyles();
-
-  return (
-    <View style={[styles.row, !isFirst ? styles.rowDivider : undefined]}>
-      <View style={styles.rowContent}>
-        <AppText style={styles.rowTitle} variant="body3">
-          {title}
-        </AppText>
-        {description ? (
-          <AppText style={styles.rowDescription} variant="body3">
-            {description}
-          </AppText>
-        ) : null}
-      </View>
-
-      <View style={styles.rowAccessory}>{accessory}</View>
-    </View>
-  );
-}
-
-function SettingsValueRow({
-  isFirst = false,
-  isPressable = false,
-  onPress,
-  title,
-  value,
-}: SettingsValueRowProps): React.JSX.Element {
-  const styles = useSettingsScreenStyles();
-  const themeColors = useAppThemeColors();
-
-  return (
-    <Pressable
-      accessibilityRole={isPressable ? "button" : undefined}
-      disabled={!isPressable}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        !isFirst ? styles.rowDivider : undefined,
-        isPressable && pressed ? styles.rowPressed : undefined,
-      ]}
-    >
-      <AppText style={styles.rowTitle} variant="body3">
-        {title}
-      </AppText>
-      <View style={styles.valueWithIcon}>
-        <AppText style={styles.rowValue} variant="body3">
-          {value}
-        </AppText>
-        {isPressable ? <Pencil color={themeColors.textSoft} size={14} /> : null}
-      </View>
-    </Pressable>
-  );
-}
+import {
+  SettingsControlRow,
+  SettingsRow,
+  SettingsSectionCard,
+  SettingsValueRow,
+} from "./settings-screen-rows";
+import { useSettingsScreenStyles } from "./settings-screen-styles";
 
 export function SettingsScreen(): React.JSX.Element {
   const { t } = useTranslation();
@@ -543,21 +382,31 @@ export function SettingsScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.sections}>
-          <SettingsSectionCard title={t("settings.account.section")}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.account.section")}
+          >
             <SettingsValueRow
+              iconColor={themeColors.textSoft}
               isFirst
               isPressable
               onPress={openNameEditor}
+              styles={styles}
               title={t("settings.account.name")}
               value={displayName}
             />
             <SettingsValueRow
+              iconColor={themeColors.textSoft}
+              styles={styles}
               title={t("settings.account.email")}
               value={email}
             />
           </SettingsSectionCard>
 
-          <SettingsSectionCard title={t("settings.environment.section")}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.environment.section")}
+          >
             <SettingsControlRow
               accessory={
                 <View style={styles.selectAccessory}>
@@ -585,6 +434,7 @@ export function SettingsScreen(): React.JSX.Element {
               }
               description={t("settings.environment.appLanguageLocalOnly")}
               isFirst
+              styles={styles}
               title={t("settings.environment.appLanguage")}
             />
             <SettingsControlRow
@@ -611,21 +461,31 @@ export function SettingsScreen(): React.JSX.Element {
                 </View>
               }
               description={t("settings.environment.themeLocalOnly")}
+              styles={styles}
               title={t("settings.environment.theme")}
             />
             <SettingsValueRow
+              iconColor={themeColors.textSoft}
+              styles={styles}
               title={t("settings.environment.timezone")}
               value={timezone}
             />
           </SettingsSectionCard>
 
-          <SettingsSectionCard title={t("settings.notifications.section")}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.notifications.section")}
+          >
             <SettingsValueRow
+              iconColor={themeColors.textSoft}
               isFirst
+              styles={styles}
               title={t("settings.notifications.appNotification")}
               value={getNotificationStatusText(permission.status)}
             />
             <SettingsValueRow
+              iconColor={themeColors.textSoft}
+              styles={styles}
               title={t("settings.notifications.permissionStatus")}
               value={
                 isPermissionLoading
@@ -652,6 +512,7 @@ export function SettingsScreen(): React.JSX.Element {
                 onPress={() => {
                   void handleRequestNotificationPermission();
                 }}
+                styles={styles}
                 title={t("settings.notifications.permissionRequest")}
               />
             ) : null}
@@ -667,14 +528,20 @@ export function SettingsScreen(): React.JSX.Element {
                 onPress={() => {
                   void handleOpenSystemSettings();
                 }}
+                styles={styles}
                 title={t("settings.notifications.openSettings")}
               />
             ) : null}
           </SettingsSectionCard>
 
-          <SettingsSectionCard title={t("settings.appInfo.section")}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.appInfo.section")}
+          >
             <SettingsValueRow
+              iconColor={themeColors.textSoft}
               isFirst
+              styles={styles}
               title={t("settings.appInfo.version")}
               value={`v${appVersion}`}
             />
@@ -686,6 +553,7 @@ export function SettingsScreen(): React.JSX.Element {
               onPress={() => {
                 void handleOpenTermsOfService();
               }}
+              styles={styles}
               title={t("settings.appInfo.terms")}
             />
             <SettingsRow
@@ -696,11 +564,15 @@ export function SettingsScreen(): React.JSX.Element {
               onPress={() => {
                 void handleOpenPrivacyPolicy();
               }}
+              styles={styles}
               title={t("settings.appInfo.privacyPolicy")}
             />
           </SettingsSectionCard>
 
-          <SettingsSectionCard title={t("settings.accountManagement.section")}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.accountManagement.section")}
+          >
             <SettingsRow
               accessory={
                 isSigningOut ? (
@@ -716,6 +588,7 @@ export function SettingsScreen(): React.JSX.Element {
               onPress={() => {
                 void handleSignOut();
               }}
+              styles={styles}
               title={t("settings.accountManagement.signOut")}
             />
             <SettingsRow
@@ -727,6 +600,7 @@ export function SettingsScreen(): React.JSX.Element {
               isDisabled={isDeletingAccount || isSigningOut}
               isPressable
               onPress={requestDeleteAccount}
+              styles={styles}
               title={t("settings.accountManagement.delete")}
               tone="danger"
             />
@@ -805,152 +679,4 @@ export function SettingsScreen(): React.JSX.Element {
       </Modal>
     </AppScreen>
   );
-}
-
-function useSettingsScreenStyles() {
-  const themeColors = useAppThemeColors();
-
-  return useMemo(() => createSettingsScreenStyles(themeColors), [themeColors]);
-}
-
-function createSettingsScreenStyles(themeColors: AppThemeColors) {
-  return StyleSheet.create({
-    dangerText: {
-      color: themeColors.error,
-    },
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
-    },
-    selectAccessory: {
-      alignItems: "center",
-      flexDirection: "row",
-      gap: spacing.xs,
-    },
-    modalBackdrop: {
-      alignItems: "center",
-      backgroundColor: themeColors.scrim,
-      flex: 1,
-      justifyContent: "center",
-      padding: spacing.lg,
-    },
-    nameEditor: {
-      backgroundColor: themeColors.surface,
-      borderRadius: borderRadius.xl,
-      gap: spacing.md,
-      padding: spacing.lg,
-      width: "100%",
-    },
-    nameEditorActions: {
-      flexDirection: "row",
-      gap: spacing.sm,
-      justifyContent: "flex-end",
-    },
-    nameEditorButton: {
-      alignItems: "center",
-      borderRadius: borderRadius.pill,
-      height: 36,
-      justifyContent: "center",
-      minWidth: 72,
-      paddingHorizontal: spacing.md,
-    },
-    nameEditorCancelButton: {
-      borderColor: themeColors.border,
-      borderWidth: StyleSheet.hairlineWidth,
-    },
-    nameEditorCancelText: {
-      color: themeColors.textMuted,
-    },
-    nameEditorSaveButton: {
-      backgroundColor: themeColors.primary,
-    },
-    nameEditorSaveText: {
-      color: themeColors.primaryForeground,
-    },
-    nameEditorTitle: {
-      color: themeColors.text,
-    },
-    nameErrorText: {
-      color: themeColors.error,
-    },
-    nameInput: {
-      backgroundColor: "transparent",
-      borderColor: themeColors.border,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      color: themeColors.text,
-      fontFamily: typography.fontFamily.body,
-      fontSize: typography.size.body3,
-      lineHeight: typography.lineHeight.body3,
-      minHeight: 48,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    row: {
-      alignItems: "center",
-      flexDirection: "row",
-      gap: spacing.md,
-      justifyContent: "space-between",
-      paddingVertical: spacing.xs,
-    },
-    rowAccessory: {
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    rowDivider: {
-      borderTopColor: themeColors.divider,
-      borderTopWidth: StyleSheet.hairlineWidth,
-    },
-    rowContent: {
-      flex: 1,
-      gap: spacing.xxs,
-      minWidth: 0,
-    },
-    rowDescription: {
-      color: themeColors.textSoft,
-    },
-    rowDisabled: {
-      opacity: 0.56,
-    },
-    rowPressed: {
-      opacity: 0.72,
-    },
-    rowTitle: {
-      color: themeColors.text,
-    },
-    rowValue: {
-      color: themeColors.textSoft,
-      flexShrink: 1,
-      textAlign: "right",
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingHorizontal: spacing.md,
-    },
-    sectionCard: {
-      backgroundColor: themeColors.surface,
-      borderRadius: borderRadius.xl,
-      paddingBottom: spacing.xs,
-      paddingHorizontal: spacing.md,
-      paddingTop: spacing.md,
-    },
-    sections: {
-      gap: spacing.lg,
-    },
-    sectionTitle: {
-      color: themeColors.text,
-    },
-    screenContent: {
-      flex: 1,
-    },
-    valueWithIcon: {
-      alignItems: "center",
-      flexDirection: "row",
-      flexShrink: 1,
-      gap: spacing.xs,
-    },
-  });
 }
