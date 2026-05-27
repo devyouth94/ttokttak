@@ -16,6 +16,13 @@ import {
 } from "./app-theme";
 import { changeAppThemePreference } from "./app-theme-change";
 import { getAppThemeColors } from "./app-theme-colors";
+import {
+  completeAppThemePreferenceMutation,
+  createAppThemeHydrationState,
+  failAppThemePreferenceMutation,
+  recordHydratedAppThemePreference,
+  startAppThemePreferenceMutation,
+} from "./app-theme-hydration";
 import { readStoredAppThemePreference } from "./app-theme-storage";
 import { AppThemeContext, type AppThemeContextValue } from "./theme-context";
 
@@ -26,7 +33,7 @@ export function AppThemeProvider({
   const [themePreference, setThemePreferenceState] =
     useState<AppThemePreference>(fallbackAppThemePreference);
   const themePreferenceRef = useRef(themePreference);
-  const didChangePreferenceRef = useRef(false);
+  const hydrationStateRef = useRef(createAppThemeHydrationState());
 
   useEffect(() => {
     themePreferenceRef.current = themePreference;
@@ -38,7 +45,14 @@ export function AppThemeProvider({
     void resolveInitialAppThemePreference({
       readStoredPreference: readStoredAppThemePreference,
     }).then((initialPreference) => {
-      if (isMounted && !didChangePreferenceRef.current) {
+      const hydrationResult = recordHydratedAppThemePreference(
+        hydrationStateRef.current,
+        initialPreference
+      );
+
+      hydrationStateRef.current = hydrationResult.nextState;
+
+      if (isMounted && hydrationResult.shouldApplyHydratedPreference) {
         setThemePreferenceState(initialPreference);
       }
     });
@@ -50,15 +64,35 @@ export function AppThemeProvider({
 
   const setThemePreference = useCallback(
     async (nextPreference: AppThemePreference) => {
-      didChangePreferenceRef.current = true;
+      hydrationStateRef.current = startAppThemePreferenceMutation(
+        hydrationStateRef.current
+      );
 
-      await changeAppThemePreference({
-        applyPreference: async (preference) => {
-          setThemePreferenceState(preference);
-        },
-        currentPreference: themePreferenceRef.current,
-        nextPreference,
-      });
+      try {
+        await changeAppThemePreference({
+          applyPreference: async (preference) => {
+            setThemePreferenceState(preference);
+          },
+          currentPreference: themePreferenceRef.current,
+          nextPreference,
+        });
+
+        hydrationStateRef.current = completeAppThemePreferenceMutation(
+          hydrationStateRef.current
+        );
+      } catch (error) {
+        const failureResult = failAppThemePreferenceMutation(
+          hydrationStateRef.current
+        );
+
+        hydrationStateRef.current = failureResult.nextState;
+
+        if (failureResult.hydratedPreferenceToRestore) {
+          setThemePreferenceState(failureResult.hydratedPreferenceToRestore);
+        }
+
+        throw error;
+      }
     },
     []
   );
