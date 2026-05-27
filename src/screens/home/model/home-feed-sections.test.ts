@@ -71,6 +71,7 @@ describe("buildHomeFeedSections", () => {
           title: "다가오는 필터 교체",
         }),
       ],
+      language: "ko",
       now: new Date("2026-04-10T03:00:00.000Z"),
       selectedDateId: "2026-04-10",
       timezone,
@@ -134,6 +135,7 @@ describe("buildHomeFeedSections", () => {
 
   it("지난 일정 row meta는 지난 날짜와 알림 시간 사이에 점을 넣는다", () => {
     const sections = buildHomeFeedSections({
+      language: "ko",
       completionLogs: [],
       items: [
         createItem({
@@ -158,6 +160,7 @@ describe("buildHomeFeedSections", () => {
 
   it("지난 일정은 오늘 이전 날짜 중 같은 항목당 최신 overdue 1개만 노출한다", () => {
     const sections = buildHomeFeedSections({
+      language: "ko",
       completionLogs: [],
       items: [
         createItem({
@@ -182,6 +185,7 @@ describe("buildHomeFeedSections", () => {
 
   it("오늘이 아닌 날짜를 선택하면 해당 날짜 섹션만 만든다", () => {
     const sections = buildHomeFeedSections({
+      language: "ko",
       completionLogs: [
         createLog({
           itemId: "selected-item",
@@ -237,6 +241,7 @@ describe("buildHomeFeedSections", () => {
     );
 
     const sections = buildHomeFeedSections({
+      language: "ko",
       completionLogs: [],
       items,
       now: new Date("2026-04-10T03:00:00.000Z"),
@@ -261,6 +266,7 @@ describe("buildHomeFeedSections", () => {
 
   it("수정된 version이 있으면 홈 섹션도 미래 occurrence만 새 규칙으로 보여준다", () => {
     const sections = buildHomeFeedSections({
+      language: "ko",
       completionLogs: [],
       items: [
         createItem({

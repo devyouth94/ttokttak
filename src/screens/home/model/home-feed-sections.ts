@@ -5,7 +5,6 @@ import {
   isSameDay,
   parse,
 } from "date-fns";
-import { enUS, ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
@@ -19,6 +18,7 @@ import {
   formatLocalDateTitle,
   formatLocalTimeLabel,
   getCurrentScheduleVersion,
+  getDateFnsLocale,
   getLatestOverdueItemOccurrenceEntries,
   getOccurrenceIdentity,
   getOccurrenceProjectionRequirement,
@@ -28,11 +28,6 @@ import {
 import type { AppLanguage } from "~/shared/i18n";
 
 const HOME_DATE_RANGE_DAYS = 15;
-
-const dateLocaleByLanguage = {
-  en: enUS,
-  ko,
-} as const;
 
 const homeFeedCopyByLanguage = {
   en: {
@@ -73,11 +68,6 @@ const homeFeedCopyByLanguage = {
   },
 } as const;
 
-const homeDateTitleFormatByLanguage = {
-  en: "MMM d",
-  ko: "M월 d일",
-} as const satisfies Record<AppLanguage, string>;
-
 export type HomeDateOption = {
   dayLabel: string;
   id: string;
@@ -108,7 +98,7 @@ export type HomeFeedSection = {
 type BuildHomeFeedSectionsOptions = {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   projection?: HomeFeedOccurrenceProjectionRequirement["projection"];
   selectedDateId: string;
@@ -118,7 +108,7 @@ type BuildHomeFeedSectionsOptions = {
 type BuildSectionCardsOptions = {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   range: LocalDateUtcRange;
   sectionId: HomeFeedSection["id"];
@@ -154,7 +144,7 @@ export function createHomeDateOptions(
   today: Date,
   language: AppLanguage = "ko"
 ): HomeDateOption[] {
-  const locale = dateLocaleByLanguage[language];
+  const locale = getDateFnsLocale(language);
   const copy = homeFeedCopyByLanguage[language];
 
   return Array.from({ length: HOME_DATE_RANGE_DAYS }, (_, index) => {
@@ -167,7 +157,7 @@ export function createHomeDateOptions(
       isToday: index === 0,
       title: isSameDay(date, today)
         ? copy.sections.today
-        : format(date, homeDateTitleFormatByLanguage[language], { locale }),
+        : formatLocalDateTitle(id, language),
       value: format(date, "d"),
     };
   });
@@ -176,7 +166,7 @@ export function createHomeDateOptions(
 export function buildHomeFeedSections({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   projection,
   selectedDateId,
@@ -253,7 +243,7 @@ export function buildHomeFeedSections({
 function buildSelectedDateSection({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   selectedDateTitle,
   selectedRange,
@@ -283,7 +273,7 @@ function buildSelectedDateSection({
 function buildOverdueCards({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   overdueLookbackStartLocalDate,
   timezone,
@@ -305,7 +295,7 @@ function buildOverdueCards({
 function buildUpcomingCards({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   upcomingRange,
   timezone,
@@ -330,7 +320,7 @@ function buildUpcomingCards({
 function buildScheduledCards({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   range,
   sectionId,

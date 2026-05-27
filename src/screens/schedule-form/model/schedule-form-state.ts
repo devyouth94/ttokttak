@@ -176,10 +176,10 @@ function parsePositiveInteger(value: string): number | null {
 
 export function createRecurringItemFormSchema(params: {
   isEditMode: boolean;
-  language?: AppLanguage;
+  language: AppLanguage;
   todayLocalDate: string;
 }) {
-  const messages = FORM_ERROR_MESSAGES[params.language ?? "ko"];
+  const messages = FORM_ERROR_MESSAGES[params.language];
 
   return z
     .object({
@@ -334,6 +334,7 @@ export function createRecurringItemFormSchema(params: {
 
 export const recurringItemFormSchema = createRecurringItemFormSchema({
   isEditMode: false,
+  language: "ko",
   todayLocalDate: getTodayLocalDate(),
 });
 

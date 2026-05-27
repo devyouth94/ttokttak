@@ -1,9 +1,9 @@
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import type { Locale } from "date-fns";
-import { format } from "date-fns";
-import { enUS, ko } from "date-fns/locale";
 
 import {
+  formatFullLocalDate,
+  formatLocalTimeLabel,
+  formatWeekdayLocalDateTitle,
   getFirstOccurrenceLocalDate,
   type RecurrenceType,
 } from "~/entities/schedule";
@@ -18,8 +18,6 @@ import {
   type CustomRecurrenceUnit,
   type DatePickerTarget,
   getCustomRecurrenceUnit,
-  parseLocalDateToDate,
-  parseLocalTimeToDate,
   type PickerMode,
 } from "./schedule-form-state";
 
@@ -48,26 +46,6 @@ export type RecurrenceSectionState = {
 };
 
 const positiveIntegerPattern = /^[1-9]\d*$/;
-
-const formDateLocaleByLanguage = {
-  en: enUS,
-  ko,
-} as const satisfies Record<AppLanguage, Locale>;
-
-const fullDateFormatByLanguage = {
-  en: "MMM d, yyyy",
-  ko: "yyyy년 M월 d일",
-} as const satisfies Record<AppLanguage, string>;
-
-const firstReminderDateFormatByLanguage = {
-  en: "EEEE, MMM d",
-  ko: "M월 d일 EEEE",
-} as const satisfies Record<AppLanguage, string>;
-
-const localTimeFormatByLanguage = {
-  en: "h:mm a",
-  ko: "a h:mm",
-} as const satisfies Record<AppLanguage, string>;
 
 const scheduleFormScreenTitleByLanguage = {
   en: {
@@ -186,26 +164,14 @@ function formatLocalDateForDisplay(
   localDate: string,
   language: AppLanguage
 ): string {
-  return format(
-    parseLocalDateToDate(localDate),
-    fullDateFormatByLanguage[language],
-    {
-      locale: formDateLocaleByLanguage[language],
-    }
-  );
+  return formatFullLocalDate(localDate, language);
 }
 
 function formatLocalTimeForDisplay(
   localTime: string,
   language: AppLanguage
 ): string {
-  return format(
-    parseLocalTimeToDate(localTime),
-    localTimeFormatByLanguage[language],
-    {
-      locale: formDateLocaleByLanguage[language],
-    }
-  );
+  return formatLocalTimeLabel(localTime, language);
 }
 
 export function getScheduleFormScreenTitle(
@@ -302,10 +268,9 @@ export function getFirstReminderHelperText(
     return null;
   }
 
-  const dateLabel = format(
-    parseLocalDateToDate(firstReminderLocalDate),
-    firstReminderDateFormatByLanguage[language],
-    { locale: formDateLocaleByLanguage[language] }
+  const dateLabel = formatWeekdayLocalDateTitle(
+    firstReminderLocalDate,
+    language
   );
 
   return firstReminderHelperFormatters[language](dateLabel);

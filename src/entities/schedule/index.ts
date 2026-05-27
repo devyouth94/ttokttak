@@ -1,8 +1,13 @@
 export {
+  formatFullLocalDate,
   formatLocalDateTitle,
   formatLocalTimeLabel,
+  formatUtcDateTitleInTimezone,
   formatUtcTimeInTimezone,
+  formatVisibleMonthTitle,
+  formatWeekdayLocalDateTitle,
   getCompletionActionLabel,
+  getDateFnsLocale,
   getRecurrenceLabel,
 } from "./lib/display";
 export {

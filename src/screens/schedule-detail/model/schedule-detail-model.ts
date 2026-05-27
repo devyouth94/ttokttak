@@ -1,5 +1,4 @@
 import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
-import { enUS, ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
@@ -11,8 +10,10 @@ import type {
 } from "~/entities/schedule";
 import {
   createItemOccurrenceProjection,
+  formatFullLocalDate,
   formatLocalDateTitle,
   formatLocalTimeLabel,
+  formatUtcDateTitleInTimezone,
   formatUtcTimeInTimezone,
   getCompletionActionLabel,
   getCurrentScheduleVersion,
@@ -21,21 +22,6 @@ import {
 import type { AppLanguage } from "~/shared/i18n";
 
 const OVERDUE_LOOKBACK_DAYS = 730;
-
-const dateLocaleByLanguage = {
-  en: enUS,
-  ko,
-} as const;
-
-const detailDateFormatByLanguage = {
-  en: "MMM d",
-  ko: "M월 d일",
-} as const satisfies Record<AppLanguage, string>;
-
-const summaryDateFormatByLanguage = {
-  en: "MMM d, yyyy",
-  ko: "yyyy년 M월 d일",
-} as const satisfies Record<AppLanguage, string>;
 
 const contentRecoveryCopyByLanguage = {
   en: {
@@ -219,12 +205,12 @@ export function getItemDetailBasisOccurrence({
 }
 
 export function buildOccurrenceStatusCard({
-  language = "ko",
+  language,
   now,
   occurrence,
   timezone,
 }: {
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   occurrence: DerivedOccurrence;
   timezone: string;
@@ -232,13 +218,10 @@ export function buildOccurrenceStatusCard({
   const titleByStatus = getOccurrenceStatusTitleByStatus(language);
 
   return {
-    dateLabel: formatInTimeZone(
+    dateLabel: formatUtcDateTitleInTimezone(
       occurrence.scheduledAtUtc,
       timezone,
-      detailDateFormatByLanguage[language],
-      {
-        locale: dateLocaleByLanguage[language],
-      }
+      language
     ),
     metaLabel: getOccurrenceStatusMetaLabel({
       language,
@@ -258,13 +241,13 @@ export function buildOccurrenceStatusCard({
 export function buildRecurringItemDetailViewModel({
   completionLogs,
   item,
-  language = "ko",
+  language,
   now,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   item: RecurringItem;
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   timezone: string;
 }): ItemDetailViewModel {
@@ -349,7 +332,7 @@ export function buildSummarySettingBadges(
     {
       id: "start-date",
       label: copy.startDateLabel,
-      value: formatSummaryDate(item.startDateLocal, language),
+      value: formatFullLocalDate(item.startDateLocal, language),
     },
   ];
 
@@ -357,7 +340,7 @@ export function buildSummarySettingBadges(
     badges.push({
       id: "end-date",
       label: copy.endDateLabel,
-      value: formatSummaryDate(endDateLocal, language),
+      value: formatFullLocalDate(endDateLocal, language),
     });
   }
 
@@ -370,16 +353,6 @@ export function buildSummarySettingBadges(
   }
 
   return badges;
-}
-
-function formatSummaryDate(localDate: string, language: AppLanguage): string {
-  return format(
-    parse(localDate, "yyyy-MM-dd", new Date()),
-    summaryDateFormatByLanguage[language],
-    {
-      locale: dateLocaleByLanguage[language],
-    }
-  );
 }
 
 function buildStatusCard({
@@ -409,11 +382,10 @@ function buildStatusCard({
     );
 
     return {
-      dateLabel: formatInTimeZone(
+      dateLabel: formatUtcDateTitleInTimezone(
         latestOverdueOccurrence.scheduledAtUtc,
         timezone,
-        detailDateFormatByLanguage[language],
-        { locale: dateLocaleByLanguage[language] }
+        language
       ),
       metaLabel:
         overdueOccurrences.length === 1
@@ -438,11 +410,10 @@ function buildStatusCard({
   }
 
   return {
-    dateLabel: formatInTimeZone(
+    dateLabel: formatUtcDateTitleInTimezone(
       nextOccurrence.scheduledAtUtc,
       timezone,
-      detailDateFormatByLanguage[language],
-      { locale: dateLocaleByLanguage[language] }
+      language
     ),
     metaLabel: getRelativeDayLabel(
       nextOccurrence.scheduledAtUtc,

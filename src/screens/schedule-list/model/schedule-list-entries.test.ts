@@ -11,7 +11,8 @@ describe("schedule-list entries", () => {
     expect(
       formatScheduleListNextOccurrenceTimeLabel(
         "2026-04-23T00:00:00.000Z",
-        "Asia/Seoul"
+        "Asia/Seoul",
+        "ko"
       )
     ).toBe("오전 9:00");
   });
@@ -20,7 +21,8 @@ describe("schedule-list entries", () => {
     expect(
       formatScheduleListNextOccurrenceTimeLabel(
         "2026-04-22T00:00:00.000Z",
-        "Asia/Seoul"
+        "Asia/Seoul",
+        "ko"
       )
     ).toBe("오전 9:00");
   });
@@ -29,7 +31,8 @@ describe("schedule-list entries", () => {
     expect(
       formatScheduleListNextOccurrenceTimeLabel(
         "2026-04-25T00:00:00.000Z",
-        "Asia/Seoul"
+        "Asia/Seoul",
+        "ko"
       )
     ).toBe("오전 9:00");
   });
@@ -38,7 +41,8 @@ describe("schedule-list entries", () => {
     expect(
       formatScheduleListNextOccurrenceTimeLabel(
         "2026-05-11T23:00:00.000Z",
-        "Asia/Seoul"
+        "Asia/Seoul",
+        "ko"
       )
     ).toBe("오전 8:00");
   });
@@ -47,7 +51,8 @@ describe("schedule-list entries", () => {
     expect(
       formatScheduleListNextOccurrenceTimeLabel(
         "2026-05-11T23:00:00.000Z",
-        "Asia/Seoul"
+        "Asia/Seoul",
+        "ko"
       )
     ).toBe("오전 8:00");
   });
@@ -89,6 +94,7 @@ describe("schedule-list entries", () => {
 
   it("오늘 시간이 지난 반복 일정은 다음 발생을 표시한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -108,6 +114,7 @@ describe("schedule-list entries", () => {
 
   it("다음 예정이 없는 일정은 예정 없음으로 표시한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -137,6 +144,7 @@ describe("schedule-list entries", () => {
 
   it("종료일이 지나 다음 예정이 없는 반복 일정도 목록 row에서는 예정 없음으로 표시한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -158,6 +166,7 @@ describe("schedule-list entries", () => {
 
   it("일정 목록 entry는 일정 색상 key를 함께 제공한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -175,6 +184,7 @@ describe("schedule-list entries", () => {
 
   it("기본 정렬은 제목순이다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -199,6 +209,7 @@ describe("schedule-list entries", () => {
 
   it("생성순에서는 다음 예정이 없어도 생성일 기준으로 정렬한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -225,6 +236,7 @@ describe("schedule-list entries", () => {
 
   it("제목순으로 정렬한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({
@@ -246,6 +258,7 @@ describe("schedule-list entries", () => {
 
   it("제목순에서는 다음 예정이 없어도 제목 기준으로 정렬한다", () => {
     const entries = buildScheduleListEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createRecurringItem({

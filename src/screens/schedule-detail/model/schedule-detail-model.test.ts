@@ -64,6 +64,7 @@ describe("recurring item detail helpers", () => {
     const viewModel = buildRecurringItemDetailViewModel({
       completionLogs: [],
       item,
+      language: "ko",
       now: new Date("2026-04-10T03:00:00.000Z"),
       timezone,
     });
@@ -90,6 +91,7 @@ describe("recurring item detail helpers", () => {
     ];
 
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs,
       item,
       now: new Date("2026-04-10T03:00:00.000Z"),
@@ -116,6 +118,7 @@ describe("recurring item detail helpers", () => {
     ];
 
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs,
       item,
       now: new Date("2026-04-11T03:00:00.000Z"),
@@ -130,6 +133,7 @@ describe("recurring item detail helpers", () => {
 
   it("상세 요약은 일정 색상 key를 함께 제공한다", () => {
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs: [],
       item: createItem({
         colorKey: "green",
@@ -143,6 +147,7 @@ describe("recurring item detail helpers", () => {
 
   it("복구할 수 없는 일정은 상세에서 복구 실패 상태를 제공한다", () => {
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs: [],
       item: createItem({
         contentStatus: {
@@ -271,6 +276,7 @@ describe("recurring item detail helpers", () => {
 
   it("종료일이 지나 다음 occurrence가 없어도 상세 요약과 다음 일정 없음 상태를 함께 제공한다", () => {
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs: [
         createLog({
           id: "log-1",
@@ -320,6 +326,7 @@ describe("recurring item detail helpers", () => {
       }),
     ];
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs,
       item,
       now: new Date("2026-04-14T03:00:00.000Z"),
@@ -343,6 +350,7 @@ describe("recurring item detail helpers", () => {
 
     expect(
       buildOccurrenceStatusCard({
+        language: "ko",
         now: new Date("2026-04-14T03:00:00.000Z"),
         occurrence: basisOccurrence,
         timezone,
@@ -379,6 +387,7 @@ describe("recurring item detail helpers", () => {
     });
 
     const viewModel = buildRecurringItemDetailViewModel({
+      language: "ko",
       completionLogs: [],
       item,
       now: new Date("2026-04-14T03:00:00.000Z"),

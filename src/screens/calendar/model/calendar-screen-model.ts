@@ -1,5 +1,4 @@
 import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
-import { enUS, ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
@@ -11,6 +10,8 @@ import type {
 import {
   createLocalDateUtcRange as createProjectionLocalDateUtcRange,
   formatUtcTimeInTimezone,
+  formatVisibleMonthTitle as formatScheduleVisibleMonthTitle,
+  formatWeekdayLocalDateTitle,
   getItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
 import type { AppLanguage } from "~/shared/i18n";
@@ -31,21 +32,6 @@ const calendarStatusLabelByStatus = {
     skipped: "건너뜀",
   },
 } as const satisfies Record<AppLanguage, Record<OccurrenceStatus, string>>;
-
-const calendarLocaleByLanguage = {
-  en: enUS,
-  ko,
-} as const;
-
-const visibleMonthTitleFormatByLanguage = {
-  en: "MMMM yyyy",
-  ko: "yyyy년 M월",
-} as const satisfies Record<AppLanguage, string>;
-
-const selectedDateSectionTitleFormatByLanguage = {
-  en: "EEEE, MMM d",
-  ko: "M월 d일 EEEE",
-} as const satisfies Record<AppLanguage, string>;
 
 const calendarDayEntryCountFormatters = {
   en: (count: number) => (count === 1 ? "1 item" : `${count} items`),
@@ -113,26 +99,14 @@ export function formatVisibleMonthTitle(
   visibleMonth: string,
   language: AppLanguage = "ko"
 ): string {
-  return format(
-    createVisibleMonthDate(visibleMonth),
-    visibleMonthTitleFormatByLanguage[language],
-    {
-      locale: calendarLocaleByLanguage[language],
-    }
-  );
+  return formatScheduleVisibleMonthTitle(visibleMonth, language);
 }
 
 export function formatSelectedDateSectionTitle(
   selectedDate: string,
   language: AppLanguage = "ko"
 ): string {
-  return format(
-    parse(selectedDate, "yyyy-MM-dd", new Date()),
-    selectedDateSectionTitleFormatByLanguage[language],
-    {
-      locale: calendarLocaleByLanguage[language],
-    }
-  );
+  return formatWeekdayLocalDateTitle(selectedDate, language);
 }
 
 export function formatCalendarDayEntryCount(
@@ -340,14 +314,14 @@ export function buildCalendarDaySummaries({
 export function buildCalendarDayEntries({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   selectedDate,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   selectedDate: string;
   timezone: string;
@@ -378,7 +352,7 @@ export function buildCalendarDayEntries({
       ),
       title: item.title,
     }))
-    .sort(compareCalendarEntries);
+    .sort((left, right) => compareCalendarEntries(left, right, language));
 }
 
 function createVisibleMonthUtcRange(
@@ -424,7 +398,8 @@ function compareCalendarMarkerItemsByScheduledAtUtc(
 
 function compareCalendarEntries(
   left: CalendarDayEntry,
-  right: CalendarDayEntry
+  right: CalendarDayEntry,
+  language: AppLanguage
 ): number {
   const timeDifference = left.scheduledAtUtc.localeCompare(
     right.scheduledAtUtc
@@ -434,5 +409,5 @@ function compareCalendarEntries(
     return timeDifference;
   }
 
-  return left.title.localeCompare(right.title, "ko");
+  return left.title.localeCompare(right.title, language);
 }

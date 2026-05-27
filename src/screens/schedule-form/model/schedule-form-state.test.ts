@@ -30,7 +30,7 @@ function getValidationMessages(
     options.language
       ? createRecurringItemFormSchema({
           isEditMode: options.isEditMode ?? false,
-          language: options.language,
+          language: options.language ?? "ko",
           todayLocalDate: options.todayLocalDate ?? "2026-05-06",
         })
       : recurringItemFormSchema;

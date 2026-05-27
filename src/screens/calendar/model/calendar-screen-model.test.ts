@@ -330,6 +330,7 @@ describe("calendar-screen-model", () => {
           title: "건너뜀 일정",
         }),
       ],
+      language: "ko",
       now: new Date("2026-04-12T00:30:00.000Z"),
       selectedDate: "2026-04-12",
       timezone,
@@ -414,6 +415,7 @@ describe("calendar-screen-model", () => {
 
   it("선택 날짜 entry는 일정 색상 key와 상태 라벨을 함께 제공한다", () => {
     const entries = buildCalendarDayEntries({
+      language: "ko",
       completionLogs: [
         createLog({
           action: "completed",
@@ -446,6 +448,7 @@ describe("calendar-screen-model", () => {
 
   it("선택 날짜 entry 보조 정보는 시간과 상태 라벨을 함께 표시한다", () => {
     const entries = buildCalendarDayEntries({
+      language: "ko",
       completionLogs: [
         createLog({
           action: "skipped",
@@ -473,6 +476,7 @@ describe("calendar-screen-model", () => {
 
   it("캘린더의 지난 일정 상태 라벨은 지남으로 표시한다", () => {
     const entries = buildCalendarDayEntries({
+      language: "ko",
       completionLogs: [],
       items: [
         createItem({

@@ -32,14 +32,14 @@ const noNextOccurrenceLabelByLanguage = {
 export function buildScheduleListEntries({
   completionLogs,
   items,
-  language = "ko",
+  language,
   now,
   sortMode = DEFAULT_SCHEDULE_LIST_SORT_MODE,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   sortMode?: ScheduleListSortMode;
   timezone: string;
@@ -65,13 +65,15 @@ export function buildScheduleListEntries({
       recurrenceLabel: getRecurrenceLabel(item, language),
       title: item.title,
     }))
-    .sort((left, right) => compareScheduleListEntries(left, right, sortMode));
+    .sort((left, right) =>
+      compareScheduleListEntries(left, right, sortMode, language)
+    );
 }
 
 export function formatScheduleListNextOccurrenceTimeLabel(
   scheduledAtUtc: string,
   timezone: string,
-  language: AppLanguage = "ko"
+  language: AppLanguage
 ): string {
   return formatUtcTimeInTimezone(scheduledAtUtc, timezone, language);
 }
@@ -83,29 +85,32 @@ function getNoNextOccurrenceLabel(language: AppLanguage): string {
 function compareScheduleListEntries(
   left: ScheduleListEntry,
   right: ScheduleListEntry,
-  sortMode: ScheduleListSortMode
+  sortMode: ScheduleListSortMode,
+  language: AppLanguage
 ): number {
   return sortMode === "createdDesc"
-    ? compareByCreatedAtDesc(left, right)
-    : compareByTitleAsc(left, right);
+    ? compareByCreatedAtDesc(left, right, language)
+    : compareByTitleAsc(left, right, language);
 }
 
 function compareByCreatedAtDesc(
   left: ScheduleListEntry,
-  right: ScheduleListEntry
+  right: ScheduleListEntry,
+  language: AppLanguage
 ): number {
   return (
     right.item.createdAt.localeCompare(left.item.createdAt) ||
-    compareByTitleAsc(left, right)
+    compareByTitleAsc(left, right, language)
   );
 }
 
 function compareByTitleAsc(
   left: ScheduleListEntry,
-  right: ScheduleListEntry
+  right: ScheduleListEntry,
+  language: AppLanguage
 ): number {
   return (
-    left.title.localeCompare(right.title, "ko") ||
+    left.title.localeCompare(right.title, language) ||
     compareByCreatedAtDescOnly(left, right)
   );
 }

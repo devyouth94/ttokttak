@@ -23,6 +23,21 @@ const localTimeFormatByLanguage = {
   ko: "a h:mm",
 } as const satisfies Record<AppLanguage, string>;
 
+const fullLocalDateFormatByLanguage = {
+  en: "MMM d, yyyy",
+  ko: "yyyy년 M월 d일",
+} as const satisfies Record<AppLanguage, string>;
+
+const weekdayLocalDateTitleFormatByLanguage = {
+  en: "EEEE, MMM d",
+  ko: "M월 d일 EEEE",
+} as const satisfies Record<AppLanguage, string>;
+
+const visibleMonthTitleFormatByLanguage = {
+  en: "MMMM yyyy",
+  ko: "yyyy년 M월",
+} as const satisfies Record<AppLanguage, string>;
+
 const completionActionLabelByLanguage = {
   en: {
     completed: "Complete",
@@ -109,6 +124,41 @@ export function formatLocalDateTitle(
   );
 }
 
+export function formatFullLocalDate(
+  localDate: string,
+  language: AppLanguage = "ko"
+): string {
+  return formatLocalDateWithPattern(
+    localDate,
+    fullLocalDateFormatByLanguage[language],
+    language
+  );
+}
+
+export function formatWeekdayLocalDateTitle(
+  localDate: string,
+  language: AppLanguage = "ko"
+): string {
+  return formatLocalDateWithPattern(
+    localDate,
+    weekdayLocalDateTitleFormatByLanguage[language],
+    language
+  );
+}
+
+export function formatVisibleMonthTitle(
+  visibleMonth: string,
+  language: AppLanguage = "ko"
+): string {
+  return format(
+    parse(`${visibleMonth}-01`, "yyyy-MM-dd", new Date()),
+    visibleMonthTitleFormatByLanguage[language],
+    {
+      locale: getDateFnsLocale(language),
+    }
+  );
+}
+
 export function formatLocalTimeLabel(
   localTime: string,
   language: AppLanguage = "ko"
@@ -118,6 +168,21 @@ export function formatLocalTimeLabel(
     localTimeFormatByLanguage[language],
     {
       locale: localeByLanguage[language],
+    }
+  );
+}
+
+export function formatUtcDateTitleInTimezone(
+  utcDateTime: string,
+  timezone: string,
+  language: AppLanguage = "ko"
+): string {
+  return formatInTimeZone(
+    utcDateTime,
+    timezone,
+    localDateTitleFormatByLanguage[language],
+    {
+      locale: getDateFnsLocale(language),
     }
   );
 }
@@ -135,6 +200,10 @@ export function formatUtcTimeInTimezone(
       locale: localeByLanguage[language],
     }
   );
+}
+
+export function getDateFnsLocale(language: AppLanguage = "ko"): Locale {
+  return localeByLanguage[language];
 }
 
 export function getCompletionActionLabel(
@@ -196,6 +265,16 @@ function getKoreanIntervalUnitLabel(unit: "day" | "month" | "week"): string {
     case "week":
       return "주";
   }
+}
+
+function formatLocalDateWithPattern(
+  localDate: string,
+  pattern: string,
+  language: AppLanguage
+): string {
+  return format(parse(localDate, "yyyy-MM-dd", new Date()), pattern, {
+    locale: getDateFnsLocale(language),
+  });
 }
 
 function getWeeklyLabel(

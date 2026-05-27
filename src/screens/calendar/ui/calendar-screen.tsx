@@ -105,7 +105,6 @@ const calendarTheme = {
 export function CalendarScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  LocaleConfig.defaultLocale = getCalendarLocaleName(language);
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
