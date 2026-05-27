@@ -89,6 +89,7 @@
 - `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
 - `src/shared/api`: Supabase client와 schema type.
 - `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
+- `src/shared/theme`: 테마 저장, 기기 화면 표시 설정 해석, 테마 토큰 provider.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
 
 ### Architecture Guard
@@ -109,17 +110,32 @@
 - 한국어 fallback 기본값은 shared/entity 표시 primitive나 테스트 helper처럼 의도적으로 좁은 경계에서만 둔다.
 - 화면 model은 일정 날짜/시간 표시를 직접 format하지 않고 `entities/schedule/lib`의 표시 primitive를 조합한다.
 - 특정 UI 라이브러리 전역 locale 설정은 해당 화면 내부에 둘 수 있지만 render 중에 변경하지 않는다.
-- 앱 표시 언어 초기화 실패는 앱 진입을 막지 않고 한국어 fallback으로 계속 진행한다.
-- 앱 표시 언어 초기화 실패 상태는 재시도 가능해야 하며 Promise cache에 영구 고정하지 않는다.
+- 표시 언어 초기화 실패는 앱 진입을 막지 않고 한국어 fallback으로 계속 진행한다.
+- 표시 언어 초기화 실패 상태는 재시도 가능해야 하며 Promise cache에 영구 고정하지 않는다.
 - 한국어 fallback 초기화까지 실패하면 i18n에 의존하지 않는 한국어 bootstrap 오류 화면과 재시도 액션만 보여준다.
 - 지원 언어의 기준은 `appLanguages`와 `fallbackAppLanguage`다.
-- 앱 표시 언어 resource는 모든 `AppLanguage` key를 가져야 하며 타입으로 드리프트를 막는다.
+- 표시 언어 resource는 모든 `AppLanguage` key를 가져야 하며 타입으로 드리프트를 막는다.
 - 앱 내부 public 경계는 `locale`이 아니라 `AppLanguage`를 노출한다.
 - `locale`은 date-fns, Expo Localization, React Native Calendar 같은 외부 라이브러리 adapter 경계에서만 사용한다.
 - 네이티브 번들 localization 선언은 지원 언어와 맞춘다.
 - 네이티브 앱 표시명 다국어화는 필요가 확인될 때 별도 범위로 다룬다.
-- 앱 표시 언어 변경은 런타임 적용과 저장된 설정이 갈라지지 않게 처리한다.
-- 앱 표시 언어 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 언어를 모호하게 두지 않는다.
+- 표시 언어 변경은 런타임 적용과 저장된 설정이 갈라지지 않게 처리한다.
+- 표시 언어 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 언어를 모호하게 두지 않는다.
+- 테마 provider는 session과 무관하게 로그인 전 화면과 로그인 후 화면을 모두 감싼다.
+- 테마 초기화 실패는 앱 진입을 막지 않고 시스템 fallback으로 계속 진행한다.
+- 테마 select는 시스템, 라이트, 다크 순서로 표시한다.
+- 테마는 전역 provider와 semantic color token hook으로 적용한다.
+- 컴포넌트는 정적 `colors` 객체를 직접 고정하지 않고 현재 테마의 의미 토큰을 읽는다.
+- 테마 적용 작업은 shared UI, navigation/app shell, settings/login, schedule screens 순서로 넓힌다.
+- StatusBar는 resolved theme에 맞춰 라이트 테마에서 dark style, 다크 테마에서 light style을 사용한다.
+- 시스템 테마는 실행 중 기기의 화면 표시 설정 변경을 즉시 따른다.
+- 라이트 또는 다크 테마를 직접 고른 상태에서는 기기의 화면 표시 설정 변경을 따르지 않는다.
+- 일정 색상 팔레트는 테마와 무관하게 같은 색상값을 사용한다.
+- 일정 색상은 marker, swatch, line 같은 보조 표시에만 사용한다.
+- 일정 관련 텍스트와 아이콘은 일정 색상 위에 올리지 않고 현재 테마의 text 토큰을 사용한다.
+- 배경, 표면, 텍스트, divider, scrim, shadow, soft container는 테마별 의미 토큰으로 분리한다.
+- accent, error, green, amber, red, blue 계열은 의미와 hue를 유지하되 테마별 대비가 부족하면 tone을 조정한다.
+- 테마 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 테마를 모호하게 두지 않는다.
 - 순수 검증 model은 i18next에 의존하지 않고 `AppLanguage` 기준 사용자-facing 검증 메시지를 만든다.
 - 검증 메시지가 여러 경계에서 반복되면 shared i18n resource가 아니라 해당 feature/entity 표시 primitive로 모은다.
 
