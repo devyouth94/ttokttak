@@ -20,14 +20,14 @@ import {
   type RecurringItemColorKey,
 } from "~/entities/schedule";
 import { useAppLanguage } from "~/shared/i18n";
+import { useAppTheme, useAppThemeColors } from "~/shared/theme/theme-context";
 import {
   AppSelectMenu,
   type AppSelectMenuOption,
 } from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
-import { colors } from "~/shared/ui/tokens";
 
-import { styles } from "./schedule-form-screen-styles";
+import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";
 import {
   getAdvancedOptionsState,
   getCompletionBasedInfoText,
@@ -92,6 +92,8 @@ export function RecurrenceSection({
 }: RecurrenceSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const themeColors = useAppThemeColors();
+  const styles = useScheduleFormScreenStyles();
   const [isCustomIntervalFocused, setIsCustomIntervalFocused] = useState(false);
 
   const {
@@ -154,7 +156,7 @@ export function RecurrenceSection({
             onChangeText={onChangeIntervalValue}
             onFocus={() => setIsCustomIntervalFocused(true)}
             placeholder="1"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={themeColors.textMuted}
             style={[
               styles.textInput,
               styles.customRecurrenceInput,
@@ -227,6 +229,7 @@ export function ColorPickerSection({
 }: ColorPickerSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const styles = useScheduleFormScreenStyles();
   const colorOptions = getFormColorOptions(language).map((option) => ({
     accessibilityHint: t("scheduleForm.color.optionHint", {
       color: option.label,
@@ -273,6 +276,7 @@ function RecurrenceOptionButton({
   selected,
   variant = "default",
 }: RecurrenceOptionButtonProps): React.JSX.Element {
+  const styles = useScheduleFormScreenStyles();
   const isPrimary = variant === "primary";
   const usesCompactChip = isPrimary || variant === "unit";
   const textStyle = usesCompactChip
@@ -315,6 +319,8 @@ function RecurrenceModeTabButton({
   onPress,
   selected,
 }: RecurrenceModeTabButtonProps): React.JSX.Element {
+  const styles = useScheduleFormScreenStyles();
+
   return (
     <Pressable
       accessibilityRole="tab"
@@ -351,6 +357,7 @@ function WeekdaySelector({
 }: WeekdaySelectorProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const styles = useScheduleFormScreenStyles();
   const selectedWeekdaySet = new Set(selectedDays);
   const weekdayButtons = getWeekdayOptions(language).map((weekday) => {
     return (
@@ -383,6 +390,8 @@ function WeekdayChipButton({
   label,
   onPress,
 }: WeekdayChipButtonProps): React.JSX.Element {
+  const styles = useScheduleFormScreenStyles();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -415,6 +424,8 @@ export function NotificationSection({
   onToggle,
 }: NotificationSectionProps): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
+  const styles = useScheduleFormScreenStyles();
 
   return (
     <View style={styles.optionToggleRow}>
@@ -424,8 +435,11 @@ export function NotificationSection({
       <Switch
         onValueChange={onToggle}
         style={styles.optionToggleSwitch}
-        thumbColor={colors.primaryForeground}
-        trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
+        thumbColor={themeColors.primaryForeground}
+        trackColor={{
+          false: themeColors.dividerOnPrimary,
+          true: themeColors.primary,
+        }}
         value={enabled}
       />
     </View>
@@ -447,6 +461,8 @@ export function AdvancedOptionsSection({
 }: AdvancedOptionsSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const themeColors = useAppThemeColors();
+  const styles = useScheduleFormScreenStyles();
   const { isCompletionBasedSwitchEnabled } = getAdvancedOptionsState({
     recurrenceType,
   });
@@ -489,7 +505,7 @@ export function AdvancedOptionsSection({
           >
             <Info
               absoluteStrokeWidth
-              color={colors.textSoft}
+              color={themeColors.textSoft}
               size={16}
               strokeWidth={1.2}
             />
@@ -499,8 +515,11 @@ export function AdvancedOptionsSection({
           disabled={!isCompletionBasedSwitchEnabled}
           onValueChange={handleToggleCompletionBased}
           style={styles.optionToggleSwitch}
-          thumbColor={colors.primaryForeground}
-          trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
+          thumbColor={themeColors.primaryForeground}
+          trackColor={{
+            false: themeColors.dividerOnPrimary,
+            true: themeColors.primary,
+          }}
           value={isCompletionBasedSelected}
         />
       </View>
@@ -534,6 +553,8 @@ export function IosPickerModal({
   onConfirm,
 }: IosPickerModalProps): React.JSX.Element {
   const { t } = useTranslation();
+  const { colors: themeColors, resolvedTheme } = useAppTheme();
+  const styles = useScheduleFormScreenStyles();
 
   return (
     <Modal
@@ -576,10 +597,13 @@ export function IosPickerModal({
 
           {mode ? (
             <DateTimePicker
+              accentColor={themeColors.primary}
               display="spinner"
               minimumDate={mode === "date" ? minimumDate : undefined}
               mode={mode}
               onChange={onChange}
+              textColor={themeColors.text}
+              themeVariant={resolvedTheme}
               value={value}
             />
           ) : null}

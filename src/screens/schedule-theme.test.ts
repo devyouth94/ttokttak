@@ -74,6 +74,23 @@ describe("schedule screen theme", () => {
     expect(`${detailScreen}\n${detailStyles}`).not.toContain("colors.");
   });
 
+  it("생성·수정 화면 form control과 picker는 현재 테마 토큰을 사용한다", () => {
+    const formFiles = [
+      "src/screens/schedule-form/ui/schedule-form-screen.tsx",
+      "src/screens/schedule-form/ui/schedule-form-screen-content.tsx",
+      "src/screens/schedule-form/ui/schedule-form-screen-sections.tsx",
+      "src/screens/schedule-form/ui/schedule-form-screen-styles.ts",
+    ].map(readWorkspaceFile);
+    const source = formFiles.join("\n");
+
+    expect(source).toContain("useScheduleFormScreenStyles()");
+    expect(source).toContain("useAppTheme()");
+    expect(source).toContain("themeVariant={resolvedTheme}");
+    expect(source).toContain("placeholderTextColor={themeColors.textMuted}");
+    expect(source).toContain("trackColor={{");
+    expect(source).not.toContain("colors.");
+  });
+
   it("일정 색상 marker는 고정 팔레트 swatch 값만 사용한다", () => {
     const colorPalette = readWorkspaceFile(
       "src/entities/schedule/ui/color-palette.ts"
@@ -83,6 +100,9 @@ describe("schedule screen theme", () => {
     );
     const calendarDayCell = readWorkspaceFile(
       "src/screens/calendar/ui/calendar-day-cell.tsx"
+    );
+    const formSections = readWorkspaceFile(
+      "src/screens/schedule-form/ui/schedule-form-screen-sections.tsx"
     );
     const detailScreen = readWorkspaceFile(
       "src/screens/schedule-detail/ui/schedule-detail-screen.tsx"
@@ -95,6 +115,7 @@ describe("schedule screen theme", () => {
     expect(calendarDayCell).toContain(
       "recurringItemColorOptionByKey[colorKey].swatchColor"
     );
+    expect(formSections).toContain("backgroundColor: option.swatchColor");
     expect(detailScreen).toContain(
       "style={[styles.summaryColorMarker, { backgroundColor: swatchColor }]}"
     );

@@ -21,9 +21,9 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
+import { useAppTheme, useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
-import { colors } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 import {
@@ -33,7 +33,7 @@ import {
   NotificationSection,
   RecurrenceSection,
 } from "./schedule-form-screen-sections";
-import { styles } from "./schedule-form-screen-styles";
+import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";
 import { type ScheduleFormScreenContentProps } from "../model/schedule-form-contracts";
 import {
   type FormErrorTarget,
@@ -55,6 +55,7 @@ function ScreenErrorCard({
   message,
 }: ScreenErrorCardProps): React.JSX.Element | null {
   const { t } = useTranslation();
+  const styles = useScheduleFormScreenStyles();
 
   if (!message) {
     return null;
@@ -103,7 +104,9 @@ export function ScheduleFormScreenContent({
 }: ScheduleFormScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const { colors: themeColors, resolvedTheme } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const styles = useScheduleFormScreenStyles();
   const {
     headerAnimatedStyle,
     headerHeight,
@@ -248,7 +251,7 @@ export function ScheduleFormScreenContent({
                     onChangeText={actions.field.onChangeTitle}
                     onFocus={() => setFocusedTextInput("title")}
                     placeholder={t("scheduleForm.placeholders.title")}
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={themeColors.textMuted}
                     style={[
                       styles.textInput,
                       styles.primaryTextInput,
@@ -288,7 +291,7 @@ export function ScheduleFormScreenContent({
                     onChangeText={actions.field.onChangeDescription}
                     onFocus={() => setFocusedTextInput("description")}
                     placeholder={t("scheduleForm.placeholders.description")}
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={themeColors.textMuted}
                     style={[
                       styles.textInput,
                       styles.multilineInput,
@@ -342,7 +345,7 @@ export function ScheduleFormScreenContent({
                   icon={
                     <CalendarDays
                       absoluteStrokeWidth
-                      color={colors.text}
+                      color={themeColors.text}
                       size={18}
                       strokeWidth={1.2}
                     />
@@ -360,7 +363,7 @@ export function ScheduleFormScreenContent({
                   icon={
                     <Clock3
                       absoluteStrokeWidth
-                      color={colors.text}
+                      color={themeColors.text}
                       size={18}
                       strokeWidth={1.2}
                     />
@@ -395,28 +398,37 @@ export function ScheduleFormScreenContent({
 
               {picker.isStartDateVisible ? (
                 <DateTimePicker
+                  accentColor={themeColors.primary}
                   initialInputMode="default"
                   minimumDate={minimumStartDate}
                   mode="date"
                   onChange={actions.picker.onStartDatePickerChange}
+                  textColor={themeColors.text}
+                  themeVariant={resolvedTheme}
                   value={selectedStartDate}
                 />
               ) : null}
 
               {endDateControlState.isEnabled && picker.isEndDateVisible ? (
                 <DateTimePicker
+                  accentColor={themeColors.primary}
                   initialInputMode="default"
                   minimumDate={minimumEndDate}
                   mode="date"
                   onChange={actions.picker.onEndDatePickerChange}
+                  textColor={themeColors.text}
+                  themeVariant={resolvedTheme}
                   value={selectedEndDate}
                 />
               ) : null}
 
               {picker.isTimeVisible ? (
                 <DateTimePicker
+                  accentColor={themeColors.primary}
                   mode="time"
                   onChange={actions.picker.onTimePickerChange}
+                  textColor={themeColors.text}
+                  themeVariant={resolvedTheme}
                   value={parseLocalTimeToDate(values.reminderTimeLocal)}
                 />
               ) : null}
@@ -497,11 +509,11 @@ export function ScheduleFormScreenContent({
                   ]}
                 >
                   {view.isDeleting ? (
-                    <ActivityIndicator color={colors.accent} />
+                    <ActivityIndicator color={themeColors.accent} />
                   ) : (
                     <Trash2
                       absoluteStrokeWidth
-                      color={colors.accent}
+                      color={themeColors.accent}
                       size={18}
                       strokeWidth={1.2}
                     />
@@ -521,12 +533,14 @@ function SaveButtonContent({
   isSaving,
 }: SaveButtonContentProps): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
+  const styles = useScheduleFormScreenStyles();
   const buttonLabel = isEditMode
     ? t("scheduleForm.actions.update")
     : t("scheduleForm.actions.save");
 
   if (isSaving) {
-    return <ActivityIndicator color={colors.primaryForeground} />;
+    return <ActivityIndicator color={themeColors.primaryForeground} />;
   }
 
   return (
@@ -548,6 +562,8 @@ function PickerField({
   value,
   variantStyle,
 }: PickerFieldProps): React.JSX.Element {
+  const styles = useScheduleFormScreenStyles();
+
   return (
     <View style={[styles.field, variantStyle]}>
       {label ? (
@@ -606,6 +622,8 @@ function EndDateControl({
   onOpenPicker,
 }: EndDateControlProps): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
+  const styles = useScheduleFormScreenStyles();
   const handleToggle = (nextValue: boolean): void => {
     if (nextValue) {
       onEnable();
@@ -626,8 +644,11 @@ function EndDateControl({
           accessibilityLabel={t("scheduleForm.endDate.toggleLabel")}
           onValueChange={handleToggle}
           style={styles.optionToggleSwitch}
-          thumbColor={colors.primaryForeground}
-          trackColor={{ false: colors.dividerOnPrimary, true: colors.primary }}
+          thumbColor={themeColors.primaryForeground}
+          trackColor={{
+            false: themeColors.dividerOnPrimary,
+            true: themeColors.primary,
+          }}
           value={isEnabled}
         />
       </View>
@@ -640,7 +661,7 @@ function EndDateControl({
           icon={
             <CalendarDays
               absoluteStrokeWidth
-              color={colors.text}
+              color={themeColors.text}
               size={18}
               strokeWidth={1.2}
             />
