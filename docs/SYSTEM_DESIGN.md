@@ -65,7 +65,7 @@
 ### Domain
 
 - `src/entities/schedule/model`: 일정 타입, 반복 규칙, occurrence 계산, occurrence projection, validation, 수정 정책.
-- `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 helper.
+- `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 primitive의 기준 경계.
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
 - `src/entities/profile`: profile 복원과 표시 이름 저장.
@@ -105,6 +105,23 @@
 - `shared` 최상위 segment 이름은 `api`, `config`, `i18n`, `lib`, `routes`, `ui`만 사용한다.
 - `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
 - `widgets` layer는 현재 만들지 않는다. 여러 화면에서 재사용되고 feature와 entity를 조합하는 큰 UI 블록이 생기면 별도 결정으로 추가한다.
+- 앱 문구나 날짜/시간 표시 문구를 만드는 화면 model 경계는 `AppLanguage`를 필수 입력으로 받는다.
+- 한국어 fallback 기본값은 shared/entity 표시 primitive나 테스트 helper처럼 의도적으로 좁은 경계에서만 둔다.
+- 화면 model은 일정 날짜/시간 표시를 직접 format하지 않고 `entities/schedule/lib`의 표시 primitive를 조합한다.
+- 특정 UI 라이브러리 전역 locale 설정은 해당 화면 내부에 둘 수 있지만 render 중에 변경하지 않는다.
+- 앱 표시 언어 초기화 실패는 앱 진입을 막지 않고 한국어 fallback으로 계속 진행한다.
+- 앱 표시 언어 초기화 실패 상태는 재시도 가능해야 하며 Promise cache에 영구 고정하지 않는다.
+- 한국어 fallback 초기화까지 실패하면 i18n에 의존하지 않는 한국어 bootstrap 오류 화면과 재시도 액션만 보여준다.
+- 지원 언어의 기준은 `appLanguages`와 `fallbackAppLanguage`다.
+- 앱 표시 언어 resource는 모든 `AppLanguage` key를 가져야 하며 타입으로 드리프트를 막는다.
+- 앱 내부 public 경계는 `locale`이 아니라 `AppLanguage`를 노출한다.
+- `locale`은 date-fns, Expo Localization, React Native Calendar 같은 외부 라이브러리 adapter 경계에서만 사용한다.
+- 네이티브 번들 localization 선언은 지원 언어와 맞춘다.
+- 네이티브 앱 표시명 다국어화는 필요가 확인될 때 별도 범위로 다룬다.
+- 앱 표시 언어 변경은 런타임 적용과 저장된 설정이 갈라지지 않게 처리한다.
+- 앱 표시 언어 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 언어를 모호하게 두지 않는다.
+- 순수 검증 model은 i18next에 의존하지 않고 `AppLanguage` 기준 사용자-facing 검증 메시지를 만든다.
+- 검증 메시지가 여러 경계에서 반복되면 shared i18n resource가 아니라 해당 feature/entity 표시 primitive로 모은다.
 
 ## Routing
 
@@ -335,6 +352,7 @@ payload:
 - 세션 복원.
 - 앱 foreground 복귀.
 - 알림 tap.
+- 앱 표시 언어 변경.
 
 범위 재동기화 trigger:
 
@@ -347,6 +365,8 @@ payload:
 세션이 없으면 알림 tap 동기화를 보류한다.
 로그아웃 또는 세션 없음 상태가 되면 현재 기기의 Ttokttak 로컬 알림을 모두 취소한다.
 취소 실패는 Sentry에 기록하되 로그아웃 자체를 막지 않는다.
+기기 로컬 알림은 파생 예약 상태이므로 재동기화 실패 시 부분 rollback 모델을 만들지 않는다.
+재동기화 실패는 기록하고 다음 lifecycle trigger에서 다시 맞춘다.
 
 ## Notification Tap Routing
 
@@ -405,3 +425,4 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 - 원격 푸시 코드 경로 없음.
 - content key 복구 정적 key 없음.
 - 복구 감사 이벤트의 민감 정보 저장.
+- 앱 표시 언어 초기화 실패가 blank screen으로 고정되지 않음.
