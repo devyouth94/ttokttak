@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { AppText } from "~/shared/ui/app-text";
-import { colors } from "~/shared/ui/tokens";
 
 type HomeHeaderProps = {
   profileName: string;
@@ -39,7 +38,5 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
   },
-  headerTitle: {
-    color: colors.text,
-  },
+  headerTitle: {},
 });

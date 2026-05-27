@@ -18,9 +18,10 @@ import {
   useOccurrenceProjectionQuery,
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
-import { colors, spacing } from "~/shared/ui/tokens";
+import { spacing } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 import { ScheduleListLoadingPlaceholder } from "./schedule-list-loading-placeholder";
@@ -39,6 +40,7 @@ import {
 export function ScheduleListScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const themeColors = useAppThemeColors();
   const insets = useSafeAreaInsets();
   const scheduleReadContext = useScheduleReadContext();
   const now = useOccurrenceProjectionNow();
@@ -142,7 +144,7 @@ export function ScheduleListScreen(): React.JSX.Element {
             <RefreshControl
               onRefresh={handleRefresh}
               refreshing={isRefreshing}
-              tintColor={colors.primary}
+              tintColor={themeColors.primary}
             />
           }
           renderItem={({ index, item }) => (

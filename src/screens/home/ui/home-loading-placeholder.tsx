@@ -1,12 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
-import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 const HOME_LOADING_PLACEHOLDER_ROW_COUNT = 3;
 
 export function HomeLoadingPlaceholder(): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
 
   return (
     <View
@@ -14,14 +16,40 @@ export function HomeLoadingPlaceholder(): React.JSX.Element {
       accessibilityRole="progressbar"
       style={styles.placeholder}
     >
-      <View style={styles.placeholderHeader} />
+      <View
+        style={[
+          styles.placeholderHeader,
+          { backgroundColor: themeColors.surface },
+        ]}
+      />
       {Array.from({ length: HOME_LOADING_PLACEHOLDER_ROW_COUNT }).map(
         (_, index) => (
-          <View key={index} style={styles.placeholderRow}>
-            <View style={styles.placeholderIcon} />
+          <View
+            key={index}
+            style={[
+              styles.placeholderRow,
+              { borderBottomColor: themeColors.dividerOnPrimary },
+            ]}
+          >
+            <View
+              style={[
+                styles.placeholderIcon,
+                { backgroundColor: themeColors.surface },
+              ]}
+            />
             <View style={styles.placeholderCopy}>
-              <View style={styles.placeholderTitle} />
-              <View style={styles.placeholderBody} />
+              <View
+                style={[
+                  styles.placeholderTitle,
+                  { backgroundColor: themeColors.surface },
+                ]}
+              />
+              <View
+                style={[
+                  styles.placeholderBody,
+                  { backgroundColor: themeColors.surface },
+                ]}
+              />
             </View>
           </View>
         )
@@ -37,7 +65,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   placeholderBody: {
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 12,
     width: "58%",
@@ -48,21 +75,18 @@ const styles = StyleSheet.create({
   },
   placeholderHeader: {
     alignSelf: "flex-start",
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 16,
     marginBottom: spacing.xs,
     width: 112,
   },
   placeholderIcon: {
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 28,
     width: 28,
   },
   placeholderRow: {
     alignItems: "center",
-    borderBottomColor: colors.dividerOnPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: spacing.sm,
@@ -70,7 +94,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   placeholderTitle: {
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 14,
     width: "72%",

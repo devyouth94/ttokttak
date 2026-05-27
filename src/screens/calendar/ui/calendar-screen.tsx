@@ -21,11 +21,13 @@ import {
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
+import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppEmptyStateView, AppRetryStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
-import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";
@@ -51,60 +53,68 @@ LocaleConfig.defaultLocale = getCalendarLocaleName("ko");
 
 const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
 
-const calendarTheme = {
-  arrowColor: colors.text,
-  calendarBackground: colors.surface,
-  dayTextColor: colors.text,
-  monthTextColor: colors.text,
-  selectedDayBackgroundColor: colors.primary,
-  selectedDayTextColor: colors.primaryForeground,
-  textDayFontFamily: typography.fontFamily.body,
-  textDayHeaderFontFamily: typography.fontFamily.body,
-  textDayHeaderFontSize: typography.label,
-  textDayHeaderFontWeight: "600" as const,
-  textDisabledColor: colors.dividerOnPrimary,
-  textInactiveColor: colors.dividerOnPrimary,
-  textMonthFontFamily: typography.fontFamily.body,
-  textSectionTitleColor: colors.textMuted,
-  todayTextColor: colors.text,
-  weekVerticalMargin: spacing.xs,
-  "stylesheet.calendar.header": {
-    arrow: {
-      display: "none",
+function createCalendarTheme(themeColors: AppThemeColors) {
+  return {
+    arrowColor: themeColors.text,
+    calendarBackground: themeColors.surface,
+    dayTextColor: themeColors.text,
+    monthTextColor: themeColors.text,
+    selectedDayBackgroundColor: themeColors.primary,
+    selectedDayTextColor: themeColors.primaryForeground,
+    textDayFontFamily: typography.fontFamily.body,
+    textDayHeaderFontFamily: typography.fontFamily.body,
+    textDayHeaderFontSize: typography.label,
+    textDayHeaderFontWeight: "600" as const,
+    textDisabledColor: themeColors.dividerOnPrimary,
+    textInactiveColor: themeColors.dividerOnPrimary,
+    textMonthFontFamily: typography.fontFamily.body,
+    textSectionTitleColor: themeColors.textMuted,
+    todayTextColor: themeColors.text,
+    weekVerticalMargin: spacing.xs,
+    "stylesheet.calendar.header": {
+      arrow: {
+        display: "none",
+      },
+      dayTextAtIndex0: {
+        color: themeColors.red,
+      },
+      dayTextAtIndex6: {
+        color: themeColors.blue,
+      },
+      dayHeader: {
+        color: themeColors.textMuted,
+        fontFamily: typography.fontFamily.body,
+        fontSize: typography.label,
+        fontWeight: "600",
+        marginBottom: 7,
+        marginTop: 2,
+        textAlign: "center",
+        width: 32,
+      },
+      header: {
+        display: "none",
+      },
+      headerContainer: {
+        display: "none",
+      },
+      week: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        marginTop: 0,
+      },
     },
-    dayTextAtIndex0: {
-      color: colors.red,
-    },
-    dayTextAtIndex6: {
-      color: colors.blue,
-    },
-    dayHeader: {
-      color: colors.textMuted,
-      fontFamily: typography.fontFamily.body,
-      fontSize: typography.label,
-      fontWeight: "600",
-      marginBottom: 7,
-      marginTop: 2,
-      textAlign: "center",
-      width: 32,
-    },
-    header: {
-      display: "none",
-    },
-    headerContainer: {
-      display: "none",
-    },
-    week: {
-      flexDirection: "row",
-      justifyContent: "space-around",
-      marginTop: 0,
-    },
-  },
-};
+  };
+}
 
 export function CalendarScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const themeColors = useAppThemeColors();
+  const styles = useCalendarScreenStyles();
+  const calendarTheme = useMemo(
+    () => createCalendarTheme(themeColors),
+    [themeColors]
+  );
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -241,7 +251,9 @@ export function CalendarScreen(): React.JSX.Element {
           <MonthArrowButton
             accessibilityLabel={t("calendar.previousMonthLabel")}
             disabled={isPreviousMonthDisabled}
-            icon={<ChevronLeft color={colors.primaryForeground} size={18} />}
+            icon={
+              <ChevronLeft color={themeColors.primaryForeground} size={18} />
+            }
             onPress={() => {
               shiftMonth(-1);
             }}
@@ -251,7 +263,9 @@ export function CalendarScreen(): React.JSX.Element {
           </AppText>
           <MonthArrowButton
             accessibilityLabel={t("calendar.nextMonthLabel")}
-            icon={<ChevronRight color={colors.primaryForeground} size={18} />}
+            icon={
+              <ChevronRight color={themeColors.primaryForeground} size={18} />
+            }
             onPress={() => {
               shiftMonth(1);
             }}
@@ -362,6 +376,7 @@ function MonthArrowButton({
   onPress: () => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
+  const styles = useCalendarScreenStyles();
 
   return (
     <Pressable
@@ -384,6 +399,7 @@ function MonthArrowButton({
 
 function CalendarEntryListPlaceholder(): React.JSX.Element {
   const { t } = useTranslation();
+  const styles = useCalendarScreenStyles();
 
   return (
     <View
@@ -413,115 +429,123 @@ function CalendarEntryListPlaceholder(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  calendar: {
-    borderRadius: borderRadius.lg,
-  },
-  calendarCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.xs,
-    paddingTop: spacing.md,
-  },
-  content: {
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  emptyCard: {
-    gap: spacing.xs,
-    minHeight: 144,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-  },
-  emptyDayCell: {
-    height: CALENDAR_DAY_CELL_HEIGHT,
-    width: 42,
-  },
-  headerLayer: {
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    zIndex: 10,
-  },
-  monthArrowButton: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.pill,
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-  monthArrowButtonPressed: {
-    opacity: 0.88,
-  },
-  monthArrowButtonDisabled: {
-    opacity: 0.4,
-  },
-  monthHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  monthTitle: {
-    color: colors.text,
-    flex: 1,
-    textAlign: "center",
-  },
-  placeholderAction: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: 34,
-    width: 34,
-  },
-  placeholderCopy: {
-    flex: 1,
-    gap: spacing.xxs,
-    minWidth: 0,
-  },
-  placeholderDivider: {
-    borderBottomColor: colors.dividerOnPrimary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  placeholderMeta: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: typography.lineHeight.caption,
-    opacity: 0.72,
-    width: "36%",
-  },
-  placeholderRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  placeholderTitle: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.pill,
-    height: typography.lineHeight.body,
-    width: "44%",
-  },
-  selectedDateCount: {
-    color: colors.textSoft,
-  },
-  selectedDateHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  selectedDateSection: {
-    gap: spacing.xxs,
-  },
-  selectedDateTitle: {
-    color: colors.text,
-    flex: 1,
-  },
-  selectedDateState: {
-    minHeight: 96,
-  },
-  screenContent: {
-    flex: 1,
-  },
-});
+function useCalendarScreenStyles() {
+  const themeColors = useAppThemeColors();
+
+  return useMemo(() => createCalendarScreenStyles(themeColors), [themeColors]);
+}
+
+function createCalendarScreenStyles(themeColors: AppThemeColors) {
+  return StyleSheet.create({
+    calendar: {
+      borderRadius: borderRadius.lg,
+    },
+    calendarCard: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.xs,
+      paddingBottom: spacing.xs,
+      paddingTop: spacing.md,
+    },
+    content: {
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    emptyCard: {
+      gap: spacing.xs,
+      minHeight: 144,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.xl,
+    },
+    emptyDayCell: {
+      height: CALENDAR_DAY_CELL_HEIGHT,
+      width: 42,
+    },
+    headerLayer: {
+      left: 0,
+      position: "absolute",
+      right: 0,
+      top: 0,
+      zIndex: 10,
+    },
+    monthArrowButton: {
+      alignItems: "center",
+      backgroundColor: themeColors.primary,
+      borderRadius: borderRadius.pill,
+      height: 32,
+      justifyContent: "center",
+      width: 32,
+    },
+    monthArrowButtonPressed: {
+      opacity: 0.88,
+    },
+    monthArrowButtonDisabled: {
+      opacity: 0.4,
+    },
+    monthHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    monthTitle: {
+      color: themeColors.text,
+      flex: 1,
+      textAlign: "center",
+    },
+    placeholderAction: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.pill,
+      height: 34,
+      width: 34,
+    },
+    placeholderCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+      minWidth: 0,
+    },
+    placeholderDivider: {
+      borderBottomColor: themeColors.dividerOnPrimary,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    placeholderMeta: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.pill,
+      height: typography.lineHeight.caption,
+      opacity: 0.72,
+      width: "36%",
+    },
+    placeholderRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    placeholderTitle: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.pill,
+      height: typography.lineHeight.body,
+      width: "44%",
+    },
+    selectedDateCount: {
+      color: themeColors.textSoft,
+    },
+    selectedDateHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    selectedDateSection: {
+      gap: spacing.xxs,
+    },
+    selectedDateTitle: {
+      color: themeColors.text,
+      flex: 1,
+    },
+    selectedDateState: {
+      minHeight: 96,
+    },
+    screenContent: {
+      flex: 1,
+    },
+  });
+}

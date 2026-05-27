@@ -4,8 +4,9 @@ import type { DateData } from "react-native-calendars";
 
 import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, colors, typography } from "~/shared/ui/tokens";
+import { borderRadius, typography } from "~/shared/ui/tokens";
 
 import { CALENDAR_MAX_VISIBLE_MARKERS } from "../model/calendar-screen-model";
 
@@ -40,6 +41,7 @@ function CalendarDayCellComponent({
   overflowCount,
   onPress,
 }: CalendarDayCellProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
   const dayOfWeek = new Date(date.year, date.month - 1, date.day).getDay();
   const isSunday = dayOfWeek === 0;
   const isSaturday = dayOfWeek === 6;
@@ -84,16 +86,24 @@ function CalendarDayCellComponent({
         style={[
           styles.daySurface,
           isToday && styles.todaySurface,
-          isSelected && styles.selectedSurface,
+          isToday && {
+            backgroundColor: themeColors.surface,
+            borderColor: themeColors.dividerOnPrimary,
+          },
+          isSelected && { backgroundColor: themeColors.primary },
         ]}
       >
         <AppText
           style={[
             styles.dayLabel,
-            isSunday && styles.dayLabelSunday,
-            isSaturday && styles.dayLabelSaturday,
+            { color: themeColors.text },
+            isSunday && { color: themeColors.red },
+            isSaturday && { color: themeColors.blue },
             isToday && styles.todayLabel,
-            isSelected && styles.selectedLabel,
+            isSelected && {
+              color: themeColors.primaryForeground,
+              fontWeight: "700",
+            },
           ]}
         >
           {date.day}
@@ -112,7 +122,11 @@ function CalendarDayCellComponent({
         </View>
         <View style={styles.overflowSlot}>
           {overflowCount > 0 ? (
-            <AppText style={styles.overflowLabel}>+{overflowCount}</AppText>
+            <AppText
+              style={[styles.overflowLabel, { color: themeColors.textMuted }]}
+            >
+              +{overflowCount}
+            </AppText>
           ) : null}
         </View>
       </View>
@@ -153,16 +167,11 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   dayLabel: {
-    color: colors.text,
     fontSize: typography.body,
     lineHeight: 20,
   },
-  dayLabelSaturday: {
-    color: colors.blue,
-  },
-  dayLabelSunday: {
-    color: colors.red,
-  },
+  dayLabelSaturday: {},
+  dayLabelSunday: {},
   daySurface: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
@@ -191,7 +200,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   overflowLabel: {
-    color: colors.textMuted,
     fontSize: 9,
     lineHeight: 9,
     marginBottom: 0,
@@ -201,22 +209,15 @@ const styles = StyleSheet.create({
     height: cellOverflowLabelHeight,
     justifyContent: "center",
   },
-  selectedLabel: {
-    color: colors.primaryForeground,
-    fontWeight: "700",
-  },
+  selectedLabel: {},
   selectedMarker: {
     opacity: 0.96,
   },
-  selectedSurface: {
-    backgroundColor: colors.primary,
-  },
+  selectedSurface: {},
   todayLabel: {
     fontWeight: "600",
   },
   todaySurface: {
-    backgroundColor: colors.surface,
-    borderColor: colors.dividerOnPrimary,
     borderWidth: 1,
   },
 });

@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
+import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 import { recurringItemColorOptionByKey } from "./color-palette";
 import type { RecurringItemColorKey } from "../model/types";
@@ -26,6 +27,7 @@ export function RecurringItemSummaryRow({
   onPress,
   title,
 }: RecurringItemSummaryRowProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
   const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
 
   return (
@@ -36,7 +38,10 @@ export function RecurringItemSummaryRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        !isLast && styles.divider,
+        !isLast && {
+          borderBottomColor: themeColors.dividerOnPrimary,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+        },
         pressed ? styles.pressed : undefined,
       ]}
     >
@@ -63,8 +68,8 @@ export function RecurringItemSummaryRow({
         </View>
       </View>
 
-      <View style={styles.actionIcon}>
-        <ArrowRight color={colors.text} size={16} />
+      <View style={[styles.actionIcon, { borderColor: themeColors.primary }]}>
+        <ArrowRight color={themeColors.text} size={16} />
       </View>
     </Pressable>
   );
@@ -73,7 +78,6 @@ export function RecurringItemSummaryRow({
 const styles = StyleSheet.create({
   actionIcon: {
     alignItems: "center",
-    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     height: 34,
@@ -89,16 +93,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  divider: {
-    borderBottomColor: colors.dividerOnPrimary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   metaSlot: {
     marginTop: spacing.xxs,
   },
-  metaText: {
-    color: colors.textSoft,
-  },
+  metaText: {},
   pressed: {
     opacity: 0.72,
   },
@@ -109,7 +107,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   title: {
-    color: colors.text,
     flex: 1,
     minWidth: 0,
   },

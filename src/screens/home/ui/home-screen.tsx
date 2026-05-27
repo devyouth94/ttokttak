@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { AppScreen } from "~/shared/ui/app-screen";
-import { colors } from "~/shared/ui/tokens";
 
 import { HomeFeedErrorCard } from "./home-feed-error-card";
 import { HomeFeedSectionList } from "./home-feed-section-list";
@@ -89,7 +88,6 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   screenRoot: {
-    backgroundColor: colors.background,
     flex: 1,
   },
   screenScroll: {

@@ -3,18 +3,19 @@ import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppEmptyStateView, AppRetryStateView } from "~/shared/ui/app-state";
-import { colors } from "~/shared/ui/tokens";
 
 export function ScheduleListEmptyState(): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
 
   return (
     <AppEmptyStateView
       action={{
         accessibilityHint: t("scheduleList.empty.createHint"),
         accessibilityLabel: t("scheduleList.empty.createLabel"),
-        icon: <Plus color={colors.primaryForeground} size={16} />,
+        icon: <Plus color={themeColors.primaryForeground} size={16} />,
         label: t("scheduleList.empty.createLabel"),
         onPress: () => {
           router.push({

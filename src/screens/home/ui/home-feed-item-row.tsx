@@ -4,13 +4,18 @@ import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
 import type { CompletionAction } from "~/entities/schedule";
+import { appThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
+import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 import type { HomeFeedCard } from "../model/home-feed-sections";
 
 const FEED_ITEM_ACTION_BORDER_WIDTH = 1;
 const FEED_ITEM_ACTION_STROKE_WIDTH = 2;
+const feedItemCardTextColor = appThemeColors.light.text;
+const feedItemCardBorderColor = appThemeColors.light.primary;
+const feedItemCardDividerColor = appThemeColors.light.dividerOnPrimary;
 
 type HomeFeedItemRowProps = {
   card: HomeFeedCard;
@@ -30,19 +35,25 @@ export function HomeFeedItemRow({
   usesLightContent,
 }: HomeFeedItemRowProps): React.JSX.Element {
   const { t } = useTranslation();
-  const textStyle = usesLightContent
-    ? styles.feedSectionTextLight
-    : styles.feedSectionTextDark;
-  const actionBorderStyle = usesLightContent
-    ? styles.feedItemActionIconLight
-    : styles.feedItemActionIconDark;
-  const dividerStyle = usesLightContent
-    ? styles.feedItemDividerLight
-    : styles.feedItemDividerDark;
-  const iconColor = usesLightContent ? colors.primaryForeground : colors.text;
+  const themeColors = useAppThemeColors();
+  const textColor = usesLightContent
+    ? themeColors.primaryForeground
+    : feedItemCardTextColor;
+  const borderColor = usesLightContent
+    ? themeColors.primaryForeground
+    : feedItemCardBorderColor;
+  const iconColor = textColor;
 
   return (
-    <View style={[styles.feedItemRow, !isLast && dividerStyle]}>
+    <View
+      style={[
+        styles.feedItemRow,
+        !isLast && {
+          borderBottomColor: feedItemCardDividerColor,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+        },
+      ]}
+    >
       <Pressable
         accessibilityHint={t("home.feed.itemDetailHint")}
         accessibilityLabel={t("home.feed.itemDetailLabel", {
@@ -57,14 +68,18 @@ export function HomeFeedItemRow({
           pressed && styles.feedItemPressed,
         ]}
       >
-        <AppText ellipsizeMode="tail" numberOfLines={1} style={textStyle}>
+        <AppText
+          ellipsizeMode="tail"
+          numberOfLines={1}
+          style={{ color: textColor }}
+        >
           {card.item.title}
         </AppText>
         <View style={styles.feedItemMetaSlot}>
           <AppText
             ellipsizeMode="tail"
             numberOfLines={1}
-            style={textStyle}
+            style={{ color: textColor }}
             variant="caption"
           >
             {getFeedItemMetaLine(card)}
@@ -86,7 +101,7 @@ export function HomeFeedItemRow({
             }}
             style={({ pressed }) => [
               styles.feedItemActionIcon,
-              actionBorderStyle,
+              { borderColor },
               isProcessing && styles.feedItemActionDisabled,
               pressed && !isProcessing && styles.feedItemPressed,
             ]}
@@ -110,7 +125,7 @@ export function HomeFeedItemRow({
             }}
             style={({ pressed }) => [
               styles.feedItemActionIcon,
-              actionBorderStyle,
+              { borderColor },
               isProcessing && styles.feedItemActionDisabled,
               pressed && !isProcessing && styles.feedItemPressed,
             ]}
@@ -160,12 +175,6 @@ const styles = StyleSheet.create({
   feedItemActionDisabled: {
     opacity: 0.42,
   },
-  feedItemActionIconDark: {
-    borderColor: colors.primary,
-  },
-  feedItemActionIconLight: {
-    borderColor: colors.primaryForeground,
-  },
   feedItemActions: {
     alignItems: "center",
     flexDirection: "row",
@@ -174,14 +183,6 @@ const styles = StyleSheet.create({
   feedItemCopyButton: {
     flex: 1,
     minWidth: 0,
-  },
-  feedItemDividerDark: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.dividerOnPrimary,
-  },
-  feedItemDividerLight: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.dividerOnPrimary,
   },
   feedItemMetaSlot: {
     marginTop: spacing.xxs,
@@ -195,11 +196,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  feedSectionTextDark: {
-    color: colors.text,
-  },
-  feedSectionTextLight: {
-    color: colors.primaryForeground,
   },
 });

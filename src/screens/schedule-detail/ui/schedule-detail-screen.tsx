@@ -19,15 +19,16 @@ import {
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { IconButton } from "~/shared/ui/icon-button";
-import { colors, spacing } from "~/shared/ui/tokens";
+import { spacing } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
-import { scheduleDetailScreenStyles as styles } from "./schedule-detail-screen.styles";
+import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";
 import {
   buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
@@ -51,6 +52,8 @@ function DetailScheduleSection({
   timeLabel: string | null;
   title: string;
 }): React.JSX.Element {
+  const styles = useScheduleDetailScreenStyles();
+
   return (
     <View style={styles.scheduleSection}>
       <AppText style={styles.scheduleTitle} variant="caption">
@@ -83,6 +86,8 @@ function DetailSummarySection({
 }): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const styles = useScheduleDetailScreenStyles();
+  const themeColors = useAppThemeColors();
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
   const colorOption = recurringItemColorOptionByKey[colorKey];
   const colorLabel = getRecurringItemColorLabel(colorKey, language);
@@ -119,7 +124,7 @@ function DetailSummarySection({
               <View style={styles.summaryNotificationIconSlot}>
                 <NotificationIcon
                   absoluteStrokeWidth
-                  color={colors.text}
+                  color={themeColors.text}
                   size={14}
                   strokeWidth={1.2}
                 />
@@ -167,6 +172,7 @@ function DetailSummaryColorRow({
   swatchColor: string;
 }): React.JSX.Element {
   const { t } = useTranslation();
+  const styles = useScheduleDetailScreenStyles();
 
   return (
     <View
@@ -201,6 +207,8 @@ function DetailSummaryOutlineRow({
   trailingIcon?: ReactNode;
   value: string;
 }): React.JSX.Element {
+  const styles = useScheduleDetailScreenStyles();
+
   return (
     <View
       accessible={Boolean(accessibilityLabel)}
@@ -227,6 +235,7 @@ function DetailSummaryOutlineRow({
 
 function DetailLoadingPlaceholder(): React.JSX.Element {
   const { t } = useTranslation();
+  const styles = useScheduleDetailScreenStyles();
 
   return (
     <View
@@ -322,6 +331,7 @@ function DetailHistorySection({
   entries: ItemDetailHistoryEntry[];
 }): React.JSX.Element {
   const { t } = useTranslation();
+  const styles = useScheduleDetailScreenStyles();
 
   return (
     <View style={styles.historySection}>
@@ -355,6 +365,7 @@ function DetailHistoryCard({
   entry: ItemDetailHistoryEntry;
   isFirst: boolean;
 }): React.JSX.Element {
+  const styles = useScheduleDetailScreenStyles();
   const isCompleted = entry.action === "completed";
   const statusChipStyle = isCompleted
     ? styles.historyStatusChipCompleted
@@ -411,6 +422,8 @@ export function ScheduleDetailScreen({
 }): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const styles = useScheduleDetailScreenStyles();
+  const themeColors = useAppThemeColors();
   const { isReady, timezone, userId } = useScheduleReadContext();
   const insets = useSafeAreaInsets();
   const {
@@ -584,7 +597,9 @@ export function ScheduleDetailScreen({
                         "scheduleDetail.management.menuLabel"
                       )}
                       disabled={isMutating}
-                      icon={<EllipsisVertical color={colors.text} size={20} />}
+                      icon={
+                        <EllipsisVertical color={themeColors.text} size={20} />
+                      }
                       size="lg"
                     />
                   </DropdownMenu.Trigger>

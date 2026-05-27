@@ -3,14 +3,19 @@ import { useTranslation } from "react-i18next";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import type { CompletionAction } from "~/entities/schedule";
+import { appThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
+import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedItemRow } from "./home-feed-item-row";
 import type {
   HomeFeedCard,
   HomeFeedSection,
 } from "../model/home-feed-sections";
+
+const feedSectionCardTextColor = appThemeColors.light.text;
+const feedSectionCardMutedTextColor = appThemeColors.light.textSoft;
 
 type HomeFeedSectionBlockProps = {
   bottomOverlapInset: number;
@@ -32,6 +37,7 @@ export function HomeFeedSectionBlock({
   style,
 }: HomeFeedSectionBlockProps): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
   const summary = getFeedSectionSummary(section, isLoading, t);
   const showsActions =
     section.id === "overdue" ||
@@ -41,7 +47,7 @@ export function HomeFeedSectionBlock({
     <View
       style={[
         styles.feedSectionCard,
-        getFeedSectionCardStyle(section.id),
+        getFeedSectionCardStyle(section.id, themeColors),
         style,
       ]}
     >
@@ -59,7 +65,7 @@ export function HomeFeedSectionBlock({
       </View>
       {section.caption ? (
         <View style={styles.feedSectionCaption}>
-          <AppText style={styles.feedSectionText} variant="caption">
+          <AppText style={styles.feedSectionMutedText} variant="caption">
             {section.caption}
           </AppText>
         </View>
@@ -89,13 +95,16 @@ export function HomeFeedSectionBlock({
                     ]}
                   >
                     <AppText
-                      style={styles.feedDateSeparatorText}
+                      style={[
+                        styles.feedDateSeparatorText,
+                        styles.feedSectionText,
+                      ]}
                       variant="body2"
                     >
                       {card.dateSeparatorLabel}
                     </AppText>
                     <AppText
-                      style={styles.feedDateSeparatorCount}
+                      style={styles.feedSectionMutedText}
                       variant="body3"
                     >
                       {t("home.feed.dateSeparatorCount", {
@@ -119,7 +128,7 @@ export function HomeFeedSectionBlock({
       ) : (
         <View style={styles.feedSectionSummarySlot}>
           <View style={styles.feedSectionSummaryCopy}>
-            <AppText style={styles.feedSectionText} variant="body">
+            <AppText style={styles.feedSectionMutedText} variant="body">
               {summary}
             </AppText>
           </View>
@@ -155,15 +164,16 @@ function getDateSeparatorItemCount(
 }
 
 function getFeedSectionCardStyle(
-  sectionId: HomeFeedSection["id"]
+  sectionId: HomeFeedSection["id"],
+  themeColors: ReturnType<typeof useAppThemeColors>
 ): StyleProp<ViewStyle> {
   switch (sectionId) {
     case "overdue":
-      return styles.feedSectionOverdue;
+      return { backgroundColor: themeColors.redSoft };
     case "selected-date":
-      return styles.feedSectionSelectedDate;
+      return { backgroundColor: themeColors.greenSoft };
     case "upcoming":
-      return styles.feedSectionUpcoming;
+      return { backgroundColor: themeColors.amberSoft };
   }
 }
 
@@ -200,14 +210,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: spacing.xs,
   },
-  feedDateSeparatorCount: {
-    color: colors.textSoft,
-  },
+  feedDateSeparatorCount: {},
   feedDateSeparatorStacked: {
     paddingTop: spacing.sm,
   },
   feedDateSeparatorText: {
-    color: colors.text,
     flex: 1,
   },
   feedItemList: {
@@ -230,12 +237,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between",
   },
-  feedSectionOverdue: {
-    backgroundColor: colors.redSoft,
-  },
-  feedSectionSelectedDate: {
-    backgroundColor: colors.greenSoft,
-  },
   feedSectionSummarySlot: {
     alignItems: "center",
     flex: 1,
@@ -246,13 +247,14 @@ const styles = StyleSheet.create({
   feedSectionSummaryCopy: {
     opacity: 0.72,
   },
+  feedSectionMutedText: {
+    color: feedSectionCardMutedTextColor,
+  },
   feedSectionText: {
-    color: colors.text,
+    color: feedSectionCardTextColor,
   },
   feedSectionTitleSlot: {
     flex: 1,
   },
-  feedSectionUpcoming: {
-    backgroundColor: colors.amberSoft,
-  },
+  feedSectionUpcoming: {},
 });

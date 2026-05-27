@@ -5,8 +5,9 @@ import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
+import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 import { createHomeDateOptions } from "../model/home-feed-sections";
 
@@ -21,6 +22,7 @@ export function HomeDateCarousel({
 }: HomeDateCarouselProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const themeColors = useAppThemeColors();
   const dateScrollRef = useRef<ScrollView>(null);
   const dateOptions = createHomeDateOptions(startOfDay(new Date()), language);
   const todayOption = dateOptions[0];
@@ -92,15 +94,16 @@ export function HomeDateCarousel({
                 }}
                 style={({ pressed }) => [
                   styles.dateChip,
-                  isSelected && styles.dateChipSelected,
+                  { borderColor: themeColors.primary },
+                  isSelected && { backgroundColor: themeColors.primary },
                   pressed && styles.dateChipPressed,
                 ]}
               >
                 <AppText
                   style={
                     isSelected
-                      ? styles.dateChipLabelSelected
-                      : styles.dateChipLabel
+                      ? { color: themeColors.primaryForeground }
+                      : { color: themeColors.text }
                   }
                   variant="caption"
                 >
@@ -109,8 +112,8 @@ export function HomeDateCarousel({
                 <AppText
                   style={
                     isSelected
-                      ? styles.dateChipValueSelected
-                      : styles.dateChipValue
+                      ? { color: themeColors.primaryForeground }
+                      : { color: themeColors.text }
                   }
                   variant="body"
                 >
@@ -129,11 +132,15 @@ export function HomeDateCarousel({
             onPress={selectToday}
             style={({ pressed }) => [
               styles.todayShortcutButton,
+              { borderColor: themeColors.primary },
               pressed && styles.todayShortcutButtonPressed,
             ]}
           >
-            <Undo2 color={colors.text} size={13} />
-            <AppText style={styles.todayShortcutText} variant="caption">
+            <Undo2 color={themeColors.text} size={13} />
+            <AppText
+              style={[styles.todayShortcutText, { color: themeColors.text }]}
+              variant="caption"
+            >
               {t("home.date.returnTodayShort")}
             </AppText>
           </Pressable>
@@ -158,7 +165,6 @@ const styles = StyleSheet.create({
   dateChip: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
@@ -168,25 +174,15 @@ const styles = StyleSheet.create({
     minWidth: 52,
     paddingHorizontal: spacing.sm,
   },
-  dateChipLabel: {
-    color: colors.text,
-  },
-  dateChipLabelSelected: {
-    color: colors.primaryForeground,
-  },
+  dateChipLabel: {},
+  dateChipLabelSelected: {},
   dateChipPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.97 }],
   },
-  dateChipSelected: {
-    backgroundColor: colors.primary,
-  },
-  dateChipValue: {
-    color: colors.text,
-  },
-  dateChipValueSelected: {
-    color: colors.primaryForeground,
-  },
+  dateChipSelected: {},
+  dateChipValue: {},
+  dateChipValueSelected: {},
   dateSelectorRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -195,7 +191,6 @@ const styles = StyleSheet.create({
   todayShortcutButton: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
@@ -208,7 +203,5 @@ const styles = StyleSheet.create({
   todayShortcutButtonPressed: {
     opacity: 0.88,
   },
-  todayShortcutText: {
-    color: colors.text,
-  },
+  todayShortcutText: {},
 });
