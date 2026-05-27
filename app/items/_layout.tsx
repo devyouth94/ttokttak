@@ -1,5 +1,16 @@
 import { Stack } from "expo-router";
 
+import { createItemsStackScreenOptions } from "~/application/navigation";
+import { useAppThemeColors } from "~/shared/theme";
+
 export default function ItemsStackLayout(): React.JSX.Element {
-  return <Stack screenOptions={{ animation: "default", headerShown: false }} />;
+  const themeColors = useAppThemeColors();
+
+  return (
+    <Stack
+      screenOptions={createItemsStackScreenOptions({
+        backgroundColor: themeColors.background,
+      })}
+    />
+  );
 }

@@ -27,8 +27,23 @@ describe("route shell", () => {
 
     expect(rootLayout).toContain("<AppProviders>");
     expect(rootLayout).toContain("<AppBootstrap />");
+    expect(rootLayout).toContain("useAppThemeColors()");
     expect(rootLayout).not.toContain("QueryClientProvider");
     expect(rootLayout).not.toContain("NotificationProvider");
+  });
+
+  it("루트 stack과 메인 탭 scene은 resolved theme 배경색을 사용한다", () => {
+    const rootLayout = readWorkspaceFile("app/_layout.tsx");
+    const tabsLayout = readWorkspaceFile("app/(tabs)/_layout.tsx");
+    const itemsLayout = readWorkspaceFile("app/items/_layout.tsx");
+
+    expect(rootLayout).toContain(
+      "contentStyle: { backgroundColor: themeColors.background }"
+    );
+    expect(tabsLayout).toContain("useAppThemeColors()");
+    expect(tabsLayout).toContain("sceneStyle:");
+    expect(tabsLayout).toContain("themeColors.background");
+    expect(itemsLayout).toContain("useAppThemeColors()");
   });
 
   it("메인 탭 shell 제목은 표시 언어 리소스를 사용한다", () => {

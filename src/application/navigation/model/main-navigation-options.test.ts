@@ -6,7 +6,12 @@ declare const require: (moduleName: string) => unknown;
 const { readFileSync } = require("fs") as {
   readFileSync: (path: string, encoding: "utf8") => string;
 };
-const { mainTabStackScreenOptions, mainTabsRootScreenOptions } =
+const {
+  createItemsStackScreenOptions,
+  createMainTabStackScreenOptions,
+  mainTabStackScreenOptions,
+  mainTabsRootScreenOptions,
+} =
   require("./main-navigation-options") as typeof import("./main-navigation-options");
 
 function readWorkspaceFile(relativePath: string): string {
@@ -36,7 +41,32 @@ describe("main navigation options", () => {
     });
   });
 
-  it("네 개 메인 탭 layout은 공통 stack 옵션을 적용한다", () => {
+  it("테마 배경색을 포함한 메인 탭 stack 옵션을 만든다", () => {
+    expect(
+      createMainTabStackScreenOptions({ backgroundColor: "#111315" })
+    ).toMatchObject({
+      animation: "default",
+      contentStyle: {
+        backgroundColor: "#111315",
+      },
+      gestureEnabled: false,
+      headerShown: false,
+    });
+  });
+
+  it("items stack도 테마 배경색을 포함한 stack 옵션을 만든다", () => {
+    expect(
+      createItemsStackScreenOptions({ backgroundColor: "#111315" })
+    ).toMatchObject({
+      animation: "default",
+      contentStyle: {
+        backgroundColor: "#111315",
+      },
+      headerShown: false,
+    });
+  });
+
+  it("네 개 메인 탭 layout은 테마 기반 공통 stack 옵션을 적용한다", () => {
     const tabLayoutPaths = [
       "app/(tabs)/home/_layout.tsx",
       "app/(tabs)/schedule/_layout.tsx",
@@ -46,8 +76,18 @@ describe("main navigation options", () => {
 
     for (const tabLayoutPath of tabLayoutPaths) {
       expect(readWorkspaceFile(tabLayoutPath)).toContain(
-        "<Stack screenOptions={mainTabStackScreenOptions} />"
+        "createMainTabStackScreenOptions({"
+      );
+      expect(readWorkspaceFile(tabLayoutPath)).toContain(
+        "backgroundColor: themeColors.background"
       );
     }
+  });
+
+  it("items layout은 테마 기반 stack 옵션을 적용한다", () => {
+    const itemsLayout = readWorkspaceFile("app/items/_layout.tsx");
+
+    expect(itemsLayout).toContain("createItemsStackScreenOptions({");
+    expect(itemsLayout).toContain("backgroundColor: themeColors.background");
   });
 });

@@ -1,4 +1,6 @@
 export {
+  createItemsStackScreenOptions,
+  createMainTabStackScreenOptions,
   mainTabsRootScreenOptions,
   mainTabStackScreenOptions,
 } from "./model/main-navigation-options";

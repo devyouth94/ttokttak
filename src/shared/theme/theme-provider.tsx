@@ -18,9 +18,11 @@ import {
   resolveInitialAppThemePreference,
 } from "./app-theme";
 import { changeAppThemePreference } from "./app-theme-change";
+import { type AppThemeColors, getAppThemeColors } from "./app-theme-colors";
 import { readStoredAppThemePreference } from "./app-theme-storage";
 
 type AppThemeContextValue = {
+  colors: AppThemeColors;
   resolvedTheme: ResolvedAppTheme;
   setThemePreference: (preference: AppThemePreference) => Promise<void>;
   themePreference: AppThemePreference;
@@ -72,17 +74,19 @@ export function AppThemeProvider({
     []
   );
 
-  const value = useMemo<AppThemeContextValue>(
-    () => ({
-      resolvedTheme: resolveAppTheme({
-        colorScheme,
-        preference: themePreference,
-      }),
+  const value = useMemo<AppThemeContextValue>(() => {
+    const resolvedTheme = resolveAppTheme({
+      colorScheme,
+      preference: themePreference,
+    });
+
+    return {
+      colors: getAppThemeColors(resolvedTheme),
+      resolvedTheme,
       setThemePreference,
       themePreference,
-    }),
-    [colorScheme, setThemePreference, themePreference]
-  );
+    };
+  }, [colorScheme, setThemePreference, themePreference]);
 
   return (
     <AppThemeContext.Provider value={value}>
@@ -99,4 +103,8 @@ export function useAppTheme(): AppThemeContextValue {
   }
 
   return context;
+}
+
+export function useAppThemeColors(): AppThemeColors {
+  return useAppTheme().colors;
 }

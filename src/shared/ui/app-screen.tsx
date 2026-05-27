@@ -3,7 +3,7 @@ import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme";
 
 type AppScreenProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
@@ -15,12 +15,26 @@ export function AppScreen({
   contentStyle,
   safeAreaStyle,
 }: AppScreenProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
-      style={[styles.safeArea, safeAreaStyle]}
+      style={[
+        styles.safeArea,
+        { backgroundColor: themeColors.background },
+        safeAreaStyle,
+      ]}
     >
-      <View style={[styles.content, contentStyle]}>{children}</View>
+      <View
+        style={[
+          styles.content,
+          { backgroundColor: themeColors.background },
+          contentStyle,
+        ]}
+      >
+        {children}
+      </View>
     </SafeAreaView>
   );
 }
@@ -31,6 +45,5 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
   },
 });

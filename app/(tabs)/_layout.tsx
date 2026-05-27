@@ -7,16 +7,24 @@ import {
   shouldShowMainBottomNav,
 } from "~/application/navigation";
 import { useSession } from "~/application/session";
-import { colors } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme";
 
 export default function TabsLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useSession();
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
   const pathname = usePathname();
   const showBottomNav = shouldShowMainBottomNav(pathname);
 
   if (isLoading) {
-    return <View style={styles.loadingScreen} />;
+    return (
+      <View
+        style={[
+          styles.loadingScreen,
+          { backgroundColor: themeColors.background },
+        ]}
+      />
+    );
   }
 
   if (!isAuthenticated) {
@@ -29,7 +37,7 @@ export default function TabsLayout(): React.JSX.Element {
       initialRouteName="home"
       screenOptions={{
         headerShown: false,
-        sceneStyle: styles.scene,
+        sceneStyle: [styles.scene, { backgroundColor: themeColors.background }],
       }}
       tabBar={(props) => <MainBottomNav {...props} isVisible={showBottomNav} />}
     >
@@ -53,9 +61,6 @@ export default function TabsLayout(): React.JSX.Element {
 const styles = StyleSheet.create({
   loadingScreen: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  scene: {
-    backgroundColor: colors.background,
-  },
+  scene: {},
 });

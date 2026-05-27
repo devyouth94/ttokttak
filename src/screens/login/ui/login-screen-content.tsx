@@ -11,6 +11,7 @@ import {
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
 import { isAppleSignInAvailable } from "~/features/sign-in";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
@@ -29,6 +30,7 @@ export function LoginScreenContent({
   onGooglePress,
 }: LoginScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
   const legalSuffix = t("login.legalSuffix");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
 
@@ -92,8 +94,11 @@ export function LoginScreenContent({
 
   return (
     <AppScreen
-      contentStyle={styles.screenContent}
-      safeAreaStyle={styles.screen}
+      contentStyle={[
+        styles.screenContent,
+        { backgroundColor: themeColors.surface },
+      ]}
+      safeAreaStyle={[styles.screen, { backgroundColor: themeColors.surface }]}
     >
       <View style={styles.container}>
         <View style={styles.content}>
@@ -295,11 +300,8 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   screenContent: {
-    backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xl,
   },
-  screen: {
-    backgroundColor: colors.surface,
-  },
+  screen: {},
 });
