@@ -22,7 +22,7 @@ import {
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppTheme, useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppEmptyStateView, AppRetryStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";
@@ -109,7 +109,7 @@ function createCalendarTheme(themeColors: AppThemeColors) {
 export function CalendarScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const themeColors = useAppThemeColors();
+  const { colors: themeColors, resolvedTheme } = useAppTheme();
   const styles = useCalendarScreenStyles();
   const calendarTheme = useMemo(
     () => createCalendarTheme(themeColors),
@@ -128,6 +128,7 @@ export function CalendarScreen(): React.JSX.Element {
   const [screenState, setScreenState] = useState(() =>
     createCalendarScreenState(now, scheduleReadContext.timezone)
   );
+  const calendarRenderKey = `${screenState.visibleMonth}:${resolvedTheme}`;
   const previousTimezoneRef = useRef(scheduleReadContext.timezone);
   const projectionQuery = useOccurrenceProjectionQuery({
     context: scheduleReadContext,
@@ -274,7 +275,7 @@ export function CalendarScreen(): React.JSX.Element {
 
         <View style={styles.calendarCard}>
           <Calendar
-            key={screenState.visibleMonth}
+            key={calendarRenderKey}
             current={`${screenState.visibleMonth}-01`}
             dayComponent={({ date }) =>
               date ? (
