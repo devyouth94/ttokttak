@@ -30,18 +30,19 @@ describe("SettingsScreen 앱 표시 언어", () => {
     expect(settingsScreen).toContain("handleChangeAppLanguage(nextLanguage)");
   });
 
-  it("앱 표시 언어 저장 성공 뒤 현재 기기의 로컬 알림을 재동기화한다", () => {
-    const settingsScreen = readWorkspaceFile(
-      "src/screens/settings/ui/settings-screen.tsx"
+  it("앱 표시 언어 변경 알림 재동기화는 notification provider lifecycle이 담당한다", () => {
+    const notificationProvider = readWorkspaceFile(
+      "src/application/notifications/local-notification-provider.tsx"
+    );
+    const notificationLifecycle = readWorkspaceFile(
+      "src/features/sync-local-notifications/model/local-notification-sync-lifecycle.ts"
     );
 
-    expect(settingsScreen).toContain("syncAfterAppLanguageChanged");
-    expect(settingsScreen).toContain(
-      "await syncAfterAppLanguageChanged(nextLanguage)"
+    expect(notificationProvider).toContain("previousLanguageRef");
+    expect(notificationProvider).toContain(
+      "notificationSyncLifecycle.syncAfterAppLanguageChanged"
     );
-    expect(settingsScreen).toContain(
-      't("settings.environment.syncErrorTitle")'
-    );
+    expect(notificationLifecycle).toContain('reason: "app-language-changed"');
   });
 
   it("앱 표시 언어 저장 실패 시 실패 안내를 보여준다", () => {

@@ -15,26 +15,31 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
 
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone: "America/Los_Angeles",
       userId: "user-1",
     });
 
     expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
     expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(1, {
+      language: "ko",
       reason: "session-restored",
       scope: { type: "all" },
       timezone,
       userId: "user-1",
     });
     expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(2, {
+      language: "ko",
       reason: "session-restored",
       scope: { type: "all" },
       timezone: "America/Los_Angeles",
@@ -91,12 +96,14 @@ describe("createLocalNotificationSyncLifecycle", () => {
 
     await expect(
       lifecycle.syncAfterAppForegrounded({
+        language: "ko",
         timezone,
         userId: "user-1",
       })
     ).resolves.toBeUndefined();
 
     expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
+      language: "ko",
       reason: "app-foregrounded",
       scope: { type: "all" },
       timezone,
@@ -187,7 +194,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     expect(syncLocalReminderNotifications).not.toHaveBeenCalled();
   });
 
-  it("앱 표시 언어 변경 뒤 알림 재동기화 실패는 기록하고 caller에게 돌려준다", async () => {
+  it("앱 표시 언어 변경 뒤 알림 재동기화 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );
@@ -208,7 +215,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
         timezone,
         userId: "user-1",
       })
-    ).rejects.toThrow(syncError);
+    ).resolves.toBeUndefined();
 
     expect(captureException).toHaveBeenCalledWith(syncError, {
       tags: {
@@ -229,20 +236,24 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
 
     await lifecycle.syncAfterNotificationTapped({
+      language: "ko",
       timezone,
       userId: null,
     });
     await lifecycle.flushPendingNotificationTapSync({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
     await lifecycle.flushPendingNotificationTapSync({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
 
     expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(1);
     expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
+      language: "ko",
       reason: "notification-tapped",
       scope: { type: "all" },
       timezone,
@@ -271,12 +282,14 @@ describe("createLocalNotificationSyncLifecycle", () => {
     };
 
     await lifecycle.syncAfterMutation({
+      language: "ko",
       reason: "item-updated",
       scope,
       timezone,
       userId: null,
     });
     await lifecycle.syncAfterMutation({
+      language: "ko",
       reason: "item-updated",
       scope,
       timezone,
@@ -285,6 +298,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
 
     await expect(
       lifecycle.syncAfterMutation({
+        language: "ko",
         reason: "item-updated",
         scope,
         timezone,
@@ -294,6 +308,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
 
     expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
     expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(1, {
+      language: "ko",
       reason: "item-updated",
       scope,
       timezone,
@@ -313,14 +328,17 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
 
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: null,
     });
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: null,
     });
@@ -342,10 +360,12 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
 
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: null,
     });
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: null,
     });
@@ -368,10 +388,12 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
 
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: "user-2",
     });
@@ -381,6 +403,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     );
     expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
     expect(syncLocalReminderNotifications).toHaveBeenNthCalledWith(2, {
+      language: "ko",
       reason: "session-restored",
       scope: { type: "all" },
       timezone,
@@ -406,12 +429,14 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
 
     await lifecycle.syncAfterSessionRestored({
+      language: "ko",
       timezone,
       userId: "user-1",
     });
 
     await expect(
       lifecycle.syncAfterSessionRestored({
+        language: "ko",
         timezone,
         userId: null,
       })

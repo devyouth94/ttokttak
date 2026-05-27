@@ -532,6 +532,7 @@ export function useScheduleFormScreenController({
       if (isEditMode && itemId) {
         await updateSchedule({
           itemId,
+          language,
           patch: {
             anchorType: draft.anchorType,
             colorKey: draft.colorKey,
@@ -551,6 +552,7 @@ export function useScheduleFormScreenController({
       } else {
         await createSchedule({
           draft,
+          language,
           userId: user.id,
         });
       }
@@ -582,6 +584,7 @@ export function useScheduleFormScreenController({
     try {
       await archiveSchedule({
         itemId: currentItemId,
+        language,
         timezone,
         userId,
       });

@@ -5,13 +5,13 @@ import type {
 import type { AppLanguage } from "~/shared/i18n";
 
 type LocalNotificationSyncContext = {
-  language?: AppLanguage;
+  language: AppLanguage;
   timezone: string;
   userId: string | null | undefined;
 };
 
 type SyncLocalReminderNotifications = (params: {
-  language?: AppLanguage;
+  language: AppLanguage;
   reason: NotificationSyncReason;
   scope: NotificationSyncScope;
   timezone: string;
@@ -82,7 +82,7 @@ export function createLocalNotificationSyncLifecycle({
 
     try {
       await syncLocalReminderNotifications({
-        ...(context.language ? { language: context.language } : {}),
+        language: context.language,
         reason,
         scope: { type: "all" },
         timezone: context.timezone,
@@ -95,36 +95,6 @@ export function createLocalNotificationSyncLifecycle({
           feature,
         },
       });
-    }
-  }
-
-  async function syncAllForUserAction(params: {
-    context: LocalNotificationSyncContext;
-    feature: string;
-    reason: NotificationSyncReason;
-  }): Promise<void> {
-    const { context, feature, reason } = params;
-
-    if (!context.userId) {
-      return;
-    }
-
-    try {
-      await syncLocalReminderNotifications({
-        ...(context.language ? { language: context.language } : {}),
-        reason,
-        scope: { type: "all" },
-        timezone: context.timezone,
-        userId: context.userId,
-      });
-      lastSessionSyncKey = `${context.userId}:${context.timezone}`;
-    } catch (error) {
-      captureException(error, {
-        tags: {
-          feature,
-        },
-      });
-      throw error;
     }
   }
 
@@ -172,7 +142,7 @@ export function createLocalNotificationSyncLifecycle({
       }
 
       await syncLocalReminderNotifications({
-        ...(language ? { language } : {}),
+        language,
         reason,
         scope,
         timezone,
@@ -181,7 +151,7 @@ export function createLocalNotificationSyncLifecycle({
     },
 
     async syncAfterAppLanguageChanged(context) {
-      await syncAllForUserAction({
+      await syncAllSafely({
         context,
         feature: "local-notification-language-sync",
         reason: "app-language-changed",
@@ -227,7 +197,7 @@ export function createLocalNotificationSyncLifecycle({
 
       await syncAllSafely({
         context: {
-          ...(language ? { language } : {}),
+          language,
           timezone,
           userId,
         },

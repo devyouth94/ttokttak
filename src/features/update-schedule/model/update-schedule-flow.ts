@@ -4,9 +4,11 @@ import {
   type UpdateRecurringItemInput,
 } from "~/entities/schedule/api";
 import { completeScheduleMutation } from "~/features/complete-schedule-mutation";
+import type { AppLanguage } from "~/shared/i18n";
 
 export type UpdateScheduleInput = {
   itemId: string;
+  language: AppLanguage;
   patch: UpdateRecurringItemInput["patch"];
   timezone: string;
   updateItem?: (input: UpdateRecurringItemInput) => Promise<RecurringItem>;
@@ -15,6 +17,7 @@ export type UpdateScheduleInput = {
 
 export async function updateSchedule({
   itemId,
+  language,
   patch,
   timezone,
   updateItem = updateRecurringItem,
@@ -28,6 +31,7 @@ export async function updateSchedule({
   });
 
   await completeScheduleMutation({
+    language,
     reason: "item-updated",
     timezone,
     userId,

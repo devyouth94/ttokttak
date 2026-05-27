@@ -76,6 +76,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-created",
       scope: { type: "all" },
       timezone,
@@ -152,6 +153,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-updated",
       scope: { type: "all" },
       timezone,
@@ -174,6 +176,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-updated",
       scope: { type: "all" },
       timezone,
@@ -215,6 +218,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-updated",
       scope: { type: "all" },
       timezone,
@@ -256,6 +260,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-updated",
       scope: { type: "all" },
       timezone,
@@ -285,6 +290,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "occurrence-skipped",
       scope: { type: "all" },
       timezone,
@@ -317,6 +323,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-created",
       scope: { type: "all" },
       timezone,
@@ -350,6 +357,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-updated",
       scope: {
         effectiveFromUtc: "2026-04-21T00:00:00.000Z",
@@ -391,6 +399,7 @@ describe("syncLocalReminderNotifications", () => {
     ]);
 
     const result = await syncLocalReminderNotifications({
+      language: "ko",
       reason: "item-created",
       scope: { type: "all" },
       timezone,
@@ -450,7 +459,7 @@ describe("syncLocalReminderNotifications", () => {
     );
   });
 
-  it("본문 변경 재예약 실패 시 기존 알림 복구를 시도한다", async () => {
+  it("본문 변경 재예약 실패 시 부분 복구 없이 실패를 caller에게 돌려준다", async () => {
     const scheduleError = new Error("schedule failed");
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
@@ -466,8 +475,7 @@ describe("syncLocalReminderNotifications", () => {
       ]);
     jest
       .mocked(Notifications.scheduleNotificationAsync)
-      .mockRejectedValueOnce(scheduleError)
-      .mockResolvedValueOnce("restored");
+      .mockRejectedValueOnce(scheduleError);
     jest.mocked(listRecurringItems).mockResolvedValue([
       createRecurringItem({
         id: "item-1",
@@ -499,15 +507,7 @@ describe("syncLocalReminderNotifications", () => {
         }),
       })
     );
-    expect(Notifications.scheduleNotificationAsync).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        content: expect.objectContaining({
-          body: "오전 9:00",
-          title: "약 먹기",
-        }),
-      })
-    );
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -213,7 +213,6 @@ export function SettingsScreen(): React.JSX.Element {
     openSettings,
     permission,
     requestPermission,
-    syncAfterAppLanguageChanged,
   } = useNotifications();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -408,14 +407,6 @@ export function SettingsScreen(): React.JSX.Element {
 
     try {
       await setAppLanguage(nextLanguage);
-      try {
-        await syncAfterAppLanguageChanged(nextLanguage);
-      } catch {
-        Alert.alert(
-          t("settings.environment.syncErrorTitle"),
-          t("settings.environment.syncErrorMessage")
-        );
-      }
     } catch {
       Alert.alert(
         t("settings.environment.saveErrorTitle"),

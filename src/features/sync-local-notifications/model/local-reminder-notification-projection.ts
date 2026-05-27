@@ -214,13 +214,12 @@ function createDesiredLocalReminderNotifications(params: {
 export function createLocalReminderNotificationProjection(params: {
   completionLogs: CompletionLog[];
   items: RecurringItem[];
-  language?: AppLanguage;
+  language: AppLanguage;
   now: Date;
   timezone: string;
   userId: string;
 }): LocalReminderNotificationProjection {
-  const { completionLogs, items, now, timezone, userId } = params;
-  const language = params.language ?? "ko";
+  const { completionLogs, items, language, now, timezone, userId } = params;
   const rangeStartUtc = now.toISOString();
   const rangeEndUtc = addDays(now, 30).toISOString();
   const completionLogsByItem = groupCompletionLogsByItemId(completionLogs);

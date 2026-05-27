@@ -526,6 +526,7 @@ export function ScheduleDetailScreen({
     try {
       await archiveSchedule({
         itemId: item.id,
+        language,
         timezone,
         userId,
       });

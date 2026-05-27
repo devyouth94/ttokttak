@@ -58,6 +58,7 @@ describe("일정 변경 mutation 흐름", () => {
           await createSchedule({
             createItem,
             draft,
+            language: "ko",
             userId,
           });
 
@@ -82,6 +83,7 @@ describe("일정 변경 mutation 흐름", () => {
 
           await updateSchedule({
             itemId: "updated-item",
+            language: "ko",
             patch: {
               title: "수정한 일정",
             },
@@ -106,6 +108,7 @@ describe("일정 변경 mutation 흐름", () => {
           await archiveSchedule({
             archiveItem,
             itemId: "archived-item",
+            language: "ko",
             timezone: "Asia/Seoul",
             userId,
           });
@@ -143,6 +146,7 @@ describe("일정 변경 mutation 흐름", () => {
         mutationCase.expectedStorageInput
       );
       expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
+        language: "ko",
         reason: mutationCase.reason,
         scope: { type: "all" },
         timezone: "Asia/Seoul",
@@ -169,6 +173,7 @@ describe("일정 변경 mutation 흐름", () => {
     await expect(
       updateSchedule({
         itemId: "updated-item",
+        language: "ko",
         patch: {
           title: "수정한 일정",
         },

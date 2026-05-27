@@ -48,6 +48,7 @@ export function LocalNotificationProvider({
   );
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const previousLanguageRef = useRef(language);
   const notificationSyncLifecycleRef = useRef<ReturnType<
     typeof createLocalNotificationSyncLifecycle
   > | null>(null);
@@ -143,6 +144,22 @@ export function LocalNotificationProvider({
   }, [language, notificationSyncLifecycle, timezone, userId]);
 
   useEffect(() => {
+    const previousLanguage = previousLanguageRef.current;
+
+    if (previousLanguage === language) {
+      return;
+    }
+
+    previousLanguageRef.current = language;
+
+    void notificationSyncLifecycle.syncAfterAppLanguageChanged({
+      language,
+      timezone,
+      userId,
+    });
+  }, [language, notificationSyncLifecycle, timezone, userId]);
+
+  useEffect(() => {
     void notificationSyncLifecycle.flushPendingNotificationTapSync({
       language,
       timezone,
@@ -169,17 +186,6 @@ export function LocalNotificationProvider({
     [language, notificationSyncLifecycle, timezone, userId]
   );
 
-  const syncAfterAppLanguageChanged = useCallback(
-    async (nextLanguage: typeof language): Promise<void> => {
-      await notificationSyncLifecycle.syncAfterAppLanguageChanged({
-        language: nextLanguage,
-        timezone,
-        userId,
-      });
-    },
-    [notificationSyncLifecycle, timezone, userId]
-  );
-
   const syncAfterNotificationTap = useCallback(async (): Promise<void> => {
     await notificationSyncLifecycle.syncAfterNotificationTapped({
       language,
@@ -195,7 +201,6 @@ export function LocalNotificationProvider({
     permission,
     refreshPermission,
     requestPermission,
-    syncAfterAppLanguageChanged,
     syncAfterMutation,
     syncAfterNotificationTap,
   };
