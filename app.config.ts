@@ -24,7 +24,7 @@ export default function getAppConfig(): ExpoConfig {
   return {
     name: "똑딱",
     slug: "ttokttak",
-    version: "1.0.1",
+    version: "1.0.2",
     runtimeVersion: {
       policy: "appVersion",
     },
@@ -37,7 +37,6 @@ export default function getAppConfig(): ExpoConfig {
     userInterfaceStyle: "automatic",
     ios: {
       bundleIdentifier: "com.youngzin.ttokttak",
-      buildNumber: "18",
       usesAppleSignIn: true,
       infoPlist: {
         CFBundleDevelopmentRegion: "ko",
@@ -52,7 +51,6 @@ export default function getAppConfig(): ExpoConfig {
       },
       predictiveBackGestureEnabled: false,
       package: "com.youngzin.ttokttak",
-      versionCode: 1,
     },
     web: {
       output: "static",

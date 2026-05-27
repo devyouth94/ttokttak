@@ -83,6 +83,8 @@ EAS가 Google Service Account JSON key를 묻는 경우 올바른 `devyouth94@gm
 Today Square 계정 또는 Today Square Play Console 권한으로 제출하지 않는다.
 
 `eas.json`의 Android 제출 설정은 `submit.production.android.track = "internal"`을 사용한다.
+개발자용 version code는 EAS 원격 값을 기준으로 한다.
+`app.config.ts`에는 `android.versionCode`를 두지 않는다.
 첫 제출은 internal track에서 검증한 뒤 production 승격 여부를 따로 결정한다.
 
 ## 복구 절차

@@ -18,6 +18,8 @@ Android 배포 절차는 `docs/release/ANDROID_RELEASE.md`를 따른다.
 production 빌드는 `autoIncrement: true`와 remote app version source를 사용한다.
 production 빌드는 EAS Update `production` channel을 사용한다.
 preview 빌드는 EAS Update `preview` channel을 사용한다.
+개발자용 빌드 번호는 EAS 원격 값을 기준으로 한다.
+`app.config.ts`에는 `ios.buildNumber`와 `android.versionCode`를 두지 않는다.
 
 ## 사전 조건
 
@@ -69,7 +71,9 @@ CI=1 pnpm exec eas update \
 현재 설정 기준:
 
 - `app.config.ts`: `runtimeVersion.policy = "appVersion"`.
+- `app.config.ts`: `version`은 제출할 앱 버전이다.
 - `app.config.ts`: `updates.url = "https://u.expo.dev/7b6d8011-8d4c-4110-967f-160aea1db801"`.
+- `app.config.ts`: `ios.buildNumber`와 `android.versionCode`는 설정하지 않는다.
 - `eas.json`: `build.production.channel = "production"`.
 - `eas.json`: `build.preview.channel = "preview"`.
 
