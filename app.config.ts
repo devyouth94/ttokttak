@@ -40,7 +40,7 @@ export default function getAppConfig(): ExpoConfig {
       usesAppleSignIn: true,
       infoPlist: {
         CFBundleDevelopmentRegion: "ko",
-        CFBundleLocalizations: ["ko"],
+        CFBundleLocalizations: ["ko", "en"],
         ITSAppUsesNonExemptEncryption: false,
       },
     },

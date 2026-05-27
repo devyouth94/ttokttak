@@ -1,3 +1,5 @@
+import type { AppLanguage } from "./app-language";
+
 export const appI18nResources = {
   en: {
     translation: {
@@ -648,4 +650,4 @@ export const appI18nResources = {
       },
     },
   },
-} as const;
+} as const satisfies Record<AppLanguage, { translation: object }>;

@@ -26,6 +26,22 @@ export function isAppLanguage(value: unknown): value is AppLanguage {
   );
 }
 
+export function normalizeAppLanguage(
+  language: string | undefined
+): AppLanguage {
+  if (isAppLanguage(language)) {
+    return language;
+  }
+
+  const baseLanguage = language?.split("-")[0];
+
+  if (isAppLanguage(baseLanguage)) {
+    return baseLanguage;
+  }
+
+  return fallbackAppLanguage;
+}
+
 export function resolveAppLanguage({
   deviceLocales,
   storedLanguage,

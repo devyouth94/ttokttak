@@ -1,5 +1,6 @@
 import {
   fallbackAppLanguage,
+  normalizeAppLanguage,
   resolveAppLanguage,
   resolveInitialAppLanguage,
 } from "./app-language";
@@ -48,6 +49,16 @@ describe("resolveAppLanguage", () => {
     });
 
     expect(language).toBe("en");
+  });
+});
+
+describe("normalizeAppLanguage", () => {
+  it("지원하는 언어 tag는 앱 표시 언어로 정규화한다", () => {
+    expect(normalizeAppLanguage("en-US")).toBe("en");
+  });
+
+  it("지원하지 않는 언어는 fallback 앱 표시 언어로 정규화한다", () => {
+    expect(normalizeAppLanguage("ja-JP")).toBe(fallbackAppLanguage);
   });
 });
 

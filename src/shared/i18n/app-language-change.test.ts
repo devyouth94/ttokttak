@@ -28,9 +28,16 @@ describe("app language change", () => {
     expect(applyLanguage).not.toHaveBeenCalled();
   });
 
-  it("새 앱 표시 언어를 현재 기기에 저장한 뒤 런타임 언어로 적용한다", async () => {
-    const applyLanguage = jest.fn(async () => undefined);
-    const writeLanguage = jest.fn(async () => undefined);
+  it("새 앱 표시 언어를 런타임에 적용한 뒤 현재 기기에 저장한다", async () => {
+    const calls: string[] = [];
+    const applyLanguage = jest.fn<Promise<void>, ["ko" | "en"]>();
+    const writeLanguage = jest.fn<Promise<void>, ["ko" | "en"]>();
+    applyLanguage.mockImplementation(async (language) => {
+      calls.push(`apply:${language}`);
+    });
+    writeLanguage.mockImplementation(async (language) => {
+      calls.push(`write:${language}`);
+    });
 
     const result = await persistAppLanguageChange({
       applyLanguage,
@@ -45,9 +52,10 @@ describe("app language change", () => {
     });
     expect(writeLanguage).toHaveBeenCalledWith("en");
     expect(applyLanguage).toHaveBeenCalledWith("en");
+    expect(calls).toEqual(["apply:en", "write:en"]);
   });
 
-  it("저장이 실패하면 기존 앱 표시 언어를 유지하고 런타임 언어를 바꾸지 않는다", async () => {
+  it("저장이 실패하면 런타임 언어를 기존 앱 표시 언어로 되돌린다", async () => {
     const applyLanguage = jest.fn(async () => undefined);
     const writeLanguage = jest.fn(async () => {
       throw new Error("저장 실패");
@@ -62,10 +70,11 @@ describe("app language change", () => {
       })
     ).rejects.toThrow("저장 실패");
 
-    expect(applyLanguage).not.toHaveBeenCalled();
+    expect(applyLanguage).toHaveBeenNthCalledWith(1, "en");
+    expect(applyLanguage).toHaveBeenNthCalledWith(2, "ko");
   });
 
-  it("런타임 적용이 실패하면 저장값과 런타임 언어를 기존 값으로 되돌린다", async () => {
+  it("런타임 적용이 실패하면 저장하지 않고 기존 앱 표시 언어로 되돌린다", async () => {
     const applyLanguage = jest
       .fn<Promise<void>, ["ko" | "en"]>()
       .mockRejectedValueOnce(new Error("적용 실패"))
@@ -81,8 +90,7 @@ describe("app language change", () => {
       })
     ).rejects.toThrow("적용 실패");
 
-    expect(writeLanguage).toHaveBeenNthCalledWith(1, "en");
-    expect(writeLanguage).toHaveBeenNthCalledWith(2, "ko");
+    expect(writeLanguage).not.toHaveBeenCalled();
     expect(applyLanguage).toHaveBeenNthCalledWith(1, "en");
     expect(applyLanguage).toHaveBeenNthCalledWith(2, "ko");
   });

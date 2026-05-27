@@ -24,6 +24,10 @@ export function ensureAppI18nInitialized(): Promise<AppLanguage> {
         getDeviceLocales: getLocales,
         readStoredLanguage: readStoredAppLanguage,
       }),
+  }).catch((error: unknown) => {
+    appI18nInitialization = null;
+
+    throw error;
   });
 
   return appI18nInitialization;

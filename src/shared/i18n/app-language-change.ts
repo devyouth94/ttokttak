@@ -1,9 +1,5 @@
 import { appI18n } from "./app-i18n";
-import {
-  type AppLanguage,
-  fallbackAppLanguage,
-  isAppLanguage,
-} from "./app-language";
+import { type AppLanguage, normalizeAppLanguage } from "./app-language";
 import { writeStoredAppLanguage } from "./app-language-storage";
 
 type ApplyAppLanguage = (language: AppLanguage) => Promise<void>;
@@ -47,15 +43,13 @@ export async function persistAppLanguageChange({
     };
   }
 
-  await writeLanguage(nextLanguage);
-
   try {
     await applyLanguage(nextLanguage);
+    await writeLanguage(nextLanguage);
   } catch (error) {
-    await restoreAppLanguage({
+    await restoreRuntimeAppLanguage({
       applyLanguage,
       currentLanguage,
-      writeLanguage,
     });
 
     throw error;
@@ -68,30 +62,17 @@ export async function persistAppLanguageChange({
 }
 
 export function getCurrentAppLanguage(): AppLanguage {
-  return normalizeAppI18nLanguage(appI18n.resolvedLanguage ?? appI18n.language);
+  return normalizeAppLanguage(appI18n.resolvedLanguage ?? appI18n.language);
 }
 
-function normalizeAppI18nLanguage(language: string | undefined): AppLanguage {
-  if (isAppLanguage(language)) {
-    return language;
-  }
-
-  const baseLanguage = language?.split("-")[0];
-
-  if (isAppLanguage(baseLanguage)) {
-    return baseLanguage;
-  }
-
-  return fallbackAppLanguage;
-}
-
-async function restoreAppLanguage({
+async function restoreRuntimeAppLanguage({
   applyLanguage,
   currentLanguage,
-  writeLanguage,
-}: Omit<PersistAppLanguageChangeInput, "nextLanguage">): Promise<void> {
+}: Pick<
+  PersistAppLanguageChangeInput,
+  "applyLanguage" | "currentLanguage"
+>): Promise<void> {
   try {
-    await writeLanguage(currentLanguage);
     await applyLanguage(currentLanguage);
   } catch {
     // 복구 실패는 원래 실패 원인을 가리지 않는다.
