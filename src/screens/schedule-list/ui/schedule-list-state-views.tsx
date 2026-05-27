@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppEmptyStateView, AppRetryStateView } from "~/shared/ui/app-state";
 
 export function ScheduleListEmptyState(): React.JSX.Element {

@@ -1,16 +1,5 @@
-import { Stack } from "expo-router";
-
-import { createMainTabStackScreenOptions } from "~/application/navigation";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { ThemedMainTabStack } from "~/application/navigation";
 
 export default function SettingsStackLayout(): React.JSX.Element {
-  const themeColors = useAppThemeColors();
-
-  return (
-    <Stack
-      screenOptions={createMainTabStackScreenOptions({
-        backgroundColor: themeColors.background,
-      })}
-    />
-  );
+  return <ThemedMainTabStack />;
 }

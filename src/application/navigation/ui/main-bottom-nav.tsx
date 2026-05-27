@@ -11,8 +11,8 @@ import {
   Settings2,
 } from "lucide-react-native";
 
-import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import type { AppThemeColors } from "~/shared/theme";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { spacing } from "~/shared/ui/tokens";
 

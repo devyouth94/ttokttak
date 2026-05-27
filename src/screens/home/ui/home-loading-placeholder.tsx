@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 const HOME_LOADING_PLACEHOLDER_ROW_COUNT = 3;

@@ -7,7 +7,7 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { typography } from "~/shared/ui/tokens";
 
 type AppTextVariant =

@@ -1,4 +1,4 @@
-import type { ResolvedAppTheme } from "~/shared/theme/app-theme";
+import type { ResolvedAppTheme } from "~/shared/theme";
 
 export function getCalendarRenderKey({
   resolvedTheme,

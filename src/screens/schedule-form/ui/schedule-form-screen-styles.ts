@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { Platform, StyleSheet } from "react-native";
 
-import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import type { AppThemeColors } from "~/shared/theme";
+import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 
 export function useScheduleFormScreenStyles() {

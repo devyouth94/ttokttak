@@ -21,8 +21,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
-import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppTheme } from "~/shared/theme/theme-context";
+import type { AppThemeColors } from "~/shared/theme";
+import { useAppTheme } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";

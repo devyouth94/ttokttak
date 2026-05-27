@@ -27,27 +27,35 @@ describe("route shell", () => {
 
     expect(rootLayout).toContain("<AppProviders>");
     expect(rootLayout).toContain("<AppBootstrap />");
-    expect(rootLayout).toContain("useAppThemeColors()");
+    expect(rootLayout).toContain("<ThemedRootStack />");
+    expect(rootLayout).not.toContain("useAppThemeColors");
     expect(rootLayout).not.toContain("QueryClientProvider");
     expect(rootLayout).not.toContain("NotificationProvider");
   });
 
-  it("루트 stack과 메인 탭 scene은 resolved theme 배경색을 사용한다", () => {
+  it("route shell은 테마 배경 적용을 application navigation에 위임한다", () => {
     const rootLayout = readWorkspaceFile("app/_layout.tsx");
     const tabsLayout = readWorkspaceFile("app/(tabs)/_layout.tsx");
     const itemsLayout = readWorkspaceFile("app/items/_layout.tsx");
-
-    expect(rootLayout).toContain(
-      "contentStyle: { backgroundColor: themeColors.background }"
+    const themedStacks = readWorkspaceFile(
+      "src/application/navigation/ui/themed-stacks.tsx"
     );
-    expect(tabsLayout).toContain("useAppThemeColors()");
-    expect(tabsLayout).toContain("sceneStyle:");
-    expect(tabsLayout).toContain("themeColors.background");
-    expect(itemsLayout).toContain("useAppThemeColors()");
+    const mainTabsLayout = readWorkspaceFile(
+      "src/application/navigation/ui/main-tabs-layout.tsx"
+    );
+
+    expect(rootLayout).not.toContain("themeColors.background");
+    expect(tabsLayout).toContain("<MainTabsLayout />");
+    expect(tabsLayout).not.toContain("themeColors.background");
+    expect(itemsLayout).not.toContain("themeColors.background");
+    expect(themedStacks).toContain("useAppThemeColors()");
+    expect(mainTabsLayout).toContain("sceneStyle:");
   });
 
   it("메인 탭 shell 제목은 표시 언어 리소스를 사용한다", () => {
-    const tabsLayout = readWorkspaceFile("app/(tabs)/_layout.tsx");
+    const tabsLayout = readWorkspaceFile(
+      "src/application/navigation/ui/main-tabs-layout.tsx"
+    );
 
     expect(tabsLayout).toContain("useTranslation()");
     expect(tabsLayout).toContain('t("navigation.tabs.home")');

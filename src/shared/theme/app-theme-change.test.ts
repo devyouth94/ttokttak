@@ -80,6 +80,25 @@ describe("app theme preference change", () => {
     expect(applyPreference).toHaveBeenNthCalledWith(2, "system");
   });
 
+  it("성공한 변경 이후 다음 변경이 실패하면 직전 성공 preference로 되돌린다", async () => {
+    const applyPreference = jest.fn(async () => undefined);
+    const writePreference = jest.fn(async () => {
+      throw new Error("저장 실패");
+    });
+
+    await expect(
+      persistAppThemePreferenceChange({
+        applyPreference,
+        currentPreference: "dark",
+        nextPreference: "system",
+        writePreference,
+      })
+    ).rejects.toThrow("저장 실패");
+
+    expect(applyPreference).toHaveBeenNthCalledWith(1, "system");
+    expect(applyPreference).toHaveBeenNthCalledWith(2, "dark");
+  });
+
   it("런타임 적용이 실패하면 저장하지 않고 기존 preference로 되돌린다", async () => {
     const applyPreference = jest
       .fn<Promise<void>, ["system" | "light" | "dark"]>()

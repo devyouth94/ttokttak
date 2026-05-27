@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 import { AppText } from "./app-text";

@@ -19,7 +19,7 @@ import {
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";

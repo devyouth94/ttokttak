@@ -11,8 +11,8 @@ import {
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
 import { isAppleSignInAvailable } from "~/features/sign-in";
-import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import type { AppThemeColors } from "~/shared/theme";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";

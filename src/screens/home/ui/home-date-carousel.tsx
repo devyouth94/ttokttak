@@ -5,7 +5,7 @@ import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 

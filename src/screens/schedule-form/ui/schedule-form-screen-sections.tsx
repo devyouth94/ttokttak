@@ -20,8 +20,7 @@ import {
   type RecurringItemColorKey,
 } from "~/entities/schedule";
 import { useAppLanguage } from "~/shared/i18n";
-import type { ResolvedAppTheme } from "~/shared/theme/app-theme";
-import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
+import type { AppThemeColors, ResolvedAppTheme } from "~/shared/theme";
 import {
   AppSelectMenu,
   type AppSelectMenuOption,

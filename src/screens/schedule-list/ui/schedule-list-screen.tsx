@@ -18,7 +18,7 @@ import {
   useOccurrenceProjectionQuery,
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { spacing } from "~/shared/ui/tokens";

@@ -12,6 +12,17 @@ export const mainTabStackScreenOptions = {
   headerShown: false,
 } as const;
 
+export function createRootStackScreenOptions({
+  backgroundColor,
+}: ThemeStackScreenOptionsInput) {
+  return {
+    contentStyle: {
+      backgroundColor,
+    },
+    headerShown: false,
+  } as const;
+}
+
 export function createMainTabStackScreenOptions({
   backgroundColor,
 }: ThemeStackScreenOptionsInput) {

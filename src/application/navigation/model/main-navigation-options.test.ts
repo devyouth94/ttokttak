@@ -7,6 +7,7 @@ const { readFileSync } = require("fs") as {
   readFileSync: (path: string, encoding: "utf8") => string;
 };
 const {
+  createRootStackScreenOptions,
   createItemsStackScreenOptions,
   createMainTabStackScreenOptions,
   mainTabStackScreenOptions,
@@ -26,11 +27,24 @@ describe("main navigation options", () => {
   });
 
   it("루트 layout은 메인 탭 컨테이너에 swipe back 차단 옵션을 적용한다", () => {
-    const rootLayout = readWorkspaceFile("app/_layout.tsx");
+    const themedStacks = readWorkspaceFile(
+      "src/application/navigation/ui/themed-stacks.tsx"
+    );
 
-    expect(rootLayout).toContain(
+    expect(themedStacks).toContain(
       '<Stack.Screen name="(tabs)" options={mainTabsRootScreenOptions} />'
     );
+  });
+
+  it("루트 stack은 테마 배경색을 포함한 stack 옵션을 만든다", () => {
+    expect(
+      createRootStackScreenOptions({ backgroundColor: "#111315" })
+    ).toMatchObject({
+      contentStyle: {
+        backgroundColor: "#111315",
+      },
+      headerShown: false,
+    });
   });
 
   it("각 메인 탭 stack은 루트 화면에서 iOS swipe back을 열지 않는다", () => {
@@ -66,7 +80,7 @@ describe("main navigation options", () => {
     });
   });
 
-  it("네 개 메인 탭 layout은 테마 기반 공통 stack 옵션을 적용한다", () => {
+  it("네 개 메인 탭 layout은 application의 themed stack만 연결한다", () => {
     const tabLayoutPaths = [
       "app/(tabs)/home/_layout.tsx",
       "app/(tabs)/schedule/_layout.tsx",
@@ -75,19 +89,19 @@ describe("main navigation options", () => {
     ];
 
     for (const tabLayoutPath of tabLayoutPaths) {
-      expect(readWorkspaceFile(tabLayoutPath)).toContain(
-        "createMainTabStackScreenOptions({"
-      );
-      expect(readWorkspaceFile(tabLayoutPath)).toContain(
-        "backgroundColor: themeColors.background"
-      );
+      const tabLayout = readWorkspaceFile(tabLayoutPath);
+
+      expect(tabLayout).toContain("<ThemedMainTabStack />");
+      expect(tabLayout).not.toContain("useAppThemeColors");
+      expect(tabLayout).not.toContain("themeColors.background");
     }
   });
 
-  it("items layout은 테마 기반 stack 옵션을 적용한다", () => {
+  it("items layout은 application의 themed stack만 연결한다", () => {
     const itemsLayout = readWorkspaceFile("app/items/_layout.tsx");
 
-    expect(itemsLayout).toContain("createItemsStackScreenOptions({");
-    expect(itemsLayout).toContain("backgroundColor: themeColors.background");
+    expect(itemsLayout).toContain("<ThemedItemsStack />");
+    expect(itemsLayout).not.toContain("useAppThemeColors");
+    expect(itemsLayout).not.toContain("themeColors.background");
   });
 });

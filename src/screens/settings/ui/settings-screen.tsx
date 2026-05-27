@@ -27,8 +27,8 @@ import {
   validateProfileDisplayName,
 } from "~/features/settings";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
-import type { AppThemePreference } from "~/shared/theme/app-theme";
-import { useAppTheme } from "~/shared/theme/theme-context";
+import type { AppThemePreference } from "~/shared/theme";
+import { useAppTheme } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import {
   AppSelectMenu,

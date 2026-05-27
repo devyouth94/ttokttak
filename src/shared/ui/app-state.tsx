@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 
 import { AppText } from "./app-text";

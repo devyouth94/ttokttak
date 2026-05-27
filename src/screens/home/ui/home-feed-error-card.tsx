@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { RotateCw } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { useAppThemeColors } from "~/shared/theme";
 import { AppRetryStatePanel } from "~/shared/ui/app-state";
 import { spacing } from "~/shared/ui/tokens";
 

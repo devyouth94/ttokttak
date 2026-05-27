@@ -16,13 +16,6 @@ import {
 } from "./app-theme";
 import { changeAppThemePreference } from "./app-theme-change";
 import { getAppThemeColors } from "./app-theme-colors";
-import {
-  completeAppThemePreferenceMutation,
-  createAppThemeHydrationState,
-  failAppThemePreferenceMutation,
-  recordHydratedAppThemePreference,
-  startAppThemePreferenceMutation,
-} from "./app-theme-hydration";
 import { readStoredAppThemePreference } from "./app-theme-storage";
 import { AppThemeContext, type AppThemeContextValue } from "./theme-context";
 
@@ -32,12 +25,13 @@ export function AppThemeProvider({
   const colorScheme = useColorScheme();
   const [themePreference, setThemePreferenceState] =
     useState<AppThemePreference>(fallbackAppThemePreference);
+  const didUserChooseThemePreferenceRef = useRef(false);
   const themePreferenceRef = useRef(themePreference);
-  const hydrationStateRef = useRef(createAppThemeHydrationState());
 
-  useEffect(() => {
-    themePreferenceRef.current = themePreference;
-  }, [themePreference]);
+  const applyThemePreference = useCallback((preference: AppThemePreference) => {
+    themePreferenceRef.current = preference;
+    setThemePreferenceState(preference);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,56 +39,29 @@ export function AppThemeProvider({
     void resolveInitialAppThemePreference({
       readStoredPreference: readStoredAppThemePreference,
     }).then((initialPreference) => {
-      const hydrationResult = recordHydratedAppThemePreference(
-        hydrationStateRef.current,
-        initialPreference
-      );
-
-      hydrationStateRef.current = hydrationResult.nextState;
-
-      if (isMounted && hydrationResult.shouldApplyHydratedPreference) {
-        setThemePreferenceState(initialPreference);
+      if (isMounted && !didUserChooseThemePreferenceRef.current) {
+        applyThemePreference(initialPreference);
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [applyThemePreference]);
 
   const setThemePreference = useCallback(
     async (nextPreference: AppThemePreference) => {
-      hydrationStateRef.current = startAppThemePreferenceMutation(
-        hydrationStateRef.current
-      );
+      didUserChooseThemePreferenceRef.current = true;
 
-      try {
-        await changeAppThemePreference({
-          applyPreference: async (preference) => {
-            setThemePreferenceState(preference);
-          },
-          currentPreference: themePreferenceRef.current,
-          nextPreference,
-        });
-
-        hydrationStateRef.current = completeAppThemePreferenceMutation(
-          hydrationStateRef.current
-        );
-      } catch (error) {
-        const failureResult = failAppThemePreferenceMutation(
-          hydrationStateRef.current
-        );
-
-        hydrationStateRef.current = failureResult.nextState;
-
-        if (failureResult.hydratedPreferenceToRestore) {
-          setThemePreferenceState(failureResult.hydratedPreferenceToRestore);
-        }
-
-        throw error;
-      }
+      await changeAppThemePreference({
+        applyPreference: async (preference) => {
+          applyThemePreference(preference);
+        },
+        currentPreference: themePreferenceRef.current,
+        nextPreference,
+      });
     },
-    []
+    [applyThemePreference]
   );
 
   const value = useMemo<AppThemeContextValue>(() => {
