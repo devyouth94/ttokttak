@@ -25,7 +25,9 @@ export function AppThemeProvider({
   const colorScheme = useColorScheme();
   const [themePreference, setThemePreferenceState] =
     useState<AppThemePreference>(fallbackAppThemePreference);
-  const didUserChooseThemePreferenceRef = useRef(false);
+  const didWriteThemePreferenceRef = useRef(false);
+  const shouldApplyHydratedPreferenceRef = useRef(true);
+  const storedThemePreferenceRef = useRef<AppThemePreference | null>(null);
   const themePreferenceRef = useRef(themePreference);
 
   const applyThemePreference = useCallback((preference: AppThemePreference) => {
@@ -39,7 +41,15 @@ export function AppThemeProvider({
     void resolveInitialAppThemePreference({
       readStoredPreference: readStoredAppThemePreference,
     }).then((initialPreference) => {
-      if (isMounted && !didUserChooseThemePreferenceRef.current) {
+      if (!didWriteThemePreferenceRef.current) {
+        storedThemePreferenceRef.current = initialPreference;
+      }
+
+      if (
+        isMounted &&
+        shouldApplyHydratedPreferenceRef.current &&
+        !didWriteThemePreferenceRef.current
+      ) {
         applyThemePreference(initialPreference);
       }
     });
@@ -51,15 +61,30 @@ export function AppThemeProvider({
 
   const setThemePreference = useCallback(
     async (nextPreference: AppThemePreference) => {
-      didUserChooseThemePreferenceRef.current = true;
+      shouldApplyHydratedPreferenceRef.current = false;
 
-      await changeAppThemePreference({
-        applyPreference: async (preference) => {
-          applyThemePreference(preference);
-        },
-        currentPreference: themePreferenceRef.current,
-        nextPreference,
-      });
+      try {
+        const result = await changeAppThemePreference({
+          applyPreference: async (preference) => {
+            applyThemePreference(preference);
+          },
+          currentPreference: themePreferenceRef.current,
+          nextPreference,
+        });
+
+        if (result.didChange) {
+          didWriteThemePreferenceRef.current = true;
+          storedThemePreferenceRef.current = result.preference;
+        }
+      } catch (error) {
+        shouldApplyHydratedPreferenceRef.current = true;
+
+        if (storedThemePreferenceRef.current) {
+          applyThemePreference(storedThemePreferenceRef.current);
+        }
+
+        throw error;
+      }
     },
     [applyThemePreference]
   );
