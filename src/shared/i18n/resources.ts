@@ -1,5 +1,19 @@
 import type { AppLanguage } from "./app-language";
 
+type AppI18nTranslationShape<T> = {
+  readonly [Key in keyof T]: T[Key] extends string
+    ? string
+    : T[Key] extends object
+      ? AppI18nTranslationShape<T[Key]>
+      : never;
+};
+
+type AssertSameAppI18nResourceShape<Left, Right> = [Left] extends [Right]
+  ? [Right] extends [Left]
+    ? true
+    : never
+  : never;
+
 export const appI18nResources = {
   en: {
     translation: {
@@ -349,6 +363,8 @@ export const appI18nResources = {
           completeHint: "이 일정을 완료 처리해요.",
           completeLabel: "{{title}} 완료",
           dateSeparatorCount: "{{count}}개",
+          dateSeparatorCount_one: "{{count}}개",
+          dateSeparatorCount_other: "{{count}}개",
           errorDescription: "홈 피드를 불러오지 못했어요. 다시 시도해주세요.",
           errorTitle: "일정을 불러오지 못했어요",
           itemDetailHint: "반복 항목 상세 화면으로 이동해요.",
@@ -358,7 +374,11 @@ export const appI18nResources = {
           retryHint: "일정을 다시 불러와요.",
           retryLabel: "일정 다시 시도",
           sectionCount: "{{count}}개",
+          sectionCount_one: "{{count}}개",
+          sectionCount_other: "{{count}}개",
           sectionSummary: "{{count}}개의 일정이 있어요",
+          sectionSummary_one: "{{count}}개의 일정이 있어요",
+          sectionSummary_other: "{{count}}개의 일정이 있어요",
           skipHint: "이 일정을 건너뛰어요.",
           skipLabel: "{{title}} 건너뛰기",
         },
@@ -651,3 +671,10 @@ export const appI18nResources = {
     },
   },
 } as const satisfies Record<AppLanguage, { translation: object }>;
+
+const appI18nResourceShapeCheck: AssertSameAppI18nResourceShape<
+  AppI18nTranslationShape<(typeof appI18nResources)["en"]["translation"]>,
+  AppI18nTranslationShape<(typeof appI18nResources)["ko"]["translation"]>
+> = true;
+
+void appI18nResourceShapeCheck;
