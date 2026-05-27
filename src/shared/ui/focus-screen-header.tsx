@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
-import { borderRadius, colors } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { borderRadius } from "~/shared/ui/tokens";
 
 import { ScreenHeader } from "./screen-header";
 
@@ -23,6 +24,8 @@ export function FocusScreenHeader({
   rightSlot,
   title,
 }: FocusScreenHeaderProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+
   return (
     <ScreenHeader
       leftSlot={
@@ -34,10 +37,11 @@ export function FocusScreenHeader({
           onPress={onBack}
           style={({ pressed }) => [
             styles.backButton,
+            { backgroundColor: themeColors.primary },
             pressed && styles.buttonPressed,
           ]}
         >
-          <ArrowLeft color={colors.primaryForeground} size={18} />
+          <ArrowLeft color={themeColors.primaryForeground} size={18} />
         </Pressable>
       }
       onHeightChange={onHeightChange}
@@ -50,7 +54,6 @@ export function FocusScreenHeader({
 const styles = StyleSheet.create({
   backButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     height: 32,
     justifyContent: "center",

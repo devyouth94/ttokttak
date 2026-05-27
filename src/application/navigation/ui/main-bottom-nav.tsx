@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { router, usePathname } from "expo-router";
@@ -10,8 +11,10 @@ import {
   Settings2,
 } from "lucide-react-native";
 
+import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
-import { colors, spacing } from "~/shared/ui/tokens";
+import { spacing } from "~/shared/ui/tokens";
 
 import { pressMainBottomNavRoute } from "./main-bottom-nav.helpers";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "./main-bottom-nav-layout";
@@ -81,6 +84,11 @@ export function MainBottomNav({
 }: MainBottomNavProps): React.JSX.Element | null {
   const pathname = usePathname();
   const { t } = useTranslation();
+  const themeColors = useAppThemeColors();
+  const styles = useMemo(
+    () => createMainBottomNavStyles(themeColors),
+    [themeColors]
+  );
   const routes = state.routes.filter(isMainTabRoute);
 
   if (!isVisible) {
@@ -145,7 +153,7 @@ export function MainBottomNav({
           pressed && styles.createButtonPressed,
         ]}
       >
-        <Plus color={colors.text} size={28} />
+        <Plus color={themeColors.text} size={28} />
       </Pressable>
     </View>
   );
@@ -159,6 +167,11 @@ function MainBottomNavItem({
   route,
   stateKey,
 }: MainBottomNavItemProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+  const styles = useMemo(
+    () => createMainBottomNavStyles(themeColors),
+    [themeColors]
+  );
   const Icon = item.icon;
 
   return (
@@ -185,7 +198,9 @@ function MainBottomNavItem({
     >
       <View style={styles.icon}>
         <Icon
-          color={isActive ? colors.primaryForeground : colors.textSoft}
+          color={
+            isActive ? themeColors.primaryForeground : themeColors.textSoft
+          }
           size={22}
         />
       </View>
@@ -200,68 +215,70 @@ function MainBottomNavItem({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: "transparent",
-    bottom: 0,
-    left: 0,
-    overflow: "visible",
-    position: "absolute",
-    right: 0,
-  },
-  panel: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 30,
-    flexDirection: "row",
-    height: 60,
-    left: 16,
-    paddingHorizontal: 8,
-    position: "absolute",
-    right: 16,
-    top: 24,
-    zIndex: 2,
-  },
-  createButton: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    height: 48,
-    justifyContent: "center",
-    left: "50%",
-    position: "absolute",
-    top: 30,
-    transform: [{ translateX: -24 }],
-    width: 48,
-    zIndex: 3,
-  },
-  createButtonPressed: {
-    opacity: 0.9,
-  },
-  createSlot: {
-    flex: 0.9,
-  },
-  item: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    minWidth: 0,
-  },
-  itemPressed: {
-    opacity: 0.72,
-  },
-  icon: {
-    alignItems: "center",
-    height: 26,
-    justifyContent: "center",
-    width: 36,
-  },
-  label: {
-    color: colors.textSoft,
-    marginTop: spacing.xxs,
-    textAlign: "center",
-  },
-  labelActive: {
-    color: colors.primaryForeground,
-  },
-});
+function createMainBottomNavStyles(themeColors: AppThemeColors) {
+  return StyleSheet.create({
+    wrapper: {
+      backgroundColor: "transparent",
+      bottom: 0,
+      left: 0,
+      overflow: "visible",
+      position: "absolute",
+      right: 0,
+    },
+    panel: {
+      alignItems: "center",
+      backgroundColor: themeColors.primary,
+      borderRadius: 30,
+      flexDirection: "row",
+      height: 60,
+      left: 16,
+      paddingHorizontal: 8,
+      position: "absolute",
+      right: 16,
+      top: 24,
+      zIndex: 2,
+    },
+    createButton: {
+      alignItems: "center",
+      backgroundColor: themeColors.surface,
+      borderRadius: 24,
+      height: 48,
+      justifyContent: "center",
+      left: "50%",
+      position: "absolute",
+      top: 30,
+      transform: [{ translateX: -24 }],
+      width: 48,
+      zIndex: 3,
+    },
+    createButtonPressed: {
+      opacity: 0.9,
+    },
+    createSlot: {
+      flex: 0.9,
+    },
+    item: {
+      alignItems: "center",
+      flex: 1,
+      justifyContent: "center",
+      minWidth: 0,
+    },
+    itemPressed: {
+      opacity: 0.72,
+    },
+    icon: {
+      alignItems: "center",
+      height: 26,
+      justifyContent: "center",
+      width: 36,
+    },
+    label: {
+      color: themeColors.textSoft,
+      marginTop: spacing.xxs,
+      textAlign: "center",
+    },
+    labelActive: {
+      color: themeColors.primaryForeground,
+    },
+  });
+}

@@ -7,7 +7,8 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { colors, typography } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { typography } from "~/shared/ui/tokens";
 
 type AppTextVariant =
   | "body"
@@ -32,11 +33,14 @@ export function AppText({
   style,
   variant = "body",
 }: AppTextProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+  const color = variant === "label" ? themeColors.textMuted : themeColors.text;
+
   return (
     <Text
       ellipsizeMode={ellipsizeMode}
       numberOfLines={numberOfLines}
-      style={[styles.base, styles[variant], style]}
+      style={[styles.base, { color }, styles[variant], style]}
     >
       {children}
     </Text>
@@ -45,7 +49,6 @@ export function AppText({
 
 const styles = StyleSheet.create({
   base: {
-    color: colors.text,
     fontFamily: typography.fontFamily.body,
   },
   body: {
@@ -73,14 +76,12 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeight.caption,
   },
   display: {
-    color: colors.text,
     fontSize: typography.size.display,
     fontWeight: typography.fontWeight.semibold,
     letterSpacing: typography.letterSpacing.display,
     lineHeight: typography.lineHeight.display,
   },
   label: {
-    color: colors.textMuted,
     fontSize: typography.size.label,
     fontWeight: typography.fontWeight.medium,
     letterSpacing: typography.letterSpacing.label,

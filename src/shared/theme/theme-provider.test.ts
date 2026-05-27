@@ -30,10 +30,11 @@ describe("AppThemeProvider", () => {
 
   it("resolved theme에 맞는 기본 색 토큰을 context로 제공한다", () => {
     const provider = readWorkspaceFile("src/shared/theme/theme-provider.tsx");
+    const context = readWorkspaceFile("src/shared/theme/theme-context.tsx");
 
     expect(provider).toContain("getAppThemeColors(resolvedTheme)");
     expect(provider).toContain("colors:");
-    expect(provider).toContain("useAppThemeColors");
+    expect(context).toContain("useAppThemeColors");
   });
 
   it("테마 preference 변경 실패 시 저장값과 런타임 적용이 갈라지지 않게 change flow를 사용한다", () => {

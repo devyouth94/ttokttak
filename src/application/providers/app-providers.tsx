@@ -8,7 +8,8 @@ import { LocalNotificationProvider } from "~/application/notifications";
 import { SessionProvider, useSession } from "~/application/session";
 import { AppI18nProvider } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
-import { AppThemeProvider, useAppTheme } from "~/shared/theme";
+import { useAppTheme } from "~/shared/theme/theme-context";
+import { AppThemeProvider } from "~/shared/theme/theme-provider";
 
 export function AppProviders({
   children,

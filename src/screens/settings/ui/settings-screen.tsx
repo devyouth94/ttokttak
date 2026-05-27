@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -28,7 +28,9 @@ import {
   validateProfileDisplayName,
 } from "~/features/settings";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
-import { type AppThemePreference, useAppTheme } from "~/shared/theme";
+import type { AppThemePreference } from "~/shared/theme/app-theme";
+import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppTheme, useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppScreen } from "~/shared/ui/app-screen";
 import {
   AppSelectMenu,
@@ -36,7 +38,7 @@ import {
 } from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
-import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
 type SectionTitleProps = {
@@ -75,6 +77,8 @@ type SettingsControlRowProps = {
 };
 
 function SectionTitle({ title }: SectionTitleProps): React.JSX.Element {
+  const styles = useSettingsScreenStyles();
+
   return (
     <AppText style={styles.sectionTitle} variant="caption">
       {title}
@@ -86,6 +90,8 @@ function SettingsSectionCard({
   children,
   title,
 }: SettingsSectionCardProps): React.JSX.Element {
+  const styles = useSettingsScreenStyles();
+
   return (
     <View style={styles.sectionCard}>
       <SectionTitle title={title} />
@@ -105,6 +111,8 @@ function SettingsRow({
   tone = "default",
   title,
 }: SettingsRowProps): React.JSX.Element {
+  const styles = useSettingsScreenStyles();
+
   return (
     <Pressable
       accessibilityRole={isPressable ? "button" : undefined}
@@ -145,6 +153,8 @@ function SettingsControlRow({
   isFirst = false,
   title,
 }: SettingsControlRowProps): React.JSX.Element {
+  const styles = useSettingsScreenStyles();
+
   return (
     <View style={[styles.row, !isFirst ? styles.rowDivider : undefined]}>
       <View style={styles.rowContent}>
@@ -170,6 +180,9 @@ function SettingsValueRow({
   title,
   value,
 }: SettingsValueRowProps): React.JSX.Element {
+  const styles = useSettingsScreenStyles();
+  const themeColors = useAppThemeColors();
+
   return (
     <Pressable
       accessibilityRole={isPressable ? "button" : undefined}
@@ -188,7 +201,7 @@ function SettingsValueRow({
         <AppText style={styles.rowValue} variant="body3">
           {value}
         </AppText>
-        {isPressable ? <Pencil color={colors.textSoft} size={14} /> : null}
+        {isPressable ? <Pencil color={themeColors.textSoft} size={14} /> : null}
       </View>
     </Pressable>
   );
@@ -196,6 +209,7 @@ function SettingsValueRow({
 
 export function SettingsScreen(): React.JSX.Element {
   const { t } = useTranslation();
+  const styles = useSettingsScreenStyles();
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -208,7 +222,11 @@ export function SettingsScreen(): React.JSX.Element {
     useSession();
   const { language: appLanguage, setLanguage: setAppLanguage } =
     useAppLanguage();
-  const { setThemePreference, themePreference } = useAppTheme();
+  const {
+    colors: themeColors,
+    setThemePreference,
+    themePreference,
+  } = useAppTheme();
   const {
     isPermissionLoading,
     isRequestingPermission,
@@ -544,7 +562,10 @@ export function SettingsScreen(): React.JSX.Element {
               accessory={
                 <View style={styles.selectAccessory}>
                   {isSavingAppLanguage ? (
-                    <ActivityIndicator color={colors.textSoft} size="small" />
+                    <ActivityIndicator
+                      color={themeColors.textSoft}
+                      size="small"
+                    />
                   ) : null}
                   <AppSelectMenu
                     accessibilityHint={t(
@@ -570,7 +591,10 @@ export function SettingsScreen(): React.JSX.Element {
               accessory={
                 <View style={styles.selectAccessory}>
                   {isSavingThemePreference ? (
-                    <ActivityIndicator color={colors.textSoft} size="small" />
+                    <ActivityIndicator
+                      color={themeColors.textSoft}
+                      size="small"
+                    />
                   ) : null}
                   <AppSelectMenu
                     accessibilityHint={t("settings.environment.themeHint")}
@@ -613,9 +637,12 @@ export function SettingsScreen(): React.JSX.Element {
               <SettingsRow
                 accessory={
                   isRequestingPermission ? (
-                    <ActivityIndicator color={colors.textSoft} size="small" />
+                    <ActivityIndicator
+                      color={themeColors.textSoft}
+                      size="small"
+                    />
                   ) : (
-                    <ExternalLink color={colors.textSoft} size={16} />
+                    <ExternalLink color={themeColors.textSoft} size={16} />
                   )
                 }
                 description={t(
@@ -630,7 +657,9 @@ export function SettingsScreen(): React.JSX.Element {
             ) : null}
             {permission.canOpenSettings ? (
               <SettingsRow
-                accessory={<ExternalLink color={colors.textSoft} size={16} />}
+                accessory={
+                  <ExternalLink color={themeColors.textSoft} size={16} />
+                }
                 description={t(
                   "settings.notifications.openSettingsDescription"
                 )}
@@ -650,7 +679,9 @@ export function SettingsScreen(): React.JSX.Element {
               value={`v${appVersion}`}
             />
             <SettingsRow
-              accessory={<ExternalLink color={colors.textSoft} size={16} />}
+              accessory={
+                <ExternalLink color={themeColors.textSoft} size={16} />
+              }
               isPressable
               onPress={() => {
                 void handleOpenTermsOfService();
@@ -658,7 +689,9 @@ export function SettingsScreen(): React.JSX.Element {
               title={t("settings.appInfo.terms")}
             />
             <SettingsRow
-              accessory={<ExternalLink color={colors.textSoft} size={16} />}
+              accessory={
+                <ExternalLink color={themeColors.textSoft} size={16} />
+              }
               isPressable
               onPress={() => {
                 void handleOpenPrivacyPolicy();
@@ -671,7 +704,10 @@ export function SettingsScreen(): React.JSX.Element {
             <SettingsRow
               accessory={
                 isSigningOut ? (
-                  <ActivityIndicator color={colors.textSoft} size="small" />
+                  <ActivityIndicator
+                    color={themeColors.textSoft}
+                    size="small"
+                  />
                 ) : undefined
               }
               isDisabled={isSigningOut || isDeletingAccount}
@@ -685,7 +721,7 @@ export function SettingsScreen(): React.JSX.Element {
             <SettingsRow
               accessory={
                 isDeletingAccount ? (
-                  <ActivityIndicator color={colors.error} size="small" />
+                  <ActivityIndicator color={themeColors.error} size="small" />
                 ) : undefined
               }
               isDisabled={isDeletingAccount || isSigningOut}
@@ -719,7 +755,7 @@ export function SettingsScreen(): React.JSX.Element {
                 setDisplayNameError(null);
               }}
               placeholder={t("settings.nameEditor.placeholder")}
-              placeholderTextColor={colors.textSoft}
+              placeholderTextColor={themeColors.textSoft}
               style={styles.nameInput}
               value={displayNameDraft}
             />
@@ -756,7 +792,7 @@ export function SettingsScreen(): React.JSX.Element {
                 ]}
               >
                 {isSavingDisplayName ? (
-                  <ActivityIndicator color={colors.primaryForeground} />
+                  <ActivityIndicator color={themeColors.primaryForeground} />
                 ) : (
                   <AppText style={styles.nameEditorSaveText} variant="body3">
                     {t("settings.nameEditor.save")}
@@ -771,142 +807,150 @@ export function SettingsScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  dangerText: {
-    color: colors.error,
-  },
-  headerLayer: {
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    zIndex: 10,
-  },
-  selectAccessory: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  modalBackdrop: {
-    alignItems: "center",
-    backgroundColor: colors.scrim,
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  nameEditor: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    gap: spacing.md,
-    padding: spacing.lg,
-    width: "100%",
-  },
-  nameEditorActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "flex-end",
-  },
-  nameEditorButton: {
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    height: 36,
-    justifyContent: "center",
-    minWidth: 72,
-    paddingHorizontal: spacing.md,
-  },
-  nameEditorCancelButton: {
-    borderColor: colors.dividerOnPrimary,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  nameEditorCancelText: {
-    color: colors.textMuted,
-  },
-  nameEditorSaveButton: {
-    backgroundColor: colors.primary,
-  },
-  nameEditorSaveText: {
-    color: colors.primaryForeground,
-  },
-  nameEditorTitle: {
-    color: colors.text,
-  },
-  nameErrorText: {
-    color: colors.error,
-  },
-  nameInput: {
-    backgroundColor: "transparent",
-    borderColor: colors.dividerOnPrimary,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.size.body3,
-    lineHeight: typography.lineHeight.body3,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  row: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "space-between",
-    paddingVertical: spacing.xs,
-  },
-  rowAccessory: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowDivider: {
-    borderTopColor: colors.dividerOnPrimary,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  rowContent: {
-    flex: 1,
-    gap: spacing.xxs,
-    minWidth: 0,
-  },
-  rowDescription: {
-    color: colors.textSoft,
-  },
-  rowDisabled: {
-    opacity: 0.56,
-  },
-  rowPressed: {
-    opacity: 0.72,
-  },
-  rowTitle: {
-    color: colors.text,
-  },
-  rowValue: {
-    color: colors.textSoft,
-    flexShrink: 1,
-    textAlign: "right",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.md,
-  },
-  sectionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    paddingBottom: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-  },
-  sections: {
-    gap: spacing.lg,
-  },
-  sectionTitle: {
-    color: colors.text,
-  },
-  screenContent: {
-    flex: 1,
-  },
-  valueWithIcon: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexShrink: 1,
-    gap: spacing.xs,
-  },
-});
+function useSettingsScreenStyles() {
+  const themeColors = useAppThemeColors();
+
+  return useMemo(() => createSettingsScreenStyles(themeColors), [themeColors]);
+}
+
+function createSettingsScreenStyles(themeColors: AppThemeColors) {
+  return StyleSheet.create({
+    dangerText: {
+      color: themeColors.error,
+    },
+    headerLayer: {
+      left: 0,
+      position: "absolute",
+      right: 0,
+      top: 0,
+      zIndex: 10,
+    },
+    selectAccessory: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.xs,
+    },
+    modalBackdrop: {
+      alignItems: "center",
+      backgroundColor: themeColors.scrim,
+      flex: 1,
+      justifyContent: "center",
+      padding: spacing.lg,
+    },
+    nameEditor: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.xl,
+      gap: spacing.md,
+      padding: spacing.lg,
+      width: "100%",
+    },
+    nameEditorActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      justifyContent: "flex-end",
+    },
+    nameEditorButton: {
+      alignItems: "center",
+      borderRadius: borderRadius.pill,
+      height: 36,
+      justifyContent: "center",
+      minWidth: 72,
+      paddingHorizontal: spacing.md,
+    },
+    nameEditorCancelButton: {
+      borderColor: themeColors.dividerOnPrimary,
+      borderWidth: StyleSheet.hairlineWidth,
+    },
+    nameEditorCancelText: {
+      color: themeColors.textMuted,
+    },
+    nameEditorSaveButton: {
+      backgroundColor: themeColors.primary,
+    },
+    nameEditorSaveText: {
+      color: themeColors.primaryForeground,
+    },
+    nameEditorTitle: {
+      color: themeColors.text,
+    },
+    nameErrorText: {
+      color: themeColors.error,
+    },
+    nameInput: {
+      backgroundColor: "transparent",
+      borderColor: themeColors.dividerOnPrimary,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      color: themeColors.text,
+      fontFamily: typography.fontFamily.body,
+      fontSize: typography.size.body3,
+      lineHeight: typography.lineHeight.body3,
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    row: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.md,
+      justifyContent: "space-between",
+      paddingVertical: spacing.xs,
+    },
+    rowAccessory: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rowDivider: {
+      borderTopColor: themeColors.dividerOnPrimary,
+      borderTopWidth: StyleSheet.hairlineWidth,
+    },
+    rowContent: {
+      flex: 1,
+      gap: spacing.xxs,
+      minWidth: 0,
+    },
+    rowDescription: {
+      color: themeColors.textSoft,
+    },
+    rowDisabled: {
+      opacity: 0.56,
+    },
+    rowPressed: {
+      opacity: 0.72,
+    },
+    rowTitle: {
+      color: themeColors.text,
+    },
+    rowValue: {
+      color: themeColors.textSoft,
+      flexShrink: 1,
+      textAlign: "right",
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.md,
+    },
+    sectionCard: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.xl,
+      paddingBottom: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+    },
+    sections: {
+      gap: spacing.lg,
+    },
+    sectionTitle: {
+      color: themeColors.text,
+    },
+    screenContent: {
+      flex: 1,
+    },
+    valueWithIcon: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexShrink: 1,
+      gap: spacing.xs,
+    },
+  });
+}

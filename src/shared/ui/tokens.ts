@@ -1,49 +1,6 @@
-export const colors = {
-  background: "#FAFAFB",
-  surface: "#FFFFFF",
+import { appThemeColors } from "~/shared/theme/app-theme-colors";
 
-  primary: "#292B2D",
-  primaryPressed: "#1C1F23",
-  primaryForeground: "#FFFFFF",
-
-  accent: "#E06A4F",
-  accentSoft: "#FCEBE6",
-  accentForeground: "#FFFFFF",
-
-  text: "#1C1F23",
-  textMuted: "#5B616B",
-  textSoft: "#8A9099",
-
-  error: "#D64545",
-  errorContainer: "#FBE9E7",
-
-  green: "#2E7D32",
-  greenBorder: "#CFE7D2",
-  greenSoft: "#DDEEDD",
-  greenText: "#1F6B2A",
-
-  amber: "#B8860B",
-  amberBorder: "#E9D8AE",
-  amberSoft: "#F6E8C8",
-  amberText: "#7E5C08",
-
-  gray: "#9AA3AD",
-  grayBorder: "#D8DEE4",
-  graySoft: "#E8ECEF",
-  grayText: "#68727D",
-
-  red: "#D64545",
-  redBorder: "#F1C6C1",
-  redSoft: "#F8DCD7",
-  redText: "#A83636",
-
-  blue: "#357ABD",
-
-  dividerOnPrimary: "rgba(28, 31, 35, 0.4)",
-
-  scrim: "rgba(28, 31, 35, 0.28)",
-  shadow: "rgba(28, 31, 35, 0.08)",
-} as const;
+export const colors = appThemeColors.light;
 
 export const spacing = {
   none: 0,

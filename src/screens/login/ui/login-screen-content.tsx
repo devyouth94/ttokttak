@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -11,12 +11,13 @@ import {
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
 import { isAppleSignInAvailable } from "~/features/sign-in";
-import { useAppThemeColors } from "~/shared/theme";
+import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { AppleLogoIcon, GoogleLogoIcon } from "~/shared/ui/social-icons";
-import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 
 type LoginScreenContentProps = {
   isConfigured: boolean;
@@ -31,6 +32,10 @@ export function LoginScreenContent({
 }: LoginScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useAppThemeColors();
+  const styles = useMemo(
+    () => createLoginScreenStyles(themeColors),
+    [themeColors]
+  );
   const legalSuffix = t("login.legalSuffix");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
 
@@ -94,11 +99,8 @@ export function LoginScreenContent({
 
   return (
     <AppScreen
-      contentStyle={[
-        styles.screenContent,
-        { backgroundColor: themeColors.surface },
-      ]}
-      safeAreaStyle={[styles.screen, { backgroundColor: themeColors.surface }]}
+      contentStyle={styles.screenContent}
+      safeAreaStyle={styles.screen}
     >
       <View style={styles.container}>
         <View style={styles.content}>
@@ -198,110 +200,115 @@ export function LoginScreenContent({
   );
 }
 
-const styles = StyleSheet.create({
-  actions: {
-    gap: spacing.xs,
-    width: "100%",
-  },
-  appleButton: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  appleButtonText: {
-    color: colors.primaryForeground,
-    fontSize: typography.body,
-    lineHeight: 22,
-  },
-  applePressedButton: {
-    opacity: 0.92,
-  },
-  brand: {
-    fontSize: 18,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 0,
-    lineHeight: 24,
-    textAlign: "center",
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  content: {
-    gap: spacing.xl,
-  },
-  disabledButton: {
-    opacity: 0.45,
-  },
-  googleButton: {
-    backgroundColor: colors.surface,
-    borderColor: colors.dividerOnPrimary,
-  },
-  googleButtonText: {
-    color: colors.text,
-    fontSize: typography.body,
-    lineHeight: 22,
-  },
-  header: {
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  legalLink: {
-    color: colors.text,
-    fontWeight: typography.fontWeight.semibold,
-    textDecorationLine: "underline",
-  },
-  legalLinkButton: {
-    borderRadius: borderRadius.xs,
-  },
-  legalLinkPressed: {
-    opacity: 0.72,
-  },
-  legalRow: {
-    alignItems: "center",
-    columnGap: spacing.xxs,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    rowGap: spacing.xxs,
-  },
-  legalText: {
-    color: colors.textSoft,
-    fontSize: typography.label,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-  loginArea: {
-    gap: spacing.sm,
-  },
-  notice: {
-    color: colors.textMuted,
-    fontSize: typography.label,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-  pressedButton: {
-    opacity: 0.82,
-  },
-  socialButton: {
-    alignItems: "center",
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.sm,
-    height: 48,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 8,
+function createLoginScreenStyles(themeColors: AppThemeColors) {
+  return StyleSheet.create({
+    actions: {
+      gap: spacing.xs,
+      width: "100%",
     },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-  },
-  screenContent: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-  },
-  screen: {},
-});
+    appleButton: {
+      backgroundColor: themeColors.primary,
+      borderColor: themeColors.primary,
+    },
+    appleButtonText: {
+      color: themeColors.primaryForeground,
+      fontSize: typography.body,
+      lineHeight: 22,
+    },
+    applePressedButton: {
+      opacity: 0.92,
+    },
+    brand: {
+      fontSize: 18,
+      fontWeight: typography.fontWeight.black,
+      letterSpacing: 0,
+      lineHeight: 24,
+      textAlign: "center",
+    },
+    container: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    content: {
+      gap: spacing.xl,
+    },
+    disabledButton: {
+      opacity: 0.45,
+    },
+    googleButton: {
+      backgroundColor: themeColors.surface,
+      borderColor: themeColors.dividerOnPrimary,
+    },
+    googleButtonText: {
+      color: themeColors.text,
+      fontSize: typography.body,
+      lineHeight: 22,
+    },
+    header: {
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    legalLink: {
+      color: themeColors.text,
+      fontWeight: typography.fontWeight.semibold,
+      textDecorationLine: "underline",
+    },
+    legalLinkButton: {
+      borderRadius: borderRadius.xs,
+    },
+    legalLinkPressed: {
+      opacity: 0.72,
+    },
+    legalRow: {
+      alignItems: "center",
+      columnGap: spacing.xxs,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      rowGap: spacing.xxs,
+    },
+    legalText: {
+      color: themeColors.textSoft,
+      fontSize: typography.label,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+    loginArea: {
+      gap: spacing.sm,
+    },
+    notice: {
+      color: themeColors.textMuted,
+      fontSize: typography.label,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+    pressedButton: {
+      opacity: 0.82,
+    },
+    socialButton: {
+      alignItems: "center",
+      borderRadius: borderRadius.pill,
+      borderWidth: 1,
+      flexDirection: "row",
+      gap: spacing.sm,
+      height: 48,
+      justifyContent: "center",
+      paddingHorizontal: spacing.lg,
+      shadowColor: themeColors.shadow,
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      shadowOpacity: 1,
+      shadowRadius: 20,
+    },
+    screenContent: {
+      backgroundColor: themeColors.surface,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.xl,
+    },
+    screen: {
+      backgroundColor: themeColors.surface,
+    },
+  });
+}

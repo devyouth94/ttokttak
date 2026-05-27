@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
-import { borderRadius, colors, spacing } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 import { AppText } from "./app-text";
 
@@ -36,6 +37,7 @@ export function AppSelectMenu<Value extends string>({
   variant = "field",
   onChange,
 }: AppSelectMenuProps<Value>): React.JSX.Element {
+  const themeColors = useAppThemeColors();
   const selectedOption = getSelectedOption(options, value);
   const isCompact = variant === "compact";
 
@@ -59,6 +61,11 @@ export function AppSelectMenu<Value extends string>({
           style={({ pressed }) => [
             styles.trigger,
             isCompact ? styles.compactTrigger : styles.fieldTrigger,
+            {
+              borderColor: isCompact
+                ? themeColors.primary
+                : themeColors.dividerOnPrimary,
+            },
             isDisabled ? styles.disabledTrigger : undefined,
             pressed
               ? isCompact
@@ -74,13 +81,13 @@ export function AppSelectMenu<Value extends string>({
             <AppText
               ellipsizeMode="tail"
               numberOfLines={1}
-              style={styles.text}
+              style={[styles.text, { color: themeColors.text }]}
               variant={isCompact ? "label" : "body3"}
             >
               {selectedOption.label}
             </AppText>
           </View>
-          <ChevronDown color={colors.text} size={16} />
+          <ChevronDown color={themeColors.text} size={16} />
         </Pressable>
       </Select.Trigger>
 
@@ -97,7 +104,10 @@ export function AppSelectMenu<Value extends string>({
           }}
           side="bottom"
           sideOffset={6}
-          style={isCompact ? styles.compactContent : styles.fieldContent}
+          style={StyleSheet.flatten([
+            isCompact ? styles.compactContent : styles.fieldContent,
+            { backgroundColor: themeColors.surface },
+          ])}
         >
           {options.map((option) => (
             <Select.Item
@@ -116,14 +126,14 @@ export function AppSelectMenu<Value extends string>({
                 <AppText
                   ellipsizeMode="tail"
                   numberOfLines={1}
-                  style={styles.text}
+                  style={[styles.text, { color: themeColors.text }]}
                   variant={isCompact ? "label" : "body3"}
                 >
                   {option.label}
                 </AppText>
               </View>
               <Select.ItemIndicator style={styles.indicator}>
-                <Check color={colors.text} size={16} />
+                <Check color={themeColors.text} size={16} />
               </Select.ItemIndicator>
             </Select.Item>
           ))}
@@ -151,7 +161,6 @@ function getOptionValue<Value extends string>(
 
 const styles = StyleSheet.create({
   compactContent: {
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     minWidth: 180,
     padding: spacing.xxs,
@@ -165,7 +174,6 @@ const styles = StyleSheet.create({
   },
   compactTrigger: {
     alignSelf: "flex-end",
-    borderColor: colors.primary,
     borderRadius: borderRadius.pill,
     maxWidth: 210,
     paddingHorizontal: spacing.sm,
@@ -179,7 +187,6 @@ const styles = StyleSheet.create({
     opacity: 0.56,
   },
   fieldContent: {
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.xxs,
     width: "100%",
@@ -192,7 +199,6 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   fieldTrigger: {
-    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.xl,
     minHeight: 48,
     paddingHorizontal: spacing.md,
@@ -214,9 +220,7 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
   },
-  text: {
-    color: colors.text,
-  },
+  text: {},
   textSlot: {
     flex: 1,
     minWidth: 0,

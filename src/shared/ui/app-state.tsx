@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { borderRadius, colors, spacing, typography } from "~/shared/ui/tokens";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
+import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 
 import { AppText } from "./app-text";
 
@@ -57,16 +58,31 @@ function AppStateView({
   style,
   title,
 }: AppStateViewProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+
   return (
     <View style={[styles.state, style]}>
-      {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+      {icon ? (
+        <View
+          style={[styles.iconWrap, { backgroundColor: themeColors.surface }]}
+        >
+          {icon}
+        </View>
+      ) : null}
 
       <View style={styles.copy}>
-        <AppText style={styles.title} variant="title">
+        <AppText
+          style={[styles.title, { color: themeColors.text }]}
+          variant="title"
+        >
           {title}
         </AppText>
         {description ? (
-          <AppText style={styles.description}>{description}</AppText>
+          <AppText
+            style={[styles.description, { color: themeColors.textMuted }]}
+          >
+            {description}
+          </AppText>
         ) : null}
       </View>
 
@@ -78,11 +94,15 @@ function AppStateView({
           onPress={action.onPress}
           style={({ pressed }) => [
             styles.action,
+            { borderColor: themeColors.dividerOnPrimary },
             pressed ? styles.pressed : undefined,
           ]}
         >
           {action.icon}
-          <AppText style={styles.actionText} variant="label">
+          <AppText
+            style={[styles.actionText, { color: themeColors.text }]}
+            variant="label"
+          >
             {action.label}
           </AppText>
         </Pressable>
@@ -128,8 +148,19 @@ export function AppStatePanel({
   title,
   variant = "outline",
 }: AppStatePanelProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+  const variantStyle =
+    variant === "surface"
+      ? { backgroundColor: themeColors.surface }
+      : variant === "dashed"
+        ? {
+            backgroundColor: themeColors.surface,
+            borderColor: themeColors.dividerOnPrimary,
+          }
+        : { borderColor: themeColors.dividerOnPrimary };
+
   return (
-    <View style={[styles.panel, styles[variant], panelStyle]}>
+    <View style={[styles.panel, styles[variant], variantStyle, panelStyle]}>
       <AppStateView
         action={action}
         description={description}
@@ -179,9 +210,14 @@ export function AppEmptyStateView({
   style,
   title,
 }: AppEmptyStateViewProps): React.JSX.Element {
+  const themeColors = useAppThemeColors();
+
   return (
     <View style={[styles.emptyState, style]}>
-      <AppText style={styles.emptyTitle} variant="body">
+      <AppText
+        style={[styles.emptyTitle, { color: themeColors.textMuted }]}
+        variant="body"
+      >
         {title}
       </AppText>
 
@@ -193,11 +229,18 @@ export function AppEmptyStateView({
           onPress={action.onPress}
           style={({ pressed }) => [
             styles.emptyAction,
+            { backgroundColor: themeColors.primary },
             pressed ? styles.pressed : undefined,
           ]}
         >
           {action.icon}
-          <AppText style={styles.emptyActionText} variant="body3">
+          <AppText
+            style={[
+              styles.emptyActionText,
+              { color: themeColors.primaryForeground },
+            ]}
+            variant="body3"
+          >
             {action.label}
           </AppText>
         </Pressable>
@@ -209,7 +252,6 @@ export function AppEmptyStateView({
 const styles = StyleSheet.create({
   action: {
     alignItems: "center",
-    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.pill,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
@@ -219,7 +261,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   actionText: {
-    color: colors.text,
     fontSize: typography.label,
     letterSpacing: 0,
   },
@@ -228,21 +269,17 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   dashed: {
-    backgroundColor: colors.surface,
-    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.lg,
     borderStyle: "dashed",
     borderWidth: 1,
   },
   description: {
-    color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
   },
   emptyAction: {
     alignItems: "center",
-    backgroundColor: colors.primary,
     borderRadius: borderRadius.pill,
     flexDirection: "row",
     gap: spacing.xs,
@@ -251,7 +288,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyActionText: {
-    color: colors.primaryForeground,
     letterSpacing: 0,
   },
   emptyState: {
@@ -262,19 +298,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
-    color: colors.textMuted,
     textAlign: "center",
   },
   iconWrap: {
     alignItems: "center",
-    backgroundColor: colors.surface,
     borderRadius: borderRadius.pill,
     height: 44,
     justifyContent: "center",
     width: 44,
   },
   outline: {
-    borderColor: colors.dividerOnPrimary,
     borderRadius: borderRadius.md,
     borderWidth: StyleSheet.hairlineWidth,
   },
@@ -294,11 +327,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
   },
-  surface: {
-    backgroundColor: colors.surface,
-  },
+  surface: {},
   title: {
-    color: colors.text,
     fontSize: 17,
     lineHeight: 24,
     textAlign: "center",

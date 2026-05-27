@@ -7,7 +7,7 @@ import {
   shouldShowMainBottomNav,
 } from "~/application/navigation";
 import { useSession } from "~/application/session";
-import { useAppThemeColors } from "~/shared/theme";
+import { useAppThemeColors } from "~/shared/theme/theme-context";
 
 export default function TabsLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useSession();

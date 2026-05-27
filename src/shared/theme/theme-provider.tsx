@@ -1,8 +1,6 @@
 import {
-  createContext,
   type PropsWithChildren,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -14,21 +12,12 @@ import {
   type AppThemePreference,
   fallbackAppThemePreference,
   resolveAppTheme,
-  type ResolvedAppTheme,
   resolveInitialAppThemePreference,
 } from "./app-theme";
 import { changeAppThemePreference } from "./app-theme-change";
-import { type AppThemeColors, getAppThemeColors } from "./app-theme-colors";
+import { getAppThemeColors } from "./app-theme-colors";
 import { readStoredAppThemePreference } from "./app-theme-storage";
-
-type AppThemeContextValue = {
-  colors: AppThemeColors;
-  resolvedTheme: ResolvedAppTheme;
-  setThemePreference: (preference: AppThemePreference) => Promise<void>;
-  themePreference: AppThemePreference;
-};
-
-const AppThemeContext = createContext<AppThemeContextValue | null>(null);
+import { AppThemeContext, type AppThemeContextValue } from "./theme-context";
 
 export function AppThemeProvider({
   children,
@@ -93,18 +82,4 @@ export function AppThemeProvider({
       {children}
     </AppThemeContext.Provider>
   );
-}
-
-export function useAppTheme(): AppThemeContextValue {
-  const context = useContext(AppThemeContext);
-
-  if (!context) {
-    throw new Error("AppThemeProvider 안에서만 테마를 사용할 수 있습니다.");
-  }
-
-  return context;
-}
-
-export function useAppThemeColors(): AppThemeColors {
-  return useAppTheme().colors;
 }
