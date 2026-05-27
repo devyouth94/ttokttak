@@ -10,7 +10,9 @@ export type AppThemeColors = {
   amberText: string;
   background: string;
   blue: string;
-  dividerOnPrimary: string;
+  border: string;
+  controlTrack: string;
+  divider: string;
   error: string;
   errorContainer: string;
   gray: string;
@@ -32,11 +34,12 @@ export type AppThemeColors = {
   shadow: string;
   surface: string;
   text: string;
+  textDisabled: string;
   textMuted: string;
   textSoft: string;
 };
 
-export const appThemeColors = {
+const appThemeColors = {
   light: {
     accent: "#E06A4F",
     accentForeground: "#FFFFFF",
@@ -47,7 +50,9 @@ export const appThemeColors = {
     amberText: "#7E5C08",
     background: "#FAFAFB",
     blue: "#357ABD",
-    dividerOnPrimary: "rgba(28, 31, 35, 0.4)",
+    border: "rgba(28, 31, 35, 0.4)",
+    controlTrack: "rgba(28, 31, 35, 0.4)",
+    divider: "rgba(28, 31, 35, 0.4)",
     error: "#D64545",
     errorContainer: "#FBE9E7",
     gray: "#9AA3AD",
@@ -69,6 +74,7 @@ export const appThemeColors = {
     shadow: "rgba(28, 31, 35, 0.08)",
     surface: "#FFFFFF",
     text: "#1C1F23",
+    textDisabled: "rgba(28, 31, 35, 0.4)",
     textMuted: "#5B616B",
     textSoft: "#8A9099",
   },
@@ -82,7 +88,9 @@ export const appThemeColors = {
     amberText: "#7E5C08",
     background: "#111315",
     blue: "#357ABD",
-    dividerOnPrimary: "rgba(244, 245, 246, 0.18)",
+    border: "rgba(244, 245, 246, 0.18)",
+    controlTrack: "rgba(244, 245, 246, 0.18)",
+    divider: "rgba(244, 245, 246, 0.18)",
     error: "#D64545",
     errorContainer: "#3A1E1D",
     gray: "#9AA3AD",
@@ -104,6 +112,7 @@ export const appThemeColors = {
     shadow: "rgba(0, 0, 0, 0.28)",
     surface: "#1A1D21",
     text: "#F4F5F6",
+    textDisabled: "rgba(244, 245, 246, 0.18)",
     textMuted: "#C2C7D0",
     textSoft: "#8D95A1",
   },

@@ -1,7 +1,3 @@
-import { appThemeColors } from "~/shared/theme/app-theme-colors";
-
-export const colors = appThemeColors.light;
-
 export const spacing = {
   none: 0,
   xxs: 4,

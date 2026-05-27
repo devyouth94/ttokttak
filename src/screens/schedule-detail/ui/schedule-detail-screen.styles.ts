@@ -40,7 +40,7 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
       paddingVertical: spacing.xs,
     },
     historyRowDivider: {
-      borderTopColor: themeColors.dividerOnPrimary,
+      borderTopColor: themeColors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
     },
     historySection: {
@@ -144,7 +144,7 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
       height: 20,
     },
     loadingHistoryDivider: {
-      borderTopColor: themeColors.dividerOnPrimary,
+      borderTopColor: themeColors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
     },
     loadingHistoryLabel: {

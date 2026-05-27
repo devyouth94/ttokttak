@@ -62,9 +62,7 @@ export function AppSelectMenu<Value extends string>({
             styles.trigger,
             isCompact ? styles.compactTrigger : styles.fieldTrigger,
             {
-              borderColor: isCompact
-                ? themeColors.primary
-                : themeColors.dividerOnPrimary,
+              borderColor: isCompact ? themeColors.primary : themeColors.border,
             },
             isDisabled ? styles.disabledTrigger : undefined,
             pressed

@@ -88,7 +88,7 @@ function CalendarDayCellComponent({
           isToday && styles.todaySurface,
           isToday && {
             backgroundColor: themeColors.surface,
-            borderColor: themeColors.dividerOnPrimary,
+            borderColor: themeColors.border,
           },
           isSelected && { backgroundColor: themeColors.primary },
         ]}

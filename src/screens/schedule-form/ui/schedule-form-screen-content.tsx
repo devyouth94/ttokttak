@@ -21,7 +21,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
-import { useAppTheme, useAppThemeColors } from "~/shared/theme/theme-context";
+import type { AppThemeColors } from "~/shared/theme/app-theme-colors";
+import { useAppTheme } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
@@ -33,7 +34,10 @@ import {
   NotificationSection,
   RecurrenceSection,
 } from "./schedule-form-screen-sections";
-import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";
+import {
+  type ScheduleFormScreenStyles,
+  useScheduleFormScreenStyles,
+} from "./schedule-form-screen-styles";
 import { type ScheduleFormScreenContentProps } from "../model/schedule-form-contracts";
 import {
   type FormErrorTarget,
@@ -49,13 +53,14 @@ import {
 
 type ScreenErrorCardProps = {
   message: string | null;
+  styles: ScheduleFormScreenStyles;
 };
 
 function ScreenErrorCard({
   message,
+  styles,
 }: ScreenErrorCardProps): React.JSX.Element | null {
   const { t } = useTranslation();
-  const styles = useScheduleFormScreenStyles();
 
   if (!message) {
     return null;
@@ -76,6 +81,8 @@ function ScreenErrorCard({
 type SaveButtonContentProps = {
   isEditMode: boolean;
   isSaving: boolean;
+  styles: ScheduleFormScreenStyles;
+  themeColors: AppThemeColors;
 };
 
 type PickerFieldProps = {
@@ -87,6 +94,7 @@ type PickerFieldProps = {
   accessibilityHint: string;
   accessibilityLabel: string;
   onPress: () => void;
+  styles: ScheduleFormScreenStyles;
   value: string;
   variantStyle: object;
 };
@@ -228,7 +236,7 @@ export function ScheduleFormScreenContent({
             showsVerticalScrollIndicator={false}
             style={styles.scrollView}
           >
-            <ScreenErrorCard message={view.screenError} />
+            <ScreenErrorCard message={view.screenError} styles={styles} />
 
             <View
               onLayout={(event) => handleSectionLayout("title", event)}
@@ -308,6 +316,7 @@ export function ScheduleFormScreenContent({
 
             <ColorPickerSection
               selectedColorKey={values.colorKey}
+              styles={styles}
               onSelectColorKey={actions.field.onSelectColorKey}
             />
 
@@ -319,6 +328,8 @@ export function ScheduleFormScreenContent({
                 intervalValue={values.intervalValue}
                 recurrenceType={values.recurrenceType}
                 selectedWeekdays={values.weekdayMask}
+                styles={styles}
+                themeColors={themeColors}
                 weekdayError={errors.weekday}
                 onChangeIntervalValue={actions.recurrence.onChangeIntervalValue}
                 onChangeUnit={actions.recurrence.onUnitChange}
@@ -354,6 +365,7 @@ export function ScheduleFormScreenContent({
                   accessibilityHint={t("scheduleForm.picker.startDateHint")}
                   accessibilityLabel={t("scheduleForm.picker.startDateLabel")}
                   onPress={actions.picker.onOpenDatePicker}
+                  styles={styles}
                   value={startDateDisplayValue}
                   variantStyle={styles.dateField}
                 />
@@ -374,6 +386,7 @@ export function ScheduleFormScreenContent({
                     "scheduleForm.picker.reminderTimeLabel"
                   )}
                   onPress={actions.picker.onOpenTimePicker}
+                  styles={styles}
                   value={reminderTimeDisplayValue}
                   variantStyle={styles.timeField}
                 />
@@ -387,6 +400,8 @@ export function ScheduleFormScreenContent({
                   onDisable={actions.recurrence.onDisableEndDate}
                   onEnable={actions.recurrence.onEnableEndDate}
                   onOpenPicker={actions.picker.onOpenEndDatePicker}
+                  styles={styles}
+                  themeColors={themeColors}
                 />
               ) : null}
 
@@ -436,6 +451,9 @@ export function ScheduleFormScreenContent({
               <IosPickerModal
                 minimumDate={iosPickerMinimumDate}
                 mode={picker.iosMode}
+                resolvedTheme={resolvedTheme}
+                styles={styles}
+                themeColors={themeColors}
                 title={iosPickerTitle}
                 value={picker.iosValue}
                 onChange={iosPickerChangeHandler}
@@ -454,6 +472,8 @@ export function ScheduleFormScreenContent({
               <View style={styles.optionRows}>
                 <NotificationSection
                   enabled={values.notificationsEnabled}
+                  styles={styles}
+                  themeColors={themeColors}
                   onToggle={actions.field.onToggleNotifications}
                 />
 
@@ -461,6 +481,8 @@ export function ScheduleFormScreenContent({
                   anchorError={errors.anchor}
                   anchorType={values.anchorType}
                   recurrenceType={values.recurrenceType}
+                  styles={styles}
+                  themeColors={themeColors}
                   onSelectAnchorType={actions.recurrence.onSelectAnchorType}
                 />
               </View>
@@ -488,6 +510,8 @@ export function ScheduleFormScreenContent({
                 <SaveButtonContent
                   isEditMode={view.isEditMode}
                   isSaving={view.isSaving}
+                  styles={styles}
+                  themeColors={themeColors}
                 />
               </Pressable>
 
@@ -531,10 +555,10 @@ export function ScheduleFormScreenContent({
 function SaveButtonContent({
   isEditMode,
   isSaving,
+  styles,
+  themeColors,
 }: SaveButtonContentProps): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
-  const styles = useScheduleFormScreenStyles();
   const buttonLabel = isEditMode
     ? t("scheduleForm.actions.update")
     : t("scheduleForm.actions.save");
@@ -559,11 +583,10 @@ function PickerField({
   icon,
   label,
   onPress,
+  styles,
   value,
   variantStyle,
 }: PickerFieldProps): React.JSX.Element {
-  const styles = useScheduleFormScreenStyles();
-
   return (
     <View style={[styles.field, variantStyle]}>
       {label ? (
@@ -608,6 +631,8 @@ type EndDateControlProps = {
   displayValue: string | null;
   error?: string;
   isEnabled: boolean;
+  styles: ScheduleFormScreenStyles;
+  themeColors: AppThemeColors;
   onDisable: () => void;
   onEnable: () => void;
   onOpenPicker: () => void;
@@ -617,13 +642,13 @@ function EndDateControl({
   displayValue,
   error,
   isEnabled,
+  styles,
+  themeColors,
   onDisable,
   onEnable,
   onOpenPicker,
 }: EndDateControlProps): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
-  const styles = useScheduleFormScreenStyles();
   const handleToggle = (nextValue: boolean): void => {
     if (nextValue) {
       onEnable();
@@ -646,7 +671,7 @@ function EndDateControl({
           style={styles.optionToggleSwitch}
           thumbColor={themeColors.primaryForeground}
           trackColor={{
-            false: themeColors.dividerOnPrimary,
+            false: themeColors.controlTrack,
             true: themeColors.primary,
           }}
           value={isEnabled}
@@ -667,6 +692,7 @@ function EndDateControl({
             />
           }
           onPress={onOpenPicker}
+          styles={styles}
           value={displayValue}
           variantStyle={styles.endDateField}
         />

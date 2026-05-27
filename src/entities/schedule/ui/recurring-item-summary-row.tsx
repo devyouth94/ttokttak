@@ -39,7 +39,7 @@ export function RecurringItemSummaryRow({
       style={({ pressed }) => [
         styles.row,
         !isLast && {
-          borderBottomColor: themeColors.dividerOnPrimary,
+          borderBottomColor: themeColors.divider,
           borderBottomWidth: StyleSheet.hairlineWidth,
         },
         pressed ? styles.pressed : undefined,

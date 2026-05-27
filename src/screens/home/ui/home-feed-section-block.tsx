@@ -3,19 +3,18 @@ import { useTranslation } from "react-i18next";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import type { CompletionAction } from "~/entities/schedule";
-import { appThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
+import {
+  getHomeFeedSectionCardStyle,
+  homeFeedCardPalette,
+} from "./home-feed-card-palette";
 import { HomeFeedItemRow } from "./home-feed-item-row";
 import type {
   HomeFeedCard,
   HomeFeedSection,
 } from "../model/home-feed-sections";
-
-const feedSectionCardTextColor = appThemeColors.light.text;
-const feedSectionCardMutedTextColor = appThemeColors.light.textSoft;
 
 type HomeFeedSectionBlockProps = {
   bottomOverlapInset: number;
@@ -37,7 +36,6 @@ export function HomeFeedSectionBlock({
   style,
 }: HomeFeedSectionBlockProps): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
   const summary = getFeedSectionSummary(section, isLoading, t);
   const showsActions =
     section.id === "overdue" ||
@@ -47,7 +45,7 @@ export function HomeFeedSectionBlock({
     <View
       style={[
         styles.feedSectionCard,
-        getFeedSectionCardStyle(section.id, themeColors),
+        getHomeFeedSectionCardStyle(section.id),
         style,
       ]}
     >
@@ -119,7 +117,6 @@ export function HomeFeedSectionBlock({
                   isProcessing={processingOccurrenceIds.includes(card.id)}
                   onAction={onAction}
                   showsActions={showsActions}
-                  usesLightContent={false}
                 />
               </Fragment>
             );
@@ -161,20 +158,6 @@ function getDateSeparatorItemCount(
   return cards.filter(
     (card) => card.occurrence.localDate === targetCard.occurrence.localDate
   ).length;
-}
-
-function getFeedSectionCardStyle(
-  sectionId: HomeFeedSection["id"],
-  themeColors: ReturnType<typeof useAppThemeColors>
-): StyleProp<ViewStyle> {
-  switch (sectionId) {
-    case "overdue":
-      return { backgroundColor: themeColors.redSoft };
-    case "selected-date":
-      return { backgroundColor: themeColors.greenSoft };
-    case "upcoming":
-      return { backgroundColor: themeColors.amberSoft };
-  }
 }
 
 function shouldShowDateSeparator(
@@ -248,10 +231,10 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   feedSectionMutedText: {
-    color: feedSectionCardMutedTextColor,
+    color: homeFeedCardPalette.mutedText,
   },
   feedSectionText: {
-    color: feedSectionCardTextColor,
+    color: homeFeedCardPalette.text,
   },
   feedSectionTitleSlot: {
     flex: 1,

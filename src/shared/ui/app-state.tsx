@@ -94,7 +94,7 @@ function AppStateView({
           onPress={action.onPress}
           style={({ pressed }) => [
             styles.action,
-            { borderColor: themeColors.dividerOnPrimary },
+            { borderColor: themeColors.border },
             pressed ? styles.pressed : undefined,
           ]}
         >
@@ -155,9 +155,9 @@ export function AppStatePanel({
       : variant === "dashed"
         ? {
             backgroundColor: themeColors.surface,
-            borderColor: themeColors.dividerOnPrimary,
+            borderColor: themeColors.border,
           }
-        : { borderColor: themeColors.dividerOnPrimary };
+        : { borderColor: themeColors.border };
 
   return (
     <View style={[styles.panel, styles[variant], variantStyle, panelStyle]}>

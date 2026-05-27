@@ -25,7 +25,7 @@ export function ScheduleListLoadingPlaceholder(): React.JSX.Element {
             index < PLACEHOLDER_ROW_COUNT - 1
               ? [
                   styles.placeholderDivider,
-                  { borderBottomColor: themeColors.dividerOnPrimary },
+                  { borderBottomColor: themeColors.divider },
                 ]
               : undefined,
           ]}

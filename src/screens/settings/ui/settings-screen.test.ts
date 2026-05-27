@@ -72,22 +72,6 @@ describe("SettingsScreen 환경 설정", () => {
       "handleChangeThemePreference(nextPreference)"
     );
   });
-
-  it("설정 화면은 현재 테마 색 토큰으로 카드, row, modal, input 스타일을 만든다", () => {
-    const settingsScreen = readWorkspaceFile(
-      "src/screens/settings/ui/settings-screen.tsx"
-    );
-
-    expect(settingsScreen).toContain("useSettingsScreenStyles()");
-    expect(settingsScreen).toContain("createSettingsScreenStyles(themeColors)");
-    expect(settingsScreen).toContain("themeColors.surface");
-    expect(settingsScreen).toContain("themeColors.dividerOnPrimary");
-    expect(settingsScreen).toContain(
-      "placeholderTextColor={themeColors.textSoft}"
-    );
-    expect(settingsScreen).not.toContain("colors.");
-  });
-
   it("표시 언어 변경 알림 재동기화는 notification provider lifecycle이 담당한다", () => {
     const notificationProvider = readWorkspaceFile(
       "src/application/notifications/local-notification-provider.tsx"

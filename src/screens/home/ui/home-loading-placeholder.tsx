@@ -28,7 +28,7 @@ export function HomeLoadingPlaceholder(): React.JSX.Element {
             key={index}
             style={[
               styles.placeholderRow,
-              { borderBottomColor: themeColors.dividerOnPrimary },
+              { borderBottomColor: themeColors.divider },
             ]}
           >
             <View

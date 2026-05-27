@@ -14,6 +14,10 @@ export function useScheduleFormScreenStyles() {
   );
 }
 
+export type ScheduleFormScreenStyles = ReturnType<
+  typeof createScheduleFormScreenStyles
+>;
+
 function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
   return StyleSheet.create({
     optionInfoButton: {
@@ -172,7 +176,7 @@ function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
     iconInputShell: {
       alignItems: "center",
       backgroundColor: "transparent",
-      borderColor: themeColors.dividerOnPrimary,
+      borderColor: themeColors.border,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       flexDirection: "row",
@@ -357,7 +361,7 @@ function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
     },
     textInput: {
       backgroundColor: "transparent",
-      borderColor: themeColors.dividerOnPrimary,
+      borderColor: themeColors.border,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       color: themeColors.text,

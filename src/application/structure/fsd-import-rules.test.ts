@@ -65,6 +65,10 @@ const bareImportPattern = /\bimport\s+["']~\/([^"']+)["']/g;
 const requirePattern = /\brequire\(\s*["']~\/([^"']+)["']\s*\)/g;
 const dynamicImportPattern = /\bimport\(\s*["']~\/([^"']+)["']\s*\)/g;
 const wildcardExportPattern = /^\s*export\s+\*\s+from\s+["'][^"']+["'];/m;
+const staticColorsImportPattern =
+  /\bimport\s+\{[^}]*\bcolors\b[^}]*\}\s+from\s+["']~\/shared\/ui\/tokens["']/m;
+const rawThemePaletteImportPattern =
+  /\bimport\s+\{[^}]*\bappThemeColors\b[^}]*\}\s+from\s+["']~\/shared\/theme(?:\/app-theme-colors)?["']/m;
 
 function getWorkspacePath(relativePath: string): string {
   return `${process.cwd()}/${relativePath}`;
@@ -387,5 +391,27 @@ describe("FSD import rules", () => {
       .map((segment) => `src/shared/${segment}`);
 
     expect(sliceSegmentViolations.concat(sharedSegmentViolations)).toEqual([]);
+  });
+
+  it("테마 적용 영역은 정적 light colors import와 raw theme palette import를 사용하지 않는다", () => {
+    const violations = listSourceFiles("app")
+      .concat(listSourceFiles("src"))
+      .filter((file) => file !== "src/shared/theme/app-theme-colors.ts")
+      .flatMap((file) => {
+        const source = readFileSync(getWorkspacePath(file), "utf8");
+        const fileViolations: string[] = [];
+
+        if (staticColorsImportPattern.test(source)) {
+          fileViolations.push(`${file} -> colors from ~/shared/ui/tokens`);
+        }
+
+        if (rawThemePaletteImportPattern.test(source)) {
+          fileViolations.push(`${file} -> appThemeColors raw palette`);
+        }
+
+        return fileViolations;
+      });
+
+    expect(violations).toEqual([]);
   });
 });

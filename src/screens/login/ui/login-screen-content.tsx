@@ -237,7 +237,7 @@ function createLoginScreenStyles(themeColors: AppThemeColors) {
     },
     googleButton: {
       backgroundColor: themeColors.surface,
-      borderColor: themeColors.dividerOnPrimary,
+      borderColor: themeColors.border,
     },
     googleButtonText: {
       color: themeColors.text,

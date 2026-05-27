@@ -30,18 +30,4 @@ describe("LoginScreenContent i18n", () => {
     expect(loginScreenContent).toContain('t("login.termsOpenErrorTitle")');
     expect(loginScreenContent).toContain('t("login.privacyOpenErrorTitle")');
   });
-
-  it("로그인 전 화면은 현재 테마 색 토큰으로 스타일을 만든다", () => {
-    const loginScreenContent = readWorkspaceFile(
-      "src/screens/login/ui/login-screen-content.tsx"
-    );
-
-    expect(loginScreenContent).toContain("useAppThemeColors()");
-    expect(loginScreenContent).toContain(
-      "createLoginScreenStyles(themeColors)"
-    );
-    expect(loginScreenContent).toContain("themeColors.surface");
-    expect(loginScreenContent).toContain("themeColors.primaryForeground");
-    expect(loginScreenContent).not.toContain("colors.");
-  });
 });

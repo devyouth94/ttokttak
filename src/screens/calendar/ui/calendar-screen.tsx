@@ -65,8 +65,8 @@ function createCalendarTheme(themeColors: AppThemeColors) {
     textDayHeaderFontFamily: typography.fontFamily.body,
     textDayHeaderFontSize: typography.label,
     textDayHeaderFontWeight: "600" as const,
-    textDisabledColor: themeColors.dividerOnPrimary,
-    textInactiveColor: themeColors.dividerOnPrimary,
+    textDisabledColor: themeColors.textDisabled,
+    textInactiveColor: themeColors.textDisabled,
     textMonthFontFamily: typography.fontFamily.body,
     textSectionTitleColor: themeColors.textMuted,
     todayTextColor: themeColors.text,
@@ -505,7 +505,7 @@ function createCalendarScreenStyles(themeColors: AppThemeColors) {
       minWidth: 0,
     },
     placeholderDivider: {
-      borderBottomColor: themeColors.dividerOnPrimary,
+      borderBottomColor: themeColors.divider,
       borderBottomWidth: StyleSheet.hairlineWidth,
     },
     placeholderMeta: {

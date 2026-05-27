@@ -858,7 +858,7 @@ function createSettingsScreenStyles(themeColors: AppThemeColors) {
       paddingHorizontal: spacing.md,
     },
     nameEditorCancelButton: {
-      borderColor: themeColors.dividerOnPrimary,
+      borderColor: themeColors.border,
       borderWidth: StyleSheet.hairlineWidth,
     },
     nameEditorCancelText: {
@@ -878,7 +878,7 @@ function createSettingsScreenStyles(themeColors: AppThemeColors) {
     },
     nameInput: {
       backgroundColor: "transparent",
-      borderColor: themeColors.dividerOnPrimary,
+      borderColor: themeColors.border,
       borderRadius: borderRadius.xl,
       borderWidth: 1,
       color: themeColors.text,
@@ -901,7 +901,7 @@ function createSettingsScreenStyles(themeColors: AppThemeColors) {
       justifyContent: "center",
     },
     rowDivider: {
-      borderTopColor: themeColors.dividerOnPrimary,
+      borderTopColor: themeColors.divider,
       borderTopWidth: StyleSheet.hairlineWidth,
     },
     rowContent: {

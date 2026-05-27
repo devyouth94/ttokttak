@@ -1,47 +1,62 @@
-declare const process: {
-  cwd: () => string;
-};
+import type { ReactElement } from "react";
+
 declare const require: (moduleName: string) => unknown;
 
-const { readFileSync } = require("fs") as {
-  readFileSync: (path: string, encoding: "utf8") => string;
-};
+jest.mock("react-native", () => ({
+  useColorScheme: jest.fn(),
+}));
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+}));
 
-function readWorkspaceFile(relativePath: string): string {
-  return readFileSync(`${process.cwd()}/${relativePath}`, "utf8");
-}
+type UseColorScheme = typeof import("react-native").useColorScheme;
+
+const React = require("react") as typeof import("react");
+const { renderToStaticMarkup } = require("react-dom/server") as {
+  renderToStaticMarkup: (element: ReactElement) => string;
+};
+const { useColorScheme } = require("react-native") as {
+  useColorScheme: jest.Mock<
+    ReturnType<UseColorScheme>,
+    Parameters<UseColorScheme>
+  >;
+};
+const { AppThemeProvider } =
+  require("./theme-provider") as typeof import("./theme-provider");
+const { useAppTheme } =
+  require("./theme-context") as typeof import("./theme-context");
 
 describe("AppThemeProvider", () => {
-  it("저장된 테마 preference를 읽고 system fallback으로 초기화한다", () => {
-    const provider = readWorkspaceFile("src/shared/theme/theme-provider.tsx");
-
-    expect(provider).toContain("resolveInitialAppThemePreference");
-    expect(provider).toContain("readStoredAppThemePreference");
-    expect(provider).toContain("fallbackAppThemePreference");
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it("system 테마는 기기 화면 표시 설정 변경을 provider에서 해석한다", () => {
-    const provider = readWorkspaceFile("src/shared/theme/theme-provider.tsx");
+  it("system 기본값은 현재 기기의 화면 표시 설정을 resolved theme으로 제공한다", () => {
+    useColorScheme.mockReturnValue("dark");
+    let observedTheme: ReturnType<typeof useAppTheme> | null = null;
 
-    expect(provider).toContain("useColorScheme()");
-    expect(provider).toContain("resolveAppTheme({");
-    expect(provider).toContain("colorScheme");
-  });
+    function ThemeProbe(): null {
+      observedTheme = useAppTheme();
 
-  it("resolved theme에 맞는 기본 색 토큰을 context로 제공한다", () => {
-    const provider = readWorkspaceFile("src/shared/theme/theme-provider.tsx");
-    const context = readWorkspaceFile("src/shared/theme/theme-context.tsx");
+      return null;
+    }
 
-    expect(provider).toContain("getAppThemeColors(resolvedTheme)");
-    expect(provider).toContain("colors:");
-    expect(context).toContain("useAppThemeColors");
-  });
+    renderToStaticMarkup(
+      React.createElement(
+        AppThemeProvider,
+        null,
+        React.createElement(ThemeProbe, null)
+      )
+    );
 
-  it("테마 preference 변경 실패 시 저장값과 런타임 적용이 갈라지지 않게 change flow를 사용한다", () => {
-    const provider = readWorkspaceFile("src/shared/theme/theme-provider.tsx");
-
-    expect(provider).toContain("changeAppThemePreference");
-    expect(provider).toContain("currentPreference: themePreferenceRef.current");
-    expect(provider).toContain("setThemePreferenceState(preference)");
+    expect(observedTheme).toMatchObject({
+      colors: expect.objectContaining({
+        background: "#111315",
+        text: "#F4F5F6",
+      }),
+      resolvedTheme: "dark",
+      themePreference: "system",
+    });
   });
 });

@@ -4,18 +4,14 @@ import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
 import type { CompletionAction } from "~/entities/schedule";
-import { appThemeColors } from "~/shared/theme/app-theme-colors";
-import { useAppThemeColors } from "~/shared/theme/theme-context";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
+import { homeFeedCardPalette } from "./home-feed-card-palette";
 import type { HomeFeedCard } from "../model/home-feed-sections";
 
 const FEED_ITEM_ACTION_BORDER_WIDTH = 1;
 const FEED_ITEM_ACTION_STROKE_WIDTH = 2;
-const feedItemCardTextColor = appThemeColors.light.text;
-const feedItemCardBorderColor = appThemeColors.light.primary;
-const feedItemCardDividerColor = appThemeColors.light.dividerOnPrimary;
 
 type HomeFeedItemRowProps = {
   card: HomeFeedCard;
@@ -23,7 +19,6 @@ type HomeFeedItemRowProps = {
   isProcessing: boolean;
   onAction: (card: HomeFeedCard, action: CompletionAction) => void;
   showsActions: boolean;
-  usesLightContent: boolean;
 };
 
 export function HomeFeedItemRow({
@@ -32,24 +27,15 @@ export function HomeFeedItemRow({
   isProcessing,
   onAction,
   showsActions,
-  usesLightContent,
 }: HomeFeedItemRowProps): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
-  const textColor = usesLightContent
-    ? themeColors.primaryForeground
-    : feedItemCardTextColor;
-  const borderColor = usesLightContent
-    ? themeColors.primaryForeground
-    : feedItemCardBorderColor;
-  const iconColor = textColor;
 
   return (
     <View
       style={[
         styles.feedItemRow,
         !isLast && {
-          borderBottomColor: feedItemCardDividerColor,
+          borderBottomColor: homeFeedCardPalette.divider,
           borderBottomWidth: StyleSheet.hairlineWidth,
         },
       ]}
@@ -71,7 +57,7 @@ export function HomeFeedItemRow({
         <AppText
           ellipsizeMode="tail"
           numberOfLines={1}
-          style={{ color: textColor }}
+          style={{ color: homeFeedCardPalette.text }}
         >
           {card.item.title}
         </AppText>
@@ -79,7 +65,7 @@ export function HomeFeedItemRow({
           <AppText
             ellipsizeMode="tail"
             numberOfLines={1}
-            style={{ color: textColor }}
+            style={{ color: homeFeedCardPalette.text }}
             variant="caption"
           >
             {getFeedItemMetaLine(card)}
@@ -101,13 +87,13 @@ export function HomeFeedItemRow({
             }}
             style={({ pressed }) => [
               styles.feedItemActionIcon,
-              { borderColor },
+              { borderColor: homeFeedCardPalette.actionBorder },
               isProcessing && styles.feedItemActionDisabled,
               pressed && !isProcessing && styles.feedItemPressed,
             ]}
           >
             <SkipForward
-              color={iconColor}
+              color={homeFeedCardPalette.text}
               size={15}
               strokeWidth={FEED_ITEM_ACTION_STROKE_WIDTH}
             />
@@ -125,13 +111,13 @@ export function HomeFeedItemRow({
             }}
             style={({ pressed }) => [
               styles.feedItemActionIcon,
-              { borderColor },
+              { borderColor: homeFeedCardPalette.actionBorder },
               isProcessing && styles.feedItemActionDisabled,
               pressed && !isProcessing && styles.feedItemPressed,
             ]}
           >
             <Check
-              color={iconColor}
+              color={homeFeedCardPalette.text}
               size={16}
               strokeWidth={FEED_ITEM_ACTION_STROKE_WIDTH}
             />

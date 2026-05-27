@@ -103,7 +103,7 @@
 - `shared`는 작은 foundation이므로 `shared/ui`, `shared/api`, `shared/config` 파일 직접 import를 허용한다.
 - `shared/lib/<topic>`은 주제 경계다. Barrel import가 side effect나 bundle coupling을 만들면 leaf 파일 직접 import를 허용한다.
 - slice segment 이름은 `api`, `assets`, `config`, `i18n`, `lib`, `model`, `routes`, `ui`만 사용한다.
-- `shared` 최상위 segment 이름은 `api`, `config`, `i18n`, `lib`, `routes`, `ui`만 사용한다.
+- `shared` 최상위 segment 이름은 `api`, `config`, `i18n`, `lib`, `routes`, `theme`, `ui`만 사용한다.
 - `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
 - `widgets` layer는 현재 만들지 않는다. 여러 화면에서 재사용되고 feature와 entity를 조합하는 큰 UI 블록이 생기면 별도 결정으로 추가한다.
 - 앱 문구나 날짜/시간 표시 문구를 만드는 화면 model 경계는 `AppLanguage`를 필수 입력으로 받는다.
@@ -133,7 +133,8 @@
 - 일정 색상 팔레트는 테마와 무관하게 같은 색상값을 사용한다.
 - 일정 색상은 marker, swatch, line 같은 보조 표시에만 사용한다.
 - 일정 관련 텍스트와 아이콘은 일정 색상 위에 올리지 않고 현재 테마의 text 토큰을 사용한다.
-- 배경, 표면, 텍스트, divider, scrim, shadow, soft container는 테마별 의미 토큰으로 분리한다.
+- 홈 피드 섹션 카드처럼 화면 전용 고정 표현 색상은 해당 screen slice가 소유하고 shared theme token으로 승격하지 않는다.
+- 배경, 표면, 텍스트, border, divider, disabled text, control track, scrim, shadow, soft container는 테마별 의미 토큰으로 분리한다.
 - accent, error, green, amber, red, blue 계열은 의미와 hue를 유지하되 테마별 대비가 부족하면 tone을 조정한다.
 - 테마 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 테마를 모호하게 두지 않는다.
 - 순수 검증 model은 i18next에 의존하지 않고 `AppLanguage` 기준 사용자-facing 검증 메시지를 만든다.
@@ -442,3 +443,6 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 - content key 복구 정적 key 없음.
 - 복구 감사 이벤트의 민감 정보 저장.
 - 표시 언어 초기화 실패가 blank screen으로 고정되지 않음.
+- FSD import rule, resource key completeness, route layout helper 사용처럼 구조 자체가 요구사항인 경우에만 소스 문자열 기반 테스트를 사용한다.
+- 테마 적용처럼 사용자-facing 동작은 구현 문자열 대신 provider로 실제 컴포넌트를 렌더링해 검증한다.
+- 정적 `colors` import 금지는 화면별 문자열 테스트가 아니라 architecture guard에서 한 번에 검증한다.
