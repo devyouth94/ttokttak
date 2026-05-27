@@ -6,7 +6,7 @@ import {
 } from "./app-language";
 
 describe("resolveAppLanguage", () => {
-  it("저장된 앱 표시 언어가 있으면 기기 언어보다 우선한다", () => {
+  it("저장된 표시 언어가 있으면 기기 언어보다 우선한다", () => {
     const language = resolveAppLanguage({
       deviceLocales: [{ languageCode: "ko", languageTag: "ko-KR" }],
       storedLanguage: "en",
@@ -53,11 +53,11 @@ describe("resolveAppLanguage", () => {
 });
 
 describe("normalizeAppLanguage", () => {
-  it("지원하는 언어 tag는 앱 표시 언어로 정규화한다", () => {
+  it("지원하는 언어 tag는 표시 언어로 정규화한다", () => {
     expect(normalizeAppLanguage("en-US")).toBe("en");
   });
 
-  it("지원하지 않는 언어는 fallback 앱 표시 언어로 정규화한다", () => {
+  it("지원하지 않는 언어는 fallback 표시 언어로 정규화한다", () => {
     expect(normalizeAppLanguage("ja-JP")).toBe(fallbackAppLanguage);
   });
 });

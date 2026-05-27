@@ -56,7 +56,7 @@ describe("createLocalReminderNotificationProjection", () => {
     expect(JSON.stringify(result)).not.toContain("복구 불가");
   });
 
-  it("English 앱 표시 언어에서는 제목은 유지하고 본문 시간만 English로 만든다", () => {
+  it("English 표시 언어에서는 제목은 유지하고 본문 시간만 English로 만든다", () => {
     const result = createLocalReminderNotificationProjection({
       completionLogs: [],
       items: [

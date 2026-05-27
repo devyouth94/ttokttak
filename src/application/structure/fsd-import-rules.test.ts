@@ -47,6 +47,7 @@ const allowedSharedSegments = new Set([
   "i18n",
   "lib",
   "routes",
+  "theme",
   "ui",
 ]);
 const disallowedSegmentNames = new Set([

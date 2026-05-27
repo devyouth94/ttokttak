@@ -28,6 +28,7 @@ import {
   validateProfileDisplayName,
 } from "~/features/settings";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
+import { type AppThemePreference, useAppTheme } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import {
   AppSelectMenu,
@@ -207,6 +208,7 @@ export function SettingsScreen(): React.JSX.Element {
     useSession();
   const { language: appLanguage, setLanguage: setAppLanguage } =
     useAppLanguage();
+  const { setThemePreference, themePreference } = useAppTheme();
   const {
     isPermissionLoading,
     isRequestingPermission,
@@ -217,6 +219,7 @@ export function SettingsScreen(): React.JSX.Element {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSavingAppLanguage, setIsSavingAppLanguage] = useState(false);
+  const [isSavingThemePreference, setIsSavingThemePreference] = useState(false);
   const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
   const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
@@ -233,6 +236,23 @@ export function SettingsScreen(): React.JSX.Element {
       value: "en",
     },
   ] satisfies AppSelectMenuOption<AppLanguage>[];
+  const themeOptions = [
+    {
+      accessibilityHint: t("settings.environment.themeSystemHint"),
+      label: t("settings.environment.themeSystem"),
+      value: "system",
+    },
+    {
+      accessibilityHint: t("settings.environment.themeLightHint"),
+      label: t("settings.environment.themeLight"),
+      value: "light",
+    },
+    {
+      accessibilityHint: t("settings.environment.themeDarkHint"),
+      label: t("settings.environment.themeDark"),
+      value: "dark",
+    },
+  ] satisfies AppSelectMenuOption<AppThemePreference>[];
 
   const profileName = profile?.display_name?.trim();
   const metadataName = user?.user_metadata?.full_name;
@@ -417,6 +437,27 @@ export function SettingsScreen(): React.JSX.Element {
     }
   }
 
+  async function handleChangeThemePreference(
+    nextPreference: AppThemePreference
+  ): Promise<void> {
+    if (isSavingThemePreference || nextPreference === themePreference) {
+      return;
+    }
+
+    setIsSavingThemePreference(true);
+
+    try {
+      await setThemePreference(nextPreference);
+    } catch {
+      Alert.alert(
+        t("settings.environment.themeSaveErrorTitle"),
+        t("settings.environment.themeSaveErrorMessage")
+      );
+    } finally {
+      setIsSavingThemePreference(false);
+    }
+  }
+
   async function handleOpenSystemSettings(): Promise<void> {
     try {
       await openSettings();
@@ -501,7 +542,7 @@ export function SettingsScreen(): React.JSX.Element {
           <SettingsSectionCard title={t("settings.environment.section")}>
             <SettingsControlRow
               accessory={
-                <View style={styles.languageSelectAccessory}>
+                <View style={styles.selectAccessory}>
                   {isSavingAppLanguage ? (
                     <ActivityIndicator color={colors.textSoft} size="small" />
                   ) : null}
@@ -524,6 +565,29 @@ export function SettingsScreen(): React.JSX.Element {
               description={t("settings.environment.appLanguageLocalOnly")}
               isFirst
               title={t("settings.environment.appLanguage")}
+            />
+            <SettingsControlRow
+              accessory={
+                <View style={styles.selectAccessory}>
+                  {isSavingThemePreference ? (
+                    <ActivityIndicator color={colors.textSoft} size="small" />
+                  ) : null}
+                  <AppSelectMenu
+                    accessibilityHint={t("settings.environment.themeHint")}
+                    accessibilityLabel={t("settings.environment.theme")}
+                    align="end"
+                    isDisabled={isSavingThemePreference}
+                    onChange={(nextPreference) => {
+                      void handleChangeThemePreference(nextPreference);
+                    }}
+                    options={themeOptions}
+                    value={themePreference}
+                    variant="compact"
+                  />
+                </View>
+              }
+              description={t("settings.environment.themeLocalOnly")}
+              title={t("settings.environment.theme")}
             />
             <SettingsValueRow
               title={t("settings.environment.timezone")}
@@ -718,7 +782,7 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 10,
   },
-  languageSelectAccessory: {
+  selectAccessory: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.xs,

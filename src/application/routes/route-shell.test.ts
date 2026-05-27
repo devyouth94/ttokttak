@@ -31,7 +31,7 @@ describe("route shell", () => {
     expect(rootLayout).not.toContain("NotificationProvider");
   });
 
-  it("메인 탭 shell 제목은 앱 표시 언어 리소스를 사용한다", () => {
+  it("메인 탭 shell 제목은 표시 언어 리소스를 사용한다", () => {
     const tabsLayout = readWorkspaceFile("app/(tabs)/_layout.tsx");
 
     expect(tabsLayout).toContain("useTranslation()");

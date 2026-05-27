@@ -53,9 +53,11 @@ describe("app i18n resources", () => {
     expect(i18n.t("scheduleForm.recurrence.once")).toBe("Once");
     expect(i18n.t("scheduleForm.actions.save")).toBe("Save");
     expect(i18n.t("settings.headerTitle")).toBe("Settings");
-    expect(i18n.t("settings.environment.appLanguage")).toBe(
-      "App display language"
-    );
+    expect(i18n.t("settings.environment.appLanguage")).toBe("Display language");
+    expect(i18n.t("settings.environment.theme")).toBe("Theme");
+    expect(i18n.t("settings.environment.themeSystem")).toBe("System");
+    expect(i18n.t("settings.environment.themeLight")).toBe("Light");
+    expect(i18n.t("settings.environment.themeDark")).toBe("Dark");
     expect(i18n.t("settings.accountManagement.delete")).toBe("Delete account");
   });
 
@@ -86,7 +88,11 @@ describe("app i18n resources", () => {
     expect(i18n.t("scheduleForm.fields.endDate")).toBe("종료일");
     expect(i18n.t("scheduleForm.actions.save")).toBe("저장");
     expect(i18n.t("settings.headerTitle")).toBe("설정");
-    expect(i18n.t("settings.environment.appLanguage")).toBe("앱 표시 언어");
+    expect(i18n.t("settings.environment.appLanguage")).toBe("표시 언어");
+    expect(i18n.t("settings.environment.theme")).toBe("테마");
+    expect(i18n.t("settings.environment.themeSystem")).toBe("시스템");
+    expect(i18n.t("settings.environment.themeLight")).toBe("라이트");
+    expect(i18n.t("settings.environment.themeDark")).toBe("다크");
     expect(i18n.t("settings.accountManagement.delete")).toBe("계정 삭제");
   });
 });

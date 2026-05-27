@@ -12,7 +12,7 @@ function readWorkspaceFile(relativePath: string): string {
 }
 
 describe("MainBottomNav i18n", () => {
-  it("중앙 일정 추가 버튼 접근성 문구를 앱 표시 언어에서 읽는다", () => {
+  it("중앙 일정 추가 버튼 접근성 문구를 표시 언어에서 읽는다", () => {
     const mainBottomNav = readWorkspaceFile(
       "src/application/navigation/ui/main-bottom-nav.tsx"
     );

@@ -23,7 +23,7 @@ describe("settings profile display name", () => {
     });
   });
 
-  it("English 앱 표시 언어에서는 English 검증 문구를 반환한다", () => {
+  it("English 표시 언어에서는 English 검증 문구를 반환한다", () => {
     expect(validateProfileDisplayName("   ", "en")).toEqual({
       errorMessage: "Enter a name.",
       value: null,

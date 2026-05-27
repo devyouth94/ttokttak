@@ -8,25 +8,34 @@ import { LocalNotificationProvider } from "~/application/notifications";
 import { SessionProvider, useSession } from "~/application/session";
 import { AppI18nProvider } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
+import { AppThemeProvider, useAppTheme } from "~/shared/theme";
 
 export function AppProviders({
   children,
 }: PropsWithChildren): React.JSX.Element {
   return (
     <SafeAreaProvider>
-      <AppI18nProvider>
-        <QueryClientProvider client={queryClient}>
-          <SessionProvider>
-            <SessionNotificationProvider>
-              <StatusBar style="dark" />
-              {children}
-              <PortalHost />
-            </SessionNotificationProvider>
-          </SessionProvider>
-        </QueryClientProvider>
-      </AppI18nProvider>
+      <AppThemeProvider>
+        <AppI18nProvider>
+          <QueryClientProvider client={queryClient}>
+            <SessionProvider>
+              <SessionNotificationProvider>
+                <ThemeStatusBar />
+                {children}
+                <PortalHost />
+              </SessionNotificationProvider>
+            </SessionProvider>
+          </QueryClientProvider>
+        </AppI18nProvider>
+      </AppThemeProvider>
     </SafeAreaProvider>
   );
+}
+
+function ThemeStatusBar(): React.JSX.Element {
+  const { resolvedTheme } = useAppTheme();
+
+  return <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />;
 }
 
 function SessionNotificationProvider({

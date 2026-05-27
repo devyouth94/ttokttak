@@ -59,9 +59,9 @@ export function AppI18nProvider({
     return (
       <AppScreen contentStyle={styles.bootstrapError}>
         <AppRetryStateView
-          description="앱 표시 언어를 준비하는 중 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요."
+          description="표시 언어를 준비하는 중 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요."
           onRetry={initializeAppI18n}
-          retryAccessibilityHint="앱 표시 언어 초기화를 다시 시도합니다."
+          retryAccessibilityHint="표시 언어 초기화를 다시 시도합니다."
           title="앱을 시작하지 못했어요"
         />
       </AppScreen>

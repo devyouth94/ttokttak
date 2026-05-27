@@ -11,7 +11,7 @@ function readHomeUiFile(fileName: string): string {
 }
 
 describe("home UI i18n", () => {
-  it("날짜 캐러셀은 앱 표시 언어와 번역 key를 사용한다", () => {
+  it("날짜 캐러셀은 표시 언어와 번역 key를 사용한다", () => {
     const source = readHomeUiFile("home-date-carousel.tsx");
 
     expect(source).toContain("useAppLanguage()");

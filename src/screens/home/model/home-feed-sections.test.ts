@@ -91,7 +91,7 @@ describe("buildHomeFeedSections", () => {
     expect(sections[2]?.items[0]?.metaLabel).toBe("오전 9:00");
   });
 
-  it("English 앱 표시 언어에서는 홈 섹션과 날짜/시간 문구를 English로 만든다", () => {
+  it("English 표시 언어에서는 홈 섹션과 날짜/시간 문구를 English로 만든다", () => {
     const sections = buildHomeFeedSections({
       completionLogs: [],
       items: [
@@ -211,7 +211,7 @@ describe("buildHomeFeedSections", () => {
     expect(sections[0]?.items[0]?.item.title).toBe("복용 체크");
   });
 
-  it("English 앱 표시 언어에서는 날짜 캐러셀 라벨을 English로 만든다", () => {
+  it("English 표시 언어에서는 날짜 캐러셀 라벨을 English로 만든다", () => {
     const options = createHomeDateOptions(
       new Date("2026-04-10T03:00:00.000Z"),
       "en"

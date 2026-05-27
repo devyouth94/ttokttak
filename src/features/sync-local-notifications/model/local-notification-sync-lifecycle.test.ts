@@ -47,7 +47,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
-  it("세션 복원은 앱 표시 언어만 바뀌어도 중복 전체 동기화하지 않는다", async () => {
+  it("세션 복원은 표시 언어만 바뀌어도 중복 전체 동기화하지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );
@@ -116,7 +116,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
-  it("앱 표시 언어 변경 뒤 현재 언어로 전체 기기 로컬 알림을 재동기화한다", async () => {
+  it("표시 언어 변경 뒤 현재 언어로 전체 기기 로컬 알림을 재동기화한다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );
@@ -142,7 +142,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
-  it("앱 표시 언어 변경 전체 동기화 뒤 세션 복원 effect가 이어져도 중복 실행하지 않는다", async () => {
+  it("표시 언어 변경 전체 동기화 뒤 세션 복원 effect가 이어져도 중복 실행하지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );
@@ -174,7 +174,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
-  it("로그인 전처럼 user가 없으면 앱 표시 언어 변경 알림 재동기화를 건너뛴다", async () => {
+  it("로그인 전처럼 user가 없으면 표시 언어 변경 알림 재동기화를 건너뛴다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );
@@ -194,7 +194,7 @@ describe("createLocalNotificationSyncLifecycle", () => {
     expect(syncLocalReminderNotifications).not.toHaveBeenCalled();
   });
 
-  it("앱 표시 언어 변경 뒤 알림 재동기화 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
+  it("표시 언어 변경 뒤 알림 재동기화 실패는 기록하고 사용자 흐름을 막지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
     );

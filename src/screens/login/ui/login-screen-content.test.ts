@@ -12,7 +12,7 @@ function readWorkspaceFile(relativePath: string): string {
 }
 
 describe("LoginScreenContent i18n", () => {
-  it("로그인 전 화면 문구와 외부 링크 실패 안내를 앱 표시 언어에서 읽는다", () => {
+  it("로그인 전 화면 문구와 외부 링크 실패 안내를 표시 언어에서 읽는다", () => {
     const loginScreenContent = readWorkspaceFile(
       "src/screens/login/ui/login-screen-content.tsx"
     );

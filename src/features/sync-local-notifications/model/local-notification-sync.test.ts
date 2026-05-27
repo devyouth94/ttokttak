@@ -114,7 +114,7 @@ describe("syncLocalReminderNotifications", () => {
     });
   });
 
-  it("English 앱 표시 언어로 현재 기기 로컬 알림 본문을 예약한다", async () => {
+  it("English 표시 언어로 현재 기기 로컬 알림 본문을 예약한다", async () => {
     jest.mocked(listRecurringItems).mockResolvedValue([
       createRecurringItem({
         id: "item-1",
