@@ -37,6 +37,7 @@ export default function getAppConfig(): ExpoConfig {
     userInterfaceStyle: "automatic",
     ios: {
       bundleIdentifier: "com.youngzin.ttokttak",
+      buildNumber: "18",
       usesAppleSignIn: true,
       infoPlist: {
         CFBundleDevelopmentRegion: "ko",
@@ -51,6 +52,7 @@ export default function getAppConfig(): ExpoConfig {
       },
       predictiveBackGestureEnabled: false,
       package: "com.youngzin.ttokttak",
+      versionCode: 1,
     },
     web: {
       output: "static",
@@ -62,6 +64,7 @@ export default function getAppConfig(): ExpoConfig {
     },
     plugins: [
       "expo-router",
+      "expo-image",
       "expo-localization",
       [
         "expo-font",

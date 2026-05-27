@@ -37,8 +37,8 @@ pnpm why <package>
 ## 처리 기준
 
 - patched 버전이 semver range 안에 있으면 lockfile 갱신으로 처리한다.
-- semver range 밖이어도 호환성이 명확하면 `pnpm.overrides`를 사용할 수 있다.
-- override를 추가하면 `package.json`과 `pnpm-lock.yaml`을 함께 커밋한다.
+- semver range 밖이어도 호환성이 명확하면 `pnpm-workspace.yaml`의 `overrides`를 사용할 수 있다.
+- override를 추가하면 `pnpm-workspace.yaml`과 `pnpm-lock.yaml`을 함께 커밋한다.
 - override 후에는 Expo config와 Metro export까지 확인한다.
 - major override가 CommonJS / ESM, peer dependency, native tooling을 깨뜨릴 수 있으면 예외로 둔다.
 
@@ -73,16 +73,17 @@ set -a; source .env.local; set +a
 - 확인한 실제 사용 경로
 - 재검토 조건
 
+## 현재 override
+
+`pnpm-workspace.yaml`에 기록한다.
+아래 항목은 `pnpm audit --audit-level moderate` 차단 항목을 줄이기 위한 transitive dependency override다.
+
+- `brace-expansion@>=5.0.0 <5.0.6` → `5.0.6`
+- `postcss` → `8.5.12`
+- `uuid` → `11.1.1`
+- `ws@>=8.0.0 <8.20.1` → `8.21.0`
+
 ## 현재 예외
-
-### `uuid`
-
-- severity: moderate
-- 유입 경로: `jest-expo` / Expo config plugin / `xcode@3.0.1`
-- 분류: build-time
-- 이유: patched 버전은 `uuid@14` 이상이다. `uuid@14`는 ESM-only이고, `xcode@3.0.1`은 CommonJS `require('uuid')`를 사용한다.
-- 실제 사용 경로: `xcode` 내부 `uuid.v4()` 1곳이다. advisory의 v3 / v5 / v6 buffer write 경로와 다르다.
-- 재검토 조건: `xcode` 또는 Expo config plugin이 `uuid@14` 이상과 호환되는 버전으로 업데이트되면 제거한다.
 
 ### `@tootallnate/once`
 

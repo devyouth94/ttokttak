@@ -66,4 +66,12 @@ describe("app config", () => {
       "./plugins/with-local-notifications-only"
     );
   });
+
+  it("스토어 빌드 번호를 config에 명시한다", () => {
+    const getAppConfig = loadAppConfig();
+    const config = getAppConfig();
+
+    expect(config.ios?.buildNumber).toBe("18");
+    expect(config.android?.versionCode).toBe(1);
+  });
 });
