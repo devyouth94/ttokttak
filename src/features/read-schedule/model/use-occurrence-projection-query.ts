@@ -9,8 +9,8 @@ import type {
   OccurrenceProjectionPurpose,
   OccurrenceProjectionRequirement,
   RecurringItem,
-  ReminderListOccurrenceProjectionPurpose,
-  ReminderListOccurrenceProjectionRequirement,
+  ScheduleListOccurrenceProjectionPurpose,
+  ScheduleListOccurrenceProjectionRequirement,
 } from "~/entities/schedule";
 import { getOccurrenceProjectionRequirement } from "~/entities/schedule";
 
@@ -47,8 +47,8 @@ export function useOccurrenceProjectionQuery({
   purpose,
 }: {
   context: ScheduleReadContext;
-  purpose: ReminderListOccurrenceProjectionPurpose;
-}): UseOccurrenceProjectionQueryResult<ReminderListOccurrenceProjectionRequirement>;
+  purpose: ScheduleListOccurrenceProjectionPurpose;
+}): UseOccurrenceProjectionQueryResult<ScheduleListOccurrenceProjectionRequirement>;
 export function useOccurrenceProjectionQuery({
   context,
   purpose,

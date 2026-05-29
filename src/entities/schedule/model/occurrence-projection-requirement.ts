@@ -27,9 +27,9 @@ export type HomeFeedOccurrenceProjectionPurpose = {
   type: "homeFeed";
 };
 
-export type ReminderListOccurrenceProjectionPurpose = {
+export type ScheduleListOccurrenceProjectionPurpose = {
   now: Date;
-  type: "reminderList";
+  type: "scheduleList";
 };
 
 export type CalendarMonthOccurrenceProjectionPurpose = {
@@ -40,7 +40,7 @@ export type CalendarMonthOccurrenceProjectionPurpose = {
 export type OccurrenceProjectionPurpose =
   | CalendarMonthOccurrenceProjectionPurpose
   | HomeFeedOccurrenceProjectionPurpose
-  | ReminderListOccurrenceProjectionPurpose;
+  | ScheduleListOccurrenceProjectionPurpose;
 
 export type HomeFeedOccurrenceProjectionRequirement = {
   completionLogQuery: OccurrenceProjectionCompletionLogQueryRequirement;
@@ -51,7 +51,7 @@ export type HomeFeedOccurrenceProjectionRequirement = {
   };
 };
 
-export type ReminderListOccurrenceProjectionRequirement = {
+export type ScheduleListOccurrenceProjectionRequirement = {
   completionLogQuery: OccurrenceProjectionCompletionLogQueryRequirement;
   projection: {
     todayLocalDate: string;
@@ -68,7 +68,7 @@ export type CalendarMonthOccurrenceProjectionRequirement = {
 export type OccurrenceProjectionRequirement =
   | CalendarMonthOccurrenceProjectionRequirement
   | HomeFeedOccurrenceProjectionRequirement
-  | ReminderListOccurrenceProjectionRequirement;
+  | ScheduleListOccurrenceProjectionRequirement;
 
 export function getOccurrenceProjectionRequirement({
   items,
@@ -85,9 +85,9 @@ export function getOccurrenceProjectionRequirement({
   timezone,
 }: {
   items: RecurringItem[];
-  purpose: ReminderListOccurrenceProjectionPurpose;
+  purpose: ScheduleListOccurrenceProjectionPurpose;
   timezone: string;
-}): ReminderListOccurrenceProjectionRequirement;
+}): ScheduleListOccurrenceProjectionRequirement;
 export function getOccurrenceProjectionRequirement({
   items,
   purpose,
@@ -128,8 +128,8 @@ export function getOccurrenceProjectionRequirement({
         purpose,
         timezone,
       });
-    case "reminderList":
-      return getReminderListOccurrenceProjectionRequirement({
+    case "scheduleList":
+      return getScheduleListOccurrenceProjectionRequirement({
         items,
         purpose,
         timezone,
@@ -190,15 +190,15 @@ function getHomeFeedOccurrenceProjectionRequirement({
   };
 }
 
-function getReminderListOccurrenceProjectionRequirement({
+function getScheduleListOccurrenceProjectionRequirement({
   items,
   purpose,
   timezone,
 }: {
   items: RecurringItem[];
-  purpose: ReminderListOccurrenceProjectionPurpose;
+  purpose: ScheduleListOccurrenceProjectionPurpose;
   timezone: string;
-}): ReminderListOccurrenceProjectionRequirement {
+}): ScheduleListOccurrenceProjectionRequirement {
   const todayLocalDate = formatInTimeZone(purpose.now, timezone, "yyyy-MM-dd");
   const startLocalDate = addDaysToLocalDate(
     todayLocalDate,

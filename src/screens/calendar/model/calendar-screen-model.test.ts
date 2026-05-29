@@ -1,7 +1,13 @@
+import { endOfMonth, format, parse, startOfMonth } from "date-fns";
+
 import type {
   CompletionLog,
   RecurringItem,
   RecurringItemScheduleVersion,
+} from "~/entities/schedule";
+import {
+  createLocalDateUtcRange,
+  getItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
 import {
   createCompletionLogFixture,
@@ -11,8 +17,8 @@ import {
 } from "~/entities/schedule/testing";
 
 import {
-  buildCalendarDayEntries,
-  buildCalendarDaySummaries,
+  buildCalendarDayEntries as buildCalendarDayViewEntries,
+  buildCalendarDaySummaries as buildCalendarDayViewSummaries,
   clampVisibleMonth,
   createCalendarScreenState,
   formatCalendarDayEntryCount,
@@ -47,6 +53,75 @@ function createVersion(
   return createScheduleVersionFixture({
     seedStartDateLocal: "2026-04-10",
     ...overrides,
+  });
+}
+
+function buildCalendarDaySummaries({
+  completionLogs,
+  items,
+  now,
+  timezone,
+  visibleMonth,
+}: {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  now: Date;
+  timezone: string;
+  visibleMonth: string;
+}) {
+  const visibleMonthDate = parse(
+    `${visibleMonth}-01`,
+    "yyyy-MM-dd",
+    new Date()
+  );
+  const monthStartLocalDate = format(
+    startOfMonth(visibleMonthDate),
+    "yyyy-MM-dd"
+  );
+  const monthEndLocalDate = format(endOfMonth(visibleMonthDate), "yyyy-MM-dd");
+  const monthRange = {
+    endUtc: createLocalDateUtcRange(monthEndLocalDate, timezone).endUtc,
+    startUtc: createLocalDateUtcRange(monthStartLocalDate, timezone).startUtc,
+  };
+
+  return buildCalendarDayViewSummaries({
+    visibleMonthEntries: getItemOccurrenceEntriesInRange({
+      completionLogs,
+      items,
+      now,
+      range: monthRange,
+      timezone,
+    }),
+  });
+}
+
+function buildCalendarDayEntries({
+  completionLogs,
+  items,
+  language,
+  now,
+  selectedDate,
+  timezone,
+}: {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  language: "en" | "ko";
+  now: Date;
+  selectedDate: string;
+  timezone: string;
+}) {
+  const selectedDateRange = createLocalDateUtcRange(selectedDate, timezone);
+
+  return buildCalendarDayViewEntries({
+    language,
+    selectedDateEntries: getItemOccurrenceEntriesInRange({
+      completionLogs,
+      items,
+      now,
+      range: selectedDateRange,
+      timezone,
+    }).filter((entry) => entry.occurrence.localDate === selectedDate),
+    timezone,
   });
 }
 

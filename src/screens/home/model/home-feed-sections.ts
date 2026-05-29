@@ -8,10 +8,8 @@ import {
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
-  CompletionLog,
   DerivedOccurrence,
-  HomeFeedOccurrenceProjectionRequirement,
-  LocalDateUtcRange,
+  ItemOccurrenceProjectionEntry,
   RecurringItem,
 } from "~/entities/schedule";
 import {
@@ -19,11 +17,8 @@ import {
   formatLocalTimeLabel,
   getCurrentScheduleVersion,
   getDateFnsLocale,
-  getLatestOverdueItemOccurrenceEntries,
   getOccurrenceIdentity,
-  getOccurrenceProjectionRequirement,
   getRecurrenceLabel,
-  getScheduledItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
@@ -96,41 +91,30 @@ export type HomeFeedSection = {
 };
 
 type BuildHomeFeedSectionsOptions = {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
   language: AppLanguage;
   now: Date;
-  projection?: HomeFeedOccurrenceProjectionRequirement["projection"];
+  overdueEntries: ItemOccurrenceProjectionEntry[];
   selectedDateId: string;
+  selectedDateEntries: ItemOccurrenceProjectionEntry[];
   timezone: string;
+  upcomingEntries: ItemOccurrenceProjectionEntry[];
 };
 
 type BuildSectionCardsOptions = {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
+  entries: ItemOccurrenceProjectionEntry[];
   language: AppLanguage;
-  now: Date;
-  range: LocalDateUtcRange;
   sectionId: HomeFeedSection["id"];
-  timezone: string;
   todayLocalDate: string;
 };
 
 type BuildSelectedDateSectionOptions = Omit<
   BuildSectionCardsOptions,
-  "range" | "sectionId"
+  "sectionId"
 > & {
   selectedDateTitle: string;
-  selectedRange: LocalDateUtcRange;
 };
 
-type BuildRelativeCardsOptions = Omit<
-  BuildSectionCardsOptions,
-  "range" | "sectionId"
-> & {
-  overdueLookbackStartLocalDate?: string;
-  upcomingRange?: LocalDateUtcRange;
-};
+type BuildRelativeCardsOptions = Omit<BuildSectionCardsOptions, "sectionId">;
 
 type ProfileNameSource = {
   display_name: string | null;
@@ -164,13 +148,13 @@ export function createHomeDateOptions(
 }
 
 export function buildHomeFeedSections({
-  completionLogs,
-  items,
   language,
   now,
-  projection,
+  overdueEntries,
   selectedDateId,
+  selectedDateEntries,
   timezone,
+  upcomingEntries,
 }: BuildHomeFeedSectionsOptions): HomeFeedSection[] {
   const todayLocalDate = formatInTimeZone(now, timezone, "yyyy-MM-dd");
   const selectedDateTitle = getSelectedDateTitle(
@@ -179,25 +163,10 @@ export function buildHomeFeedSections({
     language
   );
   const copy = homeFeedCopyByLanguage[language];
-  const projectionRequirement =
-    projection ??
-    getOccurrenceProjectionRequirement({
-      items,
-      purpose: {
-        now,
-        selectedDateId,
-        type: "homeFeed",
-      },
-      timezone,
-    }).projection;
   const selectedSection = buildSelectedDateSection({
-    completionLogs,
-    items,
-    now,
+    entries: selectedDateEntries,
     language,
     selectedDateTitle,
-    selectedRange: projectionRequirement.selectedDateRange,
-    timezone,
     todayLocalDate,
   });
 
@@ -210,13 +179,8 @@ export function buildHomeFeedSections({
       emptyMessage: copy.empty.overdue,
       id: "overdue",
       items: buildOverdueCards({
-        completionLogs,
-        items,
+        entries: overdueEntries,
         language,
-        now,
-        overdueLookbackStartLocalDate:
-          projectionRequirement.overdueLookbackStartLocalDate,
-        timezone,
         todayLocalDate,
       }),
       title: copy.sections.overdue,
@@ -227,12 +191,8 @@ export function buildHomeFeedSections({
       emptyMessage: copy.empty.upcoming,
       id: "upcoming",
       items: buildUpcomingCards({
-        completionLogs,
-        items,
+        entries: upcomingEntries,
         language,
-        now,
-        upcomingRange: projectionRequirement.upcomingRange ?? undefined,
-        timezone,
         todayLocalDate,
       }),
       title: copy.sections.upcoming,
@@ -241,13 +201,9 @@ export function buildHomeFeedSections({
 }
 
 function buildSelectedDateSection({
-  completionLogs,
-  items,
+  entries,
   language,
-  now,
   selectedDateTitle,
-  selectedRange,
-  timezone,
   todayLocalDate,
 }: BuildSelectedDateSectionOptions): HomeFeedSection {
   const copy = homeFeedCopyByLanguage[language];
@@ -257,13 +213,9 @@ function buildSelectedDateSection({
     emptyMessage: copy.empty.selectedDate(selectedDateTitle, isToday),
     id: "selected-date",
     items: buildScheduledCards({
-      completionLogs,
-      items,
+      entries,
       language,
-      now,
-      range: selectedRange,
       sectionId: "selected-date",
-      timezone,
       todayLocalDate,
     }),
     title: selectedDateTitle,
@@ -271,21 +223,11 @@ function buildSelectedDateSection({
 }
 
 function buildOverdueCards({
-  completionLogs,
-  items,
+  entries,
   language,
-  now,
-  overdueLookbackStartLocalDate,
-  timezone,
   todayLocalDate,
 }: BuildRelativeCardsOptions): HomeFeedCard[] {
-  return getLatestOverdueItemOccurrenceEntries({
-    completionLogs,
-    items,
-    lookbackStartLocalDate: overdueLookbackStartLocalDate ?? todayLocalDate,
-    now,
-    timezone,
-  })
+  return entries
     .map(({ item, occurrence }) =>
       toHomeFeedCard(item, occurrence, "overdue", todayLocalDate, language)
     )
@@ -293,47 +235,25 @@ function buildOverdueCards({
 }
 
 function buildUpcomingCards({
-  completionLogs,
-  items,
+  entries,
   language,
-  now,
-  upcomingRange,
-  timezone,
   todayLocalDate,
 }: BuildRelativeCardsOptions): HomeFeedCard[] {
-  if (!upcomingRange) {
-    return [];
-  }
-
   return buildScheduledCards({
-    completionLogs,
-    items,
+    entries,
     language,
-    now,
-    range: upcomingRange,
     sectionId: "upcoming",
-    timezone,
     todayLocalDate,
   });
 }
 
 function buildScheduledCards({
-  completionLogs,
-  items,
+  entries,
   language,
-  now,
-  range,
   sectionId,
-  timezone,
   todayLocalDate,
 }: BuildSectionCardsOptions): HomeFeedCard[] {
-  return getScheduledItemOccurrenceEntriesInRange({
-    completionLogs,
-    items,
-    now,
-    range,
-    timezone,
-  })
+  return entries
     .map(({ item, occurrence }) =>
       toHomeFeedCard(item, occurrence, sectionId, todayLocalDate, language)
     )

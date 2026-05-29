@@ -4,6 +4,11 @@ import type {
   RecurringItemScheduleVersion,
 } from "~/entities/schedule";
 import {
+  getLatestOverdueItemOccurrenceEntries,
+  getOccurrenceProjectionRequirement,
+  getScheduledItemOccurrenceEntriesInRange,
+} from "~/entities/schedule";
+import {
   createCompletionLogFixture,
   createRecurringItemFixture,
   createScheduleVersionFixture,
@@ -11,7 +16,7 @@ import {
 } from "~/entities/schedule/testing";
 
 import {
-  buildHomeFeedSections,
+  buildHomeFeedSections as buildHomeFeedViewSections,
   createHomeDateOptions,
 } from "./home-feed-sections";
 import { getFeedItemMetaLine } from "../ui/home-feed-item-row";
@@ -39,6 +44,62 @@ function createVersion(
   return createScheduleVersionFixture({
     seedStartDateLocal: "2026-04-10",
     ...overrides,
+  });
+}
+
+function buildHomeFeedSections({
+  completionLogs,
+  items,
+  language,
+  now,
+  selectedDateId,
+  timezone,
+}: {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  language: "en" | "ko";
+  now: Date;
+  selectedDateId: string;
+  timezone: string;
+}) {
+  const projection = getOccurrenceProjectionRequirement({
+    items,
+    purpose: {
+      now,
+      selectedDateId,
+      type: "homeFeed",
+    },
+    timezone,
+  }).projection;
+
+  return buildHomeFeedViewSections({
+    language,
+    now,
+    overdueEntries: getLatestOverdueItemOccurrenceEntries({
+      completionLogs,
+      items,
+      lookbackStartLocalDate: projection.overdueLookbackStartLocalDate,
+      now,
+      timezone,
+    }),
+    selectedDateEntries: getScheduledItemOccurrenceEntriesInRange({
+      completionLogs,
+      items,
+      now,
+      range: projection.selectedDateRange,
+      timezone,
+    }),
+    selectedDateId,
+    timezone,
+    upcomingEntries: projection.upcomingRange
+      ? getScheduledItemOccurrenceEntriesInRange({
+          completionLogs,
+          items,
+          now,
+          range: projection.upcomingRange,
+          timezone,
+        })
+      : [],
   });
 }
 

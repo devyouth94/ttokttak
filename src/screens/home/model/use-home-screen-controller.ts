@@ -8,7 +8,7 @@ import { useScheduleReadContext } from "~/application/schedule-read";
 import { useSession } from "~/application/session";
 import type { CompletionAction } from "~/entities/schedule";
 import { useNotifications } from "~/features/notifications";
-import { useOccurrenceProjectionQuery } from "~/features/read-schedule";
+import { useHomeFeedOccurrenceProjectionQuery } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 
 import {
@@ -84,21 +84,19 @@ export function useHomeScreenController(): HomeScreenController {
   const hasFocusedOnceRef = useRef(false);
   const previousTimezoneRef = useRef(scheduleReadContext.timezone);
   const now = new Date();
-  const projectionQuery = useOccurrenceProjectionQuery({
+  const projectionQuery = useHomeFeedOccurrenceProjectionQuery({
     context: scheduleReadContext,
-    purpose: {
-      now,
-      selectedDateId,
-      type: "homeFeed",
-    },
+    now,
+    selectedDateId,
   });
   const {
     completionLogs,
     isReady,
-    items,
-    projectionRequirement,
+    overdueEntries,
     refetch: refetchProjection,
+    selectedDateEntries,
     timezone,
+    upcomingEntries,
     userId,
   } = projectionQuery;
 
@@ -124,13 +122,13 @@ export function useHomeScreenController(): HomeScreenController {
     actionErrorMessage ??
     (projectionQuery.error ? t("home.feed.errorDescription") : null);
   const feedSections = buildHomeFeedSections({
-    completionLogs,
-    items,
     language,
     now,
-    projection: projectionRequirement.projection,
+    overdueEntries,
     selectedDateId,
+    selectedDateEntries,
     timezone,
+    upcomingEntries,
   }).map((section) => ({
     ...section,
     items: section.items.filter(

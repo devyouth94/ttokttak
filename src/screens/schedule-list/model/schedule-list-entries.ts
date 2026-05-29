@@ -1,11 +1,10 @@
 import type {
-  CompletionLog,
+  ItemNextOccurrenceProjectionEntry,
   RecurringItem,
   RecurringItemColorKey,
 } from "~/entities/schedule";
 import {
   formatUtcTimeInTimezone,
-  getNextItemOccurrenceEntries,
   getRecurrenceLabel,
 } from "~/entities/schedule";
 import type { AppLanguage } from "~/shared/i18n";
@@ -30,26 +29,17 @@ const noNextOccurrenceLabelByLanguage = {
 } as const satisfies Record<AppLanguage, string>;
 
 export function buildScheduleListEntries({
-  completionLogs,
-  items,
   language,
-  now,
+  nextOccurrenceEntries,
   sortMode = DEFAULT_SCHEDULE_LIST_SORT_MODE,
   timezone,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
   language: AppLanguage;
-  now: Date;
+  nextOccurrenceEntries: ItemNextOccurrenceProjectionEntry[];
   sortMode?: ScheduleListSortMode;
   timezone: string;
 }): ScheduleListEntry[] {
-  return getNextItemOccurrenceEntries({
-    completionLogs,
-    items,
-    now,
-    timezone,
-  })
+  return nextOccurrenceEntries
     .map(({ item, occurrence }) => ({
       colorKey: item.colorKey,
       id: item.id,

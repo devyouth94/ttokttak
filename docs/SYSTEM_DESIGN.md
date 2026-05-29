@@ -71,7 +71,7 @@
 - `src/entities/profile`: profile 복원과 표시 이름 저장.
 - `src/features/mutate-schedule`: 일정 생성, 수정, 보관 use case와 mutation 이후 query 무효화, 로컬 알림 범위 재동기화 후속 흐름.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
-- `src/features/read-schedule`: 일정 조회 query, occurrence projection query, query key.
+- `src/features/read-schedule`: 일정 조회 query, 목적별 occurrence projection read hook, query key.
 - `src/features/settings`: 설정 화면의 표시 이름 입력 규칙.
 - `src/features/legal`: 이용약관과 개인정보처리방침 공개 링크.
 - `src/features/sign-in`: Apple/Google 로그인 use case와 provider adapter.
@@ -258,14 +258,13 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
 
-completion log 조회는 화면이나 후속 계산에 필요한 범위로 제한한다.
+completion log 조회는 projection 목적이나 후속 계산에 필요한 범위로 제한한다.
 상세 화면의 최근 히스토리는 최신 5건만 표시한다.
 MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
 `completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
-탭 루트는 홈 피드, 일정 목록, 캘린더 같은 projection 목적을 넘긴다.
+read-schedule의 목적별 projection read hook은 홈 피드, 일정 목록, 캘린더, 상세 화면의 조회 범위, completion log anchor, occurrence entry 조립을 숨긴다.
 화면의 날짜 상태는 profile timezone을 기준으로 만든다.
-반복 기능 hook이 active 일정 조회, completion log 조회 조건, query 상태를 함께 맞춘다.
-화면별 섹션, 정렬, marker 구성은 각 화면 feature helper가 맡는다.
+화면별 문구, 정렬, card, row, marker 구성은 각 screen slice가 맡는다.
 
 ### 종료일 정책
 

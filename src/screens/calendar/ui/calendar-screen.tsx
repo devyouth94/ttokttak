@@ -16,8 +16,8 @@ import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { useScheduleReadContext } from "~/application/schedule-read";
 import { RecurringItemSummaryRow } from "~/entities/schedule";
 import {
+  useCalendarMonthOccurrenceProjectionQuery,
   useOccurrenceProjectionNow,
-  useOccurrenceProjectionQuery,
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
@@ -134,16 +134,14 @@ export function CalendarScreen(): React.JSX.Element {
     visibleMonth: screenState.visibleMonth,
   });
   const previousTimezoneRef = useRef(scheduleReadContext.timezone);
-  const projectionQuery = useOccurrenceProjectionQuery({
+  const projectionQuery = useCalendarMonthOccurrenceProjectionQuery({
     context: scheduleReadContext,
-    purpose: {
-      type: "calendarMonth",
-      visibleMonth: screenState.visibleMonth,
-    },
+    now,
+    selectedDate: screenState.selectedDate,
+    visibleMonth: screenState.visibleMonth,
   });
   const timezone = projectionQuery.timezone;
   const items = projectionQuery.items;
-  const completionLogs = projectionQuery.completionLogs;
   const todayState = createCalendarScreenState(now, timezone);
   const minimumVisibleMonth = useMemo(
     () => getMinimumVisibleMonth(items),
@@ -164,25 +162,18 @@ export function CalendarScreen(): React.JSX.Element {
   const daySummaries = useMemo(
     () =>
       buildCalendarDaySummaries({
-        completionLogs,
-        items,
-        now,
-        timezone,
-        visibleMonth: screenState.visibleMonth,
+        visibleMonthEntries: projectionQuery.visibleMonthEntries,
       }),
-    [completionLogs, items, now, screenState.visibleMonth, timezone]
+    [projectionQuery.visibleMonthEntries]
   );
   const selectedEntries = useMemo(
     () =>
       buildCalendarDayEntries({
-        completionLogs,
-        items,
         language,
-        now,
-        selectedDate: screenState.selectedDate,
+        selectedDateEntries: projectionQuery.selectedDateEntries,
         timezone,
       }),
-    [completionLogs, items, language, now, screenState.selectedDate, timezone]
+    [language, projectionQuery.selectedDateEntries, timezone]
   );
   const isPreviousMonthDisabled =
     minimumVisibleMonth !== null &&

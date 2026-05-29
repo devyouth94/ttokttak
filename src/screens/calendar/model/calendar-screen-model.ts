@@ -1,18 +1,16 @@
-import { addMonths, endOfMonth, format, parse, startOfMonth } from "date-fns";
+import { addMonths, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type {
-  CompletionLog,
+  ItemOccurrenceProjectionEntry,
   OccurrenceStatus,
   RecurringItem,
   RecurringItemColorKey,
 } from "~/entities/schedule";
 import {
-  createLocalDateUtcRange as createProjectionLocalDateUtcRange,
   formatUtcTimeInTimezone,
   formatVisibleMonthTitle as formatScheduleVisibleMonthTitle,
   formatWeekdayLocalDateTitle,
-  getItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
@@ -254,34 +252,16 @@ export function clampVisibleMonth(
 }
 
 export function buildCalendarDaySummaries({
-  completionLogs,
-  items,
-  now,
-  timezone,
-  visibleMonth,
+  visibleMonthEntries,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
-  now: Date;
-  timezone: string;
-  visibleMonth: string;
+  visibleMonthEntries: ItemOccurrenceProjectionEntry[];
 }): Record<string, CalendarDaySummary> {
-  const { endUtc, startUtc } = createVisibleMonthUtcRange(
-    visibleMonth,
-    timezone
-  );
   const summaryMap = new Map<
     string,
     { markerItems: CalendarMarkerItem[]; occurrenceCount: number }
   >();
 
-  getItemOccurrenceEntriesInRange({
-    completionLogs,
-    items,
-    now,
-    range: { endUtc, startUtc },
-    timezone,
-  }).forEach(({ item, occurrence }) => {
+  visibleMonthEntries.forEach(({ item, occurrence }) => {
     const summary = summaryMap.get(occurrence.localDate) ?? {
       markerItems: [],
       occurrenceCount: 0,
@@ -312,33 +292,15 @@ export function buildCalendarDaySummaries({
 }
 
 export function buildCalendarDayEntries({
-  completionLogs,
-  items,
   language,
-  now,
-  selectedDate,
+  selectedDateEntries,
   timezone,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
   language: AppLanguage;
-  now: Date;
-  selectedDate: string;
+  selectedDateEntries: ItemOccurrenceProjectionEntry[];
   timezone: string;
 }): CalendarDayEntry[] {
-  const { endUtc, startUtc } = createProjectionLocalDateUtcRange(
-    selectedDate,
-    timezone
-  );
-
-  return getItemOccurrenceEntriesInRange({
-    completionLogs,
-    items,
-    now,
-    range: { endUtc, startUtc },
-    timezone,
-  })
-    .filter(({ occurrence }) => occurrence.localDate === selectedDate)
+  return selectedDateEntries
     .map(({ item, occurrence }) => ({
       colorKey: item.colorKey,
       itemId: item.id,
@@ -353,25 +315,6 @@ export function buildCalendarDayEntries({
       title: item.title,
     }))
     .sort((left, right) => compareCalendarEntries(left, right, language));
-}
-
-function createVisibleMonthUtcRange(
-  visibleMonth: string,
-  timezone: string
-): { endUtc: string; startUtc: string } {
-  const visibleMonthDate = createVisibleMonthDate(visibleMonth);
-  const monthStartLocalDate = format(
-    startOfMonth(visibleMonthDate),
-    "yyyy-MM-dd"
-  );
-  const monthEndLocalDate = format(endOfMonth(visibleMonthDate), "yyyy-MM-dd");
-
-  return {
-    endUtc: createProjectionLocalDateUtcRange(monthEndLocalDate, timezone)
-      .endUtc,
-    startUtc: createProjectionLocalDateUtcRange(monthStartLocalDate, timezone)
-      .startUtc,
-  };
 }
 
 type CalendarMarkerItem = {

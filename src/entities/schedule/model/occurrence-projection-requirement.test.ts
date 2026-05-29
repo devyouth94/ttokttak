@@ -93,7 +93,7 @@ describe("occurrence projection requirement", () => {
       ],
       purpose: {
         now: new Date("2026-04-10T03:00:00.000Z"),
-        type: "reminderList",
+        type: "scheduleList",
       },
       timezone,
     });

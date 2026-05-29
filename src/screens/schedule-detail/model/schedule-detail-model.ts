@@ -242,23 +242,34 @@ export function buildRecurringItemDetailViewModel({
   completionLogs,
   item,
   language,
+  nextOccurrence: providedNextOccurrence,
   now,
+  overdueOccurrences: providedOverdueOccurrences,
   timezone,
 }: {
   completionLogs: CompletionLog[];
   item: RecurringItem;
   language: AppLanguage;
+  nextOccurrence?: DerivedOccurrence | null;
   now: Date;
+  overdueOccurrences?: DerivedOccurrence[];
   timezone: string;
 }): ItemDetailViewModel {
-  const projection = createItemOccurrenceProjection({
-    completionLogs,
-    item,
-    now,
-    timezone,
-  });
-  const overdueOccurrences = getOverdueOccurrences(projection, now, timezone);
-  const nextOccurrence = projection.getNextOccurrence();
+  const projection =
+    providedOverdueOccurrences === undefined ||
+    providedNextOccurrence === undefined
+      ? createItemOccurrenceProjection({
+          completionLogs,
+          item,
+          now,
+          timezone,
+        })
+      : null;
+  const overdueOccurrences =
+    providedOverdueOccurrences ??
+    getOverdueOccurrences(projection!, now, timezone);
+  const nextOccurrence =
+    providedNextOccurrence ?? projection!.getNextOccurrence();
   const primaryOccurrence = overdueOccurrences[0] ?? nextOccurrence;
 
   return {

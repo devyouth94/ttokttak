@@ -1,9 +1,11 @@
-import type { RecurringItem } from "~/entities/schedule";
+import type { CompletionLog, RecurringItem } from "~/entities/schedule";
+import { getNextItemOccurrenceEntries } from "~/entities/schedule";
 import { createRecurringItemFixture } from "~/entities/schedule/testing";
 
 import {
-  buildScheduleListEntries,
+  buildScheduleListEntries as buildScheduleListViewEntries,
   formatScheduleListNextOccurrenceTimeLabel,
+  type ScheduleListSortMode,
 } from "./schedule-list-entries";
 
 describe("schedule-list entries", () => {
@@ -293,5 +295,33 @@ function createRecurringItem(
     startDateLocal: "2026-04-22",
     updatedAt: "2026-04-20T00:00:00.000Z",
     ...overrides,
+  });
+}
+
+function buildScheduleListEntries({
+  completionLogs,
+  items,
+  language,
+  now,
+  sortMode,
+  timezone,
+}: {
+  completionLogs: CompletionLog[];
+  items: RecurringItem[];
+  language: "en" | "ko";
+  now: Date;
+  sortMode?: ScheduleListSortMode;
+  timezone: string;
+}) {
+  return buildScheduleListViewEntries({
+    language,
+    nextOccurrenceEntries: getNextItemOccurrenceEntries({
+      completionLogs,
+      items,
+      now,
+      timezone,
+    }),
+    sortMode,
+    timezone,
   });
 }

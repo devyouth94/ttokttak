@@ -13,10 +13,7 @@ import {
   recurringItemColorOptionByKey,
 } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/mutate-schedule";
-import {
-  useScheduleByIdQuery,
-  useScheduleCompletionLogsQuery,
-} from "~/features/read-schedule";
+import { useScheduleDetailReadModelQuery } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { useAppThemeColors } from "~/shared/theme";
@@ -32,7 +29,6 @@ import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";
 import {
   buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
-  getItemDetailBasisOccurrence,
   getRecurringItemDetailDeleteReturnPath,
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
@@ -424,7 +420,8 @@ export function ScheduleDetailScreen({
   const { language } = useAppLanguage();
   const styles = useScheduleDetailScreenStyles();
   const themeColors = useAppThemeColors();
-  const { isReady, timezone, userId } = useScheduleReadContext();
+  const scheduleReadContext = useScheduleReadContext();
+  const { timezone, userId } = scheduleReadContext;
   const insets = useSafeAreaInsets();
   const {
     headerAnimatedStyle,
@@ -438,53 +435,32 @@ export function ScheduleDetailScreen({
   );
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const itemQuery = useScheduleByIdQuery({
-    enabled: isReady,
+  const now = new Date();
+  const detailQuery = useScheduleDetailReadModelQuery({
+    context: scheduleReadContext,
     itemId: itemId ?? null,
-    timezone,
-    userId,
+    now,
+    scheduledAtUtc,
   });
-  const completionLogsQuery = useScheduleCompletionLogsQuery({
-    enabled: isReady,
-    itemId: itemId ?? null,
-    userId,
-  });
-  const isLoading =
-    !isReady ||
-    !userId ||
-    itemQuery.isPending ||
-    (Boolean(itemQuery.data) && completionLogsQuery.isPending);
+  const isLoading = detailQuery.isLoading;
   const queryErrorMessage = !itemId
     ? t("scheduleDetail.error.missingPath")
-    : itemQuery.error
-      ? getErrorMessage(itemQuery.error)
-      : completionLogsQuery.error
-        ? getErrorMessage(completionLogsQuery.error)
-        : null;
+    : detailQuery.error
+      ? getErrorMessage(detailQuery.error)
+      : null;
 
-  const item = itemQuery.data;
-  const completionLogs = completionLogsQuery.data ?? [];
-  const now = new Date();
+  const { basisOccurrence, completionLogs, item } = detailQuery;
   const viewModel = item
     ? buildRecurringItemDetailViewModel({
         completionLogs,
         item,
         language,
+        nextOccurrence: detailQuery.nextOccurrence,
         now,
+        overdueOccurrences: detailQuery.overdueOccurrences,
         timezone,
       })
     : null;
-  const basisOccurrence =
-    item && viewModel
-      ? getItemDetailBasisOccurrence({
-          completionLogs,
-          item,
-          now,
-          primaryOccurrence: viewModel.primaryOccurrence,
-          scheduledAtUtc,
-          timezone,
-        })
-      : null;
   const statusCard =
     basisOccurrence && scheduledAtUtc
       ? buildOccurrenceStatusCard({
@@ -506,7 +482,7 @@ export function ScheduleDetailScreen({
   const scrollTopPadding = headerHeight;
 
   const refetchDetail = async (): Promise<void> => {
-    await Promise.all([itemQuery.refetch(), completionLogsQuery.refetch()]);
+    await detailQuery.refetch();
   };
 
   const handleRetry = (): void => {

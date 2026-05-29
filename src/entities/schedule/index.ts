@@ -26,6 +26,8 @@ export {
   getScheduledItemOccurrenceEntriesInRange,
 } from "./model/occurrence-projection";
 export type {
+  ItemNextOccurrenceProjectionEntry,
+  ItemOccurrenceProjectionEntry,
   ItemOccurrenceProjection,
   LocalDateUtcRange,
 } from "./model/occurrence-projection";
@@ -37,8 +39,8 @@ export type {
   HomeFeedOccurrenceProjectionRequirement,
   OccurrenceProjectionPurpose,
   OccurrenceProjectionRequirement,
-  ReminderListOccurrenceProjectionPurpose,
-  ReminderListOccurrenceProjectionRequirement,
+  ScheduleListOccurrenceProjectionPurpose,
+  ScheduleListOccurrenceProjectionRequirement,
 } from "./model/occurrence-projection-requirement";
 export {
   anchorTypes,

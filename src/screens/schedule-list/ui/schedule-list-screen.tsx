@@ -15,7 +15,7 @@ import { useScheduleReadContext } from "~/application/schedule-read";
 import { RecurringItemSummaryRow } from "~/entities/schedule";
 import {
   useOccurrenceProjectionNow,
-  useOccurrenceProjectionQuery,
+  useScheduleListOccurrenceProjectionQuery,
 } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { useAppThemeColors } from "~/shared/theme";
@@ -54,29 +54,21 @@ export function ScheduleListScreen(): React.JSX.Element {
   const [sortMode, setSortMode] = useState<ScheduleListSortMode>(
     DEFAULT_SCHEDULE_LIST_SORT_MODE
   );
-  const projectionQuery = useOccurrenceProjectionQuery({
+  const projectionQuery = useScheduleListOccurrenceProjectionQuery({
     context: scheduleReadContext,
-    purpose: {
-      now,
-      type: "reminderList",
-    },
+    now,
   });
-  const items = projectionQuery.items;
   const entries = useMemo(
     () =>
       buildScheduleListEntries({
-        completionLogs: projectionQuery.completionLogs,
-        items,
         language,
-        now,
+        nextOccurrenceEntries: projectionQuery.nextOccurrenceEntries,
         sortMode,
         timezone: projectionQuery.timezone,
       }),
     [
-      projectionQuery.completionLogs,
-      items,
       language,
-      now,
+      projectionQuery.nextOccurrenceEntries,
       sortMode,
       projectionQuery.timezone,
     ]
