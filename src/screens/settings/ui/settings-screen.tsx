@@ -1,39 +1,18 @@
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
-  Linking,
   Modal,
   Pressable,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Constants from "expo-constants";
 import { ExternalLink } from "lucide-react-native";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
-import { useSession } from "~/application/session";
-import {
-  AccountDeletionAppleAuthorizationRequiredError,
-  AccountDeletionSessionRequiredError,
-} from "~/features/delete-account";
-import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
-import { useNotifications } from "~/features/notifications";
-import {
-  getEditableProfileDisplayName,
-  validateProfileDisplayName,
-} from "~/features/settings";
-import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
-import type { AppThemePreference } from "~/shared/theme";
 import { useAppTheme } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
-import {
-  AppSelectMenu,
-  type AppSelectMenuOption,
-} from "~/shared/ui/app-select-menu";
+import { AppSelectMenu } from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
@@ -45,11 +24,12 @@ import {
   SettingsValueRow,
 } from "./settings-screen-rows";
 import { useSettingsScreenStyles } from "./settings-screen-styles";
+import { useSettingsScreenController } from "../model/use-settings-screen-controller";
 
 export function SettingsScreen(): React.JSX.Element {
-  const { t } = useTranslation();
   const styles = useSettingsScreenStyles();
   const insets = useSafeAreaInsets();
+  const settingsModel = useSettingsScreenController();
   const {
     headerAnimatedStyle,
     headerHeight,
@@ -57,314 +37,15 @@ export function SettingsScreen(): React.JSX.Element {
     onScroll,
     scrollEventThrottle,
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const { deleteAccount, profile, signOut, updateDisplayName, user } =
-    useSession();
-  const { language: appLanguage, setLanguage: setAppLanguage } =
-    useAppLanguage();
-  const {
-    colors: themeColors,
-    setThemePreference,
-    themePreference,
-  } = useAppTheme();
-  const {
-    isPermissionLoading,
-    isRequestingPermission,
-    openSettings,
-    permission,
-    requestPermission,
-  } = useNotifications();
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [isSavingAppLanguage, setIsSavingAppLanguage] = useState(false);
-  const [isSavingThemePreference, setIsSavingThemePreference] = useState(false);
-  const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
-  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
-  const [displayNameDraft, setDisplayNameDraft] = useState("");
-  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
-  const appLanguageOptions = [
-    {
-      accessibilityHint: t("settings.environment.languageKoreanHint"),
-      label: "한국어",
-      value: "ko",
-    },
-    {
-      accessibilityHint: t("settings.environment.languageEnglishHint"),
-      label: "English",
-      value: "en",
-    },
-  ] satisfies AppSelectMenuOption<AppLanguage>[];
-  const themeOptions = [
-    {
-      accessibilityHint: t("settings.environment.themeSystemHint"),
-      label: t("settings.environment.themeSystem"),
-      value: "system",
-    },
-    {
-      accessibilityHint: t("settings.environment.themeLightHint"),
-      label: t("settings.environment.themeLight"),
-      value: "light",
-    },
-    {
-      accessibilityHint: t("settings.environment.themeDarkHint"),
-      label: t("settings.environment.themeDark"),
-      value: "dark",
-    },
-  ] satisfies AppSelectMenuOption<AppThemePreference>[];
-
-  const profileName = profile?.display_name?.trim();
-  const metadataName = user?.user_metadata?.full_name;
-  const displayName =
-    profileName ||
-    (typeof metadataName === "string" && metadataName.trim()
-      ? metadataName.trim()
-      : null) ||
-    user?.email ||
-    t("settings.account.name");
-
-  const email = user?.email ?? t("settings.account.missingEmail");
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
-  const getNotificationPermissionStatusText = (
-    status: typeof permission.status
-  ): string => {
-    switch (status) {
-      case "granted":
-        return t("settings.notifications.statusGranted");
-      case "denied":
-        return t("settings.notifications.statusDenied");
-      case "unsupported":
-        return t("settings.notifications.statusUnsupported");
-      case "undetermined":
-        return t("settings.notifications.statusUndetermined");
-      default:
-        return t("settings.notifications.statusDenied");
-    }
-  };
-  const getNotificationStatusText = (
-    status: typeof permission.status
-  ): string =>
-    status === "granted"
-      ? t("settings.notifications.statusGranted")
-      : status === "unsupported"
-        ? t("settings.notifications.statusUnsupported")
-        : t("settings.notifications.statusDenied");
-
-  function openNameEditor(): void {
-    setDisplayNameDraft(
-      getEditableProfileDisplayName({
-        email: user?.email,
-        metadataName:
-          typeof metadataName === "string" ? metadataName : undefined,
-        profileName,
-      })
-    );
-    setDisplayNameError(null);
-    setIsNameEditorVisible(true);
-  }
-
-  function closeNameEditor(): void {
-    if (isSavingDisplayName) {
-      return;
-    }
-
-    setIsNameEditorVisible(false);
-    setDisplayNameError(null);
-  }
-
-  async function handleSaveDisplayName(): Promise<void> {
-    if (isSavingDisplayName) {
-      return;
-    }
-
-    const validationResult = validateProfileDisplayName(
-      displayNameDraft,
-      appLanguage
-    );
-
-    if (validationResult.value === null) {
-      setDisplayNameError(validationResult.errorMessage);
-      return;
-    }
-
-    const nextDisplayName = validationResult.value;
-
-    setIsSavingDisplayName(true);
-
-    try {
-      await updateDisplayName(nextDisplayName);
-      setIsNameEditorVisible(false);
-      setDisplayNameError(null);
-    } catch (error) {
-      Alert.alert(
-        t("settings.nameEditor.saveErrorTitle"),
-        error instanceof Error ? error.message : String(error)
-      );
-    } finally {
-      setIsSavingDisplayName(false);
-    }
-  }
-
-  async function handleSignOut(): Promise<void> {
-    if (isSigningOut) {
-      return;
-    }
-
-    setIsSigningOut(true);
-
-    try {
-      await signOut();
-    } catch (error) {
-      Alert.alert(
-        t("settings.accountManagement.signOutErrorTitle"),
-        error instanceof Error ? error.message : String(error)
-      );
-    } finally {
-      setIsSigningOut(false);
-    }
-  }
-
-  async function handleDeleteAccount(): Promise<void> {
-    if (isDeletingAccount) {
-      return;
-    }
-
-    setIsDeletingAccount(true);
-
-    try {
-      await deleteAccount();
-    } catch (error) {
-      const message =
-        error instanceof AccountDeletionAppleAuthorizationRequiredError
-          ? t(
-              "settings.accountManagement.deleteError.appleAuthorizationRequired"
-            )
-          : error instanceof AccountDeletionSessionRequiredError
-            ? t("settings.accountManagement.deleteError.sessionRequired")
-            : t("settings.accountManagement.deleteError.unknown");
-
-      Alert.alert(t("settings.accountManagement.deleteError.title"), message);
-    } finally {
-      setIsDeletingAccount(false);
-    }
-  }
-
-  function requestDeleteAccount(): void {
-    if (isDeletingAccount) {
-      return;
-    }
-
-    Alert.alert(
-      t("settings.accountManagement.deleteAlert.title"),
-      t("settings.accountManagement.deleteAlert.message"),
-      [
-        {
-          style: "cancel",
-          text: t("settings.accountManagement.deleteAlert.cancel"),
-        },
-        {
-          onPress: () => {
-            void handleDeleteAccount();
-          },
-          style: "destructive",
-          text: t("settings.accountManagement.deleteAlert.confirm"),
-        },
-      ]
-    );
-  }
-
-  async function handleChangeAppLanguage(
-    nextLanguage: AppLanguage
-  ): Promise<void> {
-    if (isSavingAppLanguage || nextLanguage === appLanguage) {
-      return;
-    }
-
-    setIsSavingAppLanguage(true);
-
-    try {
-      await setAppLanguage(nextLanguage);
-    } catch {
-      Alert.alert(
-        t("settings.environment.saveErrorTitle"),
-        t("settings.environment.saveErrorMessage")
-      );
-    } finally {
-      setIsSavingAppLanguage(false);
-    }
-  }
-
-  async function handleChangeThemePreference(
-    nextPreference: AppThemePreference
-  ): Promise<void> {
-    if (isSavingThemePreference || nextPreference === themePreference) {
-      return;
-    }
-
-    setIsSavingThemePreference(true);
-
-    try {
-      await setThemePreference(nextPreference);
-    } catch {
-      Alert.alert(
-        t("settings.environment.themeSaveErrorTitle"),
-        t("settings.environment.themeSaveErrorMessage")
-      );
-    } finally {
-      setIsSavingThemePreference(false);
-    }
-  }
-
-  async function handleOpenSystemSettings(): Promise<void> {
-    try {
-      await openSettings();
-    } catch {
-      Alert.alert(
-        t("settings.notifications.openSettingsErrorTitle"),
-        t("settings.notifications.openSettingsErrorMessage")
-      );
-    }
-  }
-
-  async function handleOpenPrivacyPolicy(): Promise<void> {
-    try {
-      await Linking.openURL(PRIVACY_POLICY_URL);
-    } catch {
-      Alert.alert(
-        t("settings.appInfo.privacyOpenErrorTitle"),
-        t("settings.appInfo.privacyOpenErrorMessage")
-      );
-    }
-  }
-
-  async function handleOpenTermsOfService(): Promise<void> {
-    try {
-      await Linking.openURL(TERMS_OF_SERVICE_URL);
-    } catch {
-      Alert.alert(
-        t("settings.appInfo.termsOpenErrorTitle"),
-        t("settings.appInfo.termsOpenErrorMessage")
-      );
-    }
-  }
-
-  async function handleRequestNotificationPermission(): Promise<void> {
-    try {
-      await requestPermission();
-    } catch (error) {
-      Alert.alert(
-        t("settings.notifications.permissionRequestErrorTitle"),
-        error instanceof Error ? error.message : String(error)
-      );
-    }
-  }
+  const { actions, copy, options, values, view } = settingsModel;
+  const { colors: themeColors } = useAppTheme();
 
   return (
     <AppScreen contentStyle={styles.screenContent}>
       <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
         <ScreenHeader
           onHeightChange={onHeaderHeightChange}
-          title={t("settings.headerTitle")}
+          title={copy.headerTitle}
         />
       </Animated.View>
 
@@ -382,121 +63,109 @@ export function SettingsScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.sections}>
-          <SettingsSectionCard
-            styles={styles}
-            title={t("settings.account.section")}
-          >
+          <SettingsSectionCard styles={styles} title={copy.accountSection}>
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               isFirst
               isPressable
-              onPress={openNameEditor}
+              onPress={actions.openNameEditor}
               styles={styles}
-              title={t("settings.account.name")}
-              value={displayName}
+              title={copy.accountName}
+              value={values.displayName}
             />
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               styles={styles}
-              title={t("settings.account.email")}
-              value={email}
+              title={copy.accountEmail}
+              value={values.email}
             />
           </SettingsSectionCard>
 
-          <SettingsSectionCard
-            styles={styles}
-            title={t("settings.environment.section")}
-          >
+          <SettingsSectionCard styles={styles} title={copy.environmentSection}>
             <SettingsControlRow
               accessory={
                 <View style={styles.selectAccessory}>
-                  {isSavingAppLanguage ? (
+                  {view.isSavingAppLanguage ? (
                     <ActivityIndicator
                       color={themeColors.textSoft}
                       size="small"
                     />
                   ) : null}
                   <AppSelectMenu
-                    accessibilityHint={t(
-                      "settings.environment.appLanguageHint"
-                    )}
-                    accessibilityLabel={t("settings.environment.appLanguage")}
+                    accessibilityHint={copy.appLanguageHint}
+                    accessibilityLabel={copy.appLanguage}
                     align="end"
-                    isDisabled={isSavingAppLanguage}
+                    isDisabled={view.isSavingAppLanguage}
                     onChange={(nextLanguage) => {
-                      void handleChangeAppLanguage(nextLanguage);
+                      void actions.changeAppLanguage(nextLanguage);
                     }}
-                    options={appLanguageOptions}
-                    value={appLanguage}
+                    options={options.appLanguage}
+                    value={values.appLanguage}
                     variant="compact"
                   />
                 </View>
               }
-              description={t("settings.environment.appLanguageLocalOnly")}
+              description={copy.appLanguageLocalOnly}
               isFirst
               styles={styles}
-              title={t("settings.environment.appLanguage")}
+              title={copy.appLanguage}
             />
             <SettingsControlRow
               accessory={
                 <View style={styles.selectAccessory}>
-                  {isSavingThemePreference ? (
+                  {view.isSavingThemePreference ? (
                     <ActivityIndicator
                       color={themeColors.textSoft}
                       size="small"
                     />
                   ) : null}
                   <AppSelectMenu
-                    accessibilityHint={t("settings.environment.themeHint")}
-                    accessibilityLabel={t("settings.environment.theme")}
+                    accessibilityHint={copy.themeHint}
+                    accessibilityLabel={copy.theme}
                     align="end"
-                    isDisabled={isSavingThemePreference}
+                    isDisabled={view.isSavingThemePreference}
                     onChange={(nextPreference) => {
-                      void handleChangeThemePreference(nextPreference);
+                      void actions.changeThemePreference(nextPreference);
                     }}
-                    options={themeOptions}
-                    value={themePreference}
+                    options={options.themePreference}
+                    value={values.themePreference}
                     variant="compact"
                   />
                 </View>
               }
-              description={t("settings.environment.themeLocalOnly")}
+              description={copy.themeLocalOnly}
               styles={styles}
-              title={t("settings.environment.theme")}
+              title={copy.theme}
             />
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               styles={styles}
-              title={t("settings.environment.timezone")}
-              value={timezone}
+              title={copy.timezone}
+              value={values.timezone}
             />
           </SettingsSectionCard>
 
           <SettingsSectionCard
             styles={styles}
-            title={t("settings.notifications.section")}
+            title={copy.notificationsSection}
           >
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               isFirst
               styles={styles}
-              title={t("settings.notifications.appNotification")}
-              value={getNotificationStatusText(permission.status)}
+              title={copy.notificationsAppNotification}
+              value={values.notificationStatus}
             />
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               styles={styles}
-              title={t("settings.notifications.permissionStatus")}
-              value={
-                isPermissionLoading
-                  ? t("settings.notifications.statusChecking")
-                  : getNotificationPermissionStatusText(permission.status)
-              }
+              title={copy.notificationsPermissionStatus}
+              value={values.notificationPermissionStatus}
             />
-            {permission.canRequest ? (
+            {view.canRequestNotificationPermission ? (
               <SettingsRow
                 accessory={
-                  isRequestingPermission ? (
+                  view.isRequestingPermission ? (
                     <ActivityIndicator
                       color={themeColors.textSoft}
                       size="small"
@@ -505,45 +174,38 @@ export function SettingsScreen(): React.JSX.Element {
                     <ExternalLink color={themeColors.textSoft} size={16} />
                   )
                 }
-                description={t(
-                  "settings.notifications.permissionRequestDescription"
-                )}
+                description={copy.notificationPermissionRequestDescription}
                 isPressable
                 onPress={() => {
-                  void handleRequestNotificationPermission();
+                  void actions.requestNotificationPermission();
                 }}
                 styles={styles}
-                title={t("settings.notifications.permissionRequest")}
+                title={copy.notificationPermissionRequest}
               />
             ) : null}
-            {permission.canOpenSettings ? (
+            {view.canOpenNotificationSettings ? (
               <SettingsRow
                 accessory={
                   <ExternalLink color={themeColors.textSoft} size={16} />
                 }
-                description={t(
-                  "settings.notifications.openSettingsDescription"
-                )}
+                description={copy.notificationOpenSettingsDescription}
                 isPressable
                 onPress={() => {
-                  void handleOpenSystemSettings();
+                  void actions.openSystemSettings();
                 }}
                 styles={styles}
-                title={t("settings.notifications.openSettings")}
+                title={copy.notificationOpenSettings}
               />
             ) : null}
           </SettingsSectionCard>
 
-          <SettingsSectionCard
-            styles={styles}
-            title={t("settings.appInfo.section")}
-          >
+          <SettingsSectionCard styles={styles} title={copy.appInfoSection}>
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               isFirst
               styles={styles}
-              title={t("settings.appInfo.version")}
-              value={`v${appVersion}`}
+              title={copy.appInfoVersion}
+              value={`v${values.appVersion}`}
             />
             <SettingsRow
               accessory={
@@ -551,10 +213,10 @@ export function SettingsScreen(): React.JSX.Element {
               }
               isPressable
               onPress={() => {
-                void handleOpenTermsOfService();
+                void actions.openTermsOfService();
               }}
               styles={styles}
-              title={t("settings.appInfo.terms")}
+              title={copy.appInfoTerms}
             />
             <SettingsRow
               accessory={
@@ -562,46 +224,46 @@ export function SettingsScreen(): React.JSX.Element {
               }
               isPressable
               onPress={() => {
-                void handleOpenPrivacyPolicy();
+                void actions.openPrivacyPolicy();
               }}
               styles={styles}
-              title={t("settings.appInfo.privacyPolicy")}
+              title={copy.appInfoPrivacyPolicy}
             />
           </SettingsSectionCard>
 
           <SettingsSectionCard
             styles={styles}
-            title={t("settings.accountManagement.section")}
+            title={copy.accountManagementSection}
           >
             <SettingsRow
               accessory={
-                isSigningOut ? (
+                view.isSigningOut ? (
                   <ActivityIndicator
                     color={themeColors.textSoft}
                     size="small"
                   />
                 ) : undefined
               }
-              isDisabled={isSigningOut || isDeletingAccount}
+              isDisabled={view.isSigningOut || view.isDeletingAccount}
               isFirst
               isPressable
               onPress={() => {
-                void handleSignOut();
+                void actions.signOutCurrentSession();
               }}
               styles={styles}
-              title={t("settings.accountManagement.signOut")}
+              title={copy.accountManagementSignOut}
             />
             <SettingsRow
               accessory={
-                isDeletingAccount ? (
+                view.isDeletingAccount ? (
                   <ActivityIndicator color={themeColors.error} size="small" />
                 ) : undefined
               }
-              isDisabled={isDeletingAccount || isSigningOut}
+              isDisabled={view.isDeletingAccount || view.isSigningOut}
               isPressable
-              onPress={requestDeleteAccount}
+              onPress={actions.requestDeleteAccount}
               styles={styles}
-              title={t("settings.accountManagement.delete")}
+              title={copy.accountManagementDelete}
               tone="danger"
             />
           </SettingsSectionCard>
@@ -610,39 +272,38 @@ export function SettingsScreen(): React.JSX.Element {
 
       <Modal
         animationType="fade"
-        onRequestClose={closeNameEditor}
+        onRequestClose={actions.closeNameEditor}
         transparent
-        visible={isNameEditorVisible}
+        visible={view.isNameEditorVisible}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.nameEditor}>
             <AppText style={styles.nameEditorTitle} variant="body2">
-              {t("settings.nameEditor.title")}
+              {copy.nameEditorTitle}
             </AppText>
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isSavingDisplayName}
+              editable={!view.isSavingDisplayName}
               maxLength={30}
               onChangeText={(value) => {
-                setDisplayNameDraft(value);
-                setDisplayNameError(null);
+                actions.changeDisplayNameDraft(value);
               }}
-              placeholder={t("settings.nameEditor.placeholder")}
+              placeholder={copy.nameEditorPlaceholder}
               placeholderTextColor={themeColors.textSoft}
               style={styles.nameInput}
-              value={displayNameDraft}
+              value={values.displayNameDraft}
             />
-            {displayNameError ? (
+            {values.displayNameError ? (
               <AppText style={styles.nameErrorText} variant="caption">
-                {displayNameError}
+                {values.displayNameError}
               </AppText>
             ) : null}
             <View style={styles.nameEditorActions}>
               <Pressable
                 accessibilityRole="button"
-                disabled={isSavingDisplayName}
-                onPress={closeNameEditor}
+                disabled={view.isSavingDisplayName}
+                onPress={actions.closeNameEditor}
                 style={({ pressed }) => [
                   styles.nameEditorButton,
                   styles.nameEditorCancelButton,
@@ -650,14 +311,14 @@ export function SettingsScreen(): React.JSX.Element {
                 ]}
               >
                 <AppText style={styles.nameEditorCancelText} variant="body3">
-                  {t("settings.nameEditor.cancel")}
+                  {copy.nameEditorCancel}
                 </AppText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                disabled={isSavingDisplayName}
+                disabled={view.isSavingDisplayName}
                 onPress={() => {
-                  void handleSaveDisplayName();
+                  void actions.saveDisplayName();
                 }}
                 style={({ pressed }) => [
                   styles.nameEditorButton,
@@ -665,11 +326,11 @@ export function SettingsScreen(): React.JSX.Element {
                   pressed ? styles.rowPressed : undefined,
                 ]}
               >
-                {isSavingDisplayName ? (
+                {view.isSavingDisplayName ? (
                   <ActivityIndicator color={themeColors.primaryForeground} />
                 ) : (
                   <AppText style={styles.nameEditorSaveText} variant="body3">
-                    {t("settings.nameEditor.save")}
+                    {copy.nameEditorSave}
                   </AppText>
                 )}
               </Pressable>

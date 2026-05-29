@@ -45,7 +45,7 @@
 - `src/screens/schedule-edit`: 일정 수정 route-facing 화면.
 - `src/screens/schedule-form`: 생성/수정이 공유하는 form 화면 구현.
 - `src/screens/login`: 로그인 화면.
-- `src/screens/settings`: 설정 화면.
+- `src/screens/settings`: 설정 화면, 설정 action controller, 행 렌더링.
 - `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
 
 ### Application

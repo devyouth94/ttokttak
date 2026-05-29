@@ -11,24 +11,44 @@ function readWorkspaceFile(relativePath: string): string {
   return readFileSync(`${process.cwd()}/${relativePath}`, "utf8");
 }
 
+function expectContainsInOrder(source: string, values: string[]): void {
+  let previousIndex = -1;
+
+  for (const value of values) {
+    const nextIndex = source.indexOf(value);
+
+    expect(nextIndex).toBeGreaterThan(previousIndex);
+    previousIndex = nextIndex;
+  }
+}
+
 describe("SettingsScreen 환경 설정", () => {
   it("설정 화면에서 한국어와 English select를 현재 표시 언어에 연결한다", () => {
     const settingsScreen = readWorkspaceFile(
       "src/screens/settings/ui/settings-screen.tsx"
     );
-
-    expect(settingsScreen).toContain("useTranslation()");
-    expect(settingsScreen).toContain("useAppLanguage()");
-    expect(settingsScreen).toContain("<AppSelectMenu");
-    expect(settingsScreen).toContain(
-      'title={t("settings.environment.section")}'
+    const settingsController = readWorkspaceFile(
+      "src/screens/settings/model/use-settings-screen-controller.ts"
     );
-    expect(settingsScreen).toContain('t("settings.environment.appLanguage")');
-    expect(settingsScreen).toContain('t("settings.environment.theme")');
-    expect(settingsScreen).toContain('t("settings.environment.timezone")');
-    expect(settingsScreen).toContain('label: "한국어"');
-    expect(settingsScreen).toContain('label: "English"');
-    expect(settingsScreen).toContain("handleChangeAppLanguage(nextLanguage)");
+
+    expect(settingsController).toContain("useTranslation()");
+    expect(settingsController).toContain("useAppLanguage()");
+    expect(settingsScreen).toContain("<AppSelectMenu");
+    expect(settingsController).toContain(
+      'environmentSection: t("settings.environment.section")'
+    );
+    expect(settingsController).toContain(
+      'appLanguage: t("settings.environment.appLanguage")'
+    );
+    expect(settingsController).toContain(
+      'theme: t("settings.environment.theme")'
+    );
+    expect(settingsController).toContain(
+      'timezone: t("settings.environment.timezone")'
+    );
+    expect(settingsScreen).toContain("options={options.appLanguage}");
+    expect(settingsScreen).toContain("value={values.appLanguage}");
+    expect(settingsScreen).toContain("actions.changeAppLanguage(nextLanguage)");
   });
 
   it("환경 카드에 표시 언어, 테마, 시간대 순서로 표시한다", () => {
@@ -36,40 +56,26 @@ describe("SettingsScreen 환경 설정", () => {
       "src/screens/settings/ui/settings-screen.tsx"
     );
 
-    const languageIndex = settingsScreen.indexOf(
-      'title={t("settings.environment.appLanguage")}'
-    );
-    const themeIndex = settingsScreen.indexOf(
-      'title={t("settings.environment.theme")}'
-    );
-    const timezoneIndex = settingsScreen.indexOf(
-      'title={t("settings.environment.timezone")}'
-    );
-
-    expect(languageIndex).toBeGreaterThan(-1);
-    expect(themeIndex).toBeGreaterThan(languageIndex);
-    expect(timezoneIndex).toBeGreaterThan(themeIndex);
+    expectContainsInOrder(settingsScreen, [
+      "title={copy.appLanguage}",
+      "title={copy.theme}",
+      "title={copy.timezone}",
+    ]);
   });
 
   it("테마 select를 system, light, dark 순서와 현재 테마 preference에 연결한다", () => {
     const settingsScreen = readWorkspaceFile(
       "src/screens/settings/ui/settings-screen.tsx"
     );
-
-    const systemIndex = settingsScreen.indexOf('value: "system"');
-    const lightIndex = settingsScreen.indexOf('value: "light"');
-    const darkIndex = settingsScreen.indexOf('value: "dark"');
-
-    expect(settingsScreen).toContain("useAppTheme()");
+    const settingsController = readWorkspaceFile(
+      "src/screens/settings/model/use-settings-screen-controller.ts"
+    );
+    expect(settingsController).toContain("useAppTheme()");
     expect(settingsScreen).toContain("<AppSelectMenu");
-    expect(settingsScreen).toContain('t("settings.environment.themeSystem")');
-    expect(settingsScreen).toContain('t("settings.environment.themeLight")');
-    expect(settingsScreen).toContain('t("settings.environment.themeDark")');
-    expect(systemIndex).toBeGreaterThan(-1);
-    expect(lightIndex).toBeGreaterThan(systemIndex);
-    expect(darkIndex).toBeGreaterThan(lightIndex);
+    expect(settingsScreen).toContain("options={options.themePreference}");
+    expect(settingsScreen).toContain("value={values.themePreference}");
     expect(settingsScreen).toContain(
-      "handleChangeThemePreference(nextPreference)"
+      "actions.changeThemePreference(nextPreference)"
     );
   });
   it("표시 언어 변경 알림 재동기화는 notification provider lifecycle이 담당한다", () => {
@@ -88,42 +94,44 @@ describe("SettingsScreen 환경 설정", () => {
   });
 
   it("표시 언어 저장 실패 시 실패 안내를 보여준다", () => {
-    const settingsScreen = readWorkspaceFile(
-      "src/screens/settings/ui/settings-screen.tsx"
+    const settingsController = readWorkspaceFile(
+      "src/screens/settings/model/use-settings-screen-controller.ts"
     );
 
-    expect(settingsScreen).toContain(
+    expect(settingsController).toContain(
       't("settings.environment.saveErrorTitle")'
     );
-    expect(settingsScreen).toContain(
+    expect(settingsController).toContain(
       't("settings.environment.saveErrorMessage")'
     );
   });
 
   it("테마 저장 실패 시 실패 안내를 보여준다", () => {
-    const settingsScreen = readWorkspaceFile(
-      "src/screens/settings/ui/settings-screen.tsx"
+    const settingsController = readWorkspaceFile(
+      "src/screens/settings/model/use-settings-screen-controller.ts"
     );
 
-    expect(settingsScreen).toContain(
+    expect(settingsController).toContain(
       't("settings.environment.themeSaveErrorTitle")'
     );
-    expect(settingsScreen).toContain(
+    expect(settingsController).toContain(
       't("settings.environment.themeSaveErrorMessage")'
     );
   });
 
   it("설정 화면 자체 문구도 i18n resource를 사용한다", () => {
-    const settingsScreen = readWorkspaceFile(
-      "src/screens/settings/ui/settings-screen.tsx"
+    const settingsController = readWorkspaceFile(
+      "src/screens/settings/model/use-settings-screen-controller.ts"
     );
 
-    expect(settingsScreen).toContain('t("settings.headerTitle")');
-    expect(settingsScreen).toContain('t("settings.account.section")');
-    expect(settingsScreen).toContain('t("settings.notifications.section")');
-    expect(settingsScreen).toContain('t("settings.appInfo.section")');
-    expect(settingsScreen).toContain('t("settings.accountManagement.section")');
-    expect(settingsScreen).toContain('t("settings.nameEditor.title")');
+    expect(settingsController).toContain('t("settings.headerTitle")');
+    expect(settingsController).toContain('t("settings.account.section")');
+    expect(settingsController).toContain('t("settings.notifications.section")');
+    expect(settingsController).toContain('t("settings.appInfo.section")');
+    expect(settingsController).toContain(
+      't("settings.accountManagement.section")'
+    );
+    expect(settingsController).toContain('t("settings.nameEditor.title")');
   });
 
   it("표시 언어와 테마를 서버 profile 저장 흐름에 추가하지 않는다", () => {
