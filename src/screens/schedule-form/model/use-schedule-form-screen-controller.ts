@@ -14,9 +14,11 @@ import {
 } from "~/entities/schedule";
 import { supportsCompletionBased } from "~/entities/schedule";
 import { getRecurringItemById } from "~/entities/schedule/api";
-import { archiveSchedule } from "~/features/archive-schedule";
-import { createSchedule } from "~/features/create-schedule";
-import { updateSchedule } from "~/features/update-schedule";
+import {
+  archiveSchedule,
+  createSchedule,
+  updateSchedule,
+} from "~/features/mutate-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 
 import { type ScheduleFormScreenModel } from "./schedule-form-contracts";

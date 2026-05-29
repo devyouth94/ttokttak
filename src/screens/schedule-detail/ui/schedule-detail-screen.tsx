@@ -12,7 +12,7 @@ import {
   getRecurringItemColorLabel,
   recurringItemColorOptionByKey,
 } from "~/entities/schedule";
-import { archiveSchedule } from "~/features/archive-schedule";
+import { archiveSchedule } from "~/features/mutate-schedule";
 import {
   useScheduleByIdQuery,
   useScheduleCompletionLogsQuery,

@@ -1,8 +1,10 @@
 import { createRecurringItemFixture } from "~/entities/schedule/testing";
-import { archiveSchedule } from "~/features/archive-schedule";
-import { createSchedule } from "~/features/create-schedule";
+import {
+  archiveSchedule,
+  createSchedule,
+  updateSchedule,
+} from "~/features/mutate-schedule";
 import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
-import { updateSchedule } from "~/features/update-schedule";
 import { Sentry } from "~/shared/config/sentry";
 import { queryClient } from "~/shared/lib/query/query-client";
 
@@ -17,6 +19,7 @@ jest.mock("~/shared/config/sentry", () => ({
 }));
 
 const userId = "user-1";
+const syncScopeStartedAtUtc = "2026-05-29T03:30:00.000Z";
 
 const draft = {
   anchorType: "fixed" as const,
@@ -41,7 +44,7 @@ describe("일정 변경 mutation 흐름", () => {
     jest.mocked(Sentry.captureException).mockReset();
   });
 
-  it("일정 생성, 수정, 보관 뒤 알림을 먼저 재동기화하고 recurring query를 무효화한다", async () => {
+  it("일정 생성, 수정, 보관 뒤 해당 일정 알림을 먼저 재동기화하고 recurring query를 무효화한다", async () => {
     const mutationCases = [
       {
         expectedStorageInput: {
@@ -59,6 +62,7 @@ describe("일정 변경 mutation 흐름", () => {
             createItem,
             draft,
             language: "ko",
+            now: () => new Date(syncScopeStartedAtUtc),
             userId,
           });
 
@@ -84,6 +88,7 @@ describe("일정 변경 mutation 흐름", () => {
           await updateSchedule({
             itemId: "updated-item",
             language: "ko",
+            now: () => new Date(syncScopeStartedAtUtc),
             patch: {
               title: "수정한 일정",
             },
@@ -109,6 +114,7 @@ describe("일정 변경 mutation 흐름", () => {
             archiveItem,
             itemId: "archived-item",
             language: "ko",
+            now: () => new Date(syncScopeStartedAtUtc),
             timezone: "Asia/Seoul",
             userId,
           });
@@ -148,7 +154,11 @@ describe("일정 변경 mutation 흐름", () => {
       expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
         language: "ko",
         reason: mutationCase.reason,
-        scope: { type: "all" },
+        scope: {
+          effectiveFromUtc: syncScopeStartedAtUtc,
+          itemId: mutationCase.itemId,
+          type: "item",
+        },
         timezone: "Asia/Seoul",
         userId,
       });
@@ -174,6 +184,7 @@ describe("일정 변경 mutation 흐름", () => {
       updateSchedule({
         itemId: "updated-item",
         language: "ko",
+        now: () => new Date(syncScopeStartedAtUtc),
         patch: {
           title: "수정한 일정",
         },

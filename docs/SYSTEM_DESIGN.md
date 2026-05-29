@@ -58,9 +58,9 @@
 - `src/application/routes`: route params 정규화와 route shell 회귀 테스트.
 - `src/application/schedule-read`: schedule read context wiring.
 - `src/application/structure`: FSD, session, notification/privacy boundary guard.
-- 화면 controller hook이 query, mutation, navigation, 알림 후속 처리를 조합한다.
+- 화면 controller hook이 query, mutation, navigation을 조합한다.
 - React Query가 서버 데이터 조회와 무효화를 담당한다.
-- mutation 성공 뒤에는 관련 query를 무효화하고 로컬 알림을 다시 맞춘다.
+- mutation feature는 저장 성공 뒤 관련 query를 무효화하고 로컬 알림을 다시 맞춘다.
 
 ### Domain
 
@@ -69,10 +69,7 @@
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
 - `src/entities/profile`: profile 복원과 표시 이름 저장.
-- `src/features/create-schedule`: 일정 생성 use case.
-- `src/features/update-schedule`: 일정 수정 use case.
-- `src/features/archive-schedule`: 일정 보관 use case.
-- `src/features/complete-schedule-mutation`: 일정 mutation 이후 query 무효화와 로컬 알림 재동기화 후속 흐름.
+- `src/features/mutate-schedule`: 일정 생성, 수정, 보관 use case와 mutation 이후 query 무효화, 로컬 알림 범위 재동기화 후속 흐름.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
 - `src/features/read-schedule`: 일정 조회 query, occurrence projection query, query key.
 - `src/features/settings`: 설정 화면의 표시 이름 입력 규칙.
@@ -237,7 +234,7 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 1. form 입력을 검증한다.
 2. 제목과 설명을 암호화한다.
 3. `create_recurring_item_with_initial_version` RPC로 item과 초기 schedule version을 함께 만든다.
-4. 기기 로컬 알림을 전체 재동기화한다.
+4. 생성된 일정 범위의 기기 로컬 알림을 재동기화한다.
 5. query를 무효화한다.
 
 ### Update
@@ -247,13 +244,13 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 3. 제목과 설명을 다시 암호화한다.
 4. `update_recurring_item_with_edit_policy` RPC로 item을 갱신한다.
 5. 규칙 변경이면 새 schedule version을 추가한다.
-6. 기기 로컬 알림을 전체 재동기화한다.
+6. 수정한 일정 범위의 기기 로컬 알림을 재동기화한다.
 7. query를 무효화한다.
 
 ### Archive
 
 삭제 UX는 `archive_recurring_item` RPC로 `is_archived = true`를 저장한다.
-보관 후 기기 로컬 알림을 전체 재동기화하고 query를 무효화한다.
+보관 후 보관한 일정 범위의 기기 로컬 알림을 재동기화하고 query를 무효화한다.
 
 ### Complete / Skip
 
