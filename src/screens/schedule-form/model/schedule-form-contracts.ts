@@ -39,11 +39,17 @@ type RecurringItemFormDisplayValues = {
 
 type RecurringItemFormPickerState = {
   iosDateTarget: DatePickerTarget | null;
+  iosMinimumDate: Date;
   iosMode: PickerMode | null;
   iosValue: Date;
   isEndDateVisible: boolean;
   isStartDateVisible: boolean;
   isTimeVisible: boolean;
+  minimumEndDate: Date;
+  minimumStartDate: Date;
+  selectedEndDate: Date;
+  selectedReminderTime: Date;
+  selectedStartDate: Date;
 };
 
 type RecurringItemFormViewState = {

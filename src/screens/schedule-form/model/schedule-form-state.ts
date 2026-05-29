@@ -138,6 +138,19 @@ export function normalizeStartDateSelection(
   return nextValue < minimumStartDateLocal ? minimumStartDateLocal : nextValue;
 }
 
+export function normalizeEndDateSelection(
+  nextValue: string,
+  params: {
+    isEditMode: boolean;
+    startDateLocal: string;
+    todayLocalDate: string;
+  }
+): string {
+  const minimumEndDateLocal = getMinimumEndDateLocal(params);
+
+  return nextValue < minimumEndDateLocal ? minimumEndDateLocal : nextValue;
+}
+
 export function getNextEndDateEnabledFormState(
   current: RecurringItemFormValues,
   params: {
@@ -161,6 +174,24 @@ export function getNextEndDateDisabledFormState(
   return {
     ...current,
     endDateLocal: null,
+  };
+}
+
+export function getNextEndDateSelectionFormState(
+  current: RecurringItemFormValues,
+  nextValue: string,
+  params: {
+    isEditMode: boolean;
+    todayLocalDate: string;
+  }
+): RecurringItemFormValues {
+  return {
+    ...current,
+    endDateLocal: normalizeEndDateSelection(nextValue, {
+      isEditMode: params.isEditMode,
+      startDateLocal: current.startDateLocal,
+      todayLocalDate: params.todayLocalDate,
+    }),
   };
 }
 
@@ -378,6 +409,24 @@ export function getNextStartDateFormState(
   };
 }
 
+export function getNextStartDateSelectionFormState(
+  current: RecurringItemFormValues,
+  nextValue: string,
+  params: {
+    isEditMode: boolean;
+    minimumStartDateLocal: string;
+  }
+): RecurringItemFormValues {
+  if (params.isEditMode) {
+    return current;
+  }
+
+  return getNextStartDateFormState(
+    current,
+    normalizeStartDateSelection(nextValue, params.minimumStartDateLocal)
+  );
+}
+
 export function getNextRecurrenceFormState(
   current: RecurringItemFormValues,
   nextRecurrenceType: RecurrenceType
@@ -401,6 +450,62 @@ export function getNextRecurrenceFormState(
     recurrenceType: nextRecurrenceType,
     weekdayMask: nextWeekdayMask,
   };
+}
+
+export function getSanitizedIntervalInput(value: string): string {
+  return value.replace(/[^0-9]/g, "");
+}
+
+export function getScheduleFormPickerDates(params: {
+  endDateLocal: string | null;
+  minimumEndDateLocal: string;
+  minimumStartDateLocal: string;
+  reminderTimeLocal: string;
+  startDateLocal: string;
+}): {
+  minimumEndDate: Date;
+  minimumStartDate: Date;
+  selectedEndDate: Date;
+  selectedReminderTime: Date;
+  selectedStartDate: Date;
+} {
+  const selectedEndDateLocal =
+    params.endDateLocal != null &&
+    params.endDateLocal >= params.minimumEndDateLocal
+      ? params.endDateLocal
+      : params.minimumEndDateLocal;
+  const selectedStartDateLocal =
+    params.startDateLocal < params.minimumStartDateLocal
+      ? params.minimumStartDateLocal
+      : params.startDateLocal;
+
+  return {
+    minimumEndDate: parseLocalDateToDate(params.minimumEndDateLocal),
+    minimumStartDate: parseLocalDateToDate(params.minimumStartDateLocal),
+    selectedEndDate: parseLocalDateToDate(selectedEndDateLocal),
+    selectedReminderTime: parseLocalTimeToDate(params.reminderTimeLocal),
+    selectedStartDate: parseLocalDateToDate(selectedStartDateLocal),
+  };
+}
+
+export function getScheduleFormIosPickerValue(params: {
+  datePickerTarget: DatePickerTarget | null;
+  endDateLocal: string | null;
+  minimumEndDateLocal: string;
+  minimumStartDateLocal: string;
+  mode: PickerMode;
+  reminderTimeLocal: string;
+  startDateLocal: string;
+}): Date {
+  const pickerDates = getScheduleFormPickerDates(params);
+
+  if (params.mode === "time") {
+    return pickerDates.selectedReminderTime;
+  }
+
+  return params.datePickerTarget === "endDate"
+    ? pickerDates.selectedEndDate
+    : pickerDates.selectedStartDate;
 }
 
 function normalizeOptionalText(value: string): string | null {

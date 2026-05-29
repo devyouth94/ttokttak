@@ -46,10 +46,6 @@ import {
   getRecurringItemFormFirstErrorTarget,
   getScheduleFormScreenTitle,
 } from "../model/schedule-form-screen-model";
-import {
-  parseLocalDateToDate,
-  parseLocalTimeToDate,
-} from "../model/schedule-form-state";
 
 type ScreenErrorCardProps = {
   message: string | null;
@@ -144,20 +140,6 @@ export function ScheduleFormScreenContent({
   const firstReminderHelperMessage = view.isStartDateEditable
     ? firstReminderHelperText
     : null;
-  const minimumEndDate = parseLocalDateToDate(view.minimumEndDateLocal);
-  const minimumStartDate = parseLocalDateToDate(view.minimumStartDateLocal);
-  const selectedEndDate = parseLocalDateToDate(
-    values.endDateLocal && values.endDateLocal >= view.minimumEndDateLocal
-      ? values.endDateLocal
-      : view.minimumEndDateLocal
-  );
-  const selectedStartDate = parseLocalDateToDate(
-    values.startDateLocal < view.minimumStartDateLocal
-      ? view.minimumStartDateLocal
-      : values.startDateLocal
-  );
-  const iosPickerMinimumDate =
-    picker.iosDateTarget === "endDate" ? minimumEndDate : minimumStartDate;
   const iosPickerTitle =
     picker.iosMode === "time"
       ? t("scheduleForm.picker.reminderTimeTitle")
@@ -415,12 +397,12 @@ export function ScheduleFormScreenContent({
                 <DateTimePicker
                   accentColor={themeColors.primary}
                   initialInputMode="default"
-                  minimumDate={minimumStartDate}
+                  minimumDate={picker.minimumStartDate}
                   mode="date"
                   onChange={actions.picker.onStartDatePickerChange}
                   textColor={themeColors.text}
                   themeVariant={resolvedTheme}
-                  value={selectedStartDate}
+                  value={picker.selectedStartDate}
                 />
               ) : null}
 
@@ -428,12 +410,12 @@ export function ScheduleFormScreenContent({
                 <DateTimePicker
                   accentColor={themeColors.primary}
                   initialInputMode="default"
-                  minimumDate={minimumEndDate}
+                  minimumDate={picker.minimumEndDate}
                   mode="date"
                   onChange={actions.picker.onEndDatePickerChange}
                   textColor={themeColors.text}
                   themeVariant={resolvedTheme}
-                  value={selectedEndDate}
+                  value={picker.selectedEndDate}
                 />
               ) : null}
 
@@ -444,12 +426,12 @@ export function ScheduleFormScreenContent({
                   onChange={actions.picker.onTimePickerChange}
                   textColor={themeColors.text}
                   themeVariant={resolvedTheme}
-                  value={parseLocalTimeToDate(values.reminderTimeLocal)}
+                  value={picker.selectedReminderTime}
                 />
               ) : null}
 
               <IosPickerModal
-                minimumDate={iosPickerMinimumDate}
+                minimumDate={picker.iosMinimumDate}
                 mode={picker.iosMode}
                 resolvedTheme={resolvedTheme}
                 styles={styles}

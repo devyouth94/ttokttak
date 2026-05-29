@@ -3,12 +3,19 @@ import { type RecurringItem } from "~/entities/schedule";
 import {
   createDefaultFormState,
   createRecurringItemFormSchema,
+  formatDateToLocalDate,
+  formatDateToLocalTime,
   getMinimumEndDateLocal,
   getMinimumStartDateLocal,
   getNextEndDateDisabledFormState,
   getNextEndDateEnabledFormState,
+  getNextEndDateSelectionFormState,
   getNextRecurrenceFormState,
   getNextStartDateFormState,
+  getNextStartDateSelectionFormState,
+  getSanitizedIntervalInput,
+  getScheduleFormIosPickerValue,
+  getScheduleFormPickerDates,
   normalizeStartDateSelection,
   recurringItemFormSchema,
   type RecurringItemFormValues,
@@ -450,5 +457,107 @@ describe("recurring item form end date state", () => {
         "2026-05-12"
       ).endDateLocal
     ).toBe("2026-05-12");
+  });
+
+  it("수정 중 시작일 선택 event는 form state를 바꾸지 않는다", () => {
+    const current = {
+      ...createDefaultFormState(),
+      startDateLocal: "2026-05-06",
+    };
+
+    expect(
+      getNextStartDateSelectionFormState(current, "2026-05-12", {
+        isEditMode: true,
+        minimumStartDateLocal: "2026-05-06",
+      })
+    ).toBe(current);
+  });
+
+  it("생성 중 시작일 선택 event는 하한선으로 보정한 뒤 연쇄 상태를 만든다", () => {
+    const next = getNextStartDateSelectionFormState(
+      {
+        ...createDefaultFormState(),
+        endDateLocal: "2026-05-10",
+        startDateLocal: "2026-05-06",
+      },
+      "2026-05-01",
+      {
+        isEditMode: false,
+        minimumStartDateLocal: "2026-05-08",
+      }
+    );
+
+    expect(next.startDateLocal).toBe("2026-05-08");
+    expect(next.endDateLocal).toBe("2026-05-10");
+  });
+
+  it("종료일 선택 event는 수정 화면 하한선으로 보정한다", () => {
+    expect(
+      getNextEndDateSelectionFormState(
+        {
+          ...createDefaultFormState(),
+          startDateLocal: "2026-05-06",
+        },
+        "2026-05-07",
+        {
+          isEditMode: true,
+          todayLocalDate: "2026-05-10",
+        }
+      ).endDateLocal
+    ).toBe("2026-05-10");
+  });
+
+  it("직접 입력 반복 간격 event는 숫자만 form state로 넘긴다", () => {
+    expect(getSanitizedIntervalInput("1주 2회")).toBe("12");
+  });
+
+  it("picker Date 값은 local date와 time form state에서 파생한다", () => {
+    const pickerDates = getScheduleFormPickerDates({
+      endDateLocal: "2026-05-07",
+      minimumEndDateLocal: "2026-05-10",
+      minimumStartDateLocal: "2026-05-06",
+      reminderTimeLocal: "09:30",
+      startDateLocal: "2026-05-01",
+    });
+
+    expect(formatDateToLocalDate(pickerDates.selectedEndDate)).toBe(
+      "2026-05-10"
+    );
+    expect(formatDateToLocalDate(pickerDates.selectedStartDate)).toBe(
+      "2026-05-06"
+    );
+    expect(formatDateToLocalTime(pickerDates.selectedReminderTime)).toBe(
+      "09:30"
+    );
+  });
+
+  it("iOS picker 값은 mode와 대상 날짜에 맞는 Date를 고른다", () => {
+    expect(
+      formatDateToLocalDate(
+        getScheduleFormIosPickerValue({
+          datePickerTarget: "endDate",
+          endDateLocal: "2026-05-12",
+          minimumEndDateLocal: "2026-05-10",
+          minimumStartDateLocal: "2026-05-06",
+          mode: "date",
+          reminderTimeLocal: "09:30",
+          startDateLocal: "2026-05-06",
+        })
+      )
+    ).toBe("2026-05-12");
+
+    expect(
+      formatDateToLocalTime(
+        getScheduleFormIosPickerValue({
+          datePickerTarget: null,
+          endDateLocal: null,
+          minimumEndDateLocal: "2026-05-10",
+          minimumStartDateLocal: "2026-05-06",
+          mode: "time",
+          reminderTimeLocal: "09:30",
+          startDateLocal: "2026-05-06",
+        })
+      )
+    ).toBe("09:30");
   });
 });

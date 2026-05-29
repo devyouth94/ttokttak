@@ -33,12 +33,13 @@ import {
   getMinimumStartDateLocal,
   getNextEndDateDisabledFormState,
   getNextEndDateEnabledFormState,
+  getNextEndDateSelectionFormState,
   getNextRecurrenceFormState,
-  getNextStartDateFormState,
+  getNextStartDateSelectionFormState,
+  getSanitizedIntervalInput,
+  getScheduleFormIosPickerValue,
+  getScheduleFormPickerDates,
   getTodayLocalDate,
-  normalizeStartDateSelection,
-  parseLocalDateToDate,
-  parseLocalTimeToDate,
   type PickerMode,
   type RecurringItemFormValues,
   toDraft,
@@ -236,37 +237,35 @@ export function useScheduleFormScreenController({
     setFields(getNextEndDateDisabledFormState(getValues()));
   }
 
-  function getCurrentMinimumEndDateLocal(): string {
-    return getMinimumEndDateLocal({
-      isEditMode,
-      startDateLocal,
-      todayLocalDate,
-    });
-  }
-
   function handleToggleWeekday(weekdayValue: number): void {
     setField("weekdayMask", toggleWeekdayMask(weekdayMask, weekdayValue));
   }
 
   function handleChangeStartDate(nextValue: string): void {
-    if (isEditMode) {
+    const currentValues = getValues();
+    const nextState = getNextStartDateSelectionFormState(
+      currentValues,
+      nextValue,
+      {
+        isEditMode,
+        minimumStartDateLocal,
+      }
+    );
+
+    if (nextState === currentValues) {
       return;
     }
 
-    const normalizedValue = normalizeStartDateSelection(
-      nextValue,
-      minimumStartDateLocal
-    );
-
-    setFields(getNextStartDateFormState(getValues(), normalizedValue));
+    setFields(nextState);
   }
 
   function handleChangeEndDate(nextValue: string): void {
-    const minimumEndDateLocal = getCurrentMinimumEndDateLocal();
-    const normalizedValue =
-      nextValue < minimumEndDateLocal ? minimumEndDateLocal : nextValue;
+    const nextState = getNextEndDateSelectionFormState(getValues(), nextValue, {
+      isEditMode,
+      todayLocalDate,
+    });
 
-    setField("endDateLocal", normalizedValue);
+    setField("endDateLocal", nextState.endDateLocal);
   }
 
   function syncIosPickerValue(
@@ -369,26 +368,15 @@ export function useScheduleFormScreenController({
     mode: PickerMode,
     datePickerTarget: DatePickerTarget | null
   ): Date {
-    if (mode === "time") {
-      return parseLocalTimeToDate(reminderTimeLocal);
-    }
-
-    if (datePickerTarget === "endDate") {
-      const minimumEndDateLocal = getCurrentMinimumEndDateLocal();
-      const selectedEndDateLocal = endDateLocal ?? minimumEndDateLocal;
-
-      return parseLocalDateToDate(
-        selectedEndDateLocal < minimumEndDateLocal
-          ? minimumEndDateLocal
-          : selectedEndDateLocal
-      );
-    }
-
-    return parseLocalDateToDate(
-      startDateLocal < minimumStartDateLocal
-        ? minimumStartDateLocal
-        : startDateLocal
-    );
+    return getScheduleFormIosPickerValue({
+      datePickerTarget,
+      endDateLocal,
+      minimumEndDateLocal,
+      minimumStartDateLocal,
+      mode,
+      reminderTimeLocal,
+      startDateLocal,
+    });
   }
 
   function openPicker(
@@ -463,7 +451,7 @@ export function useScheduleFormScreenController({
   }
 
   function handleChangeIntervalValue(value: string): void {
-    setField("intervalValue", value.replace(/[^0-9]/g, ""));
+    setField("intervalValue", getSanitizedIntervalInput(value));
   }
 
   function handleChangeTitle(value: string): void {
@@ -697,13 +685,36 @@ export function useScheduleFormScreenController({
     weekdayMask,
   };
 
+  const minimumEndDateLocal = getMinimumEndDateLocal({
+    isEditMode,
+    startDateLocal,
+    todayLocalDate,
+  });
+  const pickerDates = getScheduleFormPickerDates({
+    endDateLocal,
+    minimumEndDateLocal,
+    minimumStartDateLocal,
+    reminderTimeLocal,
+    startDateLocal,
+  });
+  const iosPickerMinimumDate =
+    iosDatePickerTarget === "endDate"
+      ? pickerDates.minimumEndDate
+      : pickerDates.minimumStartDate;
+
   const pickerDisplayState = {
     iosDateTarget: iosDatePickerTarget,
+    iosMinimumDate: iosPickerMinimumDate,
     iosMode: iosPickerMode,
     iosValue: iosPickerValue,
     isEndDateVisible: isEndDatePickerVisible,
     isStartDateVisible: isStartDatePickerVisible,
     isTimeVisible: isTimePickerVisible,
+    minimumEndDate: pickerDates.minimumEndDate,
+    minimumStartDate: pickerDates.minimumStartDate,
+    selectedEndDate: pickerDates.selectedEndDate,
+    selectedReminderTime: pickerDates.selectedReminderTime,
+    selectedStartDate: pickerDates.selectedStartDate,
   };
 
   const viewState = {
@@ -712,11 +723,7 @@ export function useScheduleFormScreenController({
     isEditMode,
     isSaving,
     isStartDateEditable: !isEditMode,
-    minimumEndDateLocal: getMinimumEndDateLocal({
-      isEditMode,
-      startDateLocal,
-      todayLocalDate,
-    }),
+    minimumEndDateLocal,
     minimumStartDateLocal,
     screenError,
     submitCount,
