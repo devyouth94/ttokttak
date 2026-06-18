@@ -41,9 +41,7 @@
 - `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
 - `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
 - `src/screens/schedule-detail`: 일정 상세 화면, 요약, 히스토리, 보관 진입점.
-- `src/screens/schedule-create`: 일정 생성 route-facing 화면.
-- `src/screens/schedule-edit`: 일정 수정 route-facing 화면.
-- `src/screens/schedule-form`: 생성/수정이 공유하는 form 화면 구현.
+- `src/screens/schedule-form`: 생성/수정 route가 공유하는 form 화면 구현.
 - `src/screens/login`: 로그인 화면.
 - `src/screens/settings`: 설정 화면, 설정 action controller, 행 렌더링.
 - `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
@@ -55,9 +53,9 @@
 - `src/application/session`: Supabase session, profile 복원, 표시 이름 갱신 wiring.
 - `src/application/navigation`: 탭 layout, 집중 화면 하단 탭 표시 정책.
 - `src/application/notifications`: 알림 권한 context provider 연결.
-- `src/application/routes`: route params 정규화와 route shell 회귀 테스트.
+- `src/application/routes`: route params 정규화.
 - `src/application/schedule-read`: schedule read context wiring.
-- `src/application/structure`: FSD, session, notification/privacy boundary guard.
+- `src/application/structure`: session, notification/privacy boundary guard.
 - 화면 controller hook이 query, mutation, navigation을 조합한다.
 - React Query가 서버 데이터 조회와 무효화를 담당한다.
 - mutation feature는 저장 성공 뒤 관련 query를 무효화하고 로컬 알림을 다시 맞춘다.
@@ -89,9 +87,8 @@
 - `src/shared/theme`: 테마 저장, 기기 화면 표시 설정 해석, 테마 토큰 provider.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
 
-### Architecture Guard
+### Architecture Rules
 
-- `src/application/structure/fsd-import-rules.test.ts`가 FSD import rule과 public API rule을 검증한다.
 - `screens`, `features`, `entities` slice 외부 호출자는 root `index.ts` 공개 진입점을 사용한다.
 - `entities/<slice>/api`는 저장 adapter 공개 진입점이다.
 - `entities/<slice>/testing`은 테스트 fixture 공개 진입점이다.
@@ -439,6 +436,5 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 - content key 복구 정적 key 없음.
 - 복구 감사 이벤트의 민감 정보 저장.
 - 표시 언어 초기화 실패가 blank screen으로 고정되지 않음.
-- FSD import rule, resource key completeness, route layout helper 사용처럼 구조 자체가 요구사항인 경우에만 소스 문자열 기반 테스트를 사용한다.
+- resource key completeness처럼 구조 자체가 요구사항인 경우에만 소스 문자열 기반 테스트를 사용한다.
 - 테마 적용처럼 사용자-facing 동작은 구현 문자열 대신 provider로 실제 컴포넌트를 렌더링해 검증한다.
-- 정적 `colors` import 금지는 화면별 문자열 테스트가 아니라 architecture guard에서 한 번에 검증한다.

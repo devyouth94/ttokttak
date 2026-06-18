@@ -1,10 +1,3 @@
-export {
-  createRootStackScreenOptions,
-  createItemsStackScreenOptions,
-  createMainTabStackScreenOptions,
-  mainTabsRootScreenOptions,
-  mainTabStackScreenOptions,
-} from "./model/main-navigation-options";
 export { MainTabsLayout } from "./ui/main-tabs-layout";
 export { MainBottomNav } from "./ui/main-bottom-nav";
 export { shouldShowMainBottomNav } from "./ui/main-bottom-nav.helpers";

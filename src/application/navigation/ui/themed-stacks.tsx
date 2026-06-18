@@ -2,23 +2,19 @@ import { Stack } from "expo-router";
 
 import { useAppThemeColors } from "~/shared/theme";
 
-import {
-  createItemsStackScreenOptions,
-  createMainTabStackScreenOptions,
-  createRootStackScreenOptions,
-  mainTabsRootScreenOptions,
-} from "../model/main-navigation-options";
-
 export function ThemedRootStack(): React.JSX.Element {
   const themeColors = useAppThemeColors();
 
   return (
     <Stack
-      screenOptions={createRootStackScreenOptions({
-        backgroundColor: themeColors.background,
-      })}
+      screenOptions={{
+        contentStyle: {
+          backgroundColor: themeColors.background,
+        },
+        headerShown: false,
+      }}
     >
-      <Stack.Screen name="(tabs)" options={mainTabsRootScreenOptions} />
+      <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }
@@ -28,9 +24,14 @@ export function ThemedMainTabStack(): React.JSX.Element {
 
   return (
     <Stack
-      screenOptions={createMainTabStackScreenOptions({
-        backgroundColor: themeColors.background,
-      })}
+      screenOptions={{
+        animation: "default",
+        contentStyle: {
+          backgroundColor: themeColors.background,
+        },
+        gestureEnabled: false,
+        headerShown: false,
+      }}
     />
   );
 }
@@ -40,9 +41,13 @@ export function ThemedItemsStack(): React.JSX.Element {
 
   return (
     <Stack
-      screenOptions={createItemsStackScreenOptions({
-        backgroundColor: themeColors.background,
-      })}
+      screenOptions={{
+        animation: "default",
+        contentStyle: {
+          backgroundColor: themeColors.background,
+        },
+        headerShown: false,
+      }}
     />
   );
 }
