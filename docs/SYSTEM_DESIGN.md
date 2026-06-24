@@ -55,7 +55,6 @@
 - `src/application/notifications`: 알림 권한 context provider 연결.
 - `src/application/routes`: route params 정규화.
 - `src/application/schedule-read`: schedule read context wiring.
-- `src/application/structure`: session, notification/privacy boundary guard.
 - 화면 controller hook이 query, mutation, navigation을 조합한다.
 - React Query가 서버 데이터 조회와 무효화를 담당한다.
 - mutation feature는 저장 성공 뒤 관련 query를 무효화하고 로컬 알림을 다시 맞춘다.
@@ -96,6 +95,7 @@
 - 같은 slice 내부에서는 segment 파일을 직접 import할 수 있다.
 - `shared`는 작은 foundation이므로 `shared/ui`, `shared/api`, `shared/config` 파일 직접 import를 허용한다.
 - `shared/lib/<topic>`은 주제 경계다. Barrel import가 side effect나 bundle coupling을 만들면 leaf 파일 직접 import를 허용한다.
+- FSD 공개 진입점과 layer boundary는 구조 변경 때 agent review로 확인한다.
 - slice segment 이름은 `api`, `assets`, `config`, `i18n`, `lib`, `model`, `routes`, `ui`만 사용한다.
 - `shared` 최상위 segment 이름은 `api`, `config`, `i18n`, `lib`, `routes`, `theme`, `ui`만 사용한다.
 - `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
