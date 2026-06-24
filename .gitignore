@@ -45,6 +45,7 @@ supabase/functions/.env.*
 # Tooling cache
 .metro-health-check*
 .serena/
+.understand-anything/
 supabase/.temp/
 
 # Logs
