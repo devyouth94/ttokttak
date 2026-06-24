@@ -1,35 +1,34 @@
-import type { CompletionLog, RecurringItem } from "~/entities/schedule";
-import { getNextItemOccurrenceEntries } from "~/entities/schedule";
+import type {
+  DerivedOccurrence,
+  ItemNextOccurrenceProjectionEntry,
+  RecurringItem,
+} from "~/entities/schedule";
 import { createRecurringItemFixture } from "~/entities/schedule/testing";
 
-import {
-  buildScheduleListEntries as buildScheduleListViewEntries,
-  type ScheduleListSortMode,
-} from "./schedule-list-entries";
+import { buildScheduleListEntries } from "./schedule-list-entries";
 
 describe("schedule-list entries", () => {
   it("English 모드에서는 다음 예정 시간, 반복, 예정 없음 라벨을 English로 표시한다", () => {
     const entries = buildScheduleListEntries({
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          id: "weekly",
-          recurrenceType: "weekly",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-22",
-          title: "한국어 제목",
-          weekdayMask: [1, 3],
+      language: "en",
+      nextOccurrenceEntries: [
+        createEntry({
+          item: createRecurringItem({
+            id: "weekly",
+            recurrenceType: "weekly",
+            title: "한국어 제목",
+            weekdayMask: [1, 3],
+          }),
+          occurrence: createOccurrence({ itemId: "weekly" }),
         }),
-        createRecurringItem({
-          id: "past-once",
-          recurrenceType: "once",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-21",
-          title: "지난 한 번",
+        createEntry({
+          item: createRecurringItem({
+            id: "past-once",
+            recurrenceType: "once",
+            title: "지난 한 번",
+          }),
         }),
       ],
-      language: "en",
-      now: new Date("2026-04-22T03:00:00.000Z"),
       timezone: "Asia/Seoul",
     });
 
@@ -43,196 +42,62 @@ describe("schedule-list entries", () => {
     ).toBe("No upcoming time");
   });
 
-  it("오늘 시간이 지난 반복 일정은 다음 발생을 표시한다", () => {
+  it("한국어 모드에서는 다음 예정 없음과 일정 색상 key를 제공한다", () => {
     const entries = buildScheduleListEntries({
       language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          id: "daily",
-          recurrenceType: "daily",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-22",
-          title: "매일 일정",
+      nextOccurrenceEntries: [
+        createEntry({
+          item: createRecurringItem({
+            colorKey: "purple",
+            id: "vitamin",
+            title: "영양제",
+          }),
         }),
       ],
-      now: new Date("2026-04-22T03:00:00.000Z"),
       timezone: "Asia/Seoul",
     });
 
-    expect(entries[0]?.nextOccurrenceTimeLabel).toBe("오전 9:00");
-  });
-
-  it("다음 예정이 없는 일정은 예정 없음으로 표시한다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          id: "past-once",
-          recurrenceType: "once",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-22",
-          title: "지난 한 번",
-        }),
-        createRecurringItem({
-          id: "daily",
-          recurrenceType: "daily",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-22",
-          title: "매일 일정",
-        }),
-      ],
-      now: new Date("2026-04-22T03:00:00.000Z"),
-      sortMode: "titleAsc",
-      timezone: "Asia/Seoul",
+    expect(entries[0]).toMatchObject({
+      colorKey: "purple",
+      nextOccurrenceTimeLabel: "예정 없음",
+      nextScheduledAtUtc: null,
+      title: "영양제",
     });
-
-    expect(
-      entries.find((entry) => entry.id === "past-once")?.nextOccurrenceTimeLabel
-    ).toBe("예정 없음");
   });
 
-  it("종료일이 지나 다음 예정이 없는 반복 일정도 목록 row에서는 예정 없음으로 표시한다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          endDateLocal: "2026-04-21",
-          id: "ended-daily",
-          recurrenceType: "daily",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-20",
-          title: "종료된 매일 일정",
-        }),
-      ],
-      now: new Date("2026-04-22T03:00:00.000Z"),
-      timezone: "Asia/Seoul",
-    });
-
-    expect(entries[0]?.nextOccurrenceTimeLabel).toBe("예정 없음");
-    expect(entries[0]?.recurrenceLabel).toBe("매일");
-  });
-
-  it("일정 목록 entry는 일정 색상 key를 함께 제공한다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          colorKey: "purple",
-          id: "vitamin",
-          title: "영양제",
-        }),
-      ],
-      now: new Date("2026-04-22T00:00:00.000Z"),
-      timezone: "Asia/Seoul",
-    });
-
-    expect(entries[0]?.colorKey).toBe("purple");
-  });
-
-  it("기본 정렬은 제목순이다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
+  it("기본 정렬은 제목순이고 생성순 정렬을 선택할 수 있다", () => {
+    const nextOccurrenceEntries = [
+      createEntry({
+        item: createRecurringItem({
           createdAt: "2026-04-20T00:00:00.000Z",
+          id: "alpha",
+          title: "가장 앞 제목",
+        }),
+      }),
+      createEntry({
+        item: createRecurringItem({
+          createdAt: "2026-04-21T00:00:00.000Z",
           id: "beta",
-          reminderTimeLocal: "12:00",
           title: "나중 제목",
         }),
-        createRecurringItem({
-          createdAt: "2026-04-21T00:00:00.000Z",
-          id: "alpha",
-          reminderTimeLocal: "10:00",
-          title: "가장 앞 제목",
-        }),
-      ],
-      now: new Date("2026-04-22T00:00:00.000Z"),
-      timezone: "Asia/Seoul",
-    });
+      }),
+    ];
 
-    expect(entries.map((entry) => entry.id)).toEqual(["alpha", "beta"]);
-  });
-
-  it("생성순에서는 다음 예정이 없어도 생성일 기준으로 정렬한다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          createdAt: "2026-04-20T00:00:00.000Z",
-          id: "daily",
-          title: "먼저 만든 일정",
-        }),
-        createRecurringItem({
-          createdAt: "2026-04-21T00:00:00.000Z",
-          id: "past-once",
-          recurrenceType: "once",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-21",
-          title: "나중에 만든 일정",
-        }),
-      ],
-      now: new Date("2026-04-22T00:00:00.000Z"),
-      sortMode: "createdDesc",
-      timezone: "Asia/Seoul",
-    });
-
-    expect(entries.map((entry) => entry.id)).toEqual(["past-once", "daily"]);
-  });
-
-  it("제목순으로 정렬한다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          id: "beta",
-          title: "청소",
-        }),
-        createRecurringItem({
-          id: "alpha",
-          title: "물 마시기",
-        }),
-      ],
-      now: new Date("2026-04-22T00:00:00.000Z"),
-      sortMode: "titleAsc",
-      timezone: "Asia/Seoul",
-    });
-
-    expect(entries.map((entry) => entry.id)).toEqual(["alpha", "beta"]);
-  });
-
-  it("제목순에서는 다음 예정이 없어도 제목 기준으로 정렬한다", () => {
-    const entries = buildScheduleListEntries({
-      language: "ko",
-      completionLogs: [],
-      items: [
-        createRecurringItem({
-          id: "past-once",
-          recurrenceType: "once",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-22",
-          title: "가장 앞 제목",
-        }),
-        createRecurringItem({
-          id: "daily",
-          recurrenceType: "daily",
-          reminderTimeLocal: "09:00",
-          startDateLocal: "2026-04-22",
-          title: "하루 일정",
-        }),
-      ],
-      now: new Date("2026-04-22T03:00:00.000Z"),
-      sortMode: "titleAsc",
-      timezone: "Asia/Seoul",
-    });
-
-    expect(entries.map((entry) => entry.id)).toEqual(["past-once", "daily"]);
+    expect(
+      buildScheduleListEntries({
+        language: "ko",
+        nextOccurrenceEntries,
+        timezone: "Asia/Seoul",
+      }).map((entry) => entry.id)
+    ).toEqual(["alpha", "beta"]);
+    expect(
+      buildScheduleListEntries({
+        language: "ko",
+        nextOccurrenceEntries,
+        sortMode: "createdDesc",
+        timezone: "Asia/Seoul",
+      }).map((entry) => entry.id)
+    ).toEqual(["beta", "alpha"]);
   });
 });
 
@@ -247,30 +112,28 @@ function createRecurringItem(
   });
 }
 
-function buildScheduleListEntries({
-  completionLogs,
-  items,
-  language,
-  now,
-  sortMode,
-  timezone,
+function createOccurrence(
+  overrides: Partial<DerivedOccurrence> & Pick<DerivedOccurrence, "itemId">
+): DerivedOccurrence {
+  return {
+    localDate: "2026-04-22",
+    localTime: "09:00",
+    scheduledAtLocal: "2026-04-22T09:00:00+09:00",
+    scheduledAtUtc: "2026-04-22T00:00:00.000Z",
+    status: "scheduled",
+    ...overrides,
+  };
+}
+
+function createEntry({
+  item,
+  occurrence = null,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
-  language: "en" | "ko";
-  now: Date;
-  sortMode?: ScheduleListSortMode;
-  timezone: string;
-}) {
-  return buildScheduleListViewEntries({
-    language,
-    nextOccurrenceEntries: getNextItemOccurrenceEntries({
-      completionLogs,
-      items,
-      now,
-      timezone,
-    }),
-    sortMode,
-    timezone,
-  });
+  item: RecurringItem;
+  occurrence?: DerivedOccurrence | null;
+}): ItemNextOccurrenceProjectionEntry {
+  return {
+    item,
+    occurrence,
+  };
 }

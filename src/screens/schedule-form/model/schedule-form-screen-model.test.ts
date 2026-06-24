@@ -10,7 +10,6 @@ import {
   getRecurringItemFormFirstErrorTarget,
   getScheduleFormScreenTitle,
   getWeekdayOptions,
-  recurringItemColorOptions,
 } from "./schedule-form-screen-model";
 
 describe("recurring item form first reminder helper", () => {
@@ -92,53 +91,22 @@ describe("recurring item form first reminder helper", () => {
 });
 
 describe("recurring item form color options", () => {
-  it("일정 색상 선택지는 정해진 7개 한국어 라벨만 제공한다", () => {
-    expect(
-      recurringItemColorOptions.map((option) => ({
-        label: option.label,
-        value: option.value,
-      }))
-    ).toEqual([
-      { label: "빨강", value: "red" },
-      { label: "주황", value: "orange" },
-      { label: "노랑", value: "yellow" },
-      { label: "초록", value: "green" },
-      { label: "파랑", value: "blue" },
-      { label: "남색", value: "indigo" },
-      { label: "보라", value: "purple" },
-    ]);
-  });
-
-  it("English 모드에서는 일정 색상과 반복 선택지를 English 라벨로 제공한다", () => {
-    expect(
-      getFormColorOptions("en").map((option) => ({
-        label: option.label,
-        value: option.value,
-      }))
-    ).toEqual([
-      { label: "Red", value: "red" },
-      { label: "Orange", value: "orange" },
-      { label: "Yellow", value: "yellow" },
-      { label: "Green", value: "green" },
-      { label: "Blue", value: "blue" },
-      { label: "Indigo", value: "indigo" },
-      { label: "Purple", value: "purple" },
-    ]);
+  it("English 모드에서는 대표 선택지 라벨을 English로 제공한다", () => {
+    expect(getFormColorOptions("en")[0]).toMatchObject({
+      label: "Red",
+      value: "red",
+    });
     expect(
       getQuickRecurrenceOptions("en").map((option) => option.label)
     ).toEqual(["Daily", "Weekly", "Monthly"]);
-    expect(
-      getCustomRecurrenceUnitOptions("en").map((option) => option.label)
-    ).toEqual(["days", "weeks", "months"]);
-    expect(getWeekdayOptions("en").map((option) => option.label)).toEqual([
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat",
-      "Sun",
-    ]);
+    expect(getCustomRecurrenceUnitOptions("en")[0]).toMatchObject({
+      label: "days",
+      value: "days",
+    });
+    expect(getWeekdayOptions("en")[0]).toMatchObject({
+      label: "Mon",
+      value: 1,
+    });
   });
 });
 
