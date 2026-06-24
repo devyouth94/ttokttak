@@ -114,10 +114,6 @@ export function formatCalendarDayEntryCount(
   return calendarDayEntryCountFormatters[language](count);
 }
 
-export function getCalendarLocaleName(language: AppLanguage): string {
-  return language;
-}
-
 export const calendarLocaleConfigByLanguage = {
   en: {
     dayNames: [
@@ -211,12 +207,6 @@ export const calendarLocaleConfigByLanguage = {
     today: string;
   }
 >;
-
-export function formatCalendarDayEntryMetaLine(
-  entry: CalendarDayEntry
-): string {
-  return [entry.timeLabel, entry.statusLabel].join(" · ");
-}
 
 export function shiftVisibleMonth(
   visibleMonth: string,

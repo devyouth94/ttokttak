@@ -1,8 +1,4 @@
-import type { ExpoConfig } from "expo/config";
-
 import getAppConfig from "./app.config";
-
-const loadAppConfig = (): (() => ExpoConfig) => getAppConfig;
 
 describe("app config", () => {
   const originalGoogleIosUrlScheme = process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
@@ -25,7 +21,6 @@ describe("app config", () => {
   it("Google iOS URL scheme은 config 함수 호출 시점의 환경 변수를 사용한다", () => {
     delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
 
-    const getAppConfig = loadAppConfig();
     process.env.GOOGLE_AUTH_IOS_URL_SCHEME =
       "com.googleusercontent.apps.test-ios-url-scheme";
 
@@ -38,8 +33,6 @@ describe("app config", () => {
     delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
     delete process.env.EAS_BUILD;
 
-    const getAppConfig = loadAppConfig();
-
     expect(JSON.stringify(getAppConfig().plugins)).toContain(
       "com.googleusercontent.apps.missing-google-ios-url-scheme"
     );
@@ -49,15 +42,12 @@ describe("app config", () => {
     delete process.env.GOOGLE_AUTH_IOS_URL_SCHEME;
     process.env.EAS_BUILD = "true";
 
-    const getAppConfig = loadAppConfig();
-
     expect(() => getAppConfig()).toThrow(
       "GOOGLE_AUTH_IOS_URL_SCHEME 환경 변수가 필요합니다."
     );
   });
 
   it("로컬 알림 설정만 유지한다", () => {
-    const getAppConfig = loadAppConfig();
     const config = getAppConfig();
 
     expect(config.android?.googleServicesFile).toBeUndefined();
@@ -68,7 +58,6 @@ describe("app config", () => {
   });
 
   it("앱 공개 버전은 config에 명시하고 빌드 번호는 EAS 원격 기준으로 둔다", () => {
-    const getAppConfig = loadAppConfig();
     const config = getAppConfig();
 
     expect(config.version).toBe("1.0.2");

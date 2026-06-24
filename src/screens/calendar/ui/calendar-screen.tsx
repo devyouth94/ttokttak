@@ -39,10 +39,8 @@ import {
   clampVisibleMonth,
   createCalendarScreenState,
   formatCalendarDayEntryCount,
-  formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
-  getCalendarLocaleName,
   getMinimumVisibleMonth,
   shiftVisibleMonth,
   syncCalendarScreenStateToTimezone,
@@ -50,7 +48,7 @@ import {
 
 LocaleConfig.locales.ko = calendarLocaleConfigByLanguage.ko;
 LocaleConfig.locales.en = calendarLocaleConfigByLanguage.en;
-LocaleConfig.defaultLocale = getCalendarLocaleName("ko");
+LocaleConfig.defaultLocale = "ko";
 
 const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
 
@@ -191,7 +189,7 @@ export function CalendarScreen(): React.JSX.Element {
   };
 
   useEffect(() => {
-    LocaleConfig.defaultLocale = getCalendarLocaleName(language);
+    LocaleConfig.defaultLocale = language;
   }, [language]);
 
   useEffect(() => {
@@ -338,7 +336,7 @@ export function CalendarScreen(): React.JSX.Element {
                   colorKey={entry.colorKey}
                   isLast={index === selectedEntries.length - 1}
                   key={`${entry.itemId}:${entry.scheduledAtUtc}`}
-                  metaLine={formatCalendarDayEntryMetaLine(entry)}
+                  metaLine={[entry.timeLabel, entry.statusLabel].join(" · ")}
                   onPress={() => {
                     router.push({
                       params: {

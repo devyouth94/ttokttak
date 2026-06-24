@@ -4,61 +4,10 @@ import { createRecurringItemFixture } from "~/entities/schedule/testing";
 
 import {
   buildScheduleListEntries as buildScheduleListViewEntries,
-  formatScheduleListNextOccurrenceTimeLabel,
   type ScheduleListSortMode,
 } from "./schedule-list-entries";
 
 describe("schedule-list entries", () => {
-  it("내일 반복 일정의 다음 예정 시간만 표시한다", () => {
-    expect(
-      formatScheduleListNextOccurrenceTimeLabel(
-        "2026-04-23T00:00:00.000Z",
-        "Asia/Seoul",
-        "ko"
-      )
-    ).toBe("오전 9:00");
-  });
-
-  it("오늘이고 아직 미래인 반복 예정일도 시간만 표시한다", () => {
-    expect(
-      formatScheduleListNextOccurrenceTimeLabel(
-        "2026-04-22T00:00:00.000Z",
-        "Asia/Seoul",
-        "ko"
-      )
-    ).toBe("오전 9:00");
-  });
-
-  it("14일 이내 반복 예정일도 시간만 표시한다", () => {
-    expect(
-      formatScheduleListNextOccurrenceTimeLabel(
-        "2026-04-25T00:00:00.000Z",
-        "Asia/Seoul",
-        "ko"
-      )
-    ).toBe("오전 9:00");
-  });
-
-  it("15일 이후 반복 예정일도 시간만 표시한다", () => {
-    expect(
-      formatScheduleListNextOccurrenceTimeLabel(
-        "2026-05-11T23:00:00.000Z",
-        "Asia/Seoul",
-        "ko"
-      )
-    ).toBe("오전 8:00");
-  });
-
-  it("한 번 일정도 시간만 표시한다", () => {
-    expect(
-      formatScheduleListNextOccurrenceTimeLabel(
-        "2026-05-11T23:00:00.000Z",
-        "Asia/Seoul",
-        "ko"
-      )
-    ).toBe("오전 8:00");
-  });
-
   it("English 모드에서는 다음 예정 시간, 반복, 예정 없음 라벨을 English로 표시한다", () => {
     const entries = buildScheduleListEntries({
       completionLogs: [],

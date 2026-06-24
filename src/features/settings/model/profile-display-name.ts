@@ -13,10 +13,6 @@ const profileDisplayNameValidationMessages = {
   },
 } as const satisfies Record<AppLanguage, Record<"empty" | "tooLong", string>>;
 
-export function normalizeProfileDisplayName(value: string): string {
-  return value.trim();
-}
-
 type ProfileDisplayNameValidationResult =
   | {
       errorMessage: null;
@@ -58,7 +54,7 @@ export function validateProfileDisplayName(
   value: string,
   language: AppLanguage = "ko"
 ): ProfileDisplayNameValidationResult {
-  const normalizedValue = normalizeProfileDisplayName(value);
+  const normalizedValue = value.trim();
   const messages = profileDisplayNameValidationMessages[language];
 
   if (!normalizedValue) {

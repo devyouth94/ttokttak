@@ -45,11 +45,7 @@ export function buildScheduleListEntries({
       id: item.id,
       item,
       nextOccurrenceTimeLabel: occurrence
-        ? formatScheduleListNextOccurrenceTimeLabel(
-            occurrence.scheduledAtUtc,
-            timezone,
-            language
-          )
+        ? formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone, language)
         : getNoNextOccurrenceLabel(language),
       nextScheduledAtUtc: occurrence?.scheduledAtUtc ?? null,
       recurrenceLabel: getRecurrenceLabel(item, language),
@@ -58,14 +54,6 @@ export function buildScheduleListEntries({
     .sort((left, right) =>
       compareScheduleListEntries(left, right, sortMode, language)
     );
-}
-
-export function formatScheduleListNextOccurrenceTimeLabel(
-  scheduledAtUtc: string,
-  timezone: string,
-  language: AppLanguage
-): string {
-  return formatUtcTimeInTimezone(scheduledAtUtc, timezone, language);
 }
 
 function getNoNextOccurrenceLabel(language: AppLanguage): string {

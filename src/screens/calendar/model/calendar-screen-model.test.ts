@@ -22,7 +22,6 @@ import {
   clampVisibleMonth,
   createCalendarScreenState,
   formatCalendarDayEntryCount,
-  formatCalendarDayEntryMetaLine,
   formatSelectedDateSectionTitle,
   formatVisibleMonthTitle,
   getMinimumVisibleMonth,
@@ -478,9 +477,7 @@ describe("calendar-screen-model", () => {
       "Complete",
       "Skip",
     ]);
-    expect(formatCalendarDayEntryMetaLine(entries[1]!)).toBe(
-      "9:00 AM · Complete"
-    );
+    expect(entries[1]?.timeLabel).toBe("9:00 AM");
     expect(entries.map((entry) => entry.title)).toEqual([
       "지난 일정",
       "완료 일정",
@@ -544,8 +541,11 @@ describe("calendar-screen-model", () => {
       timezone,
     });
 
-    expect(formatCalendarDayEntryMetaLine(entries[0]!)).toBe(
-      "오전 10:00 · 건너뜀"
+    expect(entries[0]).toEqual(
+      expect.objectContaining({
+        statusLabel: "건너뜀",
+        timeLabel: "오전 10:00",
+      })
     );
   });
 
