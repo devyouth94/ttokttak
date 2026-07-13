@@ -74,6 +74,5 @@ export {
   getRecurringItemColorLabel,
   getRecurringItemColorOptions,
   recurringItemColorOptionByKey,
-  recurringItemColorOptions,
   RecurringItemSummaryRow,
 } from "./ui";

@@ -22,9 +22,7 @@ export const recurringItemColorOptionByKey = {
   purple: { label: "보라", value: "purple", swatchColor: "#D4A8EA" },
 } satisfies RecurringItemColorOptionByKey;
 
-export const recurringItemColorOptions = Object.values(
-  recurringItemColorOptionByKey
-);
+const recurringItemColorOptions = Object.values(recurringItemColorOptionByKey);
 
 const englishRecurringItemColorLabelByKey = {
   blue: "Blue",

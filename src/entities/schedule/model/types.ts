@@ -37,9 +37,6 @@ export type OccurrenceStatus =
   | "skipped";
 export type CompletionAction = "completed" | "skipped";
 export type RecurringItemColorKey = (typeof recurringItemColorKeys)[number];
-export type NotificationKind = "reminder";
-export type CompletionBasedRecurrenceType =
-  (typeof completionBasedRecurrenceTypes)[number];
 
 export interface RecurringItemScheduleVersion {
   id: string;
