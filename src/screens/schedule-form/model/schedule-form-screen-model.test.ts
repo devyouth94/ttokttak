@@ -1,9 +1,9 @@
+import { getRecurringItemColorOptions } from "~/entities/schedule";
+
 import {
   getCompletionBasedInfoText,
   getCustomRecurrenceUnitOptions,
   getFirstReminderHelperText,
-  getFormColorOptions,
-  getIosPickerChangeHandler,
   getQuickRecurrenceOptions,
   getRecurringItemFormDisplayValues,
   getRecurringItemFormEndDateControlState,
@@ -92,7 +92,7 @@ describe("recurring item form first reminder helper", () => {
 
 describe("recurring item form color options", () => {
   it("English 모드에서는 대표 선택지 라벨을 English로 제공한다", () => {
-    expect(getFormColorOptions("en")[0]).toMatchObject({
+    expect(getRecurringItemColorOptions("en")[0]).toMatchObject({
       label: "Red",
       value: "red",
     });
@@ -174,62 +174,6 @@ describe("recurring item form screen copy", () => {
     expect(getCompletionBasedInfoText("en")).toBe(
       "Recalculates the next item from the date you complete it. Disabled for once and weekly settings."
     );
-  });
-});
-
-describe("recurring item form picker routing", () => {
-  it("iOS 시작일 picker 변경은 시작일 handler로 전달한다", () => {
-    const onStartDateChange = jest.fn();
-    const onEndDateChange = jest.fn();
-    const onTimeChange = jest.fn();
-    const event = { type: "set" } as never;
-    const selectedDate = new Date("2026-05-10T00:00:00.000Z");
-
-    getIosPickerChangeHandler("date", "startDate", {
-      onEndDateChange,
-      onStartDateChange,
-      onTimeChange,
-    })(event, selectedDate);
-
-    expect(onStartDateChange).toHaveBeenCalledWith(event, selectedDate);
-    expect(onEndDateChange).not.toHaveBeenCalled();
-    expect(onTimeChange).not.toHaveBeenCalled();
-  });
-
-  it("iOS 종료일 picker 변경은 종료일 handler로 전달한다", () => {
-    const onStartDateChange = jest.fn();
-    const onEndDateChange = jest.fn();
-    const onTimeChange = jest.fn();
-    const event = { type: "set" } as never;
-    const selectedDate = new Date("2026-05-10T00:00:00.000Z");
-
-    getIosPickerChangeHandler("date", "endDate", {
-      onEndDateChange,
-      onStartDateChange,
-      onTimeChange,
-    })(event, selectedDate);
-
-    expect(onEndDateChange).toHaveBeenCalledWith(event, selectedDate);
-    expect(onStartDateChange).not.toHaveBeenCalled();
-    expect(onTimeChange).not.toHaveBeenCalled();
-  });
-
-  it("iOS 시간 picker 변경은 시간 handler로 전달한다", () => {
-    const onStartDateChange = jest.fn();
-    const onEndDateChange = jest.fn();
-    const onTimeChange = jest.fn();
-    const event = { type: "set" } as never;
-    const selectedDate = new Date("2026-05-10T09:00:00.000Z");
-
-    getIosPickerChangeHandler("time", null, {
-      onEndDateChange,
-      onStartDateChange,
-      onTimeChange,
-    })(event, selectedDate);
-
-    expect(onTimeChange).toHaveBeenCalledWith(event, selectedDate);
-    expect(onStartDateChange).not.toHaveBeenCalled();
-    expect(onEndDateChange).not.toHaveBeenCalled();
   });
 });
 

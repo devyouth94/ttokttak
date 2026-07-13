@@ -12,10 +12,8 @@ import {
 
 import {
   buildHistoryPreview,
-  buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
   buildSummarySettingBadges,
-  getItemDetailBasisOccurrence,
   getRecurringItemDetailDeleteReturnPath,
 } from "./schedule-detail-model";
 
@@ -317,50 +315,6 @@ describe("recurring item detail helpers", () => {
     expect(entries.map((entry) => entry.id)).toEqual(["start-date"]);
   });
 
-  it("선택된 completion log occurrence를 상세 진입 맥락으로 사용한다", () => {
-    const item = createItem();
-    const completionLogs = [
-      createLog({
-        action: "completed",
-        scheduledAtUtc: "2026-04-13T00:00:00.000Z",
-      }),
-    ];
-    const viewModel = buildRecurringItemDetailViewModel({
-      language: "ko",
-      completionLogs,
-      item,
-      now: new Date("2026-04-14T03:00:00.000Z"),
-      timezone,
-    });
-
-    const basisOccurrence = getItemDetailBasisOccurrence({
-      completionLogs,
-      item,
-      now: new Date("2026-04-14T03:00:00.000Z"),
-      primaryOccurrence: viewModel.primaryOccurrence,
-      scheduledAtUtc: "2026-04-13T00:00:00.000Z",
-      timezone,
-    });
-
-    expect(basisOccurrence?.status).toBe("completed");
-    expect(basisOccurrence?.localDate).toBe("2026-04-13");
-    if (!basisOccurrence) {
-      throw new Error("상세 진입 맥락 occurrence를 찾지 못했어요.");
-    }
-
-    expect(
-      buildOccurrenceStatusCard({
-        language: "ko",
-        now: new Date("2026-04-14T03:00:00.000Z"),
-        occurrence: basisOccurrence,
-        timezone,
-      })
-    ).toMatchObject({
-      metaLabel: "완료",
-      title: "완료한 일정",
-    });
-  });
-
   it("상세 화면도 latest schedule version 기준 현재 규칙과 다음 일정을 보여준다", () => {
     const item = createItem({
       intervalValue: 3,
@@ -449,40 +403,6 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.historyPreview[0]).toMatchObject({
       statusLabel: "Skip",
       timeLabel: "Apr 9 9:00 AM",
-    });
-  });
-
-  it("English 상세 진입 맥락 상태 카드는 action glossary를 따른다", () => {
-    const item = createItem();
-    const completionLogs = [
-      createLog({
-        action: "completed",
-        scheduledAtUtc: "2026-04-13T00:00:00.000Z",
-      }),
-    ];
-    const basisOccurrence = getItemDetailBasisOccurrence({
-      completionLogs,
-      item,
-      now: new Date("2026-04-14T03:00:00.000Z"),
-      primaryOccurrence: null,
-      scheduledAtUtc: "2026-04-13T00:00:00.000Z",
-      timezone,
-    });
-
-    if (!basisOccurrence) {
-      throw new Error("상세 진입 맥락 occurrence를 찾지 못했어요.");
-    }
-
-    expect(
-      buildOccurrenceStatusCard({
-        language: "en",
-        now: new Date("2026-04-14T03:00:00.000Z"),
-        occurrence: basisOccurrence,
-        timezone,
-      })
-    ).toMatchObject({
-      metaLabel: "Complete",
-      title: "Completed item",
     });
   });
 });

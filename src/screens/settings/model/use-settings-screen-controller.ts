@@ -278,46 +278,6 @@ export function useSettingsScreenController() {
       saveDisplayName,
       signOutCurrentSession,
     },
-    copy: {
-      accountEmail: t("settings.account.email"),
-      accountManagementDelete: t("settings.accountManagement.delete"),
-      accountManagementSection: t("settings.accountManagement.section"),
-      accountManagementSignOut: t("settings.accountManagement.signOut"),
-      accountName: t("settings.account.name"),
-      accountSection: t("settings.account.section"),
-      appInfoPrivacyPolicy: t("settings.appInfo.privacyPolicy"),
-      appInfoSection: t("settings.appInfo.section"),
-      appInfoTerms: t("settings.appInfo.terms"),
-      appInfoVersion: t("settings.appInfo.version"),
-      appLanguage: t("settings.environment.appLanguage"),
-      appLanguageHint: t("settings.environment.appLanguageHint"),
-      appLanguageLocalOnly: t("settings.environment.appLanguageLocalOnly"),
-      environmentSection: t("settings.environment.section"),
-      headerTitle: t("settings.headerTitle"),
-      nameEditorCancel: t("settings.nameEditor.cancel"),
-      nameEditorPlaceholder: t("settings.nameEditor.placeholder"),
-      nameEditorSave: t("settings.nameEditor.save"),
-      nameEditorTitle: t("settings.nameEditor.title"),
-      notificationOpenSettings: t("settings.notifications.openSettings"),
-      notificationOpenSettingsDescription: t(
-        "settings.notifications.openSettingsDescription"
-      ),
-      notificationPermissionRequest: t(
-        "settings.notifications.permissionRequest"
-      ),
-      notificationPermissionRequestDescription: t(
-        "settings.notifications.permissionRequestDescription"
-      ),
-      notificationsAppNotification: t("settings.notifications.appNotification"),
-      notificationsPermissionStatus: t(
-        "settings.notifications.permissionStatus"
-      ),
-      notificationsSection: t("settings.notifications.section"),
-      theme: t("settings.environment.theme"),
-      themeHint: t("settings.environment.themeHint"),
-      themeLocalOnly: t("settings.environment.themeLocalOnly"),
-      timezone: t("settings.environment.timezone"),
-    },
     options: {
       appLanguage: getAppLanguageOptions(t),
       themePreference: getThemePreferenceOptions(t),

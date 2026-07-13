@@ -16,8 +16,10 @@ import { Info } from "lucide-react-native";
 
 import {
   type AnchorType,
+  getRecurringItemColorOptions,
   type RecurrenceType,
   type RecurringItemColorKey,
+  supportsCompletionBased,
 } from "~/entities/schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import type { AppThemeColors, ResolvedAppTheme } from "~/shared/theme";
@@ -29,10 +31,8 @@ import { AppText } from "~/shared/ui/app-text";
 
 import type { ScheduleFormScreenStyles } from "./schedule-form-screen-styles";
 import {
-  getAdvancedOptionsState,
   getCompletionBasedInfoText,
   getCustomRecurrenceUnitOptions,
-  getFormColorOptions,
   getQuickRecurrenceOptions,
   getRecurrenceSectionState,
   getWeekdayOptions,
@@ -242,7 +242,7 @@ export function ColorPickerSection({
 }: ColorPickerSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const colorOptions = getFormColorOptions(language).map((option) => ({
+  const colorOptions = getRecurringItemColorOptions(language).map((option) => ({
     accessibilityHint: t("scheduleForm.color.optionHint", {
       color: option.label,
     }),
@@ -479,9 +479,8 @@ export function AdvancedOptionsSection({
 }: AdvancedOptionsSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const { isCompletionBasedSwitchEnabled } = getAdvancedOptionsState({
-    recurrenceType,
-  });
+  const isCompletionBasedSwitchEnabled =
+    supportsCompletionBased(recurrenceType);
 
   const isCompletionBasedSelected =
     isCompletionBasedSwitchEnabled && anchorType === "completion_based";

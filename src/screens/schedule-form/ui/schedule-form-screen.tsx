@@ -7,7 +7,6 @@ import { AppText } from "~/shared/ui/app-text";
 
 import { ScheduleFormScreenContent } from "./schedule-form-screen-content";
 import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";
-import { getIosPickerChangeHandler } from "../model/schedule-form-screen-model";
 import { useScheduleFormScreenController } from "../model/use-schedule-form-screen-controller";
 
 type ScheduleFormScreenProps = {
@@ -23,15 +22,12 @@ export function ScheduleFormScreen({
     itemId,
     returnTo,
   });
-  const iosPickerChangeHandler = getIosPickerChangeHandler(
-    screenModel.picker.iosMode,
-    screenModel.picker.iosDateTarget,
-    {
-      onEndDateChange: screenModel.actions.picker.onEndDatePickerChange,
-      onStartDateChange: screenModel.actions.picker.onStartDatePickerChange,
-      onTimeChange: screenModel.actions.picker.onTimePickerChange,
-    }
-  );
+  const iosPickerChangeHandler =
+    screenModel.picker.iosMode === "time"
+      ? screenModel.actions.picker.onTimePickerChange
+      : screenModel.picker.iosDateTarget === "endDate"
+        ? screenModel.actions.picker.onEndDatePickerChange
+        : screenModel.actions.picker.onStartDatePickerChange;
 
   if (screenModel.view.isBootstrapping) {
     return <ScheduleFormScreenLoading />;

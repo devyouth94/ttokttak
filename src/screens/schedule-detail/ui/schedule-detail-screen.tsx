@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Animated, ScrollView, View } from "react-native";
+import { Alert, Animated, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
@@ -21,7 +21,6 @@ import { AppScreen } from "~/shared/ui/app-screen";
 import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
-import { IconButton } from "~/shared/ui/icon-button";
 import { spacing } from "~/shared/ui/tokens";
 import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
 
@@ -565,19 +564,25 @@ export function ScheduleDetailScreen({
               item && !queryErrorMessage ? (
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
-                    <IconButton
+                    <Pressable
                       accessibilityHint={t(
                         "scheduleDetail.management.menuHint"
                       )}
                       accessibilityLabel={t(
                         "scheduleDetail.management.menuLabel"
                       )}
+                      accessibilityRole="button"
                       disabled={isMutating}
-                      icon={
-                        <EllipsisVertical color={themeColors.text} size={20} />
-                      }
-                      size="lg"
-                    />
+                      style={({ pressed }) => [
+                        styles.managementMenuButton,
+                        isMutating && styles.managementMenuButtonDisabled,
+                        pressed &&
+                          !isMutating &&
+                          styles.managementMenuButtonPressed,
+                      ]}
+                    >
+                      <EllipsisVertical color={themeColors.text} size={20} />
+                    </Pressable>
                   </DropdownMenu.Trigger>
 
                   <DropdownMenu.Portal>

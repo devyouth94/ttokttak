@@ -17,6 +17,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
@@ -38,7 +39,6 @@ import {
   type ScheduleFormScreenStyles,
   useScheduleFormScreenStyles,
 } from "./schedule-form-screen-styles";
-import { type ScheduleFormScreenContentProps } from "../model/schedule-form-contracts";
 import {
   type FormErrorTarget,
   getRecurringItemFormDisplayValues,
@@ -46,6 +46,16 @@ import {
   getRecurringItemFormFirstErrorTarget,
   getScheduleFormScreenTitle,
 } from "../model/schedule-form-screen-model";
+import type { useScheduleFormScreenController } from "../model/use-schedule-form-screen-controller";
+
+type ScheduleFormScreenContentProps = ReturnType<
+  typeof useScheduleFormScreenController
+> & {
+  iosPickerChangeHandler: (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => void;
+};
 
 type ScreenErrorCardProps = {
   message: string | null;

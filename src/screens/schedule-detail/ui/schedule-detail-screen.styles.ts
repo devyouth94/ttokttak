@@ -82,6 +82,19 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
     managementDeleteText: {
       color: themeColors.error,
     },
+    managementMenuButton: {
+      alignItems: "center",
+      borderRadius: borderRadius.pill,
+      height: 48,
+      justifyContent: "center",
+      width: 48,
+    },
+    managementMenuButtonDisabled: {
+      opacity: 0.4,
+    },
+    managementMenuButtonPressed: {
+      opacity: 0.88,
+    },
     managementMenuContent: {
       backgroundColor: themeColors.surface,
       borderRadius: borderRadius.lg,

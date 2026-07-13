@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -27,6 +28,7 @@ import { useSettingsScreenStyles } from "./settings-screen-styles";
 import { useSettingsScreenController } from "../model/use-settings-screen-controller";
 
 export function SettingsScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const styles = useSettingsScreenStyles();
   const insets = useSafeAreaInsets();
   const settingsModel = useSettingsScreenController();
@@ -37,7 +39,7 @@ export function SettingsScreen(): React.JSX.Element {
     onScroll,
     scrollEventThrottle,
   } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const { actions, copy, options, values, view } = settingsModel;
+  const { actions, options, values, view } = settingsModel;
   const { colors: themeColors } = useAppTheme();
 
   return (
@@ -45,7 +47,7 @@ export function SettingsScreen(): React.JSX.Element {
       <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
         <ScreenHeader
           onHeightChange={onHeaderHeightChange}
-          title={copy.headerTitle}
+          title={t("settings.headerTitle")}
         />
       </Animated.View>
 
@@ -63,25 +65,31 @@ export function SettingsScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.sections}>
-          <SettingsSectionCard styles={styles} title={copy.accountSection}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.account.section")}
+          >
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               isFirst
               isPressable
               onPress={actions.openNameEditor}
               styles={styles}
-              title={copy.accountName}
+              title={t("settings.account.name")}
               value={values.displayName}
             />
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               styles={styles}
-              title={copy.accountEmail}
+              title={t("settings.account.email")}
               value={values.email}
             />
           </SettingsSectionCard>
 
-          <SettingsSectionCard styles={styles} title={copy.environmentSection}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.environment.section")}
+          >
             <SettingsControlRow
               accessory={
                 <View style={styles.selectAccessory}>
@@ -92,8 +100,10 @@ export function SettingsScreen(): React.JSX.Element {
                     />
                   ) : null}
                   <AppSelectMenu
-                    accessibilityHint={copy.appLanguageHint}
-                    accessibilityLabel={copy.appLanguage}
+                    accessibilityHint={t(
+                      "settings.environment.appLanguageHint"
+                    )}
+                    accessibilityLabel={t("settings.environment.appLanguage")}
                     align="end"
                     isDisabled={view.isSavingAppLanguage}
                     onChange={(nextLanguage) => {
@@ -105,10 +115,10 @@ export function SettingsScreen(): React.JSX.Element {
                   />
                 </View>
               }
-              description={copy.appLanguageLocalOnly}
+              description={t("settings.environment.appLanguageLocalOnly")}
               isFirst
               styles={styles}
-              title={copy.appLanguage}
+              title={t("settings.environment.appLanguage")}
             />
             <SettingsControlRow
               accessory={
@@ -120,8 +130,8 @@ export function SettingsScreen(): React.JSX.Element {
                     />
                   ) : null}
                   <AppSelectMenu
-                    accessibilityHint={copy.themeHint}
-                    accessibilityLabel={copy.theme}
+                    accessibilityHint={t("settings.environment.themeHint")}
+                    accessibilityLabel={t("settings.environment.theme")}
                     align="end"
                     isDisabled={view.isSavingThemePreference}
                     onChange={(nextPreference) => {
@@ -133,33 +143,33 @@ export function SettingsScreen(): React.JSX.Element {
                   />
                 </View>
               }
-              description={copy.themeLocalOnly}
+              description={t("settings.environment.themeLocalOnly")}
               styles={styles}
-              title={copy.theme}
+              title={t("settings.environment.theme")}
             />
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               styles={styles}
-              title={copy.timezone}
+              title={t("settings.environment.timezone")}
               value={values.timezone}
             />
           </SettingsSectionCard>
 
           <SettingsSectionCard
             styles={styles}
-            title={copy.notificationsSection}
+            title={t("settings.notifications.section")}
           >
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               isFirst
               styles={styles}
-              title={copy.notificationsAppNotification}
+              title={t("settings.notifications.appNotification")}
               value={values.notificationStatus}
             />
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               styles={styles}
-              title={copy.notificationsPermissionStatus}
+              title={t("settings.notifications.permissionStatus")}
               value={values.notificationPermissionStatus}
             />
             {view.canRequestNotificationPermission ? (
@@ -174,13 +184,15 @@ export function SettingsScreen(): React.JSX.Element {
                     <ExternalLink color={themeColors.textSoft} size={16} />
                   )
                 }
-                description={copy.notificationPermissionRequestDescription}
+                description={t(
+                  "settings.notifications.permissionRequestDescription"
+                )}
                 isPressable
                 onPress={() => {
                   void actions.requestNotificationPermission();
                 }}
                 styles={styles}
-                title={copy.notificationPermissionRequest}
+                title={t("settings.notifications.permissionRequest")}
               />
             ) : null}
             {view.canOpenNotificationSettings ? (
@@ -188,23 +200,28 @@ export function SettingsScreen(): React.JSX.Element {
                 accessory={
                   <ExternalLink color={themeColors.textSoft} size={16} />
                 }
-                description={copy.notificationOpenSettingsDescription}
+                description={t(
+                  "settings.notifications.openSettingsDescription"
+                )}
                 isPressable
                 onPress={() => {
                   void actions.openSystemSettings();
                 }}
                 styles={styles}
-                title={copy.notificationOpenSettings}
+                title={t("settings.notifications.openSettings")}
               />
             ) : null}
           </SettingsSectionCard>
 
-          <SettingsSectionCard styles={styles} title={copy.appInfoSection}>
+          <SettingsSectionCard
+            styles={styles}
+            title={t("settings.appInfo.section")}
+          >
             <SettingsValueRow
               iconColor={themeColors.textSoft}
               isFirst
               styles={styles}
-              title={copy.appInfoVersion}
+              title={t("settings.appInfo.version")}
               value={`v${values.appVersion}`}
             />
             <SettingsRow
@@ -216,7 +233,7 @@ export function SettingsScreen(): React.JSX.Element {
                 void actions.openTermsOfService();
               }}
               styles={styles}
-              title={copy.appInfoTerms}
+              title={t("settings.appInfo.terms")}
             />
             <SettingsRow
               accessory={
@@ -227,13 +244,13 @@ export function SettingsScreen(): React.JSX.Element {
                 void actions.openPrivacyPolicy();
               }}
               styles={styles}
-              title={copy.appInfoPrivacyPolicy}
+              title={t("settings.appInfo.privacyPolicy")}
             />
           </SettingsSectionCard>
 
           <SettingsSectionCard
             styles={styles}
-            title={copy.accountManagementSection}
+            title={t("settings.accountManagement.section")}
           >
             <SettingsRow
               accessory={
@@ -251,7 +268,7 @@ export function SettingsScreen(): React.JSX.Element {
                 void actions.signOutCurrentSession();
               }}
               styles={styles}
-              title={copy.accountManagementSignOut}
+              title={t("settings.accountManagement.signOut")}
             />
             <SettingsRow
               accessory={
@@ -263,7 +280,7 @@ export function SettingsScreen(): React.JSX.Element {
               isPressable
               onPress={actions.requestDeleteAccount}
               styles={styles}
-              title={copy.accountManagementDelete}
+              title={t("settings.accountManagement.delete")}
               tone="danger"
             />
           </SettingsSectionCard>
@@ -279,7 +296,7 @@ export function SettingsScreen(): React.JSX.Element {
         <View style={styles.modalBackdrop}>
           <View style={styles.nameEditor}>
             <AppText style={styles.nameEditorTitle} variant="body2">
-              {copy.nameEditorTitle}
+              {t("settings.nameEditor.title")}
             </AppText>
             <TextInput
               autoCapitalize="none"
@@ -289,7 +306,7 @@ export function SettingsScreen(): React.JSX.Element {
               onChangeText={(value) => {
                 actions.changeDisplayNameDraft(value);
               }}
-              placeholder={copy.nameEditorPlaceholder}
+              placeholder={t("settings.nameEditor.placeholder")}
               placeholderTextColor={themeColors.textSoft}
               style={styles.nameInput}
               value={values.displayNameDraft}
@@ -311,7 +328,7 @@ export function SettingsScreen(): React.JSX.Element {
                 ]}
               >
                 <AppText style={styles.nameEditorCancelText} variant="body3">
-                  {copy.nameEditorCancel}
+                  {t("settings.nameEditor.cancel")}
                 </AppText>
               </Pressable>
               <Pressable
@@ -330,7 +347,7 @@ export function SettingsScreen(): React.JSX.Element {
                   <ActivityIndicator color={themeColors.primaryForeground} />
                 ) : (
                   <AppText style={styles.nameEditorSaveText} variant="body3">
-                    {copy.nameEditorSave}
+                    {t("settings.nameEditor.save")}
                   </AppText>
                 )}
               </Pressable>

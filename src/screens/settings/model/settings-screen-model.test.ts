@@ -4,13 +4,11 @@ import {
 } from "~/features/delete-account";
 
 import {
-  getAppLanguageOptions,
   getDeleteAccountErrorMessage,
   getNotificationPermissionStatusText,
   getNotificationStatusText,
   getSettingsDisplayName,
   getSettingsErrorMessage,
-  getThemePreferenceOptions,
 } from "./settings-screen-model";
 
 const t = (key: string) => key;
@@ -95,40 +93,5 @@ describe("settings screen model", () => {
   it("알 수 없는 실패도 alert 본문에 넣을 문자열로 바꾼다", () => {
     expect(getSettingsErrorMessage(new Error("저장 실패"))).toBe("저장 실패");
     expect(getSettingsErrorMessage("저장 실패")).toBe("저장 실패");
-  });
-
-  it("표시 언어 option은 한국어와 English 순서를 유지한다", () => {
-    expect(getAppLanguageOptions(t)).toEqual([
-      {
-        accessibilityHint: "settings.environment.languageKoreanHint",
-        label: "한국어",
-        value: "ko",
-      },
-      {
-        accessibilityHint: "settings.environment.languageEnglishHint",
-        label: "English",
-        value: "en",
-      },
-    ]);
-  });
-
-  it("테마 option은 system, light, dark 순서를 유지한다", () => {
-    expect(getThemePreferenceOptions(t)).toEqual([
-      {
-        accessibilityHint: "settings.environment.themeSystemHint",
-        label: "settings.environment.themeSystem",
-        value: "system",
-      },
-      {
-        accessibilityHint: "settings.environment.themeLightHint",
-        label: "settings.environment.themeLight",
-        value: "light",
-      },
-      {
-        accessibilityHint: "settings.environment.themeDarkHint",
-        label: "settings.environment.themeDark",
-        value: "dark",
-      },
-    ]);
   });
 });

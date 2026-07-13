@@ -178,32 +178,6 @@ export function getRecurringItemDetailDeleteReturnPath(
   return "/";
 }
 
-export function getItemDetailBasisOccurrence({
-  completionLogs,
-  item,
-  now,
-  primaryOccurrence,
-  scheduledAtUtc,
-  timezone,
-}: {
-  completionLogs: CompletionLog[];
-  item: RecurringItem;
-  now: Date;
-  primaryOccurrence: DerivedOccurrence | null;
-  scheduledAtUtc?: string;
-  timezone: string;
-}): DerivedOccurrence | null {
-  return createItemOccurrenceProjection({
-    completionLogs,
-    item,
-    now,
-    timezone,
-  }).getBasisOccurrence({
-    fallbackOccurrence: primaryOccurrence,
-    scheduledAtUtc,
-  });
-}
-
 export function buildOccurrenceStatusCard({
   language,
   now,

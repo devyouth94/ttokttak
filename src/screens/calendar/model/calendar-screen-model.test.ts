@@ -22,8 +22,6 @@ import {
   clampVisibleMonth,
   createCalendarScreenState,
   formatCalendarDayEntryCount,
-  formatSelectedDateSectionTitle,
-  formatVisibleMonthTitle,
   getMinimumVisibleMonth,
   shiftVisibleMonth,
   syncCalendarScreenStateToTimezone,
@@ -197,21 +195,7 @@ describe("calendar-screen-model", () => {
     });
   });
 
-  it("보이는 월 제목을 한국어 형식으로 만든다", () => {
-    expect(formatVisibleMonthTitle("2026-04")).toBe("2026년 4월");
-  });
-
-  it("선택 날짜 제목을 요일 포함 형식으로 만든다", () => {
-    expect(formatSelectedDateSectionTitle("2026-04-16")).toBe(
-      "4월 16일 목요일"
-    );
-  });
-
-  it("English 모드에서는 월, 선택 날짜, 개수 라벨을 English로 만든다", () => {
-    expect(formatVisibleMonthTitle("2026-04", "en")).toBe("April 2026");
-    expect(formatSelectedDateSectionTitle("2026-04-16", "en")).toBe(
-      "Thursday, Apr 16"
-    );
+  it("English 모드에서는 개수 라벨을 English로 만든다", () => {
     expect(formatCalendarDayEntryCount(1, "en")).toBe("1 item");
     expect(formatCalendarDayEntryCount(2, "en")).toBe("2 items");
   });

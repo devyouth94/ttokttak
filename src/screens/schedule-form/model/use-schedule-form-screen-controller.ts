@@ -21,7 +21,6 @@ import {
 } from "~/features/mutate-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 
-import { type ScheduleFormScreenModel } from "./schedule-form-contracts";
 import {
   createDefaultFormState,
   createRecurringItemFormSchema,
@@ -55,7 +54,7 @@ type UseScheduleFormScreenControllerParams = {
 export function useScheduleFormScreenController({
   itemId,
   returnTo,
-}: UseScheduleFormScreenControllerParams): ScheduleFormScreenModel {
+}: UseScheduleFormScreenControllerParams) {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const isEditMode = Boolean(itemId);

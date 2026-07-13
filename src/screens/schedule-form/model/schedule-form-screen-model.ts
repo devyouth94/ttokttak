@@ -1,5 +1,3 @@
-import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
-
 import {
   formatFullLocalDate,
   formatLocalTimeLabel,
@@ -7,25 +5,15 @@ import {
   getFirstOccurrenceLocalDate,
   type RecurrenceType,
 } from "~/entities/schedule";
-import {
-  getRecurringItemColorOptions,
-  requiresWeekdayMask,
-  supportsCompletionBased,
-} from "~/entities/schedule";
+import { requiresWeekdayMask } from "~/entities/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 import {
   type CustomRecurrenceUnit,
-  type DatePickerTarget,
   getCustomRecurrenceUnit,
-  type PickerMode,
 } from "./schedule-form-state";
 
 export type FormErrorTarget = "options" | "recurrence" | "schedule" | "title";
-export type PickerChangeHandler = (
-  event: DateTimePickerEvent,
-  selectedDate?: Date
-) => void;
 export type RecurringItemFormErrorState = {
   anchor?: string;
   endDate?: string;
@@ -130,18 +118,6 @@ const customRecurrenceUnitOptionsByLanguage: Record<
   ],
 };
 
-export const weekdayOptions = weekdayOptionsByLanguage.ko;
-
-export const quickRecurrenceOptions: {
-  label: string;
-  value: RecurrenceType;
-}[] = quickRecurrenceOptionsByLanguage.ko;
-
-export const customRecurrenceUnitOptions: {
-  label: string;
-  value: CustomRecurrenceUnit;
-}[] = customRecurrenceUnitOptionsByLanguage.ko;
-
 export function getWeekdayOptions(language: AppLanguage = "ko") {
   return weekdayOptionsByLanguage[language];
 }
@@ -153,12 +129,6 @@ export function getQuickRecurrenceOptions(language: AppLanguage = "ko") {
 export function getCustomRecurrenceUnitOptions(language: AppLanguage = "ko") {
   return customRecurrenceUnitOptionsByLanguage[language];
 }
-
-export function getFormColorOptions(language: AppLanguage = "ko") {
-  return getRecurringItemColorOptions(language);
-}
-
-export const recurringItemColorOptions = getFormColorOptions("ko");
 
 function formatLocalDateForDisplay(
   localDate: string,
@@ -302,24 +272,6 @@ function getFirstWeeklyOccurrenceLocalDate(formState: {
   });
 }
 
-export function getIosPickerChangeHandler(
-  pickerMode: PickerMode | null,
-  datePickerTarget: DatePickerTarget | null,
-  handlers: {
-    onEndDateChange: PickerChangeHandler;
-    onStartDateChange: PickerChangeHandler;
-    onTimeChange: PickerChangeHandler;
-  }
-): PickerChangeHandler {
-  if (pickerMode === "time") {
-    return handlers.onTimeChange;
-  }
-
-  return datePickerTarget === "endDate"
-    ? handlers.onEndDateChange
-    : handlers.onStartDateChange;
-}
-
 export function getRecurringItemFormFirstErrorTarget(
   errors: RecurringItemFormErrorState
 ): FormErrorTarget | null {
@@ -359,18 +311,6 @@ export function getRecurrenceSectionState(
     showsCustomRecurrencePanel: customUnit !== null,
     showsWeekdaySelector,
     showsWeekdaysInsideCustomPanel,
-  };
-}
-
-export function getAdvancedOptionsState(params: {
-  recurrenceType: RecurrenceType;
-}): {
-  isCompletionBasedSwitchEnabled: boolean;
-} {
-  return {
-    isCompletionBasedSwitchEnabled:
-      params.recurrenceType !== "once" &&
-      supportsCompletionBased(params.recurrenceType),
   };
 }
 

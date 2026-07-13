@@ -7,11 +7,7 @@ import type {
   RecurringItem,
   RecurringItemColorKey,
 } from "~/entities/schedule";
-import {
-  formatUtcTimeInTimezone,
-  formatVisibleMonthTitle as formatScheduleVisibleMonthTitle,
-  formatWeekdayLocalDateTitle,
-} from "~/entities/schedule";
+import { formatUtcTimeInTimezone } from "~/entities/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
@@ -91,20 +87,6 @@ export function syncCalendarScreenStateToTimezone({
 
 function createVisibleMonthDate(visibleMonth: string): Date {
   return parse(`${visibleMonth}-01`, "yyyy-MM-dd", new Date());
-}
-
-export function formatVisibleMonthTitle(
-  visibleMonth: string,
-  language: AppLanguage = "ko"
-): string {
-  return formatScheduleVisibleMonthTitle(visibleMonth, language);
-}
-
-export function formatSelectedDateSectionTitle(
-  selectedDate: string,
-  language: AppLanguage = "ko"
-): string {
-  return formatWeekdayLocalDateTitle(selectedDate, language);
 }
 
 export function formatCalendarDayEntryCount(
