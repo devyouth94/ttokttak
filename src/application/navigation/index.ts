@@ -1,7 +1,8 @@
 export { MainTabsLayout } from "./ui/main-tabs-layout";
-export { MainBottomNav } from "./ui/main-bottom-nav";
-export { shouldShowMainBottomNav } from "./ui/main-bottom-nav.helpers";
-export { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "./ui/main-bottom-nav-layout";
+export {
+  MainBottomNav,
+  MAIN_BOTTOM_NAV_RESERVED_HEIGHT,
+} from "./ui/main-bottom-nav";
 export {
   ThemedItemsStack,
   ThemedMainTabStack,

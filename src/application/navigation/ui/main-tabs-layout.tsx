@@ -6,14 +6,20 @@ import { useSession } from "~/application/session";
 import { useAppThemeColors } from "~/shared/theme";
 
 import { MainBottomNav } from "./main-bottom-nav";
-import { shouldShowMainBottomNav } from "./main-bottom-nav.helpers";
+
+const MAIN_BOTTOM_NAV_VISIBLE_PATHS = new Set([
+  "/home",
+  "/calendar",
+  "/schedule",
+  "/settings",
+]);
 
 export function MainTabsLayout(): React.JSX.Element {
   const { isAuthenticated, isLoading } = useSession();
   const { t } = useTranslation();
   const themeColors = useAppThemeColors();
   const pathname = usePathname();
-  const showBottomNav = shouldShowMainBottomNav(pathname);
+  const showBottomNav = MAIN_BOTTOM_NAV_VISIBLE_PATHS.has(pathname);
 
   if (isLoading) {
     return (

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { router, usePathname } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { CommonActions } from "@react-navigation/native";
 import {
   CalendarDays,
   House,
@@ -16,8 +17,9 @@ import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { spacing } from "~/shared/ui/tokens";
 
-import { pressMainBottomNavRoute } from "./main-bottom-nav.helpers";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "./main-bottom-nav-layout";
+import { shouldNavigateMainBottomNavRoute } from "./main-bottom-nav.helpers";
+
+export const MAIN_BOTTOM_NAV_RESERVED_HEIGHT = 92;
 
 type MainTabKey = "home" | "calendar" | "schedule" | "settings";
 
@@ -187,12 +189,20 @@ function MainBottomNavItem({
         });
       }}
       onPress={() => {
-        pressMainBottomNavRoute({
-          isFocused: isActive,
-          navigation,
-          route,
-          stateKey,
+        const event = navigation.emit({
+          canPreventDefault: true,
+          target: route.key,
+          type: "tabPress",
         });
+
+        if (
+          shouldNavigateMainBottomNavRoute(isActive, event.defaultPrevented)
+        ) {
+          navigation.dispatch({
+            ...CommonActions.navigate(route),
+            target: stateKey,
+          });
+        }
       }}
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
     >
