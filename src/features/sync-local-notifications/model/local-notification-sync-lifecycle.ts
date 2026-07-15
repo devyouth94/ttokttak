@@ -193,8 +193,6 @@ export function createLocalNotificationSyncLifecycle({
         return;
       }
 
-      lastSessionSyncKey = syncKey;
-
       await syncAllSafely({
         context: {
           language,

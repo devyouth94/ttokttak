@@ -47,6 +47,38 @@ describe("createLocalNotificationSyncLifecycle", () => {
     });
   });
 
+  it("세션 복원 동기화가 실패하면 같은 세션에서 다시 시도한다", async () => {
+    const cancelAllTtokttakLocalReminderNotifications = jest.fn(
+      async () => undefined
+    );
+    const syncError = new Error("session sync failed");
+    const captureException = jest.fn();
+    const syncLocalReminderNotifications = jest
+      .fn(async () => undefined)
+      .mockRejectedValueOnce(syncError);
+    const lifecycle = createLocalNotificationSyncLifecycle({
+      cancelAllTtokttakLocalReminderNotifications,
+      captureException,
+      syncLocalReminderNotifications,
+    });
+    const context = {
+      language: "ko" as const,
+      timezone,
+      userId: "user-1",
+    };
+
+    await lifecycle.syncAfterSessionRestored(context);
+    await lifecycle.syncAfterSessionRestored(context);
+    await lifecycle.syncAfterSessionRestored(context);
+
+    expect(syncLocalReminderNotifications).toHaveBeenCalledTimes(2);
+    expect(captureException).toHaveBeenCalledWith(syncError, {
+      tags: {
+        feature: "local-notification-session-sync",
+      },
+    });
+  });
+
   it("세션 복원은 표시 언어만 바뀌어도 중복 전체 동기화하지 않는다", async () => {
     const cancelAllTtokttakLocalReminderNotifications = jest.fn(
       async () => undefined
