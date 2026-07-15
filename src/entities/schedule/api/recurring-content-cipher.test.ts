@@ -1,4 +1,9 @@
 import { recurringContentCipher } from "~/entities/schedule/api/recurring-content-cipher";
+import { listRecurringItems } from "~/entities/schedule/api/recurring-items-repository";
+import {
+  createRecurringItemsPersistenceDouble,
+  createStoredRecurringItemFixture,
+} from "~/entities/schedule/api/repository-test-helpers";
 import {
   getUserContentEncryptionKey,
   recoverUserContentKey,
@@ -236,6 +241,82 @@ describe("recurringContentCipher", () => {
       "ttokttak.user-content-key.v1.user-1",
       "server-content-key"
     );
+  });
+
+  it("일정 목록마다 같은 로컬 key 조회와 서버 복구를 한 번만 수행한다", async () => {
+    mockGetItemAsync.mockResolvedValue("wrong-local-content-key");
+    jest.mocked(recoverUserContentKey).mockResolvedValue("server-content-key");
+    const firstItem = createStoredRecurringItemFixture({
+      contentEncryptionMetadata: {
+        algorithm: "AES-GCM",
+        encoding: "combined-base64",
+        keyStorage: "server-wrapped",
+      },
+      titleCiphertext,
+    });
+    const persistence = createRecurringItemsPersistenceDouble();
+    persistence.listItems.mockResolvedValue([
+      firstItem,
+      createStoredRecurringItemFixture({
+        ...firstItem,
+        id: "item-2",
+        titleCiphertext,
+      }),
+    ]);
+
+    await listRecurringItems({
+      persistence,
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+    await listRecurringItems({
+      persistence,
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+
+    expect(mockGetItemAsync).toHaveBeenCalledTimes(2);
+    expect(recoverUserContentKey).toHaveBeenCalledTimes(2);
+    expect(mockImport).toHaveBeenCalledTimes(4);
+  });
+
+  it("같은 로컬 key의 기존 metadata backfill을 목록마다 한 번만 수행한다", async () => {
+    mockGetItemAsync.mockResolvedValue("valid-local-content-key");
+    jest.mocked(getUserContentEncryptionKey).mockResolvedValue({
+      createdAt: "2026-07-14T00:00:00.000Z",
+      keyVersion: 1,
+      updatedAt: "2026-07-14T00:00:00.000Z",
+      userId: "user-1",
+      wrapAlgorithm: "AES-GCM",
+      wrapMetadata: {},
+      wrappedKey: "existing-wrapped-key",
+    });
+    const firstItem = createStoredRecurringItemFixture({
+      contentEncryptionMetadata: {
+        algorithm: "AES-GCM",
+        encoding: "combined-base64",
+        keyStorage: "expo-secure-store",
+      },
+      descriptionCiphertext: null,
+      titleCiphertext,
+    });
+    const persistence = createRecurringItemsPersistenceDouble();
+    persistence.listItems.mockResolvedValue([
+      firstItem,
+      createStoredRecurringItemFixture({
+        ...firstItem,
+        id: "item-2",
+        titleCiphertext,
+      }),
+    ]);
+
+    await listRecurringItems({
+      persistence,
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+
+    expect(upsertUserContentEncryptionKey).toHaveBeenCalledTimes(1);
   });
 
   it("복호화할 content key가 없으면 새 key를 만들지 않고 실패한다", async () => {

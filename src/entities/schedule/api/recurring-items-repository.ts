@@ -3,6 +3,7 @@ import { fromZonedTime } from "date-fns-tz";
 import { type RepositoryClient } from "~/shared/api/repository-client";
 
 import {
+  createRecurringItemContentDecryptor,
   recurringContentCipher,
   type RecurringItemContentCipher,
 } from "./recurring-content-cipher";
@@ -237,12 +238,16 @@ async function getRecurringItemByIdFromPersistence(params: {
 
 export async function listRecurringItems({
   client,
-  contentCipher = recurringContentCipher,
+  contentCipher,
   includeArchived = false,
   persistence: providedPersistence,
   timezone,
   userId,
 }: ListRecurringItemsOptions): Promise<RecurringItem[]> {
+  const listContentCipher = contentCipher ?? {
+    ...recurringContentCipher,
+    decryptRecurringItemContent: createRecurringItemContentDecryptor(),
+  };
   const persistence = resolveRecurringItemsPersistence({
     client,
     persistence: providedPersistence,
@@ -254,7 +259,7 @@ export async function listRecurringItems({
   });
 
   return Promise.all(
-    items.map((item) => toRecurringItem(item, contentCipher, timezone))
+    items.map((item) => toRecurringItem(item, listContentCipher, timezone))
   );
 }
 

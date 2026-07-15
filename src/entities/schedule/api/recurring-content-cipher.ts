@@ -52,12 +52,15 @@ async function decryptContentWithKey(params: {
   };
 }
 
-async function getRecurringContentKeyForDecrypt(params: {
-  keyVersion: number;
-  userId: string;
-}): Promise<StoredContentKey> {
+async function getRecurringContentKeyForDecrypt(
+  params: {
+    keyVersion: number;
+    userId: string;
+  },
+  loadContentKey: typeof getContentKeyForDecrypt = getContentKeyForDecrypt
+): Promise<StoredContentKey> {
   try {
-    return await getContentKeyForDecrypt(params);
+    return await loadContentKey(params);
   } catch (error) {
     if (!(error instanceof Error)) {
       throw error;
@@ -75,55 +78,104 @@ async function getRecurringContentKeyForDecrypt(params: {
   }
 }
 
-export const recurringContentCipher: RecurringItemContentCipher = {
-  async decryptRecurringItemContent(content) {
-    const metadata = assertRecurringItemContentEncryptionMetadata(
-      content.metadata
-    );
-    const storedKey = await getRecurringContentKeyForDecrypt({
+async function decryptRecurringItemContent(
+  content: EncryptedRecurringItemContent & { userId: string },
+  getContentKey: typeof getContentKeyForDecrypt = getContentKeyForDecrypt,
+  getServerContentKey: typeof getServerWrappedContentKey = getServerWrappedContentKey,
+  upsertContentKey: typeof upsertWrappedContentKey = upsertWrappedContentKey
+): Promise<DecryptedRecurringItemContent> {
+  const metadata = assertRecurringItemContentEncryptionMetadata(
+    content.metadata
+  );
+  const storedKey = await getRecurringContentKeyForDecrypt(
+    {
+      keyVersion: content.keyVersion,
+      userId: content.userId,
+    },
+    getContentKey
+  );
+
+  try {
+    const decryptedContent = await decryptContentWithKey({
+      content,
+      key: storedKey.key,
+    });
+
+    if (
+      storedKey.source === "local" &&
+      storedKey.encodedKey &&
+      metadata.keyStorage === "expo-secure-store"
+    ) {
+      await upsertContentKey({
+        encodedKey: storedKey.encodedKey,
+        keyVersion: content.keyVersion,
+        userId: content.userId,
+      });
+    }
+
+    return decryptedContent;
+  } catch (error) {
+    if (storedKey.source === "server") {
+      throw error;
+    }
+
+    const serverKey = await getServerContentKey({
       keyVersion: content.keyVersion,
       userId: content.userId,
     });
 
-    try {
-      const decryptedContent = await decryptContentWithKey({
-        content,
-        key: storedKey.key,
-      });
-
-      if (
-        storedKey.source === "local" &&
-        storedKey.encodedKey &&
-        metadata.keyStorage === "expo-secure-store"
-      ) {
-        await upsertWrappedContentKey({
-          encodedKey: storedKey.encodedKey,
-          keyVersion: content.keyVersion,
-          userId: content.userId,
-        });
-      }
-
-      return decryptedContent;
-    } catch (error) {
-      if (storedKey.source === "server") {
-        throw error;
-      }
-
-      const serverKey = await getServerWrappedContentKey({
-        keyVersion: content.keyVersion,
-        userId: content.userId,
-      });
-
-      if (!serverKey) {
-        throw error;
-      }
-
-      return decryptContentWithKey({
-        content,
-        key: serverKey.key,
-      });
+    if (!serverKey) {
+      throw error;
     }
-  },
+
+    return decryptContentWithKey({
+      content,
+      key: serverKey.key,
+    });
+  }
+}
+
+function getSharedPromise<Value>(
+  promises: Map<string, Promise<Value>>,
+  key: string,
+  load: () => Promise<Value>
+): Promise<Value> {
+  const promise = promises.get(key) ?? load();
+  promises.set(key, promise);
+  return promise;
+}
+
+export function createRecurringItemContentDecryptor(): RecurringItemContentCipher["decryptRecurringItemContent"] {
+  const contentKeyPromises = new Map<string, Promise<StoredContentKey>>();
+  const serverContentKeyPromises = new Map<
+    string,
+    Promise<StoredContentKey | null>
+  >();
+  const wrappedContentKeyPromises = new Map<string, Promise<void>>();
+
+  return (content) => {
+    const key = JSON.stringify([content.userId, content.keyVersion]);
+
+    return decryptRecurringItemContent(
+      content,
+      (params) =>
+        getSharedPromise(contentKeyPromises, key, () =>
+          getContentKeyForDecrypt(params)
+        ),
+      (params) =>
+        getSharedPromise(serverContentKeyPromises, key, () =>
+          getServerWrappedContentKey(params)
+        ),
+      (params) =>
+        getSharedPromise(wrappedContentKeyPromises, key, () =>
+          upsertWrappedContentKey(params)
+        )
+    );
+  };
+}
+
+export const recurringContentCipher: RecurringItemContentCipher = {
+  decryptRecurringItemContent,
   async encryptRecurringItemContent({ description, title, userId }) {
     const key = await getOrCreateContentKeyForEncrypt(userId);
 
