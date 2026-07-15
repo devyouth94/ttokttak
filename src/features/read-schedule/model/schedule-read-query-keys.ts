@@ -26,6 +26,16 @@ export const scheduleReadQueryKeys = {
       "item",
       itemId,
     ] as const,
+  completionLogsForItemProjection: (userId: string, itemId: string) =>
+    [
+      "schedule-read",
+      "user",
+      userId,
+      "completion-logs",
+      "item",
+      itemId,
+      "projection",
+    ] as const,
   item: (userId: string, timezone: string, itemId: string) =>
     ["schedule-read", "user", userId, "items", timezone, itemId] as const,
   items: (userId: string, timezone: string) =>

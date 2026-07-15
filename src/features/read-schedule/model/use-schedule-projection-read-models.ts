@@ -18,7 +18,10 @@ import {
 
 import type { ScheduleReadContext } from "./schedule-read-context";
 import { useOccurrenceProjectionQuery } from "./use-occurrence-projection-query";
-import { useScheduleCompletionLogsQuery } from "./use-schedule-completion-logs-query";
+import {
+  useScheduleCompletionLogsForItemProjectionQuery,
+  useScheduleCompletionLogsQuery,
+} from "./use-schedule-completion-logs-query";
 import { useScheduleByIdQuery } from "./use-schedule-items-query";
 
 const EMPTY_COMPLETION_LOGS: CompletionLog[] = [];
@@ -229,13 +232,22 @@ export function useScheduleDetailReadModelQuery({
     timezone,
     userId,
   });
-  const completionLogsQuery = useScheduleCompletionLogsQuery({
+  const historyCompletionLogsQuery = useScheduleCompletionLogsQuery({
     enabled: isReady,
     itemId,
     userId,
   });
+  const projectionCompletionLogsQuery =
+    useScheduleCompletionLogsForItemProjectionQuery({
+      enabled: isReady,
+      itemId,
+      userId,
+    });
   const item = itemQuery.data ?? null;
-  const completionLogs = completionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;
+  const completionLogs =
+    historyCompletionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;
+  const projectionCompletionLogs =
+    projectionCompletionLogsQuery.data ?? EMPTY_COMPLETION_LOGS;
   const { basisOccurrence, nextOccurrence, overdueOccurrences } =
     useMemo(() => {
       if (!item) {
@@ -247,7 +259,7 @@ export function useScheduleDetailReadModelQuery({
       }
 
       const projection = createItemOccurrenceProjection({
-        completionLogs,
+        completionLogs: projectionCompletionLogs,
         item,
         now,
         timezone,
@@ -267,20 +279,29 @@ export function useScheduleDetailReadModelQuery({
         nextOccurrence,
         overdueOccurrences,
       };
-    }, [completionLogs, item, now, scheduledAtUtc, timezone]);
+    }, [item, now, projectionCompletionLogs, scheduledAtUtc, timezone]);
   const refetch = async (): Promise<void> => {
-    await Promise.all([itemQuery.refetch(), completionLogsQuery.refetch()]);
+    await Promise.all([
+      itemQuery.refetch(),
+      historyCompletionLogsQuery.refetch(),
+      projectionCompletionLogsQuery.refetch(),
+    ]);
   };
 
   return {
     basisOccurrence,
     completionLogs,
-    error: itemQuery.error ?? completionLogsQuery.error,
+    error:
+      itemQuery.error ??
+      historyCompletionLogsQuery.error ??
+      projectionCompletionLogsQuery.error,
     isLoading:
       !isReady ||
       !userId ||
       itemQuery.isPending ||
-      (Boolean(itemQuery.data) && completionLogsQuery.isPending),
+      (Boolean(itemQuery.data) &&
+        (historyCompletionLogsQuery.isPending ||
+          projectionCompletionLogsQuery.isPending)),
     isReady,
     item,
     nextOccurrence,

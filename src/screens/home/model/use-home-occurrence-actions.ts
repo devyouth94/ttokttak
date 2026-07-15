@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { CompletionAction, CompletionLog } from "~/entities/schedule";
-import { createCompletionLog } from "~/entities/schedule/api";
+import { createCompletionLogs } from "~/entities/schedule/api";
 import {
   completeHomeFeedOccurrence,
   skipHomeFeedOccurrence,
@@ -72,7 +72,7 @@ export function useHomeOccurrenceActions({
         await processOccurrence({
           captureException: Sentry.captureException,
           completionLogs,
-          createCompletionLog,
+          createCompletionLogs,
           invalidateScheduleReadQueries: async (readyUserId) => {
             await invalidateScheduleReadQueries(queryClient, readyUserId);
           },

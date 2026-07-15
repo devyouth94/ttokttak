@@ -4,6 +4,7 @@ import type { CompletionLog } from "~/entities/schedule";
 import {
   getCompletionLogAnchorBeforeRange,
   listCompletionLogs,
+  listCompletionLogsForItem,
   listCompletionLogsForItemHistory,
   listCompletionLogsInRange,
 } from "~/entities/schedule/api";
@@ -108,6 +109,29 @@ export function useScheduleCompletionLogsQuery({
         userId: userId!,
       }),
     queryKey: scheduleReadQueryKeys.completionLogsForItem(
+      userId ?? "anonymous",
+      itemId ?? "unknown"
+    ),
+  });
+}
+
+export function useScheduleCompletionLogsForItemProjectionQuery({
+  enabled,
+  itemId,
+  userId,
+}: {
+  enabled: boolean;
+  itemId: string | null;
+  userId: string | null;
+}) {
+  return useQuery({
+    enabled: enabled && Boolean(userId) && Boolean(itemId),
+    queryFn: async () =>
+      listCompletionLogsForItem({
+        itemId: itemId!,
+        userId: userId!,
+      }),
+    queryKey: scheduleReadQueryKeys.completionLogsForItemProjection(
       userId ?? "anonymous",
       itemId ?? "unknown"
     ),

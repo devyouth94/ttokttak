@@ -41,7 +41,9 @@ export type ProcessHomeFeedOccurrenceActionOptions = {
   action: CompletionAction;
   captureException?: CaptureHomeFeedOccurrenceActionException;
   completionLogs: CompletionLog[];
-  createCompletionLog: (input: HomeFeedOccurrenceLogInput) => Promise<unknown>;
+  createCompletionLogs: (
+    inputs: HomeFeedOccurrenceLogInput[]
+  ) => Promise<unknown>;
   invalidateScheduleReadQueries: (userId: string) => Promise<void>;
   now: Date;
   refetchFeed: () => Promise<void>;
@@ -78,7 +80,7 @@ async function processHomeFeedOccurrenceAction({
   action,
   captureException,
   completionLogs,
-  createCompletionLog,
+  createCompletionLogs,
   invalidateScheduleReadQueries,
   now,
   refetchFeed,
@@ -108,15 +110,13 @@ async function processHomeFeedOccurrenceAction({
   );
 
   if (pendingOccurrences.length > 0) {
-    await Promise.all(
-      pendingOccurrences.map((occurrence) =>
-        createCompletionLog({
-          action,
-          itemId: target.item.id,
-          scheduledAtUtc: occurrence.scheduledAtUtc,
-          userId,
-        })
-      )
+    await createCompletionLogs(
+      pendingOccurrences.map((occurrence) => ({
+        action,
+        itemId: target.item.id,
+        scheduledAtUtc: occurrence.scheduledAtUtc,
+        userId,
+      }))
     );
   }
 

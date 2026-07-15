@@ -102,18 +102,31 @@ export async function listCompletionLogsForItem({
   userId,
 }: ListCompletionLogsForItemOptions): Promise<CompletionLog[]> {
   const supabase = getRepositoryClient(client);
-  const { data, error } = await supabase
-    .from("completion_logs")
-    .select("*")
-    .eq("item_id", itemId)
-    .eq("user_id", userId)
-    .order("scheduled_at_utc", { ascending: true });
+  const rows: CompletionLogRow[] = [];
+  let from = 0;
 
-  if (error) {
-    throw error;
+  while (true) {
+    const { data, error } = await supabase
+      .from("completion_logs")
+      .select("*")
+      .eq("item_id", itemId)
+      .eq("user_id", userId)
+      .order("scheduled_at_utc", { ascending: true })
+      .range(from, from + 999);
+
+    if (error) {
+      throw error;
+    }
+
+    rows.push(...data);
+    from += data.length;
+
+    if (data.length < 1000) {
+      break;
+    }
   }
 
-  return data.map(toCompletionLog);
+  return rows.map(toCompletionLog);
 }
 
 /**
@@ -228,22 +241,18 @@ export async function listCompletionLogsInRange({
 }
 
 /**
- * 특정 occurrence identity에 대한 completion 또는 skipped 로그를 생성한다.
+ * occurrence 처리 로그를 한 번에 생성한다.
  */
-export async function createCompletionLog(
-  input: CreateCompletionLogInput,
+export async function createCompletionLogs(
+  inputs: CreateCompletionLogInput[],
   client?: RepositoryClient
-): Promise<CompletionLog> {
+): Promise<void> {
   const supabase = getRepositoryClient(client);
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("completion_logs")
-    .insert(toCompletionLogInsert(input))
-    .select("*")
-    .single();
+    .insert(inputs.map(toCompletionLogInsert));
 
   if (error) {
     throw error;
   }
-
-  return toCompletionLog(data);
 }

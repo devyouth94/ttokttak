@@ -6,6 +6,7 @@ import {
 import {
   createCompletionLogFixture,
   createRecurringItemFixture,
+  type RecurringItemFixtureOverrides,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
 
@@ -15,7 +16,9 @@ import {
   skipHomeFeedOccurrence,
 } from "../index";
 
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
+function createItem(
+  overrides: RecurringItemFixtureOverrides = {}
+): RecurringItem {
   return createRecurringItemFixture({
     recurrenceType: "once",
     reminderTimeLocal: "18:00",
@@ -52,16 +55,14 @@ describe("home feed occurrence action use cases", () => {
     const item = createItem({ id: "scheduled-item" });
     const occurrence = getTodayOccurrence(item);
     const now = new Date("2026-04-10T03:00:00.000Z");
-    const createCompletionLog = jest.fn(async () =>
-      createLog({ itemId: item.id, scheduledAtUtc: occurrence.scheduledAtUtc })
-    );
+    const createCompletionLogs = jest.fn(async () => undefined);
     const syncAfterMutation = jest.fn(async () => undefined);
     const invalidateScheduleReadQueries = jest.fn(async () => undefined);
     const refetchFeed = jest.fn(async () => undefined);
 
     await completeHomeFeedOccurrence({
       completionLogs: [],
-      createCompletionLog,
+      createCompletionLogs,
       invalidateScheduleReadQueries,
       now,
       refetchFeed,
@@ -71,12 +72,14 @@ describe("home feed occurrence action use cases", () => {
       userId: "user-1",
     });
 
-    expect(createCompletionLog).toHaveBeenCalledWith({
-      action: "completed",
-      itemId: "scheduled-item",
-      scheduledAtUtc: "2026-04-10T09:00:00.000Z",
-      userId: "user-1",
-    });
+    expect(createCompletionLogs).toHaveBeenCalledWith([
+      {
+        action: "completed",
+        itemId: "scheduled-item",
+        scheduledAtUtc: "2026-04-10T09:00:00.000Z",
+        userId: "user-1",
+      },
+    ]);
     expect(syncAfterMutation).toHaveBeenCalledWith({
       reason: "occurrence-completed",
       scope: {
@@ -107,11 +110,11 @@ describe("home feed occurrence action use cases", () => {
       lookbackStartLocalDate: item.startDateLocal,
     });
     const createdScheduledAtUtcValues: string[] = [];
-    const createCompletionLog = jest.fn(
-      async (input: HomeFeedOccurrenceLogInput) => {
-        createdScheduledAtUtcValues.push(input.scheduledAtUtc);
-
-        return createLog();
+    const createCompletionLogs = jest.fn(
+      async (inputs: HomeFeedOccurrenceLogInput[]) => {
+        createdScheduledAtUtcValues.push(
+          ...inputs.map((input) => input.scheduledAtUtc)
+        );
       }
     );
 
@@ -119,7 +122,7 @@ describe("home feed occurrence action use cases", () => {
 
     await completeHomeFeedOccurrence({
       completionLogs: [],
-      createCompletionLog,
+      createCompletionLogs,
       invalidateScheduleReadQueries: jest.fn(async () => undefined),
       now,
       refetchFeed: jest.fn(async () => undefined),
@@ -159,13 +162,13 @@ describe("home feed occurrence action use cases", () => {
     }).getLatestOverdueOccurrence({
       lookbackStartLocalDate: item.startDateLocal,
     });
-    const createCompletionLog = jest.fn(async () => createLog());
+    const createCompletionLogs = jest.fn(async () => undefined);
 
     expect(occurrence).toBeDefined();
 
     await completeHomeFeedOccurrence({
       completionLogs,
-      createCompletionLog,
+      createCompletionLogs,
       invalidateScheduleReadQueries: jest.fn(async () => undefined),
       now,
       refetchFeed: jest.fn(async () => undefined),
@@ -175,26 +178,28 @@ describe("home feed occurrence action use cases", () => {
       userId: "user-1",
     });
 
-    expect(createCompletionLog).toHaveBeenCalledTimes(1);
-    expect(createCompletionLog).toHaveBeenCalledWith({
-      action: "completed",
-      itemId: item.id,
-      scheduledAtUtc: "2026-04-07T00:00:00.000Z",
-      userId: "user-1",
-    });
+    expect(createCompletionLogs).toHaveBeenCalledTimes(1);
+    expect(createCompletionLogs).toHaveBeenCalledWith([
+      {
+        action: "completed",
+        itemId: item.id,
+        scheduledAtUtc: "2026-04-07T00:00:00.000Z",
+        userId: "user-1",
+      },
+    ]);
   });
 
   it("userId가 없으면 occurrence 처리 side effect를 실행하지 않는다", async () => {
     const item = createItem({ id: "scheduled-item" });
     const occurrence = getTodayOccurrence(item);
-    const createCompletionLog = jest.fn(async () => createLog());
+    const createCompletionLogs = jest.fn(async () => undefined);
     const syncAfterMutation = jest.fn(async () => undefined);
     const invalidateScheduleReadQueries = jest.fn(async () => undefined);
     const refetchFeed = jest.fn(async () => undefined);
 
     await completeHomeFeedOccurrence({
       completionLogs: [],
-      createCompletionLog,
+      createCompletionLogs,
       invalidateScheduleReadQueries,
       now: new Date("2026-04-10T03:00:00.000Z"),
       refetchFeed,
@@ -204,7 +209,7 @@ describe("home feed occurrence action use cases", () => {
       userId: null,
     });
 
-    expect(createCompletionLog).not.toHaveBeenCalled();
+    expect(createCompletionLogs).not.toHaveBeenCalled();
     expect(syncAfterMutation).not.toHaveBeenCalled();
     expect(invalidateScheduleReadQueries).not.toHaveBeenCalled();
     expect(refetchFeed).not.toHaveBeenCalled();
@@ -214,18 +219,12 @@ describe("home feed occurrence action use cases", () => {
     const item = createItem({ id: "scheduled-item" });
     const occurrence = getTodayOccurrence(item);
     const now = new Date("2026-04-10T03:00:00.000Z");
-    const createCompletionLog = jest.fn(async () =>
-      createLog({
-        action: "skipped",
-        itemId: item.id,
-        scheduledAtUtc: occurrence.scheduledAtUtc,
-      })
-    );
+    const createCompletionLogs = jest.fn(async () => undefined);
     const syncAfterMutation = jest.fn(async () => undefined);
 
     await skipHomeFeedOccurrence({
       completionLogs: [],
-      createCompletionLog,
+      createCompletionLogs,
       invalidateScheduleReadQueries: jest.fn(async () => undefined),
       now,
       refetchFeed: jest.fn(async () => undefined),
@@ -235,12 +234,14 @@ describe("home feed occurrence action use cases", () => {
       userId: "user-1",
     });
 
-    expect(createCompletionLog).toHaveBeenCalledWith({
-      action: "skipped",
-      itemId: item.id,
-      scheduledAtUtc: "2026-04-10T09:00:00.000Z",
-      userId: "user-1",
-    });
+    expect(createCompletionLogs).toHaveBeenCalledWith([
+      {
+        action: "skipped",
+        itemId: item.id,
+        scheduledAtUtc: "2026-04-10T09:00:00.000Z",
+        userId: "user-1",
+      },
+    ]);
     expect(syncAfterMutation).toHaveBeenCalledWith({
       reason: "occurrence-skipped",
       scope: {
@@ -256,13 +257,8 @@ describe("home feed occurrence action use cases", () => {
     const occurrence = getTodayOccurrence(item);
     const syncError = new Error("notification sync failed");
     const events: string[] = [];
-    const createCompletionLog = jest.fn(async () => {
+    const createCompletionLogs = jest.fn(async () => {
       events.push("create-log");
-
-      return createLog({
-        itemId: item.id,
-        scheduledAtUtc: occurrence.scheduledAtUtc,
-      });
     });
     const syncAfterMutation = jest.fn(async () => {
       events.push("sync");
@@ -280,7 +276,7 @@ describe("home feed occurrence action use cases", () => {
       completeHomeFeedOccurrence({
         captureException,
         completionLogs: [],
-        createCompletionLog,
+        createCompletionLogs,
         invalidateScheduleReadQueries,
         now: new Date("2026-04-10T03:00:00.000Z"),
         refetchFeed,

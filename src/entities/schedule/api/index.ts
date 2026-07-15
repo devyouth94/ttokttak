@@ -1,5 +1,5 @@
 export {
-  createCompletionLog,
+  createCompletionLogs,
   getCompletionLogAnchorBeforeRange,
   listCompletionLogs,
   listCompletionLogsForItem,
