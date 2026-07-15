@@ -97,6 +97,44 @@ describe("profile repository", () => {
     expect(profile).toBe(insertedProfile);
   });
 
+  it("동시에 생성된 profile과 충돌하면 기존 행을 다시 읽는다", async () => {
+    const concurrentProfile = createProfile();
+    const initialFetchQuery = createAwaitableQuery(
+      {
+        data: null,
+        error: null,
+      },
+      ["eq", "maybeSingle"]
+    );
+    const concurrentFetchQuery = createAwaitableQuery(
+      {
+        data: concurrentProfile,
+        error: null,
+      },
+      ["eq", "maybeSingle"]
+    );
+    const select = jest
+      .fn()
+      .mockReturnValueOnce(initialFetchQuery)
+      .mockReturnValueOnce(concurrentFetchQuery);
+    const single = jest.fn().mockResolvedValue({
+      data: null,
+      error: { code: "23505" },
+    });
+    const insert = jest.fn(() => ({
+      select: jest.fn(() => ({ single })),
+    }));
+    const from = jest.fn(() => ({ insert, select }));
+
+    const profile = await ensureProfile({
+      client: { from } as never,
+      user: createUser() as never,
+    });
+
+    expect(profile).toBe(concurrentProfile);
+    expect(select).toHaveBeenCalledTimes(2);
+  });
+
   it("기존 profile 표시 이름이 비어 있을 때만 provider 이름을 동기화한다", async () => {
     const updatedProfile = createProfile({ display_name: "길동 홍" });
     const fetchQuery = createAwaitableQuery(

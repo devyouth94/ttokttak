@@ -71,6 +71,23 @@ export async function ensureProfile({
     .single();
 
   if (insertError) {
+    if (insertError.code === "23505") {
+      const { data: concurrentProfile, error: concurrentFetchError } =
+        await client
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+
+      if (!concurrentFetchError && concurrentProfile) {
+        return concurrentProfile;
+      }
+
+      if (concurrentFetchError) {
+        throw concurrentFetchError;
+      }
+    }
+
     throw insertError;
   }
 

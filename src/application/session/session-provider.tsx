@@ -20,7 +20,7 @@ import { cancelAllTtokttakLocalReminderNotifications } from "~/features/sync-loc
 import { isSupabaseConfigured, supabase } from "~/shared/api/supabase";
 
 type SessionContextValue = {
-  authEvent: AuthChangeEvent | "BOOTSTRAP" | null;
+  authEvent: AuthChangeEvent | null;
   errorMessage: string | null;
   isAuthenticated: boolean;
   isConfigured: boolean;
@@ -57,9 +57,7 @@ function getAuthProvider(user: User | null | undefined): string | null {
 export function SessionProvider({
   children,
 }: PropsWithChildren): React.JSX.Element {
-  const [authEvent, setAuthEvent] = useState<
-    AuthChangeEvent | "BOOTSTRAP" | null
-  >(null);
+  const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [sessionRevision, setSessionRevision] = useState(0);
@@ -68,6 +66,8 @@ export function SessionProvider({
 
   useEffect(() => {
     const client = supabase;
+    let isActive = true;
+    let latestSessionRequest = 0;
 
     if (!client) {
       setIsLoading(false);
@@ -76,8 +76,10 @@ export function SessionProvider({
 
     const applySession = async (
       nextSession: Session | null,
-      nextAuthEvent: AuthChangeEvent | "BOOTSTRAP"
+      nextAuthEvent: AuthChangeEvent
     ) => {
+      const request = ++latestSessionRequest;
+
       setAuthEvent(nextAuthEvent);
       setSessionRevision((previous) => previous + 1);
       setSession(nextSession);
@@ -90,6 +92,9 @@ export function SessionProvider({
       }
 
       setIsLoading(true);
+      setProfile((current) =>
+        current?.id === nextSession.user.id ? current : null
+      );
 
       try {
         const nextProfile = await ensureProfile({
@@ -97,41 +102,23 @@ export function SessionProvider({
           user: nextSession.user,
         });
 
+        if (!isActive || request !== latestSessionRequest) {
+          return;
+        }
+
         setProfile(nextProfile);
         setErrorMessage(null);
         setIsLoading(false);
       } catch (error) {
-        setProfile(null);
-        setErrorMessage(error instanceof Error ? error.message : String(error));
-        setIsLoading(false);
-      }
-    };
-
-    const bootstrap = async () => {
-      setIsLoading(true);
-
-      try {
-        const {
-          data: { session: initialSession },
-          error,
-        } = await client.auth.getSession();
-
-        if (error) {
-          throw error;
+        if (!isActive || request !== latestSessionRequest) {
+          return;
         }
 
-        await applySession(initialSession, "BOOTSTRAP");
-      } catch (error) {
-        setAuthEvent("BOOTSTRAP");
-        setSessionRevision((previous) => previous + 1);
-        setSession(null);
         setProfile(null);
         setErrorMessage(error instanceof Error ? error.message : String(error));
         setIsLoading(false);
       }
     };
-
-    void bootstrap();
 
     const {
       data: { subscription },
@@ -140,6 +127,8 @@ export function SessionProvider({
     });
 
     return () => {
+      isActive = false;
+      latestSessionRequest += 1;
       subscription.unsubscribe();
     };
   }, []);
