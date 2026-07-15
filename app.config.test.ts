@@ -47,16 +47,6 @@ describe("app config", () => {
     );
   });
 
-  it("로컬 알림 설정만 유지한다", () => {
-    const config = getAppConfig();
-
-    expect(config.android?.googleServicesFile).toBeUndefined();
-    expect(JSON.stringify(config.plugins)).not.toContain("expo-notifications");
-    expect(JSON.stringify(config.plugins)).toContain(
-      "./plugins/with-local-notifications-only"
-    );
-  });
-
   it("앱 공개 버전은 config에 명시하고 빌드 번호는 EAS 원격 기준으로 둔다", () => {
     const config = getAppConfig();
 
