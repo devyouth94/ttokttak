@@ -50,7 +50,7 @@ describe("app config", () => {
   it("앱 공개 버전은 config에 명시하고 빌드 번호는 EAS 원격 기준으로 둔다", () => {
     const config = getAppConfig();
 
-    expect(config.version).toBe("1.0.2");
+    expect(config.version).toBe("1.0.3");
     expect(config.ios?.buildNumber).toBeUndefined();
     expect(config.android?.versionCode).toBeUndefined();
   });

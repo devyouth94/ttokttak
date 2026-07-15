@@ -24,7 +24,7 @@ export default function getAppConfig(): ExpoConfig {
   return {
     name: "똑딱",
     slug: "ttokttak",
-    version: "1.0.2",
+    version: "1.0.3",
     runtimeVersion: {
       policy: "appVersion",
     },
