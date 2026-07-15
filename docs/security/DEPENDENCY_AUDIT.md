@@ -76,19 +76,28 @@ set -a; source .env.local; set +a
 ## 현재 override
 
 `pnpm-workspace.yaml`에 기록한다.
-아래 항목은 `pnpm audit --audit-level moderate` 차단 항목을 줄이기 위한 transitive dependency override다.
+아래 항목은 `pnpm audit`에서 확인한 transitive dependency 취약점을 줄이기 위한 override다.
 
+- `@tootallnate/once@>=2.0.0 <2.0.1` → `2.0.1`
 - `brace-expansion@>=5.0.0 <5.0.6` → `5.0.6`
+- `form-data@>=4.0.0 <4.0.6` → `4.0.6`
+- `js-yaml@>=3.0.0 <3.15.0` → `3.15.0`
+- `js-yaml@>=4.0.0 <4.2.0` → `4.2.0`
 - `postcss` → `8.5.12`
+- `shell-quote@>=1.1.0 <=1.8.3` → `1.8.4`
+- `undici@>=6.0.0 <6.27.0` → `6.27.0`
 - `uuid` → `11.1.1`
+- `ws@>=7.0.0 <7.5.11` → `7.5.11`
 - `ws@>=8.0.0 <8.20.1` → `8.21.0`
 
 ## 현재 예외
 
-### `@tootallnate/once`
+### `@babel/core`
 
 - severity: low
-- 유입 경로: `jest-expo` / `jest-environment-jsdom` / `jsdom` / `http-proxy-agent`
-- 분류: dev-only
-- 이유: 테스트 jsdom 경로이며 `pnpm audit --audit-level moderate`에는 포함되지 않는다.
-- 재검토 조건: Jest / jsdom / `http-proxy-agent` 업데이트로 patched 버전이 들어오면 제거한다.
+- 고정 버전: `7.29.0`
+- 유입 경로: Expo CLI, Metro, Jest의 Babel 변환 경로
+- 분류: build-time / dev-only
+- 이유: patched 버전 `7.29.7`에서 Metro가 Expo의 `expo-asset`을 해석하지 못한다.
+- 확인한 실제 사용 경로: 앱, 테스트, 설치된 `node_modules` 소스를 Metro와 Jest가 변환하는 빌드·테스트 프로세스다. 취약 입력은 해당 프로세스 권한의 로컬 파일에 접근할 수 있으며 앱 런타임에는 포함되지 않는다.
+- 재검토 조건: Expo SDK가 patched 버전을 직접 사용하면 제거한다.
