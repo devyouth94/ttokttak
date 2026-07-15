@@ -39,7 +39,6 @@ import {
   getScheduleFormIosPickerValue,
   getScheduleFormPickerDates,
   getTodayLocalDate,
-  type PickerMode,
   type RecurringItemFormValues,
   toDraft,
   toFormState,
@@ -50,6 +49,10 @@ type UseScheduleFormScreenControllerParams = {
   itemId?: string;
   returnTo?: string;
 };
+
+type ActivePicker =
+  | { mode: "date"; target: DatePickerTarget }
+  | { mode: "time" };
 
 export function useScheduleFormScreenController({
   itemId,
@@ -72,23 +75,9 @@ export function useScheduleFormScreenController({
       todayLocalDate,
     })
   );
-  const [pickerState, setPickerState] = useState({
-    iosDatePickerTarget: null as DatePickerTarget | null,
-    iosPickerMode: null as PickerMode | null,
-    iosPickerValue: new Date(),
-    isEndDatePickerVisible: false,
-    isStartDatePickerVisible: false,
-    isTimePickerVisible: false,
-  });
+  const [activePicker, setActivePicker] = useState<ActivePicker | null>(null);
+  const [iosPickerValue, setIosPickerValue] = useState(new Date());
   const { isBootstrapping, isDeleting, isSaving, screenError } = requestState;
-  const {
-    iosDatePickerTarget,
-    iosPickerMode,
-    iosPickerValue,
-    isEndDatePickerVisible,
-    isStartDatePickerVisible,
-    isTimePickerVisible,
-  } = pickerState;
 
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -99,8 +88,9 @@ export function useScheduleFormScreenController({
         isEditMode,
         language,
         todayLocalDate,
+        timezone,
       }),
-    [isEditMode, language, todayLocalDate]
+    [isEditMode, language, timezone, todayLocalDate]
   );
 
   const {
@@ -176,19 +166,9 @@ export function useScheduleFormScreenController({
   }
 
   function closeEndDatePicker(): void {
-    setPickerState((current) => ({
-      ...current,
-      iosDatePickerTarget:
-        current.iosDatePickerTarget === "endDate"
-          ? null
-          : current.iosDatePickerTarget,
-      iosPickerMode:
-        current.iosPickerMode === "date" &&
-        current.iosDatePickerTarget === "endDate"
-          ? null
-          : current.iosPickerMode,
-      isEndDatePickerVisible: false,
-    }));
+    setActivePicker((current) =>
+      current?.mode === "date" && current.target === "endDate" ? null : current
+    );
   }
 
   function handleBack(): void {
@@ -276,45 +256,35 @@ export function useScheduleFormScreenController({
     }
 
     if (event.type === "set" && selectedDate) {
-      setPickerState((current) => ({
-        ...current,
-        iosPickerValue: selectedDate,
-      }));
+      setIosPickerValue(selectedDate);
     }
 
     return true;
   }
 
-  function closeInlinePicker(
-    mode: PickerMode,
-    datePickerTarget: DatePickerTarget | null = null
-  ): void {
-    setPickerState((current) => ({
-      ...current,
-      isEndDatePickerVisible:
-        mode === "date" && datePickerTarget === "endDate"
-          ? false
-          : current.isEndDatePickerVisible,
-      isStartDatePickerVisible:
-        mode === "date" && datePickerTarget !== "endDate"
-          ? false
-          : current.isStartDatePickerVisible,
-      isTimePickerVisible:
-        mode === "time" ? false : current.isTimePickerVisible,
-    }));
-  }
-
-  function applyPickerValue(
-    mode: PickerMode,
-    selectedDate: Date,
-    datePickerTarget: DatePickerTarget | null = null
-  ): void {
-    if (mode === "time") {
+  function applyPickerValue(picker: ActivePicker, selectedDate: Date): void {
+    if (picker.mode === "time") {
       setField("reminderTimeLocal", formatDateToLocalTime(selectedDate));
-    } else if (datePickerTarget === "endDate") {
+    } else if (picker.target === "endDate") {
       handleChangeEndDate(formatDateToLocalDate(selectedDate));
     } else {
       handleChangeStartDate(formatDateToLocalDate(selectedDate));
+    }
+  }
+
+  function handlePickerChange(
+    picker: ActivePicker,
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ): void {
+    if (syncIosPickerValue(event, selectedDate)) {
+      return;
+    }
+
+    setActivePicker(null);
+
+    if (event.type === "set" && selectedDate) {
+      applyPickerValue(picker, selectedDate);
     }
   }
 
@@ -322,83 +292,49 @@ export function useScheduleFormScreenController({
     event: DateTimePickerEvent,
     selectedDate?: Date
   ): void {
-    if (syncIosPickerValue(event, selectedDate)) {
-      return;
-    }
-
-    closeInlinePicker("date", "startDate");
-
-    if (event.type === "set" && selectedDate) {
-      applyPickerValue("date", selectedDate, "startDate");
-    }
+    handlePickerChange(
+      { mode: "date", target: "startDate" },
+      event,
+      selectedDate
+    );
   }
 
   function handleEndDatePickerChange(
     event: DateTimePickerEvent,
     selectedDate?: Date
   ): void {
-    if (syncIosPickerValue(event, selectedDate)) {
-      return;
-    }
-
-    closeInlinePicker("date", "endDate");
-
-    if (event.type === "set" && selectedDate) {
-      applyPickerValue("date", selectedDate, "endDate");
-    }
+    handlePickerChange(
+      { mode: "date", target: "endDate" },
+      event,
+      selectedDate
+    );
   }
 
   function handleTimePickerChange(
     event: DateTimePickerEvent,
     selectedDate?: Date
   ): void {
-    if (syncIosPickerValue(event, selectedDate)) {
-      return;
-    }
-
-    closeInlinePicker("time");
-
-    if (event.type === "set" && selectedDate) {
-      applyPickerValue("time", selectedDate);
-    }
+    handlePickerChange({ mode: "time" }, event, selectedDate);
   }
 
-  function getIosPickerValue(
-    mode: PickerMode,
-    datePickerTarget: DatePickerTarget | null
-  ): Date {
+  function getIosPickerValue(picker: ActivePicker): Date {
     return getScheduleFormIosPickerValue({
-      datePickerTarget,
+      datePickerTarget: picker.mode === "date" ? picker.target : null,
       endDateLocal,
       minimumEndDateLocal,
       minimumStartDateLocal,
-      mode,
+      mode: picker.mode,
       reminderTimeLocal,
       startDateLocal,
     });
   }
 
-  function openPicker(
-    mode: PickerMode,
-    datePickerTarget: DatePickerTarget | null = null
-  ): void {
+  function openPicker(picker: ActivePicker): void {
     if (Platform.OS === "ios") {
-      setPickerState((current) => ({
-        ...current,
-        iosDatePickerTarget: mode === "date" ? datePickerTarget : null,
-        iosPickerMode: mode,
-        iosPickerValue: getIosPickerValue(mode, datePickerTarget),
-      }));
-      return;
+      setIosPickerValue(getIosPickerValue(picker));
     }
 
-    setPickerState((current) => ({
-      ...current,
-      isEndDatePickerVisible: mode === "date" && datePickerTarget === "endDate",
-      isStartDatePickerVisible:
-        mode === "date" && datePickerTarget !== "endDate",
-      isTimePickerVisible: mode === "time",
-    }));
+    setActivePicker(picker);
   }
 
   function openDatePicker(): void {
@@ -406,7 +342,7 @@ export function useScheduleFormScreenController({
       return;
     }
 
-    openPicker("date", "startDate");
+    openPicker({ mode: "date", target: "startDate" });
   }
 
   function openEndDatePicker(): void {
@@ -414,24 +350,20 @@ export function useScheduleFormScreenController({
       return;
     }
 
-    openPicker("date", "endDate");
+    openPicker({ mode: "date", target: "endDate" });
   }
 
   function openTimePicker(): void {
-    openPicker("time");
+    openPicker({ mode: "time" });
   }
 
   function closeIosPicker(): void {
-    setPickerState((current) => ({
-      ...current,
-      iosDatePickerTarget: null,
-      iosPickerMode: null,
-    }));
+    setActivePicker(null);
   }
 
   function confirmIosPicker(): void {
-    if (iosPickerMode) {
-      applyPickerValue(iosPickerMode, iosPickerValue, iosDatePickerTarget);
+    if (activePicker) {
+      applyPickerValue(activePicker, iosPickerValue);
     }
 
     closeIosPicker();
@@ -696,6 +628,19 @@ export function useScheduleFormScreenController({
     reminderTimeLocal,
     startDateLocal,
   });
+  const isIos = Platform.OS === "ios";
+  const iosPickerMode = isIos ? (activePicker?.mode ?? null) : null;
+  const iosDatePickerTarget =
+    isIos && activePicker?.mode === "date" ? activePicker.target : null;
+  const isEndDatePickerVisible =
+    !isIos &&
+    activePicker?.mode === "date" &&
+    activePicker.target === "endDate";
+  const isStartDatePickerVisible =
+    !isIos &&
+    activePicker?.mode === "date" &&
+    activePicker.target === "startDate";
+  const isTimePickerVisible = !isIos && activePicker?.mode === "time";
   const iosPickerMinimumDate =
     iosDatePickerTarget === "endDate"
       ? pickerDates.minimumEndDate

@@ -90,6 +90,26 @@ describe("recurring items repository", () => {
     expect(items[0]?.description).toBe("하루 8잔");
   });
 
+  it("현재 반복 규칙은 schedule version으로만 제공한다", async () => {
+    const persistence = createRecurringItemsPersistenceDouble();
+
+    const [item] = await listRecurringItems({
+      contentCipher,
+      persistence,
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+
+    expect(item?.scheduleVersions[0]).toEqual(
+      expect.objectContaining({
+        recurrenceType: "daily",
+        reminderTimeLocal: "09:00",
+      })
+    );
+    expect(item).not.toHaveProperty("recurrenceType");
+    expect(item).not.toHaveProperty("reminderTimeLocal");
+  });
+
   it("일정 목록 조회는 보관 일정 제외 의미를 persistence에 전달한다", async () => {
     const persistence = createRecurringItemsPersistenceDouble();
 
@@ -233,7 +253,7 @@ describe("recurring items repository", () => {
         endDateLocal: "2026-05-09",
       })
     );
-    expect(item.scheduleVersions?.[0]?.endDateLocal).toBe("2026-05-09");
+    expect(item.scheduleVersions[0].endDateLocal).toBe("2026-05-09");
   });
 
   it("한 번 일정 생성은 종료일 입력이 들어와도 null로 저장한다", async () => {

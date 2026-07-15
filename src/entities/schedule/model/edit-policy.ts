@@ -2,6 +2,7 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { getFirstFutureOccurrenceLocalDateAfterEdit } from "./occurrence";
 import type { CompletionLog, RecurringItem, RecurringItemDraft } from "./types";
+import { getCurrentScheduleVersion } from "./types";
 import { validateRecurringItemDraft } from "./validation";
 
 export type RecurringItemEditPatch = Partial<
@@ -43,20 +44,22 @@ type ResolveRecurringItemEditPolicyParams = {
 function toRecurringItemDraftFromEntity(
   item: RecurringItem
 ): RecurringItemDraft {
+  const schedule = getCurrentScheduleVersion(item);
+
   return {
-    anchorType: item.anchorType,
+    anchorType: schedule.anchorType,
     colorKey: item.colorKey,
     description: item.description,
-    endDateLocal: item.endDateLocal,
-    intervalValue: item.intervalValue,
+    endDateLocal: schedule.endDateLocal,
+    intervalValue: schedule.intervalValue,
     isArchived: item.isArchived,
-    notificationsEnabled: item.notificationsEnabled,
-    recurrenceType: item.recurrenceType,
-    reminderTimeLocal: item.reminderTimeLocal,
+    notificationsEnabled: schedule.notificationsEnabled,
+    recurrenceType: schedule.recurrenceType,
+    reminderTimeLocal: schedule.reminderTimeLocal,
     startDateLocal: item.startDateLocal,
     timezone: item.timezone,
     title: item.title,
-    weekdayMask: item.weekdayMask,
+    weekdayMask: schedule.weekdayMask,
   };
 }
 
@@ -79,14 +82,16 @@ function hasRuleChanges(
   item: RecurringItem,
   draft: RecurringItemDraft
 ): boolean {
+  const schedule = getCurrentScheduleVersion(item);
+
   return (
-    item.recurrenceType !== draft.recurrenceType ||
-    item.intervalValue !== draft.intervalValue ||
-    item.reminderTimeLocal !== draft.reminderTimeLocal ||
-    (item.endDateLocal ?? null) !== (draft.endDateLocal ?? null) ||
-    item.notificationsEnabled !== draft.notificationsEnabled ||
-    item.anchorType !== draft.anchorType ||
-    JSON.stringify(item.weekdayMask ?? null) !==
+    schedule.recurrenceType !== draft.recurrenceType ||
+    schedule.intervalValue !== draft.intervalValue ||
+    schedule.reminderTimeLocal !== draft.reminderTimeLocal ||
+    (schedule.endDateLocal ?? null) !== (draft.endDateLocal ?? null) ||
+    schedule.notificationsEnabled !== draft.notificationsEnabled ||
+    schedule.anchorType !== draft.anchorType ||
+    JSON.stringify(schedule.weekdayMask ?? null) !==
       JSON.stringify(draft.weekdayMask ?? null)
   );
 }

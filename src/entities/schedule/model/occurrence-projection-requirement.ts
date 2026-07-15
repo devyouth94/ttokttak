@@ -253,13 +253,11 @@ function getCompletionBasedItemIds(items: RecurringItem[]): string[] {
   return items
     .filter((item) => {
       const schedule = getCurrentScheduleVersion(item);
-      const anchorType = schedule?.anchorType ?? item.anchorType;
-      const recurrenceType = schedule?.recurrenceType ?? item.recurrenceType;
 
       return (
-        anchorType === "completion_based" &&
+        schedule.anchorType === "completion_based" &&
         completionBasedRecurrenceTypes.includes(
-          recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
+          schedule.recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
         )
       );
     })

@@ -1,4 +1,4 @@
-import { type RecurringItem } from "~/entities/schedule";
+import { createRecurringItemFixture } from "~/entities/schedule/testing";
 
 import {
   createDefaultFormState,
@@ -17,7 +17,6 @@ import {
   getScheduleFormIosPickerValue,
   getScheduleFormPickerDates,
   normalizeStartDateSelection,
-  recurringItemFormSchema,
   type RecurringItemFormValues,
   toDraft,
   toFormState,
@@ -31,16 +30,12 @@ function getValidationMessages(
     todayLocalDate?: string;
   } = {}
 ): string[] {
-  const schema =
-    options.todayLocalDate ||
-    options.isEditMode !== undefined ||
-    options.language
-      ? createRecurringItemFormSchema({
-          isEditMode: options.isEditMode ?? false,
-          language: options.language ?? "ko",
-          todayLocalDate: options.todayLocalDate ?? "2026-05-06",
-        })
-      : recurringItemFormSchema;
+  const schema = createRecurringItemFormSchema({
+    isEditMode: options.isEditMode ?? false,
+    language: options.language ?? "ko",
+    timezone: "Asia/Seoul",
+    todayLocalDate: options.todayLocalDate ?? "2026-05-06",
+  });
   const result = schema.safeParse({
     ...createDefaultFormState(),
     ...overrides,
@@ -275,48 +270,36 @@ describe("recurring item form draft", () => {
   });
 
   it("수정 화면 form state는 저장된 일정 색상 key를 유지한다", () => {
-    const item: RecurringItem = {
-      anchorType: "fixed",
+    const item = createRecurringItemFixture({
       colorKey: "green",
       createdAt: "2026-05-06T00:00:00.000Z",
       description: null,
       id: "item-1",
-      intervalValue: null,
       isArchived: false,
-      notificationsEnabled: true,
-      recurrenceType: "daily",
-      reminderTimeLocal: "09:00",
       startDateLocal: "2026-05-06",
       timezone: "Asia/Seoul",
       title: "물 마시기",
       updatedAt: "2026-05-06T00:00:00.000Z",
       userId: "user-1",
-      weekdayMask: null,
-    };
+    });
 
     expect(toFormState(item).colorKey).toBe("green");
   });
 
   it("수정 화면 form state는 저장된 종료일을 유지한다", () => {
-    const item: RecurringItem = {
-      anchorType: "fixed",
+    const item = createRecurringItemFixture({
       colorKey: "green",
       createdAt: "2026-05-06T00:00:00.000Z",
       description: null,
       endDateLocal: "2026-05-10",
       id: "item-1",
-      intervalValue: null,
       isArchived: false,
-      notificationsEnabled: true,
-      recurrenceType: "daily",
-      reminderTimeLocal: "09:00",
       startDateLocal: "2026-05-06",
       timezone: "Asia/Seoul",
       title: "물 마시기",
       updatedAt: "2026-05-06T00:00:00.000Z",
       userId: "user-1",
-      weekdayMask: null,
-    };
+    });
 
     expect(toFormState(item).endDateLocal).toBe("2026-05-10");
   });

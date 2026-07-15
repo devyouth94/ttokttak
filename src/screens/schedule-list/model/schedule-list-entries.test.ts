@@ -3,7 +3,10 @@ import type {
   ItemNextOccurrenceProjectionEntry,
   RecurringItem,
 } from "~/entities/schedule";
-import { createRecurringItemFixture } from "~/entities/schedule/testing";
+import {
+  createRecurringItemFixture,
+  type RecurringItemFixtureOverrides,
+} from "~/entities/schedule/testing";
 
 import { buildScheduleListEntries } from "./schedule-list-entries";
 
@@ -102,7 +105,7 @@ describe("schedule-list entries", () => {
 });
 
 function createRecurringItem(
-  overrides: Partial<RecurringItem> & Pick<RecurringItem, "id" | "title">
+  overrides: RecurringItemFixtureOverrides & Pick<RecurringItem, "id" | "title">
 ): RecurringItem {
   return createRecurringItemFixture({
     createdAt: "2026-04-20T00:00:00.000Z",

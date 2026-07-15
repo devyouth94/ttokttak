@@ -137,25 +137,18 @@ function toScheduleVersion(
 
 function getSortedScheduleVersions(
   row: StoredRecurringItem
-): RecurringItemScheduleVersion[] {
-  return row.scheduleVersions
+): RecurringItem["scheduleVersions"] {
+  const [firstVersion, ...remainingVersions] = row.scheduleVersions
     .map(toScheduleVersion)
     .sort((left, right) =>
       left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
     );
-}
 
-function getLatestScheduleVersion(
-  row: StoredRecurringItem
-): RecurringItemScheduleVersion {
-  const versions = getSortedScheduleVersions(row);
-  const latestVersion = versions[versions.length - 1];
-
-  if (!latestVersion) {
+  if (!firstVersion) {
     throw new Error("반복 규칙 버전을 찾을 수 없습니다.");
   }
 
-  return latestVersion;
+  return [firstVersion, ...remainingVersions];
 }
 
 /**
@@ -167,7 +160,6 @@ async function toRecurringItem(
   contentCipher: RecurringItemContentCipher,
   timezone: string
 ): Promise<RecurringItem> {
-  const latestVersion = getLatestScheduleVersion(row);
   const scheduleVersions = getSortedScheduleVersions(row);
   const content = await decryptRecurringItemContentWithFallback({
     contentCipher,
@@ -181,14 +173,7 @@ async function toRecurringItem(
     description: content.description,
     contentStatus: content.contentStatus,
     colorKey: row.colorKey,
-    endDateLocal: latestVersion.endDateLocal ?? null,
-    recurrenceType: latestVersion.recurrenceType,
-    intervalValue: latestVersion.intervalValue,
-    weekdayMask: latestVersion.weekdayMask,
     startDateLocal: row.startDateLocal,
-    reminderTimeLocal: latestVersion.reminderTimeLocal,
-    notificationsEnabled: latestVersion.notificationsEnabled,
-    anchorType: latestVersion.anchorType,
     timezone,
     isArchived: row.isArchived,
     createdAt: row.createdAt,

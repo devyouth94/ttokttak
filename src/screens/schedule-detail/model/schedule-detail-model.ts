@@ -308,10 +308,8 @@ export function buildSummarySettingBadges(
   language: AppLanguage = "ko"
 ): ItemDetailSummaryBadge[] {
   const currentSchedule = getCurrentScheduleVersion(item);
-  const anchorType = currentSchedule?.anchorType ?? item.anchorType;
-  const endDateLocal = currentSchedule
-    ? (currentSchedule.endDateLocal ?? null)
-    : (item.endDateLocal ?? null);
+  const anchorType = currentSchedule.anchorType;
+  const endDateLocal = currentSchedule.endDateLocal ?? null;
   const copy = summaryBadgeCopyByLanguage[language];
   const badges: ItemDetailSummaryBadge[] = [
     {
@@ -457,18 +455,14 @@ function getSummaryNotificationLabel(
   item: RecurringItem,
   language: AppLanguage
 ): string {
-  const currentSchedule = getCurrentScheduleVersion(item);
-
   return formatLocalTimeLabel(
-    currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal,
+    getCurrentScheduleVersion(item).reminderTimeLocal,
     language
   );
 }
 
 function getSummaryNotificationsEnabled(item: RecurringItem): boolean {
-  const currentSchedule = getCurrentScheduleVersion(item);
-
-  return currentSchedule?.notificationsEnabled ?? item.notificationsEnabled;
+  return getCurrentScheduleVersion(item).notificationsEnabled;
 }
 
 function getRelativeDayLabel(

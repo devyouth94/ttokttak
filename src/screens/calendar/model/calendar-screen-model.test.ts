@@ -13,6 +13,7 @@ import {
   createCompletionLogFixture,
   createRecurringItemFixture,
   createScheduleVersionFixture,
+  type RecurringItemFixtureOverrides,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
 
@@ -27,9 +28,11 @@ import {
   syncCalendarScreenStateToTimezone,
 } from "./calendar-screen-model";
 
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
+function createItem(
+  overrides: RecurringItemFixtureOverrides = {}
+): RecurringItem {
   return createRecurringItemFixture({
-    recurrenceType: "once",
+    ...(overrides.scheduleVersions ? {} : { recurrenceType: "once" }),
     title: "테스트 항목",
     ...overrides,
   });
@@ -560,8 +563,6 @@ describe("calendar-screen-model", () => {
       items: [
         createItem({
           id: "edited-item",
-          intervalValue: 3,
-          recurrenceType: "interval_days",
           scheduleVersions: [
             createVersion({
               id: "version-1",

@@ -1,7 +1,7 @@
 import { resolveRecurringItemEditPolicy } from "./edit-policy";
 import {
   createRecurringItemFixture,
-  createScheduleVersionFixture,
+  type RecurringItemFixtureOverrides,
   recurringTestTimezone as timezone,
 } from "./test-fixtures";
 import type { RecurringItem } from "./types";
@@ -198,16 +198,11 @@ describe("resolveRecurringItemEditPolicy", () => {
   });
 });
 
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
+function createItem(
+  overrides: RecurringItemFixtureOverrides = {}
+): RecurringItem {
   return createRecurringItemFixture({
     createdAt: "2026-05-01T00:00:00.000Z",
-    scheduleVersions: [
-      createScheduleVersionFixture({
-        createdAt: "2026-05-01T00:00:00.000Z",
-        effectiveFromUtc: "2026-04-30T15:00:00.000Z",
-        seedStartDateLocal: "2026-05-01",
-      }),
-    ],
     startDateLocal: "2026-05-01",
     title: "물 마시기",
     updatedAt: "2026-05-01T00:00:00.000Z",

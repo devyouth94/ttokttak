@@ -4,7 +4,6 @@ import {
   isAfter,
   isBefore,
   isEqual,
-  startOfWeek,
 } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
@@ -167,39 +166,6 @@ function toScheduleContext(
   };
 }
 
-function getScheduleVersions(
-  item: RecurringItem
-): RecurringItemScheduleVersion[] {
-  if (item.scheduleVersions?.length) {
-    return item.scheduleVersions
-      .slice()
-      .sort((left, right) =>
-        left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
-      );
-  }
-
-  return [
-    {
-      id: `${item.id}:initial`,
-      itemId: item.id,
-      userId: item.userId,
-      effectiveFromUtc: fromZonedTime(
-        `${item.startDateLocal}T00:00:00.000`,
-        item.timezone
-      ).toISOString(),
-      endDateLocal: item.endDateLocal ?? null,
-      recurrenceType: item.recurrenceType,
-      intervalValue: item.intervalValue,
-      weekdayMask: item.weekdayMask,
-      reminderTimeLocal: item.reminderTimeLocal,
-      anchorType: item.anchorType,
-      seedStartDateLocal: item.startDateLocal,
-      notificationsEnabled: item.notificationsEnabled,
-      createdAt: item.createdAt,
-    },
-  ];
-}
-
 function getVersionEndUtc(
   versions: RecurringItemScheduleVersion[],
   index: number
@@ -267,55 +233,20 @@ export function hasOccurrenceBetweenLocalDates(params: {
     return true;
   }
 
-  return hasWeeklyOccurrenceBetweenLocalDates(
+  const firstOccurrenceLocalDate = getNextWeeklyCandidateLocalDate(
     {
       intervalValue: params.intervalValue,
       recurrenceType: params.recurrenceType,
       seedStartDateLocal: params.startDateLocal,
       weekdayMask: params.weekdayMask,
     },
-    params.endDateLocal
+    params.startDateLocal
   );
-}
 
-function hasWeeklyOccurrenceBetweenLocalDates(
-  schedule: Pick<
-    ScheduleContext,
-    "intervalValue" | "recurrenceType" | "seedStartDateLocal" | "weekdayMask"
-  >,
-  endDateLocal: string
-): boolean {
-  if (!schedule.weekdayMask?.length) {
-    return false;
-  }
-
-  const startDate = parseLocalDate(schedule.seedStartDateLocal);
-  const startWeek = startOfWeek(startDate, { weekStartsOn: 0 });
-  const weekInterval =
-    schedule.recurrenceType === "interval_weeks"
-      ? (schedule.intervalValue ?? 1)
-      : 1;
-
-  if (weekInterval < 1) {
-    return false;
-  }
-
-  return schedule.weekdayMask.some((weekday) => {
-    const daysUntilWeekday = (weekday - startDate.getUTCDay() + 7) % 7;
-    let candidate = addDays(startDate, daysUntilWeekday);
-    const candidateWeek = startOfWeek(candidate, { weekStartsOn: 0 });
-    const weeksFromStart =
-      differenceInCalendarDays(candidateWeek, startWeek) / 7;
-    const weekRemainder = weeksFromStart % weekInterval;
-
-    if (weekRemainder !== 0) {
-      candidate = addDays(candidate, (weekInterval - weekRemainder) * 7);
-    }
-
-    const candidateLocalDate = formatInTimeZone(candidate, "UTC", "yyyy-MM-dd");
-
-    return compareLocalDate(candidateLocalDate, endDateLocal) <= 0;
-  });
+  return (
+    firstOccurrenceLocalDate != null &&
+    compareLocalDate(firstOccurrenceLocalDate, params.endDateLocal) <= 0
+  );
 }
 
 function getNextWeeklyCandidateLocalDate(
@@ -325,38 +256,60 @@ function getNextWeeklyCandidateLocalDate(
   >,
   startLocalDate: string
 ): string | null {
-  const itemStartDate = parseLocalDate(schedule.seedStartDateLocal);
-  const itemWeekStart = startOfWeek(itemStartDate, { weekStartsOn: 0 });
-  let cursor = parseLocalDate(
-    getMaxLocalDate(startLocalDate, schedule.seedStartDateLocal)
-  );
-  let occurrenceCount = 0;
+  const weekdays = [...new Set(schedule.weekdayMask)]
+    .filter(
+      (weekday) => Number.isInteger(weekday) && weekday >= 0 && weekday <= 6
+    )
+    .sort((left, right) => left - right);
+  const weekInterval =
+    schedule.recurrenceType === "interval_weeks"
+      ? (schedule.intervalValue ?? 1)
+      : 1;
 
-  while (occurrenceCount <= MAX_OCCURRENCES_PER_QUERY) {
-    const cursorLocalDate = formatInTimeZone(cursor, "UTC", "yyyy-MM-dd");
-    const cursorWeekStart = startOfWeek(cursor, { weekStartsOn: 0 });
-    const weeksFromAnchor =
-      differenceInCalendarDays(cursorWeekStart, itemWeekStart) / 7;
-    const cursorWeekday = cursor.getUTCDay();
-    const matchesWeekday =
-      schedule.weekdayMask?.includes(cursorWeekday) ?? false;
-    const matchesInterval =
-      schedule.recurrenceType === "weekly" ||
-      weeksFromAnchor % (schedule.intervalValue ?? 1) === 0;
-
-    if (
-      compareLocalDate(cursorLocalDate, schedule.seedStartDateLocal) >= 0 &&
-      matchesWeekday &&
-      matchesInterval
-    ) {
-      return cursorLocalDate;
-    }
-
-    cursor = addDays(cursor, 1);
-    occurrenceCount += 1;
+  if (
+    weekdays.length === 0 ||
+    !Number.isInteger(weekInterval) ||
+    weekInterval < 1
+  ) {
+    return null;
   }
 
-  return null;
+  const minimumLocalDate = getMaxLocalDate(
+    startLocalDate,
+    schedule.seedStartDateLocal
+  );
+  const anchorDate = parseLocalDate(schedule.seedStartDateLocal);
+  const minimumDate = parseLocalDate(minimumLocalDate);
+  const anchorWeekStart = addDays(anchorDate, -anchorDate.getUTCDay());
+  let candidateWeekStart = addDays(minimumDate, -minimumDate.getUTCDay());
+  const weeksFromAnchor =
+    differenceInCalendarDays(candidateWeekStart, anchorWeekStart) / 7;
+  const weekRemainder = weeksFromAnchor % weekInterval;
+
+  if (weekRemainder !== 0) {
+    candidateWeekStart = addDays(
+      candidateWeekStart,
+      (weekInterval - weekRemainder) * 7
+    );
+  }
+
+  for (const weekday of weekdays) {
+    const candidateLocalDate = formatInTimeZone(
+      addDays(candidateWeekStart, weekday),
+      "UTC",
+      "yyyy-MM-dd"
+    );
+
+    if (compareLocalDate(candidateLocalDate, minimumLocalDate) >= 0) {
+      return candidateLocalDate;
+    }
+  }
+
+  return formatInTimeZone(
+    addDays(candidateWeekStart, weekInterval * 7 + weekdays[0]),
+    "UTC",
+    "yyyy-MM-dd"
+  );
 }
 
 function getNextFixedLocalDate(
@@ -796,7 +749,7 @@ export function getOccurrencesInRange(
   completionLogs: CompletionLog[],
   nowUtc: string = new Date().toISOString()
 ): DerivedOccurrence[] {
-  const versions = getScheduleVersions(item);
+  const versions = item.scheduleVersions;
   const logsByScheduledAtUtc = buildLogsByScheduledAtUtc(
     item.id,
     completionLogs
@@ -824,7 +777,7 @@ export function getNextOccurrence(
   timezone: string,
   completionLogs: CompletionLog[]
 ): DerivedOccurrence | null {
-  const versions = getScheduleVersions(item);
+  const versions = item.scheduleVersions;
   const logsByScheduledAtUtc = buildLogsByScheduledAtUtc(
     item.id,
     completionLogs

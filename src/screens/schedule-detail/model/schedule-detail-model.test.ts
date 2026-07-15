@@ -7,6 +7,7 @@ import {
   createCompletionLogFixture,
   createRecurringItemFixture,
   createScheduleVersionFixture,
+  type RecurringItemFixtureOverrides,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
 
@@ -17,7 +18,9 @@ import {
   getRecurringItemDetailDeleteReturnPath,
 } from "./schedule-detail-model";
 
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
+function createItem(
+  overrides: RecurringItemFixtureOverrides = {}
+): RecurringItem {
   return createRecurringItemFixture({
     description: "매일 아침 복용합니다.",
     startDateLocal: "2026-04-08",
@@ -250,10 +253,9 @@ describe("recurring item detail helpers", () => {
     expect(entries.some((entry) => entry.id === "end-date")).toBe(false);
   });
 
-  it("latest schedule version에서 종료일이 제거되면 이전 루트 종료일을 표시하지 않는다", () => {
+  it("latest schedule version에서 종료일이 제거되면 이전 version 종료일을 표시하지 않는다", () => {
     const entries = buildSummarySettingBadges(
       createItem({
-        endDateLocal: "2026-05-10",
         scheduleVersions: [
           createVersion({
             effectiveFromUtc: "2026-04-01T00:00:00.000Z",
@@ -317,9 +319,6 @@ describe("recurring item detail helpers", () => {
 
   it("상세 화면도 latest schedule version 기준 현재 규칙과 다음 일정을 보여준다", () => {
     const item = createItem({
-      intervalValue: 3,
-      recurrenceType: "interval_days",
-      reminderTimeLocal: "09:00",
       scheduleVersions: [
         createVersion({
           id: "version-1",

@@ -69,7 +69,9 @@ export {
   requiresIntervalValue,
   requiresWeekdayMask,
   supportsCompletionBased,
+  validateRecurringItemDraft,
 } from "./model/validation";
+export type { ValidationIssueCode } from "./model/validation";
 export {
   getRecurringItemColorLabel,
   getRecurringItemColorOptions,

@@ -64,36 +64,21 @@ export interface RecurringItem {
     status: "available" | "unrecoverable";
   };
   colorKey: RecurringItemColorKey;
-  endDateLocal?: string | null;
-  recurrenceType: RecurrenceType;
-  intervalValue?: number | null;
-  weekdayMask?: number[] | null;
   startDateLocal: string;
-  reminderTimeLocal: string;
-  notificationsEnabled: boolean;
-  anchorType: AnchorType;
   timezone: string;
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
-  scheduleVersions?: RecurringItemScheduleVersion[];
+  scheduleVersions: [
+    RecurringItemScheduleVersion,
+    ...RecurringItemScheduleVersion[],
+  ];
 }
 
 export function getCurrentScheduleVersion(
   item: RecurringItem
-): RecurringItemScheduleVersion | null {
-  if (!item.scheduleVersions?.length) {
-    return null;
-  }
-
-  return (
-    item.scheduleVersions
-      .slice()
-      .sort((left, right) =>
-        left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
-      )
-      .at(-1) ?? null
-  );
+): RecurringItemScheduleVersion {
+  return item.scheduleVersions.at(-1)!;
 }
 
 export interface CompletionLog {
@@ -115,19 +100,18 @@ export interface DerivedOccurrence {
   status: OccurrenceStatus;
 }
 
-export type RecurringItemDraft = Pick<
-  RecurringItem,
-  | "anchorType"
-  | "colorKey"
-  | "description"
-  | "endDateLocal"
-  | "intervalValue"
-  | "isArchived"
-  | "notificationsEnabled"
-  | "recurrenceType"
-  | "reminderTimeLocal"
-  | "startDateLocal"
-  | "timezone"
-  | "title"
-  | "weekdayMask"
->;
+export type RecurringItemDraft = {
+  anchorType: AnchorType;
+  colorKey: RecurringItemColorKey;
+  description?: string | null;
+  endDateLocal?: string | null;
+  intervalValue?: number | null;
+  isArchived: boolean;
+  notificationsEnabled: boolean;
+  recurrenceType: RecurrenceType;
+  reminderTimeLocal: string;
+  startDateLocal: string;
+  timezone: string;
+  title: string;
+  weekdayMask?: number[] | null;
+};

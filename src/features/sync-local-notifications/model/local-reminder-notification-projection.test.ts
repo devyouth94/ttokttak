@@ -159,15 +159,13 @@ describe("createLocalReminderNotificationProjection", () => {
       completionLogs: [],
       items: [
         createRecurringItem({
-          endDateLocal: "2026-04-22",
           id: "item-1",
-          recurrenceType: "daily",
-          reminderTimeLocal: "21:00",
           scheduleVersions: [
             createScheduleVersionFixture({
               effectiveFromUtc: "2026-04-20T15:00:00.000Z",
               endDateLocal: "2026-04-22",
               id: "version-1",
+              recurrenceType: "daily",
               reminderTimeLocal: "21:00",
               seedStartDateLocal: "2026-04-21",
             }),

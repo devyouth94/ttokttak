@@ -218,9 +218,7 @@ export function getRecurrenceLabel(
   language: AppLanguage = "ko"
 ): string {
   const currentSchedule = getCurrentScheduleVersion(item);
-  const recurrenceType = currentSchedule?.recurrenceType ?? item.recurrenceType;
-  const intervalValue = currentSchedule?.intervalValue ?? item.intervalValue;
-  const weekdayMask = currentSchedule?.weekdayMask ?? item.weekdayMask;
+  const { intervalValue, recurrenceType, weekdayMask } = currentSchedule;
   const copy = recurrenceCopyByLanguage[language];
 
   switch (recurrenceType) {

@@ -5,9 +5,14 @@ import {
   getRecurrenceLabel,
 } from "./display";
 import type { RecurringItem } from "../model/types";
-import { createRecurringItemFixture } from "../testing";
+import {
+  createRecurringItemFixture,
+  type RecurringItemFixtureOverrides,
+} from "../testing";
 
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
+function createItem(
+  overrides: RecurringItemFixtureOverrides = {}
+): RecurringItem {
   return createRecurringItemFixture({
     ...overrides,
   });

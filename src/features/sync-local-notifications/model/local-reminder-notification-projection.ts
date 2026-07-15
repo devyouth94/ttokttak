@@ -9,6 +9,7 @@ import type {
 import {
   completionBasedRecurrenceTypes,
   formatUtcTimeInTimezone,
+  getCurrentScheduleVersion,
   getNextOccurrence,
   getOccurrencesInRange,
 } from "~/entities/schedule";
@@ -43,16 +44,18 @@ type LocalReminderNotificationProjection = {
 function canScheduleItem(item: RecurringItem): boolean {
   return (
     !item.isArchived &&
-    item.notificationsEnabled &&
+    getCurrentScheduleVersion(item).notificationsEnabled &&
     item.contentStatus?.status !== "unrecoverable"
   );
 }
 
 function isCompletionBasedItem(item: RecurringItem): boolean {
+  const schedule = getCurrentScheduleVersion(item);
+
   return (
-    item.anchorType === "completion_based" &&
+    schedule.anchorType === "completion_based" &&
     completionBasedRecurrenceTypes.includes(
-      item.recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
+      schedule.recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
     )
   );
 }

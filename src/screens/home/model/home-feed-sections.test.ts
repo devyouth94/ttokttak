@@ -12,6 +12,7 @@ import {
   createCompletionLogFixture,
   createRecurringItemFixture,
   createScheduleVersionFixture,
+  type RecurringItemFixtureOverrides,
   recurringTestTimezone as timezone,
 } from "~/entities/schedule/testing";
 
@@ -21,9 +22,11 @@ import {
 } from "./home-feed-sections";
 import { getFeedItemMetaLine } from "../ui/home-feed-item-row";
 
-function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
+function createItem(
+  overrides: RecurringItemFixtureOverrides = {}
+): RecurringItem {
   return createRecurringItemFixture({
-    recurrenceType: "once",
+    ...(overrides.scheduleVersions ? {} : { recurrenceType: "once" }),
     title: "테스트 항목",
     ...overrides,
   });
@@ -332,8 +335,6 @@ describe("buildHomeFeedSections", () => {
       items: [
         createItem({
           id: "edited-item",
-          intervalValue: 3,
-          recurrenceType: "interval_days",
           scheduleVersions: [
             createVersion({
               id: "version-1",

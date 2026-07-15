@@ -24,6 +24,17 @@ describe("getOccurrencesInRange", () => {
     ).toBe("2026-05-04");
   });
 
+  it("첫 주간 occurrence가 1000일 뒤여도 계산한다", () => {
+    expect(
+      getFirstOccurrenceLocalDate({
+        intervalValue: 200,
+        recurrenceType: "interval_weeks",
+        startDateLocal: "2026-01-07",
+        weekdayMask: [1],
+      })
+    ).toBe("2029-11-05");
+  });
+
   it("월말 보정 규칙으로 monthly occurrence를 계산한다", () => {
     const item = createItem({
       recurrenceType: "monthly",
@@ -164,8 +175,6 @@ describe("getOccurrencesInRange", () => {
 
   it("규칙 수정 후에는 새 version이 미래 occurrence만 덮어쓴다", () => {
     const item = createItem({
-      intervalValue: 3,
-      recurrenceType: "interval_days",
       scheduleVersions: [
         createVersion({
           id: "version-1",
@@ -203,9 +212,6 @@ describe("getOccurrencesInRange", () => {
 
   it("completion_based 수정 version은 edit 이전 마지막 completed를 초기 anchor로 이어받는다", () => {
     const item = createItem({
-      anchorType: "completion_based",
-      recurrenceType: "interval_days",
-      intervalValue: 3,
       scheduleVersions: [
         createVersion({
           anchorType: "completion_based",
@@ -315,8 +321,6 @@ describe("getOccurrencesInRange", () => {
 
   it("completion_based 종료일도 완료한 날짜가 아니라 occurrence local date로 자른다", () => {
     const item = createItem({
-      anchorType: "completion_based",
-      recurrenceType: "daily",
       scheduleVersions: [
         createVersion({
           anchorType: "completion_based",

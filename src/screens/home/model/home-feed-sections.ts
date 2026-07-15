@@ -351,9 +351,7 @@ function getDateSeparatorLabel(
 }
 
 function getReminderTimeLocal(item: RecurringItem): string {
-  const currentSchedule = getCurrentScheduleVersion(item);
-
-  return currentSchedule?.reminderTimeLocal ?? item.reminderTimeLocal;
+  return getCurrentScheduleVersion(item).reminderTimeLocal;
 }
 
 function compareByScheduledAtUtcAsc(
