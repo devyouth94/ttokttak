@@ -64,6 +64,17 @@ export default function getAppConfig(): ExpoConfig {
       "expo-router",
       "expo-localization",
       [
+        "expo-build-properties",
+        {
+          ios: {
+            extraPods: [
+              { name: "GoogleUtilities", modular_headers: true },
+              { name: "RecaptchaInterop", modular_headers: true },
+            ],
+          },
+        },
+      ],
+      [
         "expo-font",
         {
           android: {
