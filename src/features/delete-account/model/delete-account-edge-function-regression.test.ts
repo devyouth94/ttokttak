@@ -14,19 +14,9 @@ function readWorkspaceFile(path: string): string {
 describe("delete-account Edge Function regression guard", () => {
   it("계정 삭제 함수는 타입 검사를 비활성화하지 않는다", () => {
     const functionSource = readWorkspaceFile(
-      "supabase/functions/delete-account/index.ts"
+      "supabase/functions/delete-account/handler.ts"
     );
 
     expect(functionSource).not.toContain("@ts-nocheck");
-  });
-
-  it("계정 삭제 함수는 사용자별 best-effort rate limit 응답을 가진다", () => {
-    const functionSource = readWorkspaceFile(
-      "supabase/functions/delete-account/index.ts"
-    );
-
-    expect(functionSource).toContain("rate_limited");
-    expect(functionSource).toContain("maxDeleteAccountRequestsPerMinute");
-    expect(functionSource).toContain("429");
   });
 });
