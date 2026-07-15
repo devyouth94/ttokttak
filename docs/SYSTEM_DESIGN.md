@@ -133,6 +133,7 @@
 - 테마 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 테마를 모호하게 두지 않는다.
 - 순수 검증 model은 i18next에 의존하지 않고 `AppLanguage` 기준 사용자-facing 검증 메시지를 만든다.
 - 검증 메시지가 여러 경계에서 반복되면 shared i18n resource가 아니라 해당 feature/entity 표시 primitive로 모은다.
+- 일정 form은 입력 shape를 Zod로 확인하고 반복 규칙은 entity validator 결과를 사용자 문구로 바꿔 표시한다.
 
 ## Routing
 
@@ -194,6 +195,8 @@ web export는 운영 대상이 아니므로 EAS Update는 플랫폼별로 발행
 
 Supabase Auth를 사용한다.
 세션은 `expo-secure-store` 기반 Supabase auth storage에 보존한다.
+초기 세션과 이후 auth 변경은 `onAuthStateChange` 단일 경로로 적용한다.
+늦게 완료된 이전 세션의 profile 조회 결과는 현재 세션에 적용하지 않는다.
 
 세션 복원 시 profile을 확인한다.
 profile이 없으면 현재 기기 timezone과 provider metadata 이름으로 생성한다.
@@ -226,6 +229,11 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 
 ## Recurring Item Flow
 
+repository는 item과 schedule version을 함께 읽는다.
+도메인 `RecurringItem`은 비어 있지 않은 schedule version 목록을 제공한다.
+화면, 수정 정책, 알림은 공통 accessor로 최신 version을 읽는다.
+DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는다.
+
 ### Create
 
 1. form 입력을 검증한다.
@@ -252,11 +260,14 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 ### Complete / Skip
 
 홈 피드 occurrence 처리 feature는 `completion_logs`에 기록을 만든다.
+여러 occurrence를 함께 처리하면 단일 batch insert로 전부 기록하거나 전부 실패한다.
 지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
 
 completion log 조회는 projection 목적이나 후속 계산에 필요한 범위로 제한한다.
 상세 화면의 최근 히스토리는 최신 5건만 표시한다.
+상세 화면의 최근 히스토리 조회와 occurrence projection 조회는 분리한다.
+상세 화면의 occurrence projection은 일정 시작 이후 전체 미해결 occurrence를 판정할 수 있는 completion log를 사용한다.
 MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
 `completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
 read-schedule의 목적별 projection read hook은 홈 피드, 일정 목록, 캘린더, 상세 화면의 조회 범위, completion log anchor, occurrence entry 조립을 숨긴다.
@@ -432,8 +443,8 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 - 홈 occurrence action flow.
 - 로컬 알림 예약과 lifecycle.
 - 알림 tap routing.
-- 원격 푸시 코드 경로 없음.
-- content key 복구 정적 key 없음.
+- 제거한 원격 푸시 코드 경로의 과거 식별자 재도입.
+- 제거한 content key 복구 정적 key의 과거 식별자 재도입.
 - 복구 감사 이벤트의 민감 정보 저장.
 - 표시 언어 초기화 실패가 blank screen으로 고정되지 않음.
 - resource key completeness처럼 구조 자체가 요구사항인 경우에만 소스 문자열 기반 테스트를 사용한다.
