@@ -16,7 +16,7 @@ export type SelectOption<Value extends string> = {
 type SelectMenuProps<Value extends string> = {
   accessibilityHint: string;
   accessibilityLabel: string;
-  align?: "start" | "center" | "end";
+  align?: Select.ContentProps["align"];
   disabled?: boolean;
   options: SelectOption<Value>[];
   value: Value;

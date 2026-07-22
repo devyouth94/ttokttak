@@ -33,14 +33,16 @@ export function StateMessage({
     <View style={[styles.message, style]}>
       <View style={styles.copy}>
         <AppText
-          style={[styles.title, { color: themeColors.text }]}
-          variant="title"
+          style={[styles.title, { color: themeColors.textMuted }]}
+          variant="body3"
         >
           {title}
         </AppText>
+
         {description && (
           <AppText
-            style={[styles.description, { color: themeColors.textMuted }]}
+            style={[styles.description, { color: themeColors.textSoft }]}
+            variant="caption"
           >
             {description}
           </AppText>
@@ -91,8 +93,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   description: {
-    fontSize: 13,
-    lineHeight: 19,
     textAlign: "center",
   },
   message: {
@@ -106,8 +106,6 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   title: {
-    fontSize: 17,
-    lineHeight: 24,
     textAlign: "center",
   },
 });
