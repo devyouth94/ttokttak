@@ -129,7 +129,7 @@ export function LoginScreenContent({
                 </AppText>
               </Pressable>
 
-              {isAppleAvailable ? (
+              {isAppleAvailable && (
                 <Pressable
                   accessibilityHint={t("login.appleHint")}
                   accessibilityRole="button"
@@ -147,7 +147,7 @@ export function LoginScreenContent({
                     {t("login.appleButton")}
                   </AppText>
                 </Pressable>
-              ) : null}
+              )}
             </View>
 
             <View style={styles.legalRow}>
@@ -185,15 +185,15 @@ export function LoginScreenContent({
                   {t("login.legalPrivacy")}
                 </AppText>
               </Pressable>
-              {legalSuffix ? (
+              {legalSuffix && (
                 <AppText style={styles.legalText}>{legalSuffix}</AppText>
-              ) : null}
+              )}
             </View>
           </View>
 
-          {!isConfigured ? (
+          {!isConfigured && (
             <AppText style={styles.notice}>{t("login.noticeSupabase")}</AppText>
-          ) : null}
+          )}
         </View>
       </View>
     </AppScreen>

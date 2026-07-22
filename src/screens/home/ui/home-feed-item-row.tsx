@@ -72,7 +72,7 @@ export function HomeFeedItemRow({
           </AppText>
         </View>
       </Pressable>
-      {showsActions ? (
+      {showsActions && (
         <View style={styles.feedItemActions}>
           <Pressable
             accessibilityHint={t("home.feed.skipHint")}
@@ -123,7 +123,7 @@ export function HomeFeedItemRow({
             />
           </Pressable>
         </View>
-      ) : null}
+      )}
     </View>
   );
 }

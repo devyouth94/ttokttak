@@ -124,7 +124,7 @@ export function HomeDateCarousel({
           })}
         </ScrollView>
 
-        {!selectedDateOption.isToday ? (
+        {!selectedDateOption.isToday && (
           <Pressable
             accessibilityHint={t("home.date.returnTodayHint")}
             accessibilityLabel={t("home.date.returnTodayLabel")}
@@ -137,14 +137,11 @@ export function HomeDateCarousel({
             ]}
           >
             <Undo2 color={themeColors.text} size={13} />
-            <AppText
-              style={[styles.todayShortcutText, { color: themeColors.text }]}
-              variant="caption"
-            >
+            <AppText style={{ color: themeColors.text }} variant="caption">
               {t("home.date.returnTodayShort")}
             </AppText>
           </Pressable>
-        ) : null}
+        )}
       </View>
     </View>
   );
@@ -174,15 +171,10 @@ const styles = StyleSheet.create({
     minWidth: 52,
     paddingHorizontal: spacing.sm,
   },
-  dateChipLabel: {},
-  dateChipLabelSelected: {},
   dateChipPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.97 }],
   },
-  dateChipSelected: {},
-  dateChipValue: {},
-  dateChipValueSelected: {},
   dateSelectorRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -203,5 +195,4 @@ const styles = StyleSheet.create({
   todayShortcutButtonPressed: {
     opacity: 0.88,
   },
-  todayShortcutText: {},
 });

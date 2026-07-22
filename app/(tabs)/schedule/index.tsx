@@ -1,151 +1,86 @@
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  View,
-} from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
-import { useScheduleReadContext } from "~/application/schedule-read";
-import { RecurringItemSummaryRow } from "~/entities/schedule";
-import {
-  useOccurrenceProjectionNow,
-  useScheduleListOccurrenceProjectionQuery,
-} from "~/features/read-schedule";
-import {
-  buildScheduleListEntries,
-  DEFAULT_SCHEDULE_LIST_SORT_MODE,
-  type ScheduleListEntry,
-  type ScheduleListSortMode,
-} from "~/screens/schedule-list/model/schedule-list-entries";
-import { ScheduleListLoadingPlaceholder } from "~/screens/schedule-list/ui/schedule-list-loading-placeholder";
-import { ScheduleListSortControl } from "~/screens/schedule-list/ui/schedule-list-sort-control";
-import {
-  ScheduleListEmptyState,
-  ScheduleListErrorState,
-} from "~/screens/schedule-list/ui/schedule-list-state-views";
-import { useAppLanguage } from "~/shared/i18n";
+import { ItemRow } from "~/schedule/ui/item-row";
+import { type Sort, useItems } from "~/screens/schedule-list/list";
+import { ListEmpty } from "~/screens/schedule-list/ui/empty";
+import { ListLoading } from "~/screens/schedule-list/ui/loading";
+import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
 import { useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { spacing } from "~/shared/ui/tokens";
-import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
+import { StateMessage } from "~/ui/state-message";
 
 export default function ScheduleTabPage(): React.JSX.Element {
   const { t } = useTranslation();
-  const { language } = useAppLanguage();
   const themeColors = useAppThemeColors();
   const insets = useSafeAreaInsets();
-  const scheduleReadContext = useScheduleReadContext();
-  const now = useOccurrenceProjectionNow();
-  const {
-    headerAnimatedStyle,
-    headerHeight,
-    onHeaderHeightChange,
-    onScroll,
-    scrollEventThrottle,
-  } = useCollapsibleHeader({ hiddenOffset: insets.top });
-  const [sortMode, setSortMode] = useState<ScheduleListSortMode>(
-    DEFAULT_SCHEDULE_LIST_SORT_MODE
-  );
-  const projectionQuery = useScheduleListOccurrenceProjectionQuery({
-    context: scheduleReadContext,
-    now,
-  });
-  const entries = useMemo(
-    () =>
-      buildScheduleListEntries({
-        language,
-        nextOccurrenceEntries: projectionQuery.nextOccurrenceEntries,
-        sortMode,
-        timezone: projectionQuery.timezone,
-      }),
-    [
-      language,
-      projectionQuery.nextOccurrenceEntries,
-      sortMode,
-      projectionQuery.timezone,
-    ]
-  );
-  const isInitialLoading = projectionQuery.isLoading;
-  const error = projectionQuery.error;
-  const isRefreshing = projectionQuery.isRefreshing;
-  const refetchProjection = projectionQuery.refetch;
 
-  const handleRetry = useCallback(() => {
-    void refetchProjection();
-  }, [refetchProjection]);
+  const [sort, setSort] = useState<Sort>("titleAsc");
 
-  const handleRefresh = useCallback(() => {
-    void refetchProjection();
-  }, [refetchProjection]);
+  const { isRefreshing, refetch, rows, status } = useItems(sort);
 
   return (
-    <AppScreen contentStyle={styles.screenContent}>
-      <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-        <ScreenHeader
-          onHeightChange={onHeaderHeightChange}
-          title={t("scheduleList.headerTitle")}
-        />
-      </Animated.View>
+    <AppScreen>
+      <ScreenHeader title={t("scheduleList.headerTitle")} />
 
-      {isInitialLoading ? (
-        <View
-          style={[
-            styles.staticContent,
-            styles.listContent,
-            { paddingTop: headerHeight },
-          ]}
-        >
-          <ScheduleListLoadingPlaceholder />
+      {status === "loading" && (
+        <View style={[styles.staticContent, styles.listContent]}>
+          <ListLoading />
         </View>
-      ) : error ? (
-        <View style={[styles.staticContent, { paddingTop: headerHeight }]}>
-          <ScheduleListErrorState onRetry={handleRetry} />
+      )}
+
+      {status === "error" && (
+        <View style={styles.staticContent}>
+          <StateMessage
+            action={{
+              accessibilityHint: t("scheduleList.error.retryHint"),
+              accessibilityLabel: t("scheduleList.error.retryLabel"),
+              label: t("scheduleList.error.retryLabel"),
+              onPress: refetch,
+            }}
+            title={t("scheduleList.error.title")}
+          />
         </View>
-      ) : (
+      )}
+
+      {status === "ready" && (
         <FlatList
           contentContainerStyle={[
             styles.listContent,
-            { paddingTop: headerHeight },
-            {
-              paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
-            },
-            entries.length === 0 ? styles.emptyListContent : undefined,
+            rows.length === 0 ? styles.emptyListContent : undefined,
+            { paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom },
           ]}
-          data={entries}
-          keyExtractor={keyExtractor}
+          data={rows}
+          keyExtractor={(row) => row.id}
           ListHeaderComponent={
-            entries.length > 0 ? (
-              <View style={styles.sortControlSlot}>
-                <ScheduleListSortControl
-                  onChange={setSortMode}
-                  value={sortMode}
-                />
-              </View>
-            ) : null
+            <>
+              {rows.length > 0 && (
+                <ListSortMenu onChange={setSort} value={sort} />
+              )}
+            </>
           }
-          ListEmptyComponent={<ScheduleListEmptyState />}
+          ListEmptyComponent={<ListEmpty />}
           refreshControl={
             <RefreshControl
-              onRefresh={handleRefresh}
+              onRefresh={refetch}
               refreshing={isRefreshing}
               tintColor={themeColors.primary}
             />
           }
           renderItem={({ index, item }) => (
-            <RecurringItemSummaryRow
+            <ItemRow
               accessibilityHint={t("scheduleList.row.detailHint")}
               accessibilityLabel={t("scheduleList.row.detailLabel", {
                 title: item.title,
               })}
               colorKey={item.colorKey}
-              isLast={index === entries.length - 1}
+              isLast={index === rows.length - 1}
               metaLine={[
                 item.nextOccurrenceTimeLabel,
                 item.recurrenceLabel,
@@ -165,8 +100,6 @@ export default function ScheduleTabPage(): React.JSX.Element {
               title={item.title}
             />
           )}
-          onScroll={onScroll}
-          scrollEventThrottle={scrollEventThrottle}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -174,29 +107,12 @@ export default function ScheduleTabPage(): React.JSX.Element {
   );
 }
 
-function keyExtractor(entry: ScheduleListEntry): string {
-  return entry.id;
-}
-
 const styles = StyleSheet.create({
   emptyListContent: {
     flexGrow: 1,
   },
-  headerLayer: {
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    zIndex: 10,
-  },
   listContent: {
     paddingHorizontal: spacing.md,
-  },
-  screenContent: {
-    flex: 1,
-  },
-  sortControlSlot: {
-    marginBottom: spacing.md,
   },
   staticContent: {
     flex: 1,

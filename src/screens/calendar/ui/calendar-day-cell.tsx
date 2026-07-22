@@ -121,13 +121,13 @@ function CalendarDayCellComponent({
           ))}
         </View>
         <View style={styles.overflowSlot}>
-          {overflowCount > 0 ? (
+          {overflowCount > 0 && (
             <AppText
               style={[styles.overflowLabel, { color: themeColors.textMuted }]}
             >
               +{overflowCount}
             </AppText>
-          ) : null}
+          )}
         </View>
       </View>
     </Pressable>
@@ -170,8 +170,6 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: 20,
   },
-  dayLabelSaturday: {},
-  dayLabelSunday: {},
   daySurface: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
@@ -209,11 +207,9 @@ const styles = StyleSheet.create({
     height: cellOverflowLabelHeight,
     justifyContent: "center",
   },
-  selectedLabel: {},
   selectedMarker: {
     opacity: 0.96,
   },
-  selectedSurface: {},
   todayLabel: {
     fontWeight: "600",
   },

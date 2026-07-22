@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Calendar, type DateData, LocaleConfig } from "react-native-calendars";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -17,22 +11,21 @@ import { useScheduleReadContext } from "~/application/schedule-read";
 import {
   formatVisibleMonthTitle,
   formatWeekdayLocalDateTitle,
-  RecurringItemSummaryRow,
 } from "~/entities/schedule";
 import {
   useCalendarMonthOccurrenceProjectionQuery,
   useOccurrenceProjectionNow,
 } from "~/features/read-schedule";
+import { ItemRow } from "~/schedule/ui/item-row";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import type { AppThemeColors } from "~/shared/theme";
 import { useAppTheme, useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
-import { AppEmptyStateView, AppRetryStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
-import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
+import { StateMessage } from "~/ui/state-message";
 
 import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";
 import { getCalendarRenderKey } from "./calendar-render-key";
@@ -117,13 +110,6 @@ export function CalendarScreen(): React.JSX.Element {
     [themeColors]
   );
   const insets = useSafeAreaInsets();
-  const {
-    headerAnimatedStyle,
-    headerHeight,
-    onHeaderHeightChange,
-    onScroll,
-    scrollEventThrottle,
-  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const scheduleReadContext = useScheduleReadContext();
   const now = useOccurrenceProjectionNow();
   const [screenState, setScreenState] = useState(() =>
@@ -223,24 +209,16 @@ export function CalendarScreen(): React.JSX.Element {
   };
 
   return (
-    <AppScreen contentStyle={styles.screenContent}>
-      <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-        <ScreenHeader
-          onHeightChange={onHeaderHeightChange}
-          title={t("calendar.headerTitle")}
-        />
-      </Animated.View>
+    <AppScreen>
+      <ScreenHeader title={t("calendar.headerTitle")} />
 
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: headerHeight + spacing.md },
           {
             paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
           },
         ]}
-        onScroll={onScroll}
-        scrollEventThrottle={scrollEventThrottle}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.monthHeader}>
@@ -312,25 +290,26 @@ export function CalendarScreen(): React.JSX.Element {
           {isLoading ? (
             <CalendarEntryListPlaceholder />
           ) : errorMessage ? (
-            <AppRetryStatePanel
+            <StateMessage
+              action={{
+                accessibilityHint: t("calendar.error.retryHint"),
+                accessibilityLabel: t("calendar.error.retryLabel"),
+                label: t("calendar.error.retryLabel"),
+                onPress: handleRetry,
+              }}
               description={errorMessage}
-              minHeight={96}
-              onRetry={handleRetry}
-              panelStyle={styles.emptyCard}
-              retryAccessibilityHint={t("calendar.error.retryHint")}
-              retryAccessibilityLabel={t("calendar.error.retryLabel")}
+              style={styles.selectedDateError}
               title={t("calendar.error.title")}
-              variant="dashed"
             />
           ) : selectedEntries.length === 0 ? (
-            <AppEmptyStateView
+            <StateMessage
               style={styles.selectedDateState}
               title={t("calendar.emptyTitle")}
             />
           ) : (
             <View>
               {selectedEntries.map((entry, index) => (
-                <RecurringItemSummaryRow
+                <ItemRow
                   accessibilityHint={t("calendar.row.detailHint")}
                   accessibilityLabel={t("calendar.row.detailLabel", {
                     title: entry.title,
@@ -446,8 +425,10 @@ function createCalendarScreenStyles(themeColors: AppThemeColors) {
     content: {
       gap: spacing.md,
       paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
     },
-    emptyCard: {
+    selectedDateError: {
+      flex: 0,
       gap: spacing.xs,
       minHeight: 144,
       paddingHorizontal: spacing.lg,
@@ -456,13 +437,6 @@ function createCalendarScreenStyles(themeColors: AppThemeColors) {
     emptyDayCell: {
       height: CALENDAR_DAY_CELL_HEIGHT,
       width: 42,
-    },
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
     },
     monthArrowButton: {
       alignItems: "center",
@@ -538,10 +512,8 @@ function createCalendarScreenStyles(themeColors: AppThemeColors) {
       flex: 1,
     },
     selectedDateState: {
+      flex: 0,
       minHeight: 96,
-    },
-    screenContent: {
-      flex: 1,
     },
   });
 }

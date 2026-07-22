@@ -61,13 +61,13 @@ export function HomeFeedSectionBlock({
             : t("home.feed.sectionCount", { count: section.items.length })}
         </AppText>
       </View>
-      {section.caption ? (
+      {section.caption && (
         <View style={styles.feedSectionCaption}>
           <AppText style={styles.feedSectionMutedText} variant="caption">
             {section.caption}
           </AppText>
         </View>
-      ) : null}
+      )}
       {section.items.length > 0 && !isLoading ? (
         <View
           style={[
@@ -85,7 +85,7 @@ export function HomeFeedSectionBlock({
 
             return (
               <Fragment key={card.id}>
-                {showsDateSeparator ? (
+                {showsDateSeparator && (
                   <View
                     style={[
                       styles.feedDateSeparator,
@@ -110,7 +110,7 @@ export function HomeFeedSectionBlock({
                       })}
                     </AppText>
                   </View>
-                ) : null}
+                )}
                 <HomeFeedItemRow
                   card={card}
                   isLast={shouldHideItemDivider(section.id, nextCard)}
@@ -193,7 +193,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: spacing.xs,
   },
-  feedDateSeparatorCount: {},
   feedDateSeparatorStacked: {
     paddingTop: spacing.sm,
   },
@@ -239,5 +238,4 @@ const styles = StyleSheet.create({
   feedSectionTitleSlot: {
     flex: 1,
   },
-  feedSectionUpcoming: {},
 });

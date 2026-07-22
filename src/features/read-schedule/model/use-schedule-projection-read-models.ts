@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import type {
   CompletionLog,
   DerivedOccurrence,
-  ItemNextOccurrenceProjectionEntry,
   ItemOccurrenceProjectionEntry,
   RecurringItem,
 } from "~/entities/schedule";
@@ -12,7 +11,6 @@ import {
   createLocalDateUtcRange,
   getItemOccurrenceEntriesInRange,
   getLatestOverdueItemOccurrenceEntries,
-  getNextItemOccurrenceEntries,
   getScheduledItemOccurrenceEntriesInRange,
 } from "~/entities/schedule";
 
@@ -43,11 +41,6 @@ export type HomeFeedOccurrenceProjectionReadModel =
     overdueEntries: ItemOccurrenceProjectionEntry[];
     selectedDateEntries: ItemOccurrenceProjectionEntry[];
     upcomingEntries: ItemOccurrenceProjectionEntry[];
-  };
-
-export type ScheduleListOccurrenceProjectionReadModel =
-  BaseScheduleProjectionReadModel & {
-    nextOccurrenceEntries: ItemNextOccurrenceProjectionEntry[];
   };
 
 export type CalendarMonthOccurrenceProjectionReadModel =
@@ -124,38 +117,6 @@ export function useHomeFeedOccurrenceProjectionQuery({
     overdueEntries,
     selectedDateEntries,
     upcomingEntries,
-  };
-}
-
-export function useScheduleListOccurrenceProjectionQuery({
-  context,
-  now,
-}: {
-  context: ScheduleReadContext;
-  now: Date;
-}): ScheduleListOccurrenceProjectionReadModel {
-  const projectionQuery = useOccurrenceProjectionQuery({
-    context,
-    purpose: {
-      now,
-      type: "scheduleList",
-    },
-  });
-  const { completionLogs, items, timezone } = projectionQuery;
-  const nextOccurrenceEntries = useMemo(
-    () =>
-      getNextItemOccurrenceEntries({
-        completionLogs,
-        items,
-        now,
-        timezone,
-      }),
-    [completionLogs, items, now, timezone]
-  );
-
-  return {
-    ...projectionQuery,
-    nextOccurrenceEntries,
   };
 }
 

@@ -154,13 +154,6 @@ function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
     fieldLabel: {
       color: themeColors.text,
     },
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
-    },
     footer: {
       backgroundColor: themeColors.background,
       minHeight: 60,
@@ -347,14 +340,12 @@ function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
       gap: spacing.lg,
       paddingBottom: spacing.xxl,
       paddingHorizontal: spacing.md,
-      paddingTop: spacing.lg,
     },
     scrollView: {
       flex: 1,
     },
     screenRoot: {
       flex: 1,
-      position: "relative",
     },
     subFieldLabel: {
       color: themeColors.text,

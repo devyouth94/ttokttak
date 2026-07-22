@@ -6,9 +6,10 @@ import { borderRadius, spacing } from "~/shared/ui/tokens";
 
 const PLACEHOLDER_ROW_COUNT = 4;
 
-export function ScheduleListLoadingPlaceholder(): React.JSX.Element {
+export function ListLoading(): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useAppThemeColors();
+
   const placeholderStyle = { backgroundColor: themeColors.surface };
 
   return (
@@ -16,25 +17,23 @@ export function ScheduleListLoadingPlaceholder(): React.JSX.Element {
       accessibilityLabel={t("scheduleList.loadingA11yLabel")}
       accessibilityRole="progressbar"
     >
-      <View style={[styles.sortControlPlaceholder, placeholderStyle]} />
+      <View style={[styles.sortControl, placeholderStyle]} />
+
       {Array.from({ length: PLACEHOLDER_ROW_COUNT }).map((_, index) => (
         <View
           key={index}
           style={[
-            styles.placeholderRow,
+            styles.row,
             index < PLACEHOLDER_ROW_COUNT - 1
-              ? [
-                  styles.placeholderDivider,
-                  { borderBottomColor: themeColors.divider },
-                ]
+              ? [styles.divider, { borderBottomColor: themeColors.divider }]
               : undefined,
           ]}
         >
-          <View style={styles.placeholderCopy}>
-            <View style={[styles.placeholderTitle, placeholderStyle]} />
-            <View style={[styles.placeholderMeta, placeholderStyle]} />
+          <View style={styles.copy}>
+            <View style={[styles.title, placeholderStyle]} />
+            <View style={[styles.meta, placeholderStyle]} />
           </View>
-          <View style={[styles.placeholderAction, placeholderStyle]} />
+          <View style={[styles.action, placeholderStyle]} />
         </View>
       ))}
     </View>
@@ -42,41 +41,41 @@ export function ScheduleListLoadingPlaceholder(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  placeholderAction: {
+  action: {
     borderRadius: borderRadius.pill,
     height: 34,
     width: 34,
   },
-  placeholderCopy: {
+  copy: {
     flex: 1,
     gap: spacing.xxs,
     minWidth: 0,
   },
-  placeholderDivider: {
+  divider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  placeholderMeta: {
+  meta: {
     borderRadius: borderRadius.pill,
     height: 15,
     opacity: 0.72,
     width: "56%",
   },
-  placeholderRow: {
+  row: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.md,
     paddingVertical: spacing.sm,
   },
-  placeholderTitle: {
-    borderRadius: borderRadius.pill,
-    height: 23,
-    width: "42%",
-  },
-  sortControlPlaceholder: {
+  sortControl: {
     alignSelf: "flex-end",
     borderRadius: borderRadius.pill,
     height: 36,
     marginBottom: spacing.md,
     width: 144,
+  },
+  title: {
+    borderRadius: borderRadius.pill,
+    height: 23,
+    width: "42%",
   },
 });

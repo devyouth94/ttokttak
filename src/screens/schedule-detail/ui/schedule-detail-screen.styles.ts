@@ -18,13 +18,6 @@ export function useScheduleDetailScreenStyles() {
 
 function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
   return StyleSheet.create({
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
-    },
     historyDate: {
       color: themeColors.text,
       flex: 1,
@@ -100,9 +93,6 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
       borderRadius: borderRadius.lg,
       padding: MANAGEMENT_MENU_CONTAINER_PADDING,
       width: 80,
-    },
-    managementMenuOverlay: {
-      ...StyleSheet.absoluteFillObject,
     },
     managementMenuItem: {
       alignItems: "center",
@@ -221,12 +211,8 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
       height: typography.lineHeight.title,
       width: "48%",
     },
-    screenContent: {
-      flex: 1,
-    },
     screenRoot: {
       flex: 1,
-      position: "relative",
     },
     scrollContent: {
       gap: spacing.xs,

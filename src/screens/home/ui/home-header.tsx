@@ -15,12 +15,7 @@ export function HomeHeader({
   return (
     <View style={styles.header}>
       <View style={styles.headerCopy}>
-        <AppText
-          ellipsizeMode="tail"
-          numberOfLines={2}
-          style={styles.headerTitle}
-          variant="display"
-        >
+        <AppText ellipsizeMode="tail" numberOfLines={2} variant="display">
           {t("home.header.greeting", { name: profileName })}
         </AppText>
       </View>
@@ -38,5 +33,4 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
   },
-  headerTitle: {},
 });

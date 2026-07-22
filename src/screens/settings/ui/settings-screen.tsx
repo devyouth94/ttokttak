@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Animated,
   Modal,
   Pressable,
+  ScrollView,
   TextInput,
   View,
 } from "react-native";
@@ -13,10 +13,9 @@ import { ExternalLink } from "lucide-react-native";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { useAppTheme } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
-import { AppSelectMenu } from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
-import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
+import { SelectMenu } from "~/ui/select-menu";
 
 import {
   SettingsControlRow,
@@ -32,36 +31,21 @@ export function SettingsScreen(): React.JSX.Element {
   const styles = useSettingsScreenStyles();
   const insets = useSafeAreaInsets();
   const settingsModel = useSettingsScreenController();
-  const {
-    headerAnimatedStyle,
-    headerHeight,
-    onHeaderHeightChange,
-    onScroll,
-    scrollEventThrottle,
-  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const { actions, options, values, view } = settingsModel;
   const { colors: themeColors } = useAppTheme();
 
   return (
-    <AppScreen contentStyle={styles.screenContent}>
-      <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-        <ScreenHeader
-          onHeightChange={onHeaderHeightChange}
-          title={t("settings.headerTitle")}
-        />
-      </Animated.View>
+    <AppScreen>
+      <ScreenHeader title={t("settings.headerTitle")} />
 
-      <Animated.ScrollView
+      <ScrollView
         bounces={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: headerHeight },
           {
             paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
           },
         ]}
-        onScroll={onScroll}
-        scrollEventThrottle={scrollEventThrottle}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.sections}>
@@ -93,19 +77,19 @@ export function SettingsScreen(): React.JSX.Element {
             <SettingsControlRow
               accessory={
                 <View style={styles.selectAccessory}>
-                  {view.isSavingAppLanguage ? (
+                  {view.isSavingAppLanguage && (
                     <ActivityIndicator
                       color={themeColors.textSoft}
                       size="small"
                     />
-                  ) : null}
-                  <AppSelectMenu
+                  )}
+                  <SelectMenu
                     accessibilityHint={t(
                       "settings.environment.appLanguageHint"
                     )}
                     accessibilityLabel={t("settings.environment.appLanguage")}
                     align="end"
-                    isDisabled={view.isSavingAppLanguage}
+                    disabled={view.isSavingAppLanguage}
                     onChange={(nextLanguage) => {
                       void actions.changeAppLanguage(nextLanguage);
                     }}
@@ -123,17 +107,17 @@ export function SettingsScreen(): React.JSX.Element {
             <SettingsControlRow
               accessory={
                 <View style={styles.selectAccessory}>
-                  {view.isSavingThemePreference ? (
+                  {view.isSavingThemePreference && (
                     <ActivityIndicator
                       color={themeColors.textSoft}
                       size="small"
                     />
-                  ) : null}
-                  <AppSelectMenu
+                  )}
+                  <SelectMenu
                     accessibilityHint={t("settings.environment.themeHint")}
                     accessibilityLabel={t("settings.environment.theme")}
                     align="end"
-                    isDisabled={view.isSavingThemePreference}
+                    disabled={view.isSavingThemePreference}
                     onChange={(nextPreference) => {
                       void actions.changeThemePreference(nextPreference);
                     }}
@@ -172,7 +156,7 @@ export function SettingsScreen(): React.JSX.Element {
               title={t("settings.notifications.permissionStatus")}
               value={values.notificationPermissionStatus}
             />
-            {view.canRequestNotificationPermission ? (
+            {view.canRequestNotificationPermission && (
               <SettingsRow
                 accessory={
                   view.isRequestingPermission ? (
@@ -194,8 +178,8 @@ export function SettingsScreen(): React.JSX.Element {
                 styles={styles}
                 title={t("settings.notifications.permissionRequest")}
               />
-            ) : null}
-            {view.canOpenNotificationSettings ? (
+            )}
+            {view.canOpenNotificationSettings && (
               <SettingsRow
                 accessory={
                   <ExternalLink color={themeColors.textSoft} size={16} />
@@ -210,7 +194,7 @@ export function SettingsScreen(): React.JSX.Element {
                 styles={styles}
                 title={t("settings.notifications.openSettings")}
               />
-            ) : null}
+            )}
           </SettingsSectionCard>
 
           <SettingsSectionCard
@@ -254,12 +238,12 @@ export function SettingsScreen(): React.JSX.Element {
           >
             <SettingsRow
               accessory={
-                view.isSigningOut ? (
+                view.isSigningOut && (
                   <ActivityIndicator
                     color={themeColors.textSoft}
                     size="small"
                   />
-                ) : undefined
+                )
               }
               isDisabled={view.isSigningOut || view.isDeletingAccount}
               isFirst
@@ -272,9 +256,9 @@ export function SettingsScreen(): React.JSX.Element {
             />
             <SettingsRow
               accessory={
-                view.isDeletingAccount ? (
+                view.isDeletingAccount && (
                   <ActivityIndicator color={themeColors.error} size="small" />
-                ) : undefined
+                )
               }
               isDisabled={view.isDeletingAccount || view.isSigningOut}
               isPressable
@@ -285,7 +269,7 @@ export function SettingsScreen(): React.JSX.Element {
             />
           </SettingsSectionCard>
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
 
       <Modal
         animationType="fade"
@@ -311,11 +295,11 @@ export function SettingsScreen(): React.JSX.Element {
               style={styles.nameInput}
               value={values.displayNameDraft}
             />
-            {values.displayNameError ? (
+            {values.displayNameError && (
               <AppText style={styles.nameErrorText} variant="caption">
                 {values.displayNameError}
               </AppText>
-            ) : null}
+            )}
             <View style={styles.nameEditorActions}>
               <Pressable
                 accessibilityRole="button"

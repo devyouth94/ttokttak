@@ -1,14 +1,13 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
+import type { RecurringItemColorKey } from "~/entities/schedule/model/types";
+import { recurringItemColorOptionByKey } from "~/entities/schedule/ui/color-palette";
 import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
-import { recurringItemColorOptionByKey } from "./color-palette";
-import type { RecurringItemColorKey } from "../model/types";
-
-type RecurringItemSummaryRowProps = {
+type Props = {
   accessibilityHint: string;
   accessibilityLabel?: string;
   colorKey: RecurringItemColorKey;
@@ -18,7 +17,7 @@ type RecurringItemSummaryRowProps = {
   title: string;
 };
 
-export function RecurringItemSummaryRow({
+export function ItemRow({
   accessibilityHint,
   accessibilityLabel,
   colorKey,
@@ -26,7 +25,7 @@ export function RecurringItemSummaryRow({
   metaLine,
   onPress,
   title,
-}: RecurringItemSummaryRowProps): React.JSX.Element {
+}: Props): React.JSX.Element {
   const themeColors = useAppThemeColors();
   const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
 
@@ -57,12 +56,7 @@ export function RecurringItemSummaryRow({
           </AppText>
         </View>
         <View style={styles.metaSlot}>
-          <AppText
-            ellipsizeMode="tail"
-            numberOfLines={1}
-            style={styles.metaText}
-            variant="caption"
-          >
+          <AppText ellipsizeMode="tail" numberOfLines={1} variant="caption">
             {metaLine}
           </AppText>
         </View>
@@ -96,7 +90,6 @@ const styles = StyleSheet.create({
   metaSlot: {
     marginTop: spacing.xxs,
   },
-  metaText: {},
   pressed: {
     opacity: 0.72,
   },

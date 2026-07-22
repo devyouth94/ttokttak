@@ -9,7 +9,6 @@ import { AppText } from "./app-text";
 
 type ScreenHeaderProps = {
   leftSlot?: ReactNode;
-  onHeightChange?: (height: number) => void;
   rightSlot?: ReactNode;
   style?: StyleProp<ViewStyle>;
   title: string;
@@ -18,7 +17,6 @@ type ScreenHeaderProps = {
 
 export function ScreenHeader({
   leftSlot,
-  onHeightChange,
   rightSlot,
   style,
   title,
@@ -28,29 +26,26 @@ export function ScreenHeader({
 
   return (
     <View
-      onLayout={({ nativeEvent }) => {
-        onHeightChange?.(nativeEvent.layout.height);
-      }}
       style={[
         styles.header,
         { backgroundColor: themeColors.background },
         style,
       ]}
     >
-      {leftSlot ? <View style={styles.leftSlot}>{leftSlot}</View> : null}
+      {leftSlot && <View style={styles.leftSlot}>{leftSlot}</View>}
 
       <View style={styles.copy}>
         <AppText
           ellipsizeMode="tail"
           numberOfLines={leftSlot ? 1 : 2}
-          style={[styles.title, { color: titleColor ?? themeColors.text }]}
+          style={{ color: titleColor ?? themeColors.text }}
           variant="display"
         >
           {title}
         </AppText>
       </View>
 
-      {rightSlot ? <View style={styles.rightSlot}>{rightSlot}</View> : null}
+      {rightSlot && <View style={styles.rightSlot}>{rightSlot}</View>}
     </View>
   );
 }
@@ -79,5 +74,4 @@ const styles = StyleSheet.create({
     position: "relative",
     zIndex: 20,
   },
-  title: {},
 });

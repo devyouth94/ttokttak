@@ -5,9 +5,7 @@ export {
   useCalendarMonthOccurrenceProjectionQuery,
   useHomeFeedOccurrenceProjectionQuery,
   useScheduleDetailReadModelQuery,
-  useScheduleListOccurrenceProjectionQuery,
   type CalendarMonthOccurrenceProjectionReadModel,
   type HomeFeedOccurrenceProjectionReadModel,
   type ScheduleDetailReadModel,
-  type ScheduleListOccurrenceProjectionReadModel,
 } from "./model/use-schedule-projection-read-models";

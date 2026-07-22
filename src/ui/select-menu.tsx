@@ -3,50 +3,52 @@ import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
 import { useAppThemeColors } from "~/shared/theme";
+import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
-import { AppText } from "./app-text";
-
-export type AppSelectMenuOption<Value extends string> = {
+export type SelectOption<Value extends string> = {
   accessibilityHint?: string;
   label: string;
   leading?: React.ReactNode;
   value: Value;
 };
 
-type AppSelectMenuVariant = "compact" | "field";
-
-type AppSelectMenuProps<Value extends string> = {
+type SelectMenuProps<Value extends string> = {
   accessibilityHint: string;
   accessibilityLabel: string;
   align?: "start" | "center" | "end";
-  isDisabled?: boolean;
-  options: AppSelectMenuOption<Value>[];
+  disabled?: boolean;
+  options: SelectOption<Value>[];
   value: Value;
-  variant?: AppSelectMenuVariant;
+  variant?: "compact" | "field";
   onChange: (value: Value) => void;
 };
 
-export function AppSelectMenu<Value extends string>({
+export function SelectMenu<Value extends string>({
   accessibilityHint,
   accessibilityLabel,
   align = "start",
-  isDisabled = false,
+  disabled = false,
   options,
   value,
   variant = "field",
   onChange,
-}: AppSelectMenuProps<Value>): React.JSX.Element {
+}: SelectMenuProps<Value>): React.JSX.Element {
   const themeColors = useAppThemeColors();
-  const selectedOption = getSelectedOption(options, value);
+
+  const selectedOption =
+    options.find((option) => option.value === value) ?? options[0]!;
   const isCompact = variant === "compact";
 
   return (
     <Select.Root
+      disabled={disabled}
       onValueChange={(nextOption) => {
-        const nextValue = getOptionValue(options, nextOption?.value);
+        const nextValue = options.find(
+          (option) => option.value === nextOption?.value
+        )?.value;
 
-        if (nextValue && !isDisabled) {
+        if (nextValue) {
           onChange(nextValue);
         }
       }}
@@ -57,50 +59,46 @@ export function AppSelectMenu<Value extends string>({
           accessibilityHint={accessibilityHint}
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="button"
-          disabled={isDisabled}
           style={({ pressed }) => [
             styles.trigger,
             isCompact ? styles.compactTrigger : styles.fieldTrigger,
             {
               borderColor: isCompact ? themeColors.primary : themeColors.border,
             },
-            isDisabled ? styles.disabledTrigger : undefined,
-            pressed
-              ? isCompact
-                ? styles.compactPressed
-                : styles.fieldPressed
-              : undefined,
+            disabled ? styles.disabledTrigger : undefined,
+            pressed ? styles.pressed : undefined,
           ]}
         >
           {selectedOption.leading}
+
           <View
             style={isCompact ? styles.compactTriggerTextSlot : styles.textSlot}
           >
             <AppText
               ellipsizeMode="tail"
               numberOfLines={1}
-              style={[styles.text, { color: themeColors.text }]}
+              style={{ color: themeColors.text }}
               variant={isCompact ? "label" : "body3"}
             >
               {selectedOption.label}
             </AppText>
           </View>
+
           <ChevronDown color={themeColors.text} size={16} />
         </Pressable>
       </Select.Trigger>
 
       <Select.Portal>
-        <Select.Overlay closeOnPress style={styles.overlay} />
+        <Select.Overlay style={StyleSheet.absoluteFill} />
+
         <Select.Content
           align={align}
-          avoidCollisions
           insets={{
             bottom: spacing.lg,
             left: spacing.md,
             right: spacing.md,
             top: spacing.lg,
           }}
-          side="bottom"
           sideOffset={6}
           style={StyleSheet.flatten([
             isCompact ? styles.compactContent : styles.fieldContent,
@@ -110,7 +108,6 @@ export function AppSelectMenu<Value extends string>({
           {options.map((option) => (
             <Select.Item
               accessibilityHint={option.accessibilityHint}
-              closeOnPress
               key={option.value}
               label={option.label}
               style={[
@@ -124,12 +121,13 @@ export function AppSelectMenu<Value extends string>({
                 <AppText
                   ellipsizeMode="tail"
                   numberOfLines={1}
-                  style={[styles.text, { color: themeColors.text }]}
+                  style={{ color: themeColors.text }}
                   variant={isCompact ? "label" : "body3"}
                 >
                   {option.label}
                 </AppText>
               </View>
+
               <Select.ItemIndicator style={styles.indicator}>
                 <Check color={themeColors.text} size={16} />
               </Select.ItemIndicator>
@@ -141,22 +139,6 @@ export function AppSelectMenu<Value extends string>({
   );
 }
 
-function getSelectedOption<Value extends string>(
-  options: AppSelectMenuOption<Value>[],
-  value: Value
-): AppSelectMenuOption<Value> {
-  return options.find((option) => option.value === value) ?? options[0]!;
-}
-
-function getOptionValue<Value extends string>(
-  options: AppSelectMenuOption<Value>[],
-  value: string | undefined
-): Value | null {
-  const option = options.find((candidate) => candidate.value === value);
-
-  return option?.value ?? null;
-}
-
 const styles = StyleSheet.create({
   compactContent: {
     borderRadius: borderRadius.lg,
@@ -166,9 +148,6 @@ const styles = StyleSheet.create({
   compactItem: {
     gap: spacing.md,
     minHeight: 40,
-  },
-  compactPressed: {
-    opacity: 0.72,
   },
   compactTrigger: {
     alignSelf: "flex-end",
@@ -193,9 +172,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 44,
   },
-  fieldPressed: {
-    opacity: 0.88,
-  },
   fieldTrigger: {
     borderRadius: borderRadius.xl,
     minHeight: 48,
@@ -215,17 +191,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
+  pressed: {
+    opacity: 0.88,
   },
-  text: {},
   textSlot: {
     flex: 1,
     minWidth: 0,
   },
   trigger: {
     alignItems: "center",
-    backgroundColor: "transparent",
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,

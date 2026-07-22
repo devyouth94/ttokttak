@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { AppScreen } from "~/shared/ui/app-screen";
 
-import { HomeFeedErrorCard } from "./home-feed-error-card";
+import { HomeFeedError } from "./home-feed-error";
 import { HomeFeedSectionList } from "./home-feed-section-list";
 import { HomeLoadingPlaceholder } from "./home-loading-placeholder";
 import { HomeTopPanel } from "./home-top-panel";
@@ -61,12 +61,12 @@ export function HomeScreen(): React.JSX.Element {
             selectedDateId={home.selectedDateId}
           />
 
-          {home.errorMessage ? (
-            <HomeFeedErrorCard
+          {home.errorMessage && (
+            <HomeFeedError
               message={home.errorMessage}
               onRetry={home.onRetryFeed}
             />
-          ) : null}
+          )}
 
           <HomeFeedSectionList
             bottomNavReservedHeight={bottomNavReservedHeight}

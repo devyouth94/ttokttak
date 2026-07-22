@@ -23,11 +23,8 @@ import {
 } from "~/entities/schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import type { AppThemeColors, ResolvedAppTheme } from "~/shared/theme";
-import {
-  AppSelectMenu,
-  type AppSelectMenuOption,
-} from "~/shared/ui/app-select-menu";
 import { AppText } from "~/shared/ui/app-text";
+import { SelectMenu, type SelectOption } from "~/ui/select-menu";
 
 import type { ScheduleFormScreenStyles } from "./schedule-form-screen-styles";
 import {
@@ -142,16 +139,16 @@ export function RecurrenceSection({
     );
   });
 
-  const weekdaySelector = showsWeekdaySelector ? (
+  const weekdaySelector = showsWeekdaySelector && (
     <WeekdaySelector
       errorMessage={weekdayError}
       selectedDays={selectedWeekdays}
       styles={styles}
       onToggle={onToggleWeekday}
     />
-  ) : null;
+  );
 
-  const customRecurrencePanel = showsCustomRecurrencePanel ? (
+  const customRecurrencePanel = showsCustomRecurrencePanel && (
     <View style={styles.quickRecurrenceContent}>
       <View style={styles.customRecurrenceControlGroup}>
         <AppText style={styles.subFieldLabel} variant="body2">
@@ -178,16 +175,16 @@ export function RecurrenceSection({
           {customRecurrenceUnitButtons}
         </View>
 
-        {intervalError ? (
+        {intervalError && (
           <AppText style={styles.fieldError} variant="caption">
             {intervalError}
           </AppText>
-        ) : null}
+        )}
       </View>
 
-      {showsWeekdaysInsideCustomPanel ? weekdaySelector : null}
+      {showsWeekdaysInsideCustomPanel && weekdaySelector}
     </View>
-  ) : null;
+  );
 
   return (
     <View style={styles.field}>
@@ -227,7 +224,7 @@ export function RecurrenceSection({
               />
             </View>
 
-            {showsStandaloneWeekdaySelector ? weekdaySelector : null}
+            {showsStandaloneWeekdaySelector && weekdaySelector}
           </View>
         )}
       </View>
@@ -253,7 +250,7 @@ export function ColorPickerSection({
       />
     ),
     value: option.value,
-  })) satisfies AppSelectMenuOption<RecurringItemColorKey>[];
+  })) satisfies SelectOption<RecurringItemColorKey>[];
   const selectedOption =
     colorOptions.find((option) => option.value === selectedColorKey) ??
     colorOptions[0]!;
@@ -263,7 +260,7 @@ export function ColorPickerSection({
       <AppText style={styles.fieldLabel} variant="body2">
         {t("scheduleForm.fields.color")}
       </AppText>
-      <AppSelectMenu
+      <SelectMenu
         accessibilityHint={t("scheduleForm.color.menuHint")}
         accessibilityLabel={t("scheduleForm.color.menuLabel", {
           color: selectedOption.label,
@@ -389,11 +386,11 @@ function WeekdaySelector({
         {t("scheduleForm.recurrence.weekdayLabel")}
       </AppText>
       <View style={styles.weekdayGroup}>{weekdayButtons}</View>
-      {errorMessage ? (
+      {errorMessage && (
         <AppText style={styles.fieldError} variant="caption">
           {errorMessage}
         </AppText>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -539,11 +536,11 @@ export function AdvancedOptionsSection({
         />
       </View>
 
-      {anchorError ? (
+      {anchorError && (
         <AppText style={styles.fieldError} variant="caption">
           {anchorError}
         </AppText>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -614,7 +611,7 @@ export function IosPickerModal({
             </Pressable>
           </View>
 
-          {mode ? (
+          {mode && (
             <DateTimePicker
               accentColor={themeColors.primary}
               display="spinner"
@@ -625,7 +622,7 @@ export function IosPickerModal({
               themeVariant={resolvedTheme}
               value={value}
             />
-          ) : null}
+          )}
         </Pressable>
       </Pressable>
     </Modal>

@@ -9,7 +9,7 @@ import { I18nextProvider } from "react-i18next";
 import { StyleSheet } from "react-native";
 
 import { AppScreen } from "~/shared/ui/app-screen";
-import { AppRetryStateView } from "~/shared/ui/app-state";
+import { StateMessage } from "~/ui/state-message";
 
 import { appI18n, ensureAppI18nInitialized } from "./app-i18n";
 
@@ -58,10 +58,13 @@ export function AppI18nProvider({
   if (status === "failed") {
     return (
       <AppScreen contentStyle={styles.bootstrapError}>
-        <AppRetryStateView
+        <StateMessage
+          action={{
+            accessibilityHint: "표시 언어 초기화를 다시 시도합니다.",
+            label: "다시 시도",
+            onPress: initializeAppI18n,
+          }}
           description="표시 언어를 준비하는 중 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요."
-          onRetry={initializeAppI18n}
-          retryAccessibilityHint="표시 언어 초기화를 다시 시도합니다."
           title="앱을 시작하지 못했어요"
         />
       </AppScreen>

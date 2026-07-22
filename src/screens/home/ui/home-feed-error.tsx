@@ -3,39 +3,42 @@ import { StyleSheet } from "react-native";
 import { RotateCw } from "lucide-react-native";
 
 import { useAppThemeColors } from "~/shared/theme";
-import { AppRetryStatePanel } from "~/shared/ui/app-state";
 import { spacing } from "~/shared/ui/tokens";
+import { StateMessage } from "~/ui/state-message";
 
-type HomeFeedErrorCardProps = {
+type HomeFeedErrorProps = {
   message: string;
   onRetry: () => void;
 };
 
-export function HomeFeedErrorCard({
+export function HomeFeedError({
   message,
   onRetry,
-}: HomeFeedErrorCardProps): React.JSX.Element {
+}: HomeFeedErrorProps): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useAppThemeColors();
 
   return (
-    <AppRetryStatePanel
+    <StateMessage
+      action={{
+        accessibilityHint: t("home.feed.retryHint"),
+        accessibilityLabel: t("home.feed.retryLabel"),
+        icon: <RotateCw color={themeColors.text} size={16} />,
+        label: t("home.feed.retryLabel"),
+        onPress: onRetry,
+      }}
       description={message}
-      minHeight={112}
-      onRetry={onRetry}
-      panelStyle={styles.errorCard}
-      retryAccessibilityHint={t("home.feed.retryHint")}
-      retryAccessibilityLabel={t("home.feed.retryLabel")}
-      retryIcon={<RotateCw color={themeColors.text} size={16} />}
+      style={styles.error}
       title={t("home.feed.errorTitle")}
-      variant="surface"
     />
   );
 }
 
 const styles = StyleSheet.create({
-  errorCard: {
+  error: {
+    flex: 0,
     marginHorizontal: spacing.md,
     marginTop: spacing.lg,
+    minHeight: 112,
   },
 });

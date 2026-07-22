@@ -1,7 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Animated, Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
@@ -18,11 +17,10 @@ import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
-import { AppRetryStatePanel, AppStatePanel } from "~/shared/ui/app-state";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { spacing } from "~/shared/ui/tokens";
-import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
+import { StateMessage } from "~/ui/state-message";
 
 import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";
 import {
@@ -143,7 +141,7 @@ function DetailSummarySection({
           />
         </View>
 
-        {extraBadges.length > 0 ? (
+        {extraBadges.length > 0 && (
           <View style={styles.summaryOutlineGroup}>
             {extraBadges.map((badge) => (
               <DetailSummaryOutlineRow
@@ -153,7 +151,7 @@ function DetailSummarySection({
               />
             ))}
           </View>
-        ) : null}
+        )}
       </View>
     </View>
   );
@@ -281,7 +279,7 @@ function DetailLoadingPlaceholder(): React.JSX.Element {
   );
 }
 
-function DetailErrorCard({
+function DetailError({
   message,
   onRetry,
 }: {
@@ -291,18 +289,21 @@ function DetailErrorCard({
   const { t } = useTranslation();
 
   return (
-    <AppRetryStatePanel
+    <StateMessage
+      action={{
+        accessibilityHint: t("scheduleDetail.error.retryHint"),
+        accessibilityLabel: t("scheduleDetail.error.retryLabel"),
+        label: t("scheduleDetail.error.retryLabel"),
+        onPress: onRetry,
+      }}
       description={message}
-      minHeight={120}
-      onRetry={onRetry}
-      retryAccessibilityHint={t("scheduleDetail.error.retryHint")}
-      retryAccessibilityLabel={t("scheduleDetail.error.retryLabel")}
+      style={{ flex: 0, minHeight: 120 }}
       title={t("scheduleDetail.error.title")}
     />
   );
 }
 
-function DetailInlineErrorCard({
+function DetailInlineError({
   message,
   title,
 }: {
@@ -312,9 +313,9 @@ function DetailInlineErrorCard({
   const { t } = useTranslation();
 
   return (
-    <AppStatePanel
+    <StateMessage
       description={message}
-      minHeight={96}
+      style={{ flex: 0, minHeight: 96 }}
       title={title ?? t("scheduleDetail.inlineErrorTitle")}
     />
   );
@@ -386,11 +387,11 @@ function DetailHistoryCard({
   );
 }
 
-function DetailNotFoundCard(): React.JSX.Element {
+function DetailNotFound(): React.JSX.Element {
   const { t } = useTranslation();
 
   return (
-    <AppStatePanel
+    <StateMessage
       action={{
         accessibilityHint: t("scheduleDetail.notFound.homeHint"),
         accessibilityLabel: t("scheduleDetail.notFound.homeLabel"),
@@ -400,7 +401,7 @@ function DetailNotFoundCard(): React.JSX.Element {
         },
       }}
       description={t("scheduleDetail.notFound.description")}
-      minHeight={120}
+      style={{ flex: 0, minHeight: 120 }}
       title={t("scheduleDetail.notFound.title")}
     />
   );
@@ -421,14 +422,6 @@ export function ScheduleDetailScreen({
   const themeColors = useAppThemeColors();
   const scheduleReadContext = useScheduleReadContext();
   const { timezone, userId } = scheduleReadContext;
-  const insets = useSafeAreaInsets();
-  const {
-    headerAnimatedStyle,
-    headerHeight,
-    onHeaderHeightChange,
-    onScroll,
-    scrollEventThrottle,
-  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
     null
   );
@@ -478,7 +471,6 @@ export function ScheduleDetailScreen({
     (queryErrorMessage === ITEM_NOT_FOUND_MESSAGE ||
       queryErrorMessage === null);
   const scrollBottomPadding = spacing.lg;
-  const scrollTopPadding = headerHeight;
 
   const refetchDetail = async (): Promise<void> => {
     await detailQuery.refetch();
@@ -552,112 +544,102 @@ export function ScheduleDetailScreen({
   };
 
   return (
-    <AppScreen contentStyle={styles.screenContent}>
+    <AppScreen>
       <View style={styles.screenRoot}>
-        <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-          <FocusScreenHeader
-            onBack={() => {
-              router.back();
-            }}
-            onHeightChange={onHeaderHeightChange}
-            rightSlot={
-              item && !queryErrorMessage ? (
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    <Pressable
-                      accessibilityHint={t(
-                        "scheduleDetail.management.menuHint"
-                      )}
-                      accessibilityLabel={t(
-                        "scheduleDetail.management.menuLabel"
-                      )}
-                      accessibilityRole="button"
-                      disabled={isMutating}
-                      style={({ pressed }) => [
-                        styles.managementMenuButton,
-                        isMutating && styles.managementMenuButtonDisabled,
-                        pressed &&
-                          !isMutating &&
-                          styles.managementMenuButtonPressed,
-                      ]}
-                    >
-                      <EllipsisVertical color={themeColors.text} size={20} />
-                    </Pressable>
-                  </DropdownMenu.Trigger>
+        <FocusScreenHeader
+          onBack={() => {
+            router.back();
+          }}
+          rightSlot={
+            item &&
+            !queryErrorMessage && (
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <Pressable
+                    accessibilityHint={t("scheduleDetail.management.menuHint")}
+                    accessibilityLabel={t(
+                      "scheduleDetail.management.menuLabel"
+                    )}
+                    accessibilityRole="button"
+                    disabled={isMutating}
+                    style={({ pressed }) => [
+                      styles.managementMenuButton,
+                      isMutating && styles.managementMenuButtonDisabled,
+                      pressed &&
+                        !isMutating &&
+                        styles.managementMenuButtonPressed,
+                    ]}
+                  >
+                    <EllipsisVertical color={themeColors.text} size={20} />
+                  </Pressable>
+                </DropdownMenu.Trigger>
 
-                  <DropdownMenu.Portal>
-                    <DropdownMenu.Overlay
-                      closeOnPress
-                      style={styles.managementMenuOverlay}
-                    />
-                    <DropdownMenu.Content
-                      align="end"
-                      avoidCollisions
-                      insets={{
-                        bottom: spacing.lg,
-                        left: spacing.md,
-                        right: spacing.md,
-                        top: spacing.lg,
-                      }}
-                      side="bottom"
-                      sideOffset={2}
-                      style={styles.managementMenuContent}
-                    >
-                      {isContentUnrecoverable ? null : (
-                        <DropdownMenu.Item
-                          accessibilityHint={t(
-                            "scheduleDetail.management.editHint"
-                          )}
-                          closeOnPress
-                          style={styles.managementMenuItem}
-                          onPress={handleEdit}
-                        >
-                          <AppText
-                            numberOfLines={1}
-                            style={styles.managementMenuText}
-                            variant="label"
-                          >
-                            {t("scheduleDetail.management.edit")}
-                          </AppText>
-                        </DropdownMenu.Item>
-                      )}
-
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Overlay
+                    closeOnPress
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <DropdownMenu.Content
+                    align="end"
+                    avoidCollisions
+                    insets={{
+                      bottom: spacing.lg,
+                      left: spacing.md,
+                      right: spacing.md,
+                      top: spacing.lg,
+                    }}
+                    side="bottom"
+                    sideOffset={2}
+                    style={styles.managementMenuContent}
+                  >
+                    {!isContentUnrecoverable && (
                       <DropdownMenu.Item
                         accessibilityHint={t(
-                          "scheduleDetail.management.deleteHint"
+                          "scheduleDetail.management.editHint"
                         )}
                         closeOnPress
                         style={styles.managementMenuItem}
-                        onPress={handleDelete}
+                        onPress={handleEdit}
                       >
                         <AppText
                           numberOfLines={1}
-                          style={[
-                            styles.managementMenuText,
-                            styles.managementDeleteText,
-                          ]}
+                          style={styles.managementMenuText}
                           variant="label"
                         >
-                          {t("scheduleDetail.management.delete")}
+                          {t("scheduleDetail.management.edit")}
                         </AppText>
                       </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Portal>
-                </DropdownMenu.Root>
-              ) : undefined
-            }
-            title={t("scheduleDetail.headerTitle")}
-          />
-        </Animated.View>
+                    )}
+
+                    <DropdownMenu.Item
+                      accessibilityHint={t(
+                        "scheduleDetail.management.deleteHint"
+                      )}
+                      closeOnPress
+                      style={styles.managementMenuItem}
+                      onPress={handleDelete}
+                    >
+                      <AppText
+                        numberOfLines={1}
+                        style={[
+                          styles.managementMenuText,
+                          styles.managementDeleteText,
+                        ]}
+                        variant="label"
+                      >
+                        {t("scheduleDetail.management.delete")}
+                      </AppText>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            )
+          }
+          title={t("scheduleDetail.headerTitle")}
+        />
 
         {isLoading ? (
-          <View
-            style={[
-              styles.loadingContent,
-              styles.scrollContent,
-              { paddingTop: headerHeight },
-            ]}
-          >
+          <View style={[styles.loadingContent, styles.scrollContent]}>
             <DetailLoadingPlaceholder />
           </View>
         ) : (
@@ -666,32 +648,29 @@ export function ScheduleDetailScreen({
               bounces={false}
               contentContainerStyle={[
                 styles.scrollContent,
-                { paddingTop: scrollTopPadding },
                 { paddingBottom: scrollBottomPadding },
               ]}
-              onScroll={onScroll}
-              scrollEventThrottle={scrollEventThrottle}
               showsVerticalScrollIndicator={false}
             >
               {queryErrorMessage && !isNotFound ? (
-                <DetailErrorCard
+                <DetailError
                   message={queryErrorMessage}
                   onRetry={handleRetry}
                 />
               ) : isNotFound || !item || !viewModel || !statusCard ? (
-                <DetailNotFoundCard />
+                <DetailNotFound />
               ) : (
                 <>
-                  {actionErrorMessage ? (
-                    <DetailInlineErrorCard message={actionErrorMessage} />
-                  ) : null}
+                  {actionErrorMessage && (
+                    <DetailInlineError message={actionErrorMessage} />
+                  )}
 
-                  {viewModel.contentRecovery ? (
-                    <DetailInlineErrorCard
+                  {viewModel.contentRecovery && (
+                    <DetailInlineError
                       message={viewModel.contentRecovery.description}
                       title={viewModel.contentRecovery.title}
                     />
-                  ) : null}
+                  )}
 
                   <DetailSummarySection
                     colorKey={viewModel.summary.colorKey}

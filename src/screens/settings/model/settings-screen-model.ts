@@ -5,7 +5,7 @@ import {
 import type { NotificationContextValue } from "~/features/notifications";
 import type { AppLanguage } from "~/shared/i18n";
 import type { AppThemePreference } from "~/shared/theme";
-import type { AppSelectMenuOption } from "~/shared/ui/app-select-menu";
+import type { SelectOption } from "~/ui/select-menu";
 
 type Translate = (key: string) => string;
 type NotificationPermissionStatus =
@@ -89,7 +89,7 @@ export function getSettingsErrorMessage(error: unknown): string {
 
 export function getAppLanguageOptions(
   t: Translate
-): AppSelectMenuOption<AppLanguage>[] {
+): SelectOption<AppLanguage>[] {
   return [
     {
       accessibilityHint: t("settings.environment.languageKoreanHint"),
@@ -106,7 +106,7 @@ export function getAppLanguageOptions(
 
 export function getThemePreferenceOptions(
   t: Translate
-): AppSelectMenuOption<AppThemePreference>[] {
+): SelectOption<AppThemePreference>[] {
   return [
     {
       accessibilityHint: t("settings.environment.themeSystemHint"),

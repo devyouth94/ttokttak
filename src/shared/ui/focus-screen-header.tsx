@@ -11,7 +11,6 @@ type FocusScreenHeaderProps = {
   backAccessibilityHint?: string;
   backAccessibilityLabel?: string;
   onBack: () => void;
-  onHeightChange?: (height: number) => void;
   rightSlot?: ReactNode;
   title: string;
 };
@@ -20,7 +19,6 @@ export function FocusScreenHeader({
   backAccessibilityHint = "이전 화면으로 돌아가요.",
   backAccessibilityLabel = "뒤로 가기",
   onBack,
-  onHeightChange,
   rightSlot,
   title,
 }: FocusScreenHeaderProps): React.JSX.Element {
@@ -44,7 +42,6 @@ export function FocusScreenHeader({
           <ArrowLeft color={themeColors.primaryForeground} size={18} />
         </Pressable>
       }
-      onHeightChange={onHeightChange}
       rightSlot={rightSlot ?? <View style={styles.rightActionSpacer} />}
       title={title}
     />

@@ -42,7 +42,7 @@ export function MainTabsLayout(): React.JSX.Element {
       initialRouteName="home"
       screenOptions={{
         headerShown: false,
-        sceneStyle: [styles.scene, { backgroundColor: themeColors.background }],
+        sceneStyle: { backgroundColor: themeColors.background },
       }}
       tabBar={(props) => <MainBottomNav {...props} isVisible={showBottomNav} />}
     >
@@ -67,5 +67,4 @@ const styles = StyleSheet.create({
   loadingScreen: {
     flex: 1,
   },
-  scene: {},
 });

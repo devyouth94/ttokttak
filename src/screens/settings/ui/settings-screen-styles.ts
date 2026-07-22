@@ -20,13 +20,6 @@ function createSettingsScreenStyles(themeColors: AppThemeColors) {
     dangerText: {
       color: themeColors.error,
     },
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
-    },
     modalBackdrop: {
       alignItems: "center",
       backgroundColor: themeColors.scrim,
@@ -122,9 +115,6 @@ function createSettingsScreenStyles(themeColors: AppThemeColors) {
       color: themeColors.textSoft,
       flexShrink: 1,
       textAlign: "right",
-    },
-    screenContent: {
-      flex: 1,
     },
     scrollContent: {
       flexGrow: 1,
