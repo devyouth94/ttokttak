@@ -3,9 +3,9 @@ import { ArrowRight } from "lucide-react-native";
 
 import type { RecurringItemColorKey } from "~/entities/schedule/model/types";
 import { recurringItemColorOptionByKey } from "~/entities/schedule/ui/color-palette";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 type Props = {
   accessibilityHint: string;
@@ -26,7 +26,7 @@ export function ItemRow({
   onPress,
   title,
 }: Props): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
 
   return (

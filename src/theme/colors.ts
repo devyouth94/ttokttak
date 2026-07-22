@@ -1,0 +1,51 @@
+const commonColors = {
+  accent: "#E06A4F",
+  blue: "#357ABD",
+  error: "#D64545",
+  grayBorder: "#D8DEE4",
+  graySoft: "#E8ECEF",
+  grayText: "#68727D",
+  greenBorder: "#CFE7D2",
+  greenSoft: "#DDEEDD",
+  greenText: "#1F6B2A",
+  red: "#D64545",
+} as const;
+
+export const themeColors = {
+  light: {
+    ...commonColors,
+    background: "#FAFAFB",
+    border: "rgba(28, 31, 35, 0.4)",
+    controlTrack: "rgba(28, 31, 35, 0.4)",
+    divider: "rgba(28, 31, 35, 0.4)",
+    errorContainer: "#FBE9E7",
+    primary: "#292B2D",
+    primaryForeground: "#FFFFFF",
+    scrim: "rgba(28, 31, 35, 0.28)",
+    shadow: "rgba(28, 31, 35, 0.08)",
+    surface: "#FFFFFF",
+    text: "#1C1F23",
+    textDisabled: "rgba(28, 31, 35, 0.4)",
+    textMuted: "#5B616B",
+    textSoft: "#8A9099",
+  },
+  dark: {
+    ...commonColors,
+    background: "#111315",
+    border: "rgba(244, 245, 246, 0.18)",
+    controlTrack: "rgba(244, 245, 246, 0.18)",
+    divider: "rgba(244, 245, 246, 0.18)",
+    errorContainer: "#3A1E1D",
+    primary: "#F4F5F6",
+    primaryForeground: "#111315",
+    scrim: "rgba(0, 0, 0, 0.58)",
+    shadow: "rgba(0, 0, 0, 0.28)",
+    surface: "#1A1D21",
+    text: "#F4F5F6",
+    textDisabled: "rgba(244, 245, 246, 0.18)",
+    textMuted: "#C2C7D0",
+    textSoft: "#8D95A1",
+  },
+} as const;
+
+export type ThemeColors = (typeof themeColors)[keyof typeof themeColors];

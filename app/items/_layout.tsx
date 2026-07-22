@@ -1,5 +1,16 @@
-import { ThemedItemsStack } from "~/application/navigation";
+import { Stack } from "expo-router";
+
+import { useThemeColors } from "~/theme/context";
 
 export default function ItemsStackLayout(): React.JSX.Element {
-  return <ThemedItemsStack />;
+  const themeColors = useThemeColors();
+
+  return (
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: themeColors.background },
+        headerShown: false,
+      }}
+    />
+  );
 }

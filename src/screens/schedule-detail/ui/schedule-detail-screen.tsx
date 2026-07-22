@@ -15,11 +15,11 @@ import { archiveSchedule } from "~/features/mutate-schedule";
 import { useScheduleDetailReadModelQuery } from "~/features/read-schedule";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 import { StateMessage } from "~/ui/state-message";
 
 import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";
@@ -80,7 +80,7 @@ function DetailSummarySection({
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const styles = useScheduleDetailScreenStyles();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
   const colorOption = recurringItemColorOptionByKey[colorKey];
   const colorLabel = getRecurringItemColorLabel(colorKey, language);
@@ -419,7 +419,7 @@ export function ScheduleDetailScreen({
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const styles = useScheduleDetailScreenStyles();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const scheduleReadContext = useScheduleReadContext();
   const { timezone, userId } = scheduleReadContext;
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(

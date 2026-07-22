@@ -11,10 +11,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ExternalLink } from "lucide-react-native";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
-import { useAppTheme } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
+import { useTheme } from "~/theme/context";
 import { SelectMenu } from "~/ui/select-menu";
 
 import {
@@ -32,7 +32,7 @@ export function SettingsScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const settingsModel = useSettingsScreenController();
   const { actions, options, values, view } = settingsModel;
-  const { colors: themeColors } = useAppTheme();
+  const { colors: themeColors } = useTheme();
 
   return (
     <AppScreen>

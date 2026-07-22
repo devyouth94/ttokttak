@@ -12,7 +12,6 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 
 type UseColorScheme = typeof import("react-native").useColorScheme;
 
-const React = require("react") as typeof import("react");
 const TestRenderer = require("react-test-renderer") as {
   act: (callback: () => Promise<void> | void) => Promise<void>;
   create: (element: ReactElement) => { unmount: () => void };
@@ -27,10 +26,8 @@ const AsyncStorage = require("@react-native-async-storage/async-storage") as {
   getItem: jest.Mock<Promise<string | null>, [string]>;
   setItem: jest.Mock<Promise<void>, [string, string]>;
 };
-const { AppThemeProvider } =
-  require("./theme-provider") as typeof import("./theme-provider");
-const { useAppTheme } =
-  require("./theme-context") as typeof import("./theme-context");
+const { useTheme } = require("./context") as typeof import("./context");
+const { ThemeProvider } = require("./theme") as typeof import("./theme");
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
@@ -44,8 +41,8 @@ function createDeferred<T>() {
 }
 
 function requireThemeContext(
-  context: ReturnType<typeof useAppTheme> | null
-): ReturnType<typeof useAppTheme> {
+  context: ReturnType<typeof useTheme> | null
+): ReturnType<typeof useTheme> {
   if (!context) {
     throw new Error("테마 컨텍스트를 읽지 못했습니다.");
   }
@@ -53,7 +50,28 @@ function requireThemeContext(
   return context;
 }
 
-describe("AppThemeProvider", () => {
+async function renderTheme(): Promise<() => ReturnType<typeof useTheme>> {
+  let theme: ReturnType<typeof useTheme> | null = null;
+
+  function ThemeProbe(): null {
+    theme = useTheme();
+
+    return null;
+  }
+
+  await TestRenderer.act(async () => {
+    TestRenderer.create(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+    await Promise.resolve();
+  });
+
+  return () => requireThemeContext(theme);
+}
+
+describe("ThemeProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useColorScheme.mockReturnValue("light");
@@ -61,71 +79,39 @@ describe("AppThemeProvider", () => {
 
   it("system 기본값은 현재 기기의 화면 표시 설정을 resolved theme으로 제공한다", async () => {
     useColorScheme.mockReturnValue("dark");
-    let observedTheme: ReturnType<typeof useAppTheme> | null = null;
+    AsyncStorage.getItem.mockRejectedValue(new Error("저장소 오류"));
+    const getTheme = await renderTheme();
 
-    function ThemeProbe(): null {
-      observedTheme = useAppTheme();
-
-      return null;
-    }
-
-    await TestRenderer.act(async () => {
-      TestRenderer.create(
-        React.createElement(
-          AppThemeProvider,
-          null,
-          React.createElement(ThemeProbe, null)
-        )
-      );
-      await Promise.resolve();
-    });
-
-    expect(observedTheme).toMatchObject({
-      colors: expect.objectContaining({
-        background: "#111315",
-        text: "#F4F5F6",
-      }),
+    expect(getTheme()).toMatchObject({
       resolvedTheme: "dark",
       themePreference: "system",
     });
+
+    await TestRenderer.act(async () => {
+      await getTheme().setThemePreference("system");
+    });
+
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
   });
 
-  it("저장된 초기 테마가 늦게 도착한 뒤 사용자 변경 저장이 실패하면 저장된 테마로 복구한다", async () => {
+  it("사용자 변경 저장이 실패하면 저장된 초기 테마를 유지한다", async () => {
     const hydration = createDeferred<string | null>();
     const write = createDeferred<void>();
-    let observedTheme: ReturnType<typeof useAppTheme> | null = null;
 
     useColorScheme.mockReturnValue("dark");
     AsyncStorage.getItem.mockReturnValue(hydration.promise);
     AsyncStorage.setItem.mockReturnValue(write.promise);
+    const getTheme = await renderTheme();
 
-    function ThemeProbe(): null {
-      observedTheme = useAppTheme();
-
-      return null;
-    }
-
-    await TestRenderer.act(async () => {
-      TestRenderer.create(
-        React.createElement(
-          AppThemeProvider,
-          null,
-          React.createElement(ThemeProbe, null)
-        )
-      );
-      await Promise.resolve();
-    });
-
-    const currentTheme = requireThemeContext(observedTheme);
     let changePromise!: Promise<void>;
     await TestRenderer.act(async () => {
-      changePromise = currentTheme.setThemePreference("light");
+      changePromise = getTheme().setThemePreference("light");
       await Promise.resolve();
     });
 
-    expect(observedTheme).toMatchObject({
-      resolvedTheme: "light",
-      themePreference: "light",
+    expect(getTheme()).toMatchObject({
+      resolvedTheme: "dark",
+      themePreference: "system",
     });
 
     await TestRenderer.act(async () => {
@@ -133,9 +119,9 @@ describe("AppThemeProvider", () => {
       await Promise.resolve();
     });
 
-    expect(observedTheme).toMatchObject({
-      resolvedTheme: "light",
-      themePreference: "light",
+    expect(getTheme()).toMatchObject({
+      resolvedTheme: "dark",
+      themePreference: "dark",
     });
 
     await TestRenderer.act(async () => {
@@ -143,45 +129,28 @@ describe("AppThemeProvider", () => {
       await expect(changePromise).rejects.toThrow("저장 실패");
     });
 
-    expect(observedTheme).toMatchObject({
+    expect(getTheme()).toMatchObject({
       resolvedTheme: "dark",
       themePreference: "dark",
     });
   });
 
-  it("사용자 변경이 성공한 뒤 늦게 도착한 초기 테마는 실패 복구 기준을 덮지 않는다", async () => {
+  it("사용자 변경이 성공하면 늦게 도착한 초기 테마를 무시한다", async () => {
     const hydration = createDeferred<string | null>();
     const failedWrite = createDeferred<void>();
-    let observedTheme: ReturnType<typeof useAppTheme> | null = null;
 
     useColorScheme.mockReturnValue("dark");
     AsyncStorage.getItem.mockReturnValue(hydration.promise);
     AsyncStorage.setItem
       .mockResolvedValueOnce(undefined)
       .mockReturnValueOnce(failedWrite.promise);
-
-    function ThemeProbe(): null {
-      observedTheme = useAppTheme();
-
-      return null;
-    }
+    const getTheme = await renderTheme();
 
     await TestRenderer.act(async () => {
-      TestRenderer.create(
-        React.createElement(
-          AppThemeProvider,
-          null,
-          React.createElement(ThemeProbe, null)
-        )
-      );
-      await Promise.resolve();
+      await getTheme().setThemePreference("light");
     });
 
-    await TestRenderer.act(async () => {
-      await requireThemeContext(observedTheme).setThemePreference("light");
-    });
-
-    expect(observedTheme).toMatchObject({
+    expect(getTheme()).toMatchObject({
       resolvedTheme: "light",
       themePreference: "light",
     });
@@ -191,15 +160,14 @@ describe("AppThemeProvider", () => {
       await Promise.resolve();
     });
 
-    expect(observedTheme).toMatchObject({
+    expect(getTheme()).toMatchObject({
       resolvedTheme: "light",
       themePreference: "light",
     });
 
     let failedChange!: Promise<void>;
     await TestRenderer.act(async () => {
-      failedChange =
-        requireThemeContext(observedTheme).setThemePreference("system");
+      failedChange = getTheme().setThemePreference("system");
       await Promise.resolve();
     });
 
@@ -208,7 +176,7 @@ describe("AppThemeProvider", () => {
       await expect(failedChange).rejects.toThrow("저장 실패");
     });
 
-    expect(observedTheme).toMatchObject({
+    expect(getTheme()).toMatchObject({
       resolvedTheme: "light",
       themePreference: "light",
     });

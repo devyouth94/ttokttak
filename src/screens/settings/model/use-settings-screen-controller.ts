@@ -11,7 +11,8 @@ import {
   validateProfileDisplayName,
 } from "~/features/settings";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
-import { type AppThemePreference, useAppTheme } from "~/shared/theme";
+import { useTheme } from "~/theme/context";
+import type { ThemePreference } from "~/theme/preference";
 
 import {
   getAppLanguageOptions,
@@ -29,7 +30,7 @@ export function useSettingsScreenController() {
     useSession();
   const { language: appLanguage, setLanguage: setAppLanguage } =
     useAppLanguage();
-  const { setThemePreference, themePreference } = useAppTheme();
+  const { setThemePreference, themePreference } = useTheme();
   const {
     isPermissionLoading,
     isRequestingPermission,
@@ -199,7 +200,7 @@ export function useSettingsScreenController() {
   }
 
   async function changeThemePreference(
-    nextPreference: AppThemePreference
+    nextPreference: ThemePreference
   ): Promise<void> {
     if (isSavingThemePreference || nextPreference === themePreference) {
       return;

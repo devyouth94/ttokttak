@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/context";
 
 const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
 
 export function useScheduleDetailScreenStyles() {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return useMemo(
     () => createScheduleDetailScreenStyles(themeColors),
@@ -16,7 +16,7 @@ export function useScheduleDetailScreenStyles() {
   );
 }
 
-function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
+function createScheduleDetailScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     historyDate: {
       color: themeColors.text,

@@ -10,19 +10,19 @@ import { type Sort, useItems } from "~/screens/schedule-list/list";
 import { ListEmpty } from "~/screens/schedule-list/ui/empty";
 import { ListLoading } from "~/screens/schedule-list/ui/loading";
 import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 import { StateMessage } from "~/ui/state-message";
 
 export default function ScheduleTabPage(): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
   const insets = useSafeAreaInsets();
 
-  const [sort, setSort] = useState<Sort>("titleAsc");
+  const themeColors = useThemeColors();
 
+  const [sort, setSort] = useState<Sort>("titleAsc");
   const { isRefreshing, refetch, rows, status } = useItems(sort);
 
   return (
@@ -53,7 +53,7 @@ export default function ScheduleTabPage(): React.JSX.Element {
         <FlatList
           contentContainerStyle={[
             styles.listContent,
-            rows.length === 0 ? styles.emptyListContent : undefined,
+            rows.length === 0 && styles.emptyListContent,
             { paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom },
           ]}
           data={rows}

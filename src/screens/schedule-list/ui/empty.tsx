@@ -3,12 +3,12 @@ import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
+import { useThemeColors } from "~/theme/context";
 import { StateMessage } from "~/ui/state-message";
 
 export function ListEmpty(): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <StateMessage

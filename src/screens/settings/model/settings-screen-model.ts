@@ -4,7 +4,7 @@ import {
 } from "~/features/delete-account";
 import type { NotificationContextValue } from "~/features/notifications";
 import type { AppLanguage } from "~/shared/i18n";
-import type { AppThemePreference } from "~/shared/theme";
+import type { ThemePreference } from "~/theme/preference";
 import type { SelectOption } from "~/ui/select-menu";
 
 type Translate = (key: string) => string;
@@ -106,7 +106,7 @@ export function getAppLanguageOptions(
 
 export function getThemePreferenceOptions(
   t: Translate
-): SelectOption<AppThemePreference>[] {
+): SelectOption<ThemePreference>[] {
   return [
     {
       accessibilityHint: t("settings.environment.themeSystemHint"),

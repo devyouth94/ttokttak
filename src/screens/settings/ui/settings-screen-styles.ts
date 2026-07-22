@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/context";
 
 export function useSettingsScreenStyles() {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return useMemo(() => createSettingsScreenStyles(themeColors), [themeColors]);
 }
@@ -15,7 +15,7 @@ export type SettingsScreenStyles = ReturnType<
   typeof createSettingsScreenStyles
 >;
 
-function createSettingsScreenStyles(themeColors: AppThemeColors) {
+function createSettingsScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     dangerText: {
       color: themeColors.error,

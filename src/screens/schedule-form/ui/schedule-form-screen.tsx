@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
+import { useThemeColors } from "~/theme/context";
 
 import { ScheduleFormScreenContent } from "./schedule-form-screen-content";
 import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";
@@ -43,7 +43,7 @@ export function ScheduleFormScreen({
 
 function ScheduleFormScreenLoading(): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const styles = useScheduleFormScreenStyles();
 
   return (

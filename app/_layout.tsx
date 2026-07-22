@@ -1,7 +1,9 @@
+import { Stack } from "expo-router";
+
 import { AppBootstrap } from "~/application/bootstrap";
-import { ThemedRootStack } from "~/application/navigation";
 import { AppProviders } from "~/application/providers";
 import { Sentry } from "~/shared/config/sentry";
+import { useThemeColors } from "~/theme/context";
 
 function RootLayout() {
   return (
@@ -12,10 +14,19 @@ function RootLayout() {
 }
 
 function RootStack(): React.JSX.Element {
+  const themeColors = useThemeColors();
+
   return (
     <>
       <AppBootstrap />
-      <ThemedRootStack />
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: themeColors.background },
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+      </Stack>
     </>
   );
 }

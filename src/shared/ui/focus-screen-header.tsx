@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 import { ScreenHeader } from "./screen-header";
 
@@ -22,7 +22,7 @@ export function FocusScreenHeader({
   rightSlot,
   title,
 }: FocusScreenHeaderProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <ScreenHeader

@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 type StateAction = {
   accessibilityHint?: string;
@@ -27,7 +27,7 @@ export function StateMessage({
   style,
   title,
 }: StateMessageProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <View style={[styles.message, style]}>

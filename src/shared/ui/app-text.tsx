@@ -7,8 +7,8 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { typography } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 type AppTextVariant =
   | "body"
@@ -33,7 +33,7 @@ export function AppText({
   style,
   variant = "body",
 }: AppTextProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const color = variant === "label" ? themeColors.textMuted : themeColors.text;
 
   return (

@@ -19,12 +19,12 @@ import {
 import { ItemRow } from "~/schedule/ui/item-row";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppTheme, useAppThemeColors } from "~/shared/theme";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useTheme, useThemeColors } from "~/theme/context";
 import { StateMessage } from "~/ui/state-message";
 
 import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";
@@ -47,7 +47,7 @@ LocaleConfig.defaultLocale = "ko";
 
 const CALENDAR_ENTRY_PLACEHOLDER_COUNT = 2;
 
-function createCalendarTheme(themeColors: AppThemeColors) {
+function createCalendarTheme(themeColors: ThemeColors) {
   return {
     arrowColor: themeColors.text,
     calendarBackground: themeColors.surface,
@@ -103,7 +103,7 @@ function createCalendarTheme(themeColors: AppThemeColors) {
 export function CalendarScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const { colors: themeColors, resolvedTheme } = useAppTheme();
+  const { colors: themeColors, resolvedTheme } = useTheme();
   const styles = useCalendarScreenStyles();
   const calendarTheme = useMemo(
     () => createCalendarTheme(themeColors),
@@ -405,12 +405,12 @@ function CalendarEntryListPlaceholder(): React.JSX.Element {
 }
 
 function useCalendarScreenStyles() {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return useMemo(() => createCalendarScreenStyles(themeColors), [themeColors]);
 }
 
-function createCalendarScreenStyles(themeColors: AppThemeColors) {
+function createCalendarScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     calendar: {
       borderRadius: borderRadius.lg,

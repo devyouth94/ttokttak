@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 export type SelectOption<Value extends string> = {
   accessibilityHint?: string;
@@ -34,7 +34,7 @@ export function SelectMenu<Value extends string>({
   variant = "field",
   onChange,
 }: SelectMenuProps<Value>): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   const selectedOption =
     options.find((option) => option.value === value) ?? options[0]!;

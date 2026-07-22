@@ -5,9 +5,9 @@ import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 import { createHomeDateOptions } from "../model/home-feed-sections";
 
@@ -22,7 +22,7 @@ export function HomeDateCarousel({
 }: HomeDateCarouselProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const dateScrollRef = useRef<ScrollView>(null);
   const dateOptions = createHomeDateOptions(startOfDay(new Date()), language);
   const todayOption = dateOptions[0];

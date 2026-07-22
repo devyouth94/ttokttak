@@ -11,13 +11,13 @@ import {
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
 import { isAppleSignInAvailable } from "~/features/sign-in";
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { AppleLogoIcon, GoogleLogoIcon } from "~/shared/ui/social-icons";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/context";
 
 type LoginScreenContentProps = {
   isConfigured: boolean;
@@ -31,7 +31,7 @@ export function LoginScreenContent({
   onGooglePress,
 }: LoginScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const styles = useMemo(
     () => createLoginScreenStyles(themeColors),
     [themeColors]
@@ -200,7 +200,7 @@ export function LoginScreenContent({
   );
 }
 
-function createLoginScreenStyles(themeColors: AppThemeColors) {
+function createLoginScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     actions: {
       gap: spacing.xs,

@@ -22,8 +22,9 @@ import {
   supportsCompletionBased,
 } from "~/entities/schedule";
 import { useAppLanguage } from "~/shared/i18n";
-import type { AppThemeColors, ResolvedAppTheme } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
+import type { ThemeColors } from "~/theme/colors";
+import type { ResolvedTheme } from "~/theme/preference";
 import { SelectMenu, type SelectOption } from "~/ui/select-menu";
 
 import type { ScheduleFormScreenStyles } from "./schedule-form-screen-styles";
@@ -49,7 +50,7 @@ type RecurrenceSectionProps = {
   recurrenceType: RecurrenceType;
   selectedWeekdays: number[];
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
   weekdayError?: string;
   onChangeIntervalValue: (value: string) => void;
   onChangeUnit: (unit: CustomRecurrenceUnit) => void;
@@ -426,7 +427,7 @@ function WeekdayChipButton({
 type NotificationSectionProps = {
   enabled: boolean;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
   onToggle: (value: boolean) => void;
 };
 
@@ -462,7 +463,7 @@ type AdvancedOptionsSectionProps = {
   anchorType: AnchorType;
   recurrenceType: RecurrenceType;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
   onSelectAnchorType: (anchorType: AnchorType) => void;
 };
 
@@ -548,9 +549,9 @@ export function AdvancedOptionsSection({
 type IosPickerModalProps = {
   minimumDate?: Date;
   mode: "date" | "time" | null;
-  resolvedTheme: ResolvedAppTheme;
+  resolvedTheme: ResolvedTheme;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
   title: string;
   value: Date;
   onChange: (event: DateTimePickerEvent, selectedDate?: Date) => void;

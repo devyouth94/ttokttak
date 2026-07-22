@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Platform, StyleSheet } from "react-native";
 
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/context";
 
 export function useScheduleFormScreenStyles() {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return useMemo(
     () => createScheduleFormScreenStyles(themeColors),
@@ -18,7 +18,7 @@ export type ScheduleFormScreenStyles = ReturnType<
   typeof createScheduleFormScreenStyles
 >;
 
-function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
+function createScheduleFormScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     optionInfoButton: {
       alignItems: "center",

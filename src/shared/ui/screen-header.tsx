@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/context";
 
 import { AppText } from "./app-text";
 
@@ -22,7 +22,7 @@ export function ScreenHeader({
   title,
   titleColor,
 }: ScreenHeaderProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <View

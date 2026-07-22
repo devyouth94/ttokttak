@@ -18,10 +18,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppTheme } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
+import type { ThemeColors } from "~/theme/colors";
+import { useTheme } from "~/theme/context";
 
 import {
   AdvancedOptionsSection,
@@ -83,7 +83,7 @@ type SaveButtonContentProps = {
   isEditMode: boolean;
   isSaving: boolean;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
 };
 
 type PickerFieldProps = {
@@ -113,7 +113,7 @@ export function ScheduleFormScreenContent({
 }: ScheduleFormScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const { colors: themeColors, resolvedTheme } = useAppTheme();
+  const { colors: themeColors, resolvedTheme } = useTheme();
   const styles = useScheduleFormScreenStyles();
   const [focusedTextInput, setFocusedTextInput] = useState<
     "description" | "title" | null
@@ -603,7 +603,7 @@ type EndDateControlProps = {
   error?: string;
   isEnabled: boolean;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
   onDisable: () => void;
   onEnable: () => void;
   onOpenPicker: () => void;
