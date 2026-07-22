@@ -83,7 +83,7 @@
 - `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
 - `src/shared/api`: Supabase client와 schema type.
 - `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
-- `src/shared/theme`: 테마 저장, 기기 화면 표시 설정 해석, 테마 토큰 provider.
+- `src/theme`: 테마 저장, 기기 화면 표시 설정 해석, 테마 토큰 provider.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
 
 ### Architecture Rules
