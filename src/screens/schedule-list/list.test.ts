@@ -71,7 +71,6 @@ describe("일정 목록", () => {
       result.rows.find((row) => row.id === "past-once")?.nextOccurrenceTimeLabel
     ).toBe("No upcoming time");
     expect(result).toMatchObject({
-      isRefreshing: false,
       refetch,
       status: "ready",
     });

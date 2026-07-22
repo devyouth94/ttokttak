@@ -22,8 +22,19 @@ export default function ScheduleTabPage(): React.JSX.Element {
 
   const themeColors = useThemeColors();
 
+  const [refreshing, setRefreshing] = useState(false);
   const [sort, setSort] = useState<Sort>("titleAsc");
-  const { isRefreshing, refetch, rows, status } = useItems(sort);
+  const { refetch, rows, status } = useItems(sort);
+
+  async function refresh(): Promise<void> {
+    setRefreshing(true);
+
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <AppScreen>
@@ -68,8 +79,8 @@ export default function ScheduleTabPage(): React.JSX.Element {
           ListEmptyComponent={<ListEmpty />}
           refreshControl={
             <RefreshControl
-              onRefresh={refetch}
-              refreshing={isRefreshing}
+              onRefresh={refresh}
+              refreshing={refreshing}
               tintColor={themeColors.primary}
             />
           }

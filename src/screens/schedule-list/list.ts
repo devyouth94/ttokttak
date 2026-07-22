@@ -62,7 +62,6 @@ export function useItems(sort: Sort) {
   const status = query.isLoading ? "loading" : query.error ? "error" : "ready";
 
   return {
-    isRefreshing: query.isRefreshing,
     refetch: query.refetch,
     rows,
     status,
