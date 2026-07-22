@@ -7,7 +7,7 @@ import { Undo2 } from "lucide-react-native";
 import { useAppLanguage } from "~/shared/i18n";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 import { createHomeDateOptions } from "../model/home-feed-sections";
 

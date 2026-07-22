@@ -1,4 +1,4 @@
-import type { Database } from "~/shared/api/database.types";
+import type { Database } from "~/database.types";
 
 export type CompletionLogInsert =
   Database["public"]["Tables"]["completion_logs"]["Insert"];

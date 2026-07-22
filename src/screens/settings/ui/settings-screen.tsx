@@ -14,7 +14,7 @@ import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
-import { useTheme } from "~/theme/context";
+import { useTheme } from "~/theme/provider";
 import { SelectMenu } from "~/ui/select-menu";
 
 import {

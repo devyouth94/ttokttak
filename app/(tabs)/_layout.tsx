@@ -3,16 +3,16 @@ import { StyleSheet, View } from "react-native";
 import { Redirect, Tabs } from "expo-router";
 
 import { MainBottomNav } from "~/application/navigation";
-import { useSession } from "~/application/session";
-import { useThemeColors } from "~/theme/context";
+import { useSession } from "~/session/provider";
+import { useThemeColors } from "~/theme/provider";
 
 export default function TabsLayout(): React.JSX.Element {
   const { t } = useTranslation();
 
-  const { isAuthenticated, isLoading } = useSession();
+  const { status } = useSession();
   const themeColors = useThemeColors();
 
-  if (isLoading) {
+  if (status === "loading") {
     return (
       <View
         style={[
@@ -23,7 +23,7 @@ export default function TabsLayout(): React.JSX.Element {
     );
   }
 
-  if (!isAuthenticated) {
+  if (status === "signedOut") {
     return <Redirect href="/" />;
   }
 

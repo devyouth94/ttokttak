@@ -1,4 +1,10 @@
-import { ensureProfile, updateProfileDisplayName } from "./profile-repository";
+import { supabase } from "~/supabase";
+
+import { prepareProfile, updateName } from "./profile";
+
+jest.mock("~/supabase", () => ({
+  supabase: { from: jest.fn() },
+}));
 
 function createProfile(overrides: Record<string, unknown> = {}) {
   return {
@@ -51,10 +57,9 @@ describe("profile repository", () => {
       select: jest.fn(() => maybeSingleQuery),
     }));
 
-    const profile = await ensureProfile({
-      client: { from } as never,
-      user: createUser() as never,
-    });
+    jest.mocked(supabase.from).mockImplementation(from as never);
+
+    const profile = await prepareProfile(createUser() as never);
 
     expect(profile).toBe(existingProfile);
   });
@@ -79,20 +84,20 @@ describe("profile repository", () => {
       select: jest.fn(() => fetchQuery),
     }));
 
-    const profile = await ensureProfile({
-      client: { from } as never,
-      getDeviceTimeZone: () => "Asia/Seoul",
-      user: createUser({
+    jest.mocked(supabase.from).mockImplementation(from as never);
+
+    const profile = await prepareProfile(
+      createUser({
         user_metadata: {
           full_name: "길동 홍",
         },
-      }) as never,
-    });
+      }) as never
+    );
 
     expect(insert).toHaveBeenCalledWith({
       display_name: "길동 홍",
       id: "user-1",
-      timezone: "Asia/Seoul",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
     expect(profile).toBe(insertedProfile);
   });
@@ -126,10 +131,9 @@ describe("profile repository", () => {
     }));
     const from = jest.fn(() => ({ insert, select }));
 
-    const profile = await ensureProfile({
-      client: { from } as never,
-      user: createUser() as never,
-    });
+    jest.mocked(supabase.from).mockImplementation(from as never);
+
+    const profile = await prepareProfile(createUser() as never);
 
     expect(profile).toBe(concurrentProfile);
     expect(select).toHaveBeenCalledTimes(2);
@@ -159,14 +163,15 @@ describe("profile repository", () => {
       update,
     }));
 
-    const profile = await ensureProfile({
-      client: { from } as never,
-      user: createUser({
+    jest.mocked(supabase.from).mockImplementation(from as never);
+
+    const profile = await prepareProfile(
+      createUser({
         user_metadata: {
           full_name: "길동 홍",
         },
-      }) as never,
-    });
+      }) as never
+    );
 
     expect(update).toHaveBeenCalledWith({
       display_name: "길동 홍",
@@ -187,11 +192,9 @@ describe("profile repository", () => {
     const update = jest.fn(() => ({ eq }));
     const from = jest.fn(() => ({ update }));
 
-    const profile = await updateProfileDisplayName({
-      client: { from } as never,
-      displayName: "  길동 홍  ",
-      userId: "user-1",
-    });
+    jest.mocked(supabase.from).mockImplementation(from as never);
+
+    const profile = await updateName("user-1", "  길동 홍  ");
 
     expect(update).toHaveBeenCalledWith({
       display_name: "길동 홍",

@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { router, SplashScreen } from "expo-router";
 
-import { useSession } from "~/application/session";
 import {
   getNotificationNavigationKey,
   shouldNavigateHomeFromNotificationResponse,
   useNotifications,
 } from "~/features/notifications";
+import { useSession } from "~/session/provider";
 import {
   addLocalNotificationResponseReceivedListener,
   clearLastLocalNotificationResponse,
@@ -63,13 +63,13 @@ export function AppBootstrap(): React.JSX.Element {
 }
 
 function SplashScreenController(): null {
-  const { isLoading } = useSession();
+  const { status } = useSession();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (status !== "loading") {
       void SplashScreen.hideAsync();
     }
-  }, [isLoading]);
+  }, [status]);
 
   return null;
 }

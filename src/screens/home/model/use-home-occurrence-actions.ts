@@ -10,7 +10,7 @@ import {
   type SyncAfterHomeOccurrenceMutation,
 } from "~/features/home-feed-occurrence-action";
 import { invalidateScheduleReadQueries } from "~/features/read-schedule";
-import { Sentry } from "~/shared/config/sentry";
+import { captureException } from "~/sentry";
 
 import type { HomeFeedCard } from "./home-feed-sections";
 
@@ -70,7 +70,7 @@ export function useHomeOccurrenceActions({
             : skipHomeFeedOccurrence;
 
         await processOccurrence({
-          captureException: Sentry.captureException,
+          captureException,
           completionLogs,
           createCompletionLogs,
           invalidateScheduleReadQueries: async (readyUserId) => {
@@ -84,7 +84,7 @@ export function useHomeOccurrenceActions({
           userId,
         });
       } catch (error) {
-        Sentry.captureException(error);
+        captureException(error);
         setActionErrorMessage(t("home.feed.actionErrorDescription"));
       } finally {
         setProcessingOccurrenceIds((current) =>

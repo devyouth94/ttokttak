@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { borderRadius, spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 const PLACEHOLDER_ROW_COUNT = 4;
 

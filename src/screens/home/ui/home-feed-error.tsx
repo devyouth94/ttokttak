@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 import { RotateCw } from "lucide-react-native";
 
 import { spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 import { StateMessage } from "~/ui/state-message";
 
 type HomeFeedErrorProps = {

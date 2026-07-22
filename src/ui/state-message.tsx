@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 type StateAction = {
   accessibilityHint?: string;

@@ -6,7 +6,6 @@ import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
-import { useSession } from "~/application/session";
 import {
   type AnchorType,
   type RecurrenceType,
@@ -19,6 +18,7 @@ import {
   createSchedule,
   updateSchedule,
 } from "~/features/mutate-schedule";
+import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 
 import {
@@ -62,7 +62,7 @@ export function useScheduleFormScreenController({
   const { language } = useAppLanguage();
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
-  const { isAuthenticated, isLoading, profile, user } = useSession();
+  const { profile, status, user } = useSession();
   const [requestState, setRequestState] = useState({
     isBootstrapping: isEditMode,
     isDeleting: false,
@@ -529,11 +529,11 @@ export function useScheduleFormScreenController({
       return;
     }
 
-    if (isLoading) {
+    if (status === "loading") {
       return;
     }
 
-    if (!isAuthenticated || !profile || !user || !itemId) {
+    if (status !== "ready" || !profile || !user || !itemId) {
       setRequestState((current) => ({
         ...current,
         isBootstrapping: false,
@@ -582,17 +582,7 @@ export function useScheduleFormScreenController({
     }
 
     void loadItem();
-  }, [
-    isAuthenticated,
-    isEditMode,
-    isLoading,
-    itemId,
-    profile,
-    reset,
-    t,
-    todayLocalDate,
-    user,
-  ]);
+  }, [isEditMode, itemId, profile, reset, status, t, todayLocalDate, user]);
 
   const fieldErrors = {
     anchor: getErrorMessage("anchorType"),

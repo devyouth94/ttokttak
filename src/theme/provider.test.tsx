@@ -26,8 +26,8 @@ const AsyncStorage = require("@react-native-async-storage/async-storage") as {
   getItem: jest.Mock<Promise<string | null>, [string]>;
   setItem: jest.Mock<Promise<void>, [string, string]>;
 };
-const { useTheme } = require("./context") as typeof import("./context");
-const { ThemeProvider } = require("./theme") as typeof import("./theme");
+const { ThemeProvider, useTheme } =
+  require("./provider") as typeof import("./provider");
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;

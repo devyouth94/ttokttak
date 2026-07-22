@@ -1,11 +1,11 @@
-import { useSession } from "~/application/session";
 import type { ScheduleReadContext } from "~/features/read-schedule";
+import { useSession } from "~/session/provider";
 
 export function useScheduleReadContext(): ScheduleReadContext {
-  const { isAuthenticated, profile, user } = useSession();
+  const { profile, status, user } = useSession();
 
   return {
-    isReady: isAuthenticated && Boolean(user?.id),
+    isReady: status === "ready",
     timezone:
       profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
     userId: user?.id ?? null,

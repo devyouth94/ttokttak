@@ -1,31 +1,24 @@
 import { Redirect } from "expo-router";
 
-import { useSession } from "~/application/session";
+import { useSession } from "~/session/provider";
 
 import { LoginScreenContent } from "./login-screen-content";
 
 export function LoginScreen(): React.JSX.Element {
-  const {
-    isAuthenticated,
-    isConfigured,
-    isLoading,
-    signInWithApple,
-    signInWithGoogle,
-  } = useSession();
+  const { signInApple, signInGoogle, status } = useSession();
 
-  if (isLoading) {
+  if (status === "loading") {
     return <></>;
   }
 
-  if (isAuthenticated) {
+  if (status === "ready") {
     return <Redirect href="/(tabs)/home" />;
   }
 
   return (
     <LoginScreenContent
-      isConfigured={isConfigured}
-      onApplePress={signInWithApple}
-      onGooglePress={signInWithGoogle}
+      onApplePress={signInApple}
+      onGooglePress={signInGoogle}
     />
   );
 }

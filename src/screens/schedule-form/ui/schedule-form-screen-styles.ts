@@ -3,7 +3,7 @@ import { Platform, StyleSheet } from "react-native";
 
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 export function useScheduleFormScreenStyles() {
   const themeColors = useThemeColors();

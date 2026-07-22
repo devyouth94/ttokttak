@@ -5,11 +5,10 @@ import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { LocalNotificationProvider } from "~/application/notifications";
-import { SessionProvider, useSession } from "~/application/session";
+import { SessionProvider, useSession } from "~/session/provider";
 import { AppI18nProvider } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
-import { useTheme } from "~/theme/context";
-import { ThemeProvider } from "~/theme/theme";
+import { ThemeProvider, useTheme } from "~/theme/provider";
 
 export function AppProviders({
   children,

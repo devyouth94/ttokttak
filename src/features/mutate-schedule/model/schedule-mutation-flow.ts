@@ -13,7 +13,7 @@ import type {
   NotificationSyncScope,
 } from "~/features/sync-local-notifications";
 import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
-import { Sentry } from "~/shared/config/sentry";
+import { captureException } from "~/sentry";
 import type { AppLanguage } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
 
@@ -84,7 +84,7 @@ async function completeScheduleMutation({
       userId,
     });
   } catch (error) {
-    Sentry.captureException(error, {
+    captureException(error, {
       tags: {
         feature: "schedule-mutation-notification-sync",
         reason,

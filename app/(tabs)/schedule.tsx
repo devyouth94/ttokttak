@@ -13,7 +13,7 @@ import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 import { StateMessage } from "~/ui/state-message";
 
 export default function ScheduleTabPage(): React.JSX.Element {

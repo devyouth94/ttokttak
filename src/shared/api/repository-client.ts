@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "~/shared/api/database.types";
-import { getSupabaseClient } from "~/shared/api/supabase";
+import type { Database } from "~/database.types";
+import { supabase } from "~/supabase";
 
 export type RepositoryClient = SupabaseClient<Database>;
 
 export function getRepositoryClient(
   client?: RepositoryClient
 ): RepositoryClient {
-  return client ?? getSupabaseClient();
+  return client ?? supabase;
 }

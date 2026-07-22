@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 export default function ItemsStackLayout(): React.JSX.Element {
   const themeColors = useThemeColors();

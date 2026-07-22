@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
 import { borderRadius } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 import { ScreenHeader } from "./screen-header";
 

@@ -8,7 +8,7 @@ import {
 } from "react-native";
 
 import { typography } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 type AppTextVariant =
   | "body"

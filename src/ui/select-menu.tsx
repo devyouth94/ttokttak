@@ -4,7 +4,7 @@ import { Check, ChevronDown } from "lucide-react-native";
 
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 export type SelectOption<Value extends string> = {
   accessibilityHint?: string;

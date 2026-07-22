@@ -1,9 +1,4 @@
 import {
-  AccountDeletionAppleAuthorizationRequiredError,
-  AccountDeletionSessionRequiredError,
-} from "~/features/delete-account";
-
-import {
   getDeleteAccountErrorMessage,
   getNotificationPermissionStatusText,
   getNotificationStatusText,
@@ -78,12 +73,15 @@ describe("settings screen model", () => {
   it("계정 삭제 실패는 에러 타입별 사용자 문구로 매핑한다", () => {
     expect(
       getDeleteAccountErrorMessage(
-        new AccountDeletionAppleAuthorizationRequiredError(),
+        Object.assign(new Error(), { name: "AppleAuthRequiredError" }),
         t
       )
     ).toBe("settings.accountManagement.deleteError.appleAuthorizationRequired");
     expect(
-      getDeleteAccountErrorMessage(new AccountDeletionSessionRequiredError(), t)
+      getDeleteAccountErrorMessage(
+        Object.assign(new Error(), { name: "LoginRequiredError" }),
+        t
+      )
     ).toBe("settings.accountManagement.deleteError.sessionRequired");
     expect(getDeleteAccountErrorMessage(new Error("boom"), t)).toBe(
       "settings.accountManagement.deleteError.unknown"

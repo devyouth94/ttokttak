@@ -22,6 +22,7 @@ jest.mock("expo-secure-store", () => ({
   getItemAsync: (...args: unknown[]) => mockGetItemAsync(...args),
   setItemAsync: (...args: unknown[]) => mockSetItemAsync(...args),
 }));
+jest.mock("~/supabase", () => ({ supabase: {} }));
 
 jest.mock("expo-crypto", () => ({
   AESEncryptionKey: {

@@ -19,7 +19,7 @@ import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import { spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 import { StateMessage } from "~/ui/state-message";
 
 import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";

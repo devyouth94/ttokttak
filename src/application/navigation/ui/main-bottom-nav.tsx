@@ -15,7 +15,7 @@ import {
 import { AppText } from "~/shared/ui/app-text";
 import { spacing } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 import { shouldNavigateMainBottomNavRoute } from "./main-bottom-nav.helpers";
 

@@ -1,7 +1,3 @@
-import {
-  AccountDeletionAppleAuthorizationRequiredError,
-  AccountDeletionSessionRequiredError,
-} from "~/features/delete-account";
 import type { NotificationContextValue } from "~/features/notifications";
 import type { AppLanguage } from "~/shared/i18n";
 import type { ThemePreference } from "~/theme/preference";
@@ -70,13 +66,13 @@ export function getDeleteAccountErrorMessage(
   error: unknown,
   t: Translate
 ): string {
-  if (error instanceof AccountDeletionAppleAuthorizationRequiredError) {
+  if (error instanceof Error && error.name === "AppleAuthRequiredError") {
     return t(
       "settings.accountManagement.deleteError.appleAuthorizationRequired"
     );
   }
 
-  if (error instanceof AccountDeletionSessionRequiredError) {
+  if (error instanceof Error && error.name === "LoginRequiredError") {
     return t("settings.accountManagement.deleteError.sessionRequired");
   }
 

@@ -3,16 +3,16 @@ import { useTranslation } from "react-i18next";
 import { Alert, Linking } from "react-native";
 import Constants from "expo-constants";
 
-import { useSession } from "~/application/session";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
 import { useNotifications } from "~/features/notifications";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
 } from "~/features/settings";
+import { useSession } from "~/session/provider";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
-import { useTheme } from "~/theme/context";
 import type { ThemePreference } from "~/theme/preference";
+import { useTheme } from "~/theme/provider";
 
 import {
   getAppLanguageOptions,
@@ -26,8 +26,7 @@ import {
 
 export function useSettingsScreenController() {
   const { t } = useTranslation();
-  const { deleteAccount, profile, signOut, updateDisplayName, user } =
-    useSession();
+  const { deleteAccount, profile, signOut, updateName, user } = useSession();
   const { language: appLanguage, setLanguage: setAppLanguage } =
     useAppLanguage();
   const { setThemePreference, themePreference } = useTheme();
@@ -105,7 +104,7 @@ export function useSettingsScreenController() {
     setIsSavingDisplayName(true);
 
     try {
-      await updateDisplayName(validationResult.value);
+      await updateName(validationResult.value);
       setIsNameEditorVisible(false);
       setDisplayNameError(null);
     } catch (error) {

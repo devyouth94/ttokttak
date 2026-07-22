@@ -6,7 +6,7 @@ import type { RecurringItemColorKey } from "~/entities/schedule";
 import { recurringItemColorOptionByKey } from "~/entities/schedule";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, typography } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 import { CALENDAR_MAX_VISIBLE_MARKERS } from "../model/calendar-screen-model";
 

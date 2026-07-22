@@ -5,7 +5,7 @@ import type { RecurringItemColorKey } from "~/entities/schedule/model/types";
 import { recurringItemColorOptionByKey } from "~/entities/schedule/ui/color-palette";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 type Props = {
   accessibilityHint: string;

@@ -5,17 +5,15 @@ import {
   updateSchedule,
 } from "~/features/mutate-schedule";
 import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
-import { Sentry } from "~/shared/config/sentry";
+import { captureException } from "~/sentry";
 import { queryClient } from "~/shared/lib/query/query-client";
 
 jest.mock("~/features/sync-local-notifications", () => ({
   syncLocalReminderNotifications: jest.fn(),
 }));
 
-jest.mock("~/shared/config/sentry", () => ({
-  Sentry: {
-    captureException: jest.fn(),
-  },
+jest.mock("~/sentry", () => ({
+  captureException: jest.fn(),
 }));
 
 const userId = "user-1";
@@ -41,7 +39,7 @@ describe("일정 변경 mutation 흐름", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
     jest.mocked(syncLocalReminderNotifications).mockReset();
-    jest.mocked(Sentry.captureException).mockReset();
+    jest.mocked(captureException).mockReset();
   });
 
   it("일정 생성, 수정, 보관 뒤 해당 일정 알림을 먼저 재동기화하고 recurring query를 무효화한다", async () => {
@@ -194,7 +192,7 @@ describe("일정 변경 mutation 흐름", () => {
       })
     ).resolves.toBe(updatedItem);
 
-    expect(Sentry.captureException).toHaveBeenCalledWith(syncError, {
+    expect(captureException).toHaveBeenCalledWith(syncError, {
       tags: {
         feature: "schedule-mutation-notification-sync",
         reason: "item-updated",

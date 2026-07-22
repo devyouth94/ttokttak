@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 import { StateMessage } from "~/ui/state-message";
 
 export function ListEmpty(): React.JSX.Element {

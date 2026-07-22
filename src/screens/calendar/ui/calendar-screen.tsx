@@ -24,7 +24,7 @@ import { AppText } from "~/shared/ui/app-text";
 import { ScreenHeader } from "~/shared/ui/screen-header";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
-import { useTheme, useThemeColors } from "~/theme/context";
+import { useTheme, useThemeColors } from "~/theme/provider";
 import { StateMessage } from "~/ui/state-message";
 
 import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";

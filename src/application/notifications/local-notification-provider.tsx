@@ -13,7 +13,7 @@ import {
   type NotificationSyncScope,
   syncLocalReminderNotifications,
 } from "~/features/sync-local-notifications";
-import { Sentry } from "~/shared/config/sentry";
+import { captureException } from "~/sentry";
 import { useAppLanguage } from "~/shared/i18n";
 import {
   ensureAndroidLocalNotificationChannel,
@@ -57,9 +57,7 @@ export function LocalNotificationProvider({
     notificationSyncLifecycleRef.current = createLocalNotificationSyncLifecycle(
       {
         cancelAllTtokttakLocalReminderNotifications,
-        captureException: (error, context) => {
-          Sentry.captureException(error, context);
-        },
+        captureException,
         syncLocalReminderNotifications,
       }
     );
@@ -72,7 +70,7 @@ export function LocalNotificationProvider({
       channelId: ANDROID_REMINDER_NOTIFICATION_CHANNEL_ID,
       name: "일정 알림",
     }).catch((error) => {
-      Sentry.captureException(error, {
+      captureException(error, {
         tags: {
           feature: "notification-channel-bootstrap",
         },

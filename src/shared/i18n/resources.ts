@@ -20,6 +20,14 @@ export const appI18nResources = {
       app: {
         name: "ttokttak",
       },
+      session: {
+        error: {
+          description: "Could not prepare your account. Please try again.",
+          retryHint: "Try preparing your account again.",
+          retryLabel: "Try again",
+          title: "Could not start the app",
+        },
+      },
       home: {
         date: {
           optionHint: "Show items for {{date}}.",
@@ -77,8 +85,6 @@ export const appI18nResources = {
         legalPrivacy: "Privacy Policy",
         legalSuffix: "",
         legalTerms: "Terms of Service",
-        noticeSupabase:
-          "Supabase configuration is required before sign-in can connect.",
         privacyOpenErrorMessage: "Could not open the Privacy Policy.",
         privacyOpenErrorTitle: "Privacy Policy unavailable",
         termsOpenErrorMessage: "Could not open the Terms of Service.",
@@ -360,6 +366,14 @@ export const appI18nResources = {
       app: {
         name: "똑딱",
       },
+      session: {
+        error: {
+          description: "계정 정보를 준비하지 못했어요. 다시 시도해 주세요.",
+          retryHint: "계정 정보 준비를 다시 시도해요.",
+          retryLabel: "다시 시도",
+          title: "앱을 시작하지 못했어요",
+        },
+      },
       home: {
         date: {
           optionHint: "{{date}} 기준으로 일정을 보여줘요.",
@@ -417,7 +431,6 @@ export const appI18nResources = {
         legalPrivacy: "개인정보처리방침",
         legalSuffix: "에 동의하게 됩니다.",
         legalTerms: "이용약관",
-        noticeSupabase: "로그인 연결을 위해 Supabase 설정이 먼저 필요합니다.",
         privacyOpenErrorMessage: "개인정보처리방침을 열 수 없습니다.",
         privacyOpenErrorTitle: "개인정보처리방침 열기 실패",
         termsOpenErrorMessage: "이용약관을 열 수 없습니다.",

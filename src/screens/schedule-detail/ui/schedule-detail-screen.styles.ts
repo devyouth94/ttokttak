@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
 

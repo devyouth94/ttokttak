@@ -21,7 +21,7 @@ import { useAppLanguage } from "~/shared/i18n";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
 import type { ThemeColors } from "~/theme/colors";
-import { useTheme } from "~/theme/context";
+import { useTheme } from "~/theme/provider";
 
 import {
   AdvancedOptionsSection,

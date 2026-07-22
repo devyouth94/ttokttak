@@ -5,10 +5,10 @@ import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { useScheduleReadContext } from "~/application/schedule-read";
-import { useSession } from "~/application/session";
 import type { CompletionAction } from "~/entities/schedule";
 import { useNotifications } from "~/features/notifications";
 import { useHomeFeedOccurrenceProjectionQuery } from "~/features/read-schedule";
+import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 
 import {

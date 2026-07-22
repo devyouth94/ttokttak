@@ -3,7 +3,7 @@ import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useThemeColors } from "~/theme/context";
+import { useThemeColors } from "~/theme/provider";
 
 type AppScreenProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;

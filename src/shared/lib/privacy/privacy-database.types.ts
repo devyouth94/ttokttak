@@ -1,4 +1,4 @@
-import type { Database } from "~/shared/api/database.types";
+import type { Database } from "~/database.types";
 
 export type UserContentEncryptionKeyInsert =
   Database["public"]["Tables"]["user_content_encryption_keys"]["Insert"];

@@ -15,7 +15,7 @@ jest.mock("expo-notifications", () => ({
   DEFAULT_ACTION_IDENTIFIER: "default",
 }));
 
-jest.mock("~/application/session", () => ({
+jest.mock("~/session/provider", () => ({
   useSession: jest.fn(),
 }));
 

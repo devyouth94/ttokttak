@@ -1,16 +1,32 @@
-import { type PropsWithChildren, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  type PropsWithChildren,
+  use,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { themeColors } from "./colors";
-import { ThemeContext } from "./context";
+import { type ThemeColors, themeColors } from "./colors";
 import {
+  type ResolvedTheme,
   resolveTheme,
   resolveThemePreference,
   type ThemePreference,
 } from "./preference";
 
 const THEME_STORAGE_KEY = "ttokttak:theme";
+
+type ThemeContextValue = {
+  colors: ThemeColors;
+  resolvedTheme: ResolvedTheme;
+  setThemePreference: (preference: ThemePreference) => Promise<void>;
+  themePreference: ThemePreference;
+};
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({
   children,
@@ -77,7 +93,19 @@ export function ThemeProvider({
     themePreference,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext value={value}>{children}</ThemeContext>;
+}
+
+export function useTheme(): ThemeContextValue {
+  const context = use(ThemeContext);
+
+  if (!context) {
+    throw new Error("ThemeProvider 안에서만 테마를 사용할 수 있습니다.");
+  }
+
+  return context;
+}
+
+export function useThemeColors(): ThemeColors {
+  return useTheme().colors;
 }
