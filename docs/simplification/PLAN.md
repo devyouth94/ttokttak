@@ -51,9 +51,12 @@ src/
     persistence/
     ui/
   notifications/
-  session/
+  session/                    # 세션 Context와 Apple, Google 인증
+  account/                    # profile과 계정 삭제
   ui/                        # 일정과 무관한 공용 UI
-  supabase.ts
+  supabase.ts                 # Supabase 클라이언트와 SecureStore 연결
+  database.types.ts           # 생성된 Supabase DB 타입
+  sentry/                     # Sentry 초기화와 event 전송 정책
   i18n.ts
   theme/                     # 테마 색상, 설정, 저장과 provider
 ```
@@ -84,6 +87,8 @@ src/
 - 일정 저장과 암호화 경계는 `schedule/persistence/`에 둔다.
 - 일정 지식이 필요한 공유 UI는 `schedule/ui/`에 둔다.
 - 일정과 무관한 공용 UI는 `ui/`에 둔다.
+- Supabase의 앱 전역 진입점은 `src/`에 파일 하나로 둔다.
+- Sentry는 실제 초기화를 수행하는 `sentry/index.ts`와 순수 event 정책을 함께 둔다.
 - Supabase, 알림, SecureStore 같은 외부 시스템은 화면에서 직접 호출하지 않는다.
 
 화면 모듈끼리 직접 import하지 않는다.
@@ -100,7 +105,22 @@ UI 스타일은 기본적으로 해당 컴포넌트 파일에 둔다.
 테스트는 구현 파일 옆에 둔다.
 
 테마 색상 토큰은 실제 사용 중인 값만 유지하고 `ThemeColors`는 팔레트에서 추론한다.
-테마 Context는 UI가 AsyncStorage 같은 저장 adapter를 불필요하게 로드하지 않도록 Provider와 분리한다.
+테마 Context, Provider와 hook은 `theme/provider.tsx`에서 함께 관리한다.
+Theme Context는 파일 안에 숨기고 `useTheme`와 `useThemeColors`만 노출한다.
+
+세션은 `loading`, `signedOut`, `ready`, `error` 중 하나의 상태로 표현한다.
+`ready`는 사용자와 profile 준비가 모두 끝난 상태다.
+profile 준비 실패는 루트 오류 화면에서 다시 시도한다.
+Supabase public env는 필수 설정으로 보고 미설정 UI 분기를 만들지 않는다.
+Supabase 클라이언트는 지연 생성 함수 없이 singleton 상수로 노출한다.
+Sentry 초기화는 `sentry/index.ts`에 숨기고 `captureException`과 `wrap`만 노출한다.
+Sentry는 오류 수집에만 사용한다.
+SDK가 자동으로 정하는 release와 environment를 앱 코드에서 다시 만들지 않는다.
+성능 추적이 필요해질 때만 traces 설정을 추가한다.
+Sentry event는 알려진 민감 field를 찾지 않고 허용한 오류 정보만 남긴다.
+세션 Provider 파일에는 Context, Provider와 `useSession`만 둔다.
+profile 저장과 계정 삭제는 `account/`가 소유한다.
+Apple과 Google 인증은 `session/`이 소유한다.
 
 서로 독립적인 UI는 분리해 각 파일의 역할을 명확히 한다.
 파일 수를 줄이기 위해 독립적인 역할을 한 파일에 합치지 않는다.
@@ -153,64 +173,6 @@ UI 스타일은 기본적으로 해당 컴포넌트 파일에 둔다.
 
 별도 `v2` 구조를 만들지 않는다.
 기존 구조와 새 구조를 연결하는 임시 호환 계층도 만들지 않는다.
-
-## 첫 페이지
-
-첫 작업 대상은 일정 목록이다.
-읽기 전용 페이지에서 목표 구조를 먼저 검증한다.
-
-일정 목록은 한 번에 바꾸지 않고 다음 네 페이즈로 나눈다.
-
-### 1. 라우트 통합
-
-- `ScheduleListScreen`을 라우트로 이동한다.
-- 전달만 하는 route와 screen `index.ts`를 삭제한다.
-- 조회 로직과 지역 이름은 바꾸지 않는다.
-
-### 2. 페이지 코드 정리
-
-- 목록 전용 `Row`, `Sort`, `toRows`를 정리한다.
-- 로딩, 빈 상태, 오류와 정렬 UI는 삭제 테스트로 합칠지 판단한다.
-- 목록 변환과 테스트는 `src/screens/schedule-list/list.ts`, `list.test.ts`로 옮긴다.
-- 목록 전용 UI는 `src/screens/schedule-list/ui/` 아래 `loading.tsx`, `sort-menu.tsx`, `empty.tsx`로 나눈다.
-- 목록과 캘린더가 공유하는 행은 `src/schedule/ui/item-row.tsx`로 옮긴다.
-- 기존 FSD 전달 파일과 `model` 하위 계층을 삭제한다.
-- 렌더링 결과는 그대로 유지한다.
-
-### 3. 조회 흐름 축소
-
-- 목록 조회 interface를 `useItems`로 줄인다.
-- 조회 context와 현재 시각 처리를 interface 내부로 숨긴다.
-- 목록 전용 전달 계층과 사용되지 않는 타입을 삭제한다.
-
-### 4. 테스트와 잔여 코드 정리
-
-- 목록 동작 테스트를 새 interface 기준으로 통합한다.
-- 사용되지 않는 export와 배럴 파일을 삭제한다.
-- 전체 검증과 전후 결과를 보고한다.
-
-각 페이즈는 실행 가능한 상태로 끝낸다.
-검증 결과와 diff를 전달한 뒤 사용자가 확인할 때까지 다음 페이즈를 시작하지 않는다.
-
-페이즈 1부터 3까지는 관련 테스트, 타입 검사와 lint를 실행한다.
-페이즈 4에서는 전체 Jest를 추가로 실행한다.
-
-목록 페이지의 지역 이름과 interface는 다음 방향으로 줄인다.
-
-```text
-ScheduleListScreen                        → 라우트에 합쳐 삭제
-useScheduleListOccurrenceProjectionQuery → useItems
-ScheduleListOccurrenceProjectionReadModel → 반환 타입 추론
-ScheduleListEntry                         → Row
-ScheduleListSortMode                      → Sort
-buildScheduleListEntries                  → toRows
-RecurringItemSummaryRow                   → ItemRow
-useScheduleReadContext                    → useItems 내부로 숨김
-useOccurrenceProjectionNow                → useItems 내부로 숨김
-```
-
-`RecurringItem`과 `ScheduleVersion` 같은 공용 도메인 이름은 이번 페이지에서 일부만 바꾸지 않는다.
-전체 호출자를 확인한 뒤 별도로 다시 합의한다.
 
 ## 테스트
 
@@ -265,5 +227,4 @@ docs/adr/                  # 되돌리기 어려운 결정
 ## 미정
 
 - 공용 도메인 타입과 함수의 최종 이름.
-- 일정 목록 다음에 작업할 페이지.
 - 실제 의존 관계를 확인한 뒤의 최종 파일 구성.

@@ -50,7 +50,8 @@
 
 - `src/application/providers`: provider 조립.
 - `src/application/bootstrap`: 앱 시작 후 session과 알림 lifecycle 연결.
-- `src/application/session`: Supabase session, profile 복원, 표시 이름 갱신 wiring.
+- `src/session`: Supabase session Context와 Apple, Google 인증.
+- `src/account`: profile 복원, 표시 이름 저장과 계정 삭제.
 - `src/application/navigation`: 탭 layout, 집중 화면 하단 탭 표시 정책.
 - `src/application/notifications`: 알림 권한 context provider 연결.
 - `src/application/routes`: route params 정규화.
@@ -65,14 +66,11 @@
 - `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 primitive의 기준 경계.
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
-- `src/entities/profile`: profile 복원과 표시 이름 저장.
 - `src/features/mutate-schedule`: 일정 생성, 수정, 보관 use case와 mutation 이후 query 무효화, 로컬 알림 범위 재동기화 후속 흐름.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
 - `src/features/read-schedule`: 일정 조회 query, 목적별 occurrence projection read hook, query key.
 - `src/features/settings`: 설정 화면의 표시 이름 입력 규칙.
 - `src/features/legal`: 이용약관과 개인정보처리방침 공개 링크.
-- `src/features/sign-in`: Apple/Google 로그인 use case와 provider adapter.
-- `src/features/delete-account`: 계정 삭제 use case와 Apple 계정 삭제 재인증 adapter.
 - `src/features/sync-local-notifications`: 기기 로컬 알림 예약, 재동기화 정책, lifecycle.
 - `src/features/notifications`: 알림 권한 context와 알림 tap payload 판정.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
@@ -81,9 +79,10 @@
 
 - `src/shared/lib/notifications`: Expo Notifications adapter, 알림 권한 adapter, 로컬 reminder identifier/payload helper.
 - `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
-- `src/shared/api`: Supabase client와 schema type.
-- `src/shared/config`: Sentry 같은 app-level 외부 도구 설정.
-- `src/theme`: 테마 저장, 기기 화면 표시 설정 해석, 테마 토큰 provider.
+- `src/supabase.ts`: SecureStore를 사용하는 Supabase client singleton.
+- `src/database.types.ts`: 생성된 Supabase schema type.
+- `src/sentry`: 오류 수집 초기화, 앱에서 사용하는 Sentry 함수와 event 전송 정책.
+- `src/theme`: 테마 저장, 기기 화면 표시 설정 해석, Context와 provider.
 - `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
 
 ### Architecture Rules
@@ -194,6 +193,7 @@ web export는 운영 대상이 아니므로 EAS Update는 플랫폼별로 발행
 ## Auth And Session
 
 Supabase Auth를 사용한다.
+Supabase URL과 publishable key는 앱 실행에 필요한 public env다.
 세션은 `expo-secure-store` 기반 Supabase auth storage에 보존한다.
 초기 세션과 이후 auth 변경은 `onAuthStateChange` 단일 경로로 적용한다.
 늦게 완료된 이전 세션의 profile 조회 결과는 현재 세션에 적용하지 않는다.
@@ -201,6 +201,8 @@ Supabase Auth를 사용한다.
 세션 복원 시 profile을 확인한다.
 profile이 없으면 현재 기기 timezone과 provider metadata 이름으로 생성한다.
 사용자가 설정에서 수정한 표시 이름은 provider metadata로 덮어쓰지 않는다.
+profile 준비 실패는 Sentry에 기록하고 앱 진입을 막는다.
+사용자에게 내부 오류를 노출하지 않고 다시 시도 동작을 제공한다.
 
 ### Account Deletion
 
@@ -399,8 +401,8 @@ payload:
 앱 번들에는 `EXPO_PUBLIC_*` public env만 포함한다.
 service role key, private key, OAuth client secret, Sentry auth token은 앱 번들에 넣지 않는다.
 
-Sentry event는 민감한 field를 마스킹한다.
-제목, 설명, token, secret, authorization, email, payload 계열 값은 기록 전에 필터링한다.
+Sentry event는 오류 타입과 stack trace, symbolication 정보, release, environment, `feature`와 `reason` tag만 전송한다.
+오류 메시지, user, request, breadcrumb, context와 extra는 전송하지 않는다.
 
 Edge Function secret은 Supabase 서버 실행 환경에만 둔다.
 `recover-content-key`와 `delete-account`는 JWT 검증을 켠 상태로 배포한다.
