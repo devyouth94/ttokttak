@@ -4,5 +4,4 @@ export {
   type HomeFeedOccurrenceLogInput,
   type HomeFeedOccurrenceUseCaseOptions,
   skipHomeFeedOccurrence,
-  type SyncAfterHomeOccurrenceMutation,
 } from "./model/home-feed-occurrence-action-flow";

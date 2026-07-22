@@ -18,6 +18,7 @@ import {
   createSchedule,
   updateSchedule,
 } from "~/features/mutate-schedule";
+import { useNotifications } from "~/notifications/provider";
 import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 
@@ -60,6 +61,7 @@ export function useScheduleFormScreenController({
 }: UseScheduleFormScreenControllerParams) {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const { syncNotifications } = useNotifications();
   const isEditMode = Boolean(itemId);
   const todayLocalDate = getTodayLocalDate();
   const { profile, status, user } = useSession();
@@ -453,7 +455,6 @@ export function useScheduleFormScreenController({
       if (isEditMode && itemId) {
         await updateSchedule({
           itemId,
-          language,
           patch: {
             anchorType: draft.anchorType,
             colorKey: draft.colorKey,
@@ -467,13 +468,14 @@ export function useScheduleFormScreenController({
             title: draft.title,
             weekdayMask: draft.weekdayMask,
           },
+          syncNotifications,
           timezone,
           userId: user.id,
         });
       } else {
         await createSchedule({
           draft,
-          language,
+          syncNotifications,
           userId: user.id,
         });
       }
@@ -505,8 +507,7 @@ export function useScheduleFormScreenController({
     try {
       await archiveSchedule({
         itemId: currentItemId,
-        language,
-        timezone,
+        syncNotifications,
         userId,
       });
 

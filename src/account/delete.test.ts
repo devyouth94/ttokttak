@@ -1,6 +1,6 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 
-import { cancelAllTtokttakLocalReminderNotifications as cancelReminders } from "~/features/sync-local-notifications";
+import { cancelNotifications } from "~/notifications/sync";
 import { signOutGoogle } from "~/session/google";
 import { supabase } from "~/supabase";
 
@@ -13,8 +13,8 @@ import {
 jest.mock("expo-apple-authentication", () => ({
   signInAsync: jest.fn(),
 }));
-jest.mock("~/features/sync-local-notifications", () => ({
-  cancelAllTtokttakLocalReminderNotifications: jest.fn(),
+jest.mock("~/notifications/sync", () => ({
+  cancelNotifications: jest.fn(),
 }));
 jest.mock("~/session/google", () => ({
   signOutGoogle: jest.fn(),
@@ -48,7 +48,7 @@ function mockClient(invokeError: Error | null = null) {
 describe("deleteAccount", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(cancelReminders).mockResolvedValue({} as never);
+    jest.mocked(cancelNotifications).mockResolvedValue();
     jest.mocked(signOutGoogle).mockResolvedValue();
   });
 
@@ -62,7 +62,7 @@ describe("deleteAccount", () => {
     });
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(signOutGoogle).toHaveBeenCalledTimes(1);
-    expect(cancelReminders).toHaveBeenCalledTimes(1);
+    expect(cancelNotifications).toHaveBeenCalledTimes(1);
   });
 
   it("계정 삭제 호출이 실패하면 로컬 세션과 알림을 유지한다", async () => {
@@ -73,7 +73,7 @@ describe("deleteAccount", () => {
 
     expect(signOut).not.toHaveBeenCalled();
     expect(signOutGoogle).not.toHaveBeenCalled();
-    expect(cancelReminders).not.toHaveBeenCalled();
+    expect(cancelNotifications).not.toHaveBeenCalled();
   });
 
   it("현재 사용자가 없으면 다시 로그인을 요구한다", async () => {

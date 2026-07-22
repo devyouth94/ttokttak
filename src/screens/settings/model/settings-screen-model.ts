@@ -1,12 +1,9 @@
-import type { NotificationContextValue } from "~/features/notifications";
+import type { PermissionStatus } from "~/notifications/permission";
 import type { AppLanguage } from "~/shared/i18n";
 import type { ThemePreference } from "~/theme/preference";
 import type { SelectOption } from "~/ui/select-menu";
 
 type Translate = (key: string) => string;
-type NotificationPermissionStatus =
-  NotificationContextValue["permission"]["status"];
-
 export function getSettingsDisplayName(params: {
   email?: string;
   fallbackName: string;
@@ -30,7 +27,7 @@ export function getSettingsDisplayName(params: {
 }
 
 export function getNotificationPermissionStatusText(
-  status: NotificationPermissionStatus,
+  status: PermissionStatus,
   t: Translate
 ): string {
   switch (status) {
@@ -48,7 +45,7 @@ export function getNotificationPermissionStatusText(
 }
 
 export function getNotificationStatusText(
-  status: NotificationPermissionStatus,
+  status: PermissionStatus,
   t: Translate
 ): string {
   if (status === "granted") {

@@ -4,21 +4,14 @@ import {
   createSchedule,
   updateSchedule,
 } from "~/features/mutate-schedule";
-import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
 import { captureException } from "~/sentry";
 import { queryClient } from "~/shared/lib/query/query-client";
-
-jest.mock("~/features/sync-local-notifications", () => ({
-  syncLocalReminderNotifications: jest.fn(),
-}));
 
 jest.mock("~/sentry", () => ({
   captureException: jest.fn(),
 }));
 
 const userId = "user-1";
-const syncScopeStartedAtUtc = "2026-05-29T03:30:00.000Z";
-
 const draft = {
   anchorType: "fixed" as const,
   colorKey: "green" as const,
@@ -38,168 +31,103 @@ const draft = {
 describe("일정 변경 mutation 흐름", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
-    jest.mocked(syncLocalReminderNotifications).mockReset();
     jest.mocked(captureException).mockReset();
   });
 
-  it("일정 생성, 수정, 보관 뒤 해당 일정 알림을 먼저 재동기화하고 recurring query를 무효화한다", async () => {
-    const mutationCases = [
-      {
-        expectedStorageInput: {
-          ...draft,
-          userId,
-        },
-        itemId: "created-item",
-        reason: "item-created" as const,
-        run: async () => {
-          const createItem = jest.fn(async () =>
-            createRecurringItemFixture({ id: "created-item" })
-          );
+  it("일정 생성, 수정, 보관 뒤 알림을 맞추고 일정 조회를 무효화한다", async () => {
+    const cases = [
+      async (syncNotifications: () => Promise<void>) => {
+        const createItem = jest.fn(async () =>
+          createRecurringItemFixture({ id: "created-item" })
+        );
 
-          await createSchedule({
-            createItem,
-            draft,
-            language: "ko",
-            now: () => new Date(syncScopeStartedAtUtc),
-            userId,
-          });
+        await createSchedule({ createItem, draft, syncNotifications, userId });
 
-          return createItem;
-        },
+        expect(createItem).toHaveBeenCalledWith({ ...draft, userId });
       },
-      {
-        expectedStorageInput: {
+      async (syncNotifications: () => Promise<void>) => {
+        const updateItem = jest.fn(async () =>
+          createRecurringItemFixture({ id: "updated-item" })
+        );
+
+        await updateSchedule({
+          itemId: "updated-item",
+          patch: { title: "수정한 일정" },
+          syncNotifications,
+          timezone: "Asia/Seoul",
+          updateItem,
+          userId,
+        });
+
+        expect(updateItem).toHaveBeenCalledWith({
           id: "updated-item",
-          patch: {
-            title: "수정한 일정",
-          },
+          patch: { title: "수정한 일정" },
           timezone: "Asia/Seoul",
           userId,
-        },
-        itemId: "updated-item",
-        reason: "item-updated" as const,
-        run: async () => {
-          const updateItem = jest.fn(async () =>
-            createRecurringItemFixture({ id: "updated-item" })
-          );
-
-          await updateSchedule({
-            itemId: "updated-item",
-            language: "ko",
-            now: () => new Date(syncScopeStartedAtUtc),
-            patch: {
-              title: "수정한 일정",
-            },
-            timezone: "Asia/Seoul",
-            updateItem,
-            userId,
-          });
-
-          return updateItem;
-        },
+        });
       },
-      {
-        expectedStorageInput: {
+      async (syncNotifications: () => Promise<void>) => {
+        const archiveItem = jest.fn(async () => undefined);
+
+        await archiveSchedule({
+          archiveItem,
+          itemId: "archived-item",
+          syncNotifications,
+          userId,
+        });
+
+        expect(archiveItem).toHaveBeenCalledWith({
           id: "archived-item",
           userId,
-        },
-        itemId: "archived-item",
-        reason: "item-archived" as const,
-        run: async () => {
-          const archiveItem = jest.fn(async () => undefined);
-
-          await archiveSchedule({
-            archiveItem,
-            itemId: "archived-item",
-            language: "ko",
-            now: () => new Date(syncScopeStartedAtUtc),
-            timezone: "Asia/Seoul",
-            userId,
-          });
-
-          return archiveItem;
-        },
+        });
       },
     ];
 
-    for (const mutationCase of mutationCases) {
+    for (const run of cases) {
       const events: string[] = [];
+      const syncNotifications = jest.fn(async () => {
+        events.push("sync");
+      });
       const invalidateQueries = jest
         .spyOn(queryClient, "invalidateQueries")
         .mockImplementation(async () => {
           events.push("invalidate");
         });
-      jest
-        .mocked(syncLocalReminderNotifications)
-        .mockImplementation(async () => {
-          events.push("sync");
-          return {
-            cancelledCount: 0,
-            diagnostics: {
-              candidateCount: 0,
-              omittedDistantCount: 0,
-              scheduledCount: 0,
-            },
-            scheduledCount: 0,
-          };
-        });
 
-      const storageMutation = await mutationCase.run();
+      await run(syncNotifications);
 
-      expect(storageMutation).toHaveBeenCalledWith(
-        mutationCase.expectedStorageInput
-      );
-      expect(syncLocalReminderNotifications).toHaveBeenCalledWith({
-        language: "ko",
-        reason: mutationCase.reason,
-        scope: {
-          effectiveFromUtc: syncScopeStartedAtUtc,
-          itemId: mutationCase.itemId,
-          type: "item",
-        },
-        timezone: "Asia/Seoul",
-        userId,
-      });
+      expect(syncNotifications).toHaveBeenCalledTimes(1);
       expect(invalidateQueries).toHaveBeenCalledWith({
         queryKey: ["schedule-read", "user", userId],
       });
       expect(events).toEqual(["sync", "invalidate"]);
       invalidateQueries.mockRestore();
-      jest.mocked(syncLocalReminderNotifications).mockReset();
     }
   });
 
-  it("일정 변경 후 알림 재동기화가 실패해도 기록하고 recurring query 무효화는 계속한다", async () => {
-    const syncError = new Error("notification sync failed");
+  it("알림 동기화 실패를 기록하고 일정 조회 무효화는 계속한다", async () => {
+    const error = new Error("notification sync failed");
     const invalidateQueries = jest
       .spyOn(queryClient, "invalidateQueries")
       .mockResolvedValue(undefined);
-    jest.mocked(syncLocalReminderNotifications).mockRejectedValue(syncError);
     const updatedItem = createRecurringItemFixture({ id: "updated-item" });
-    const updateItem = jest.fn(async () => updatedItem);
 
     await expect(
       updateSchedule({
         itemId: "updated-item",
-        language: "ko",
-        now: () => new Date(syncScopeStartedAtUtc),
-        patch: {
-          title: "수정한 일정",
-        },
+        patch: { title: "수정한 일정" },
+        syncNotifications: jest.fn(async () => {
+          throw error;
+        }),
         timezone: "Asia/Seoul",
-        updateItem,
+        updateItem: jest.fn(async () => updatedItem),
         userId,
       })
     ).resolves.toBe(updatedItem);
 
-    expect(captureException).toHaveBeenCalledWith(syncError, {
-      tags: {
-        feature: "schedule-mutation-notification-sync",
-        reason: "item-updated",
-      },
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { feature: "schedule-mutation-notification-sync" },
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["schedule-read", "user", userId],
-    });
+    expect(invalidateQueries).toHaveBeenCalled();
   });
 });

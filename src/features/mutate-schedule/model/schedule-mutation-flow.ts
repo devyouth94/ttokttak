@@ -8,41 +8,25 @@ import {
   type UpdateRecurringItemInput,
 } from "~/entities/schedule/api";
 import { invalidateScheduleReadQueries } from "~/features/read-schedule";
-import type {
-  NotificationSyncReason,
-  NotificationSyncScope,
-} from "~/features/sync-local-notifications";
-import { syncLocalReminderNotifications } from "~/features/sync-local-notifications";
 import { captureException } from "~/sentry";
-import type { AppLanguage } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
 
-type ScheduleMutationReason = Extract<
-  NotificationSyncReason,
-  "item-archived" | "item-created" | "item-updated"
->;
-
 type CompleteScheduleMutationInput = {
-  language: AppLanguage;
-  reason: ScheduleMutationReason;
-  scope: NotificationSyncScope;
-  timezone: string;
+  syncNotifications: () => Promise<void>;
   userId: string;
 };
 
 export type CreateScheduleInput = {
   createItem?: (input: CreateRecurringItemInput) => Promise<RecurringItem>;
   draft: Omit<CreateRecurringItemInput, "userId">;
-  language: AppLanguage;
-  now?: () => Date;
+  syncNotifications: () => Promise<void>;
   userId: string;
 };
 
 export type UpdateScheduleInput = {
   itemId: string;
-  language: AppLanguage;
-  now?: () => Date;
   patch: UpdateRecurringItemInput["patch"];
+  syncNotifications: () => Promise<void>;
   timezone: string;
   updateItem?: (input: UpdateRecurringItemInput) => Promise<RecurringItem>;
   userId: string;
@@ -51,44 +35,19 @@ export type UpdateScheduleInput = {
 export type ArchiveScheduleInput = {
   archiveItem?: (input: ArchiveRecurringItemOptions) => Promise<void>;
   itemId: string;
-  language: AppLanguage;
-  now?: () => Date;
-  timezone: string;
+  syncNotifications: () => Promise<void>;
   userId: string;
 };
 
-function createScheduleMutationScope(params: {
-  itemId: string;
-  syncScopeStartedAtUtc: string;
-}): NotificationSyncScope {
-  return {
-    effectiveFromUtc: params.syncScopeStartedAtUtc,
-    itemId: params.itemId,
-    type: "item",
-  };
-}
-
 async function completeScheduleMutation({
-  language,
-  reason,
-  scope,
-  timezone,
+  syncNotifications,
   userId,
 }: CompleteScheduleMutationInput): Promise<void> {
   try {
-    await syncLocalReminderNotifications({
-      language,
-      reason,
-      scope,
-      timezone,
-      userId,
-    });
+    await syncNotifications();
   } catch (error) {
     captureException(error, {
-      tags: {
-        feature: "schedule-mutation-notification-sync",
-        reason,
-      },
+      tags: { feature: "schedule-mutation-notification-sync" },
     });
   }
 
@@ -98,24 +57,16 @@ async function completeScheduleMutation({
 export async function createSchedule({
   createItem = createRecurringItem,
   draft,
-  language,
-  now = () => new Date(),
+  syncNotifications,
   userId,
 }: CreateScheduleInput): Promise<RecurringItem> {
-  const syncScopeStartedAtUtc = now().toISOString();
   const createdItem = await createItem({
     ...draft,
     userId,
   });
 
   await completeScheduleMutation({
-    language,
-    reason: "item-created",
-    scope: createScheduleMutationScope({
-      itemId: createdItem.id,
-      syncScopeStartedAtUtc,
-    }),
-    timezone: draft.timezone,
+    syncNotifications,
     userId,
   });
 
@@ -124,14 +75,12 @@ export async function createSchedule({
 
 export async function updateSchedule({
   itemId,
-  language,
-  now = () => new Date(),
   patch,
+  syncNotifications,
   timezone,
   updateItem = updateRecurringItem,
   userId,
 }: UpdateScheduleInput): Promise<RecurringItem> {
-  const syncScopeStartedAtUtc = now().toISOString();
   const updatedItem = await updateItem({
     id: itemId,
     patch,
@@ -140,13 +89,7 @@ export async function updateSchedule({
   });
 
   await completeScheduleMutation({
-    language,
-    reason: "item-updated",
-    scope: createScheduleMutationScope({
-      itemId,
-      syncScopeStartedAtUtc,
-    }),
-    timezone,
+    syncNotifications,
     userId,
   });
 
@@ -156,26 +99,16 @@ export async function updateSchedule({
 export async function archiveSchedule({
   archiveItem = archiveRecurringItem,
   itemId,
-  language,
-  now = () => new Date(),
-  timezone,
+  syncNotifications,
   userId,
 }: ArchiveScheduleInput): Promise<void> {
-  const syncScopeStartedAtUtc = now().toISOString();
-
   await archiveItem({
     id: itemId,
     userId,
   });
 
   await completeScheduleMutation({
-    language,
-    reason: "item-archived",
-    scope: createScheduleMutationScope({
-      itemId,
-      syncScopeStartedAtUtc,
-    }),
-    timezone,
+    syncNotifications,
     userId,
   });
 }

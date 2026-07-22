@@ -13,6 +13,7 @@ import {
 } from "~/entities/schedule";
 import { archiveSchedule } from "~/features/mutate-schedule";
 import { useScheduleDetailReadModelQuery } from "~/features/read-schedule";
+import { useNotifications } from "~/notifications/provider";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
@@ -418,6 +419,7 @@ export function ScheduleDetailScreen({
 }): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
+  const { syncNotifications } = useNotifications();
   const styles = useScheduleDetailScreenStyles();
   const themeColors = useThemeColors();
   const scheduleReadContext = useScheduleReadContext();
@@ -506,8 +508,7 @@ export function ScheduleDetailScreen({
     try {
       await archiveSchedule({
         itemId: item.id,
-        language,
-        timezone,
+        syncNotifications,
         userId,
       });
 

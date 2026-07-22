@@ -23,15 +23,6 @@ export type HomeFeedOccurrenceLogInput = {
   userId: string;
 };
 
-export type SyncAfterHomeOccurrenceMutation = (params: {
-  reason: "occurrence-completed" | "occurrence-skipped";
-  scope: {
-    effectiveFromUtc: string;
-    itemId: string;
-    type: "item";
-  };
-}) => Promise<void>;
-
 export type HomeFeedOccurrenceActionTarget = {
   item: RecurringItem;
   occurrence: DerivedOccurrence;
@@ -47,7 +38,7 @@ export type ProcessHomeFeedOccurrenceActionOptions = {
   invalidateScheduleReadQueries: (userId: string) => Promise<void>;
   now: Date;
   refetchFeed: () => Promise<void>;
-  syncAfterMutation: SyncAfterHomeOccurrenceMutation;
+  syncNotifications: () => Promise<void>;
   target: HomeFeedOccurrenceActionTarget;
   timezone: string;
   userId: string | null;
@@ -84,7 +75,7 @@ async function processHomeFeedOccurrenceAction({
   invalidateScheduleReadQueries,
   now,
   refetchFeed,
-  syncAfterMutation,
+  syncNotifications,
   target,
   timezone,
   userId,
@@ -122,17 +113,8 @@ async function processHomeFeedOccurrenceAction({
 
   const reason =
     action === "completed" ? "occurrence-completed" : "occurrence-skipped";
-  const scope = {
-    effectiveFromUtc: now.toISOString(),
-    itemId: target.item.id,
-    type: "item",
-  } as const;
-
   try {
-    await syncAfterMutation({
-      reason,
-      scope,
-    });
+    await syncNotifications();
   } catch (error) {
     captureException?.(error, {
       tags: {

@@ -6,8 +6,8 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { useScheduleReadContext } from "~/application/schedule-read";
 import type { CompletionAction } from "~/entities/schedule";
-import { useNotifications } from "~/features/notifications";
 import { useHomeFeedOccurrenceProjectionQuery } from "~/features/read-schedule";
+import { useNotifications } from "~/notifications/provider";
 import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 
@@ -73,7 +73,7 @@ export function useHomeScreenController(): HomeScreenController {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const { profile } = useSession();
-  const { permission, requestPermission, syncAfterMutation } =
+  const { permission, requestPermission, syncNotifications } =
     useNotifications();
   const scheduleReadContext = useScheduleReadContext();
   const isFocused = useIsFocused();
@@ -112,7 +112,7 @@ export function useHomeScreenController(): HomeScreenController {
   } = useHomeOccurrenceActions({
     completionLogs,
     refetchFeed,
-    syncAfterMutation,
+    syncNotifications,
     timezone,
     userId,
   });

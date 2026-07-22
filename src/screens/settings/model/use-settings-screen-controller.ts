@@ -4,11 +4,11 @@ import { Alert, Linking } from "react-native";
 import Constants from "expo-constants";
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
-import { useNotifications } from "~/features/notifications";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
 } from "~/features/settings";
+import { useNotifications } from "~/notifications/provider";
 import { useSession } from "~/session/provider";
 import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
 import type { ThemePreference } from "~/theme/preference";

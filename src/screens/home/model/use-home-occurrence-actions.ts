@@ -7,7 +7,6 @@ import { createCompletionLogs } from "~/entities/schedule/api";
 import {
   completeHomeFeedOccurrence,
   skipHomeFeedOccurrence,
-  type SyncAfterHomeOccurrenceMutation,
 } from "~/features/home-feed-occurrence-action";
 import { invalidateScheduleReadQueries } from "~/features/read-schedule";
 import { captureException } from "~/sentry";
@@ -17,7 +16,7 @@ import type { HomeFeedCard } from "./home-feed-sections";
 type UseHomeOccurrenceActionsOptions = {
   completionLogs: CompletionLog[];
   refetchFeed: () => Promise<void>;
-  syncAfterMutation: SyncAfterHomeOccurrenceMutation;
+  syncNotifications: () => Promise<void>;
   timezone: string;
   userId: string | null;
 };
@@ -35,7 +34,7 @@ type HomeOccurrenceActions = {
 export function useHomeOccurrenceActions({
   completionLogs,
   refetchFeed,
-  syncAfterMutation,
+  syncNotifications,
   timezone,
   userId,
 }: UseHomeOccurrenceActionsOptions): HomeOccurrenceActions {
@@ -78,7 +77,7 @@ export function useHomeOccurrenceActions({
           },
           now: new Date(),
           refetchFeed,
-          syncAfterMutation,
+          syncNotifications,
           target: card,
           timezone,
           userId,
@@ -96,7 +95,7 @@ export function useHomeOccurrenceActions({
       completionLogs,
       queryClient,
       refetchFeed,
-      syncAfterMutation,
+      syncNotifications,
       t,
       timezone,
       userId,

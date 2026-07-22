@@ -49,11 +49,11 @@
 ### Application
 
 - `src/application/providers`: provider 조립.
-- `src/application/bootstrap`: 앱 시작 후 session과 알림 lifecycle 연결.
+- `src/application/bootstrap`: session 준비 뒤 splash screen 종료.
 - `src/session`: Supabase session Context와 Apple, Google 인증.
 - `src/account`: profile 복원, 표시 이름 저장과 계정 삭제.
 - `src/application/navigation`: 탭 layout, 집중 화면 하단 탭 표시 정책.
-- `src/application/notifications`: 알림 권한 context provider 연결.
+- `src/notifications`: 알림 권한 Context, lifecycle, tap 처리와 Expo 예약.
 - `src/application/routes`: route params 정규화.
 - `src/application/schedule-read`: schedule read context wiring.
 - 화면 controller hook이 query, mutation, navigation을 조합한다.
@@ -66,18 +66,15 @@
 - `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 primitive의 기준 경계.
 - `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
 - `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
-- `src/features/mutate-schedule`: 일정 생성, 수정, 보관 use case와 mutation 이후 query 무효화, 로컬 알림 범위 재동기화 후속 흐름.
+- `src/features/mutate-schedule`: 일정 생성, 수정, 보관 use case와 mutation 이후 query 무효화, 로컬 알림 재동기화 후속 흐름.
 - `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
 - `src/features/read-schedule`: 일정 조회 query, 목적별 occurrence projection read hook, query key.
 - `src/features/settings`: 설정 화면의 표시 이름 입력 규칙.
 - `src/features/legal`: 이용약관과 개인정보처리방침 공개 링크.
-- `src/features/sync-local-notifications`: 기기 로컬 알림 예약, 재동기화 정책, lifecycle.
-- `src/features/notifications`: 알림 권한 context와 알림 tap payload 판정.
 - 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Infrastructure
 
-- `src/shared/lib/notifications`: Expo Notifications adapter, 알림 권한 adapter, 로컬 reminder identifier/payload helper.
 - `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
 - `src/supabase.ts`: SecureStore를 사용하는 Supabase client singleton.
 - `src/database.types.ts`: 생성된 Supabase schema type.
@@ -241,7 +238,7 @@ DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는
 1. form 입력을 검증한다.
 2. 제목과 설명을 암호화한다.
 3. `create_recurring_item_with_initial_version` RPC로 item과 초기 schedule version을 함께 만든다.
-4. 생성된 일정 범위의 기기 로컬 알림을 재동기화한다.
+4. 현재 기기의 기기 로컬 알림을 재동기화한다.
 5. query를 무효화한다.
 
 ### Update
@@ -251,13 +248,13 @@ DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는
 3. 제목과 설명을 다시 암호화한다.
 4. `update_recurring_item_with_edit_policy` RPC로 item을 갱신한다.
 5. 규칙 변경이면 새 schedule version을 추가한다.
-6. 수정한 일정 범위의 기기 로컬 알림을 재동기화한다.
+6. 현재 기기의 기기 로컬 알림을 재동기화한다.
 7. query를 무효화한다.
 
 ### Archive
 
 삭제 UX는 `archive_recurring_item` RPC로 `is_archived = true`를 저장한다.
-보관 후 보관한 일정 범위의 기기 로컬 알림을 재동기화하고 query를 무효화한다.
+보관 후 현재 기기의 기기 로컬 알림을 재동기화하고 query를 무효화한다.
 
 ### Complete / Skip
 

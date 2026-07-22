@@ -1,7 +1,7 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import type { User } from "@supabase/supabase-js";
 
-import { cancelAllTtokttakLocalReminderNotifications as cancelReminders } from "~/features/sync-local-notifications";
+import { cancelNotifications } from "~/notifications/sync";
 import { signOutGoogle } from "~/session/google";
 import { supabase } from "~/supabase";
 
@@ -64,5 +64,5 @@ export async function deleteAccount(user: User | null): Promise<void> {
   }
 
   await signOutGoogle();
-  await cancelReminders();
+  await cancelNotifications();
 }
