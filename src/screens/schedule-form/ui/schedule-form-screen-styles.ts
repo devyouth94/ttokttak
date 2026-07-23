@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Platform, StyleSheet } from "react-native";
 
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 
 export function useScheduleFormScreenStyles() {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return useMemo(
     () => createScheduleFormScreenStyles(themeColors),
@@ -18,7 +18,7 @@ export type ScheduleFormScreenStyles = ReturnType<
   typeof createScheduleFormScreenStyles
 >;
 
-function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
+function createScheduleFormScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     optionInfoButton: {
       alignItems: "center",
@@ -153,13 +153,6 @@ function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
     },
     fieldLabel: {
       color: themeColors.text,
-    },
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
     },
     footer: {
       backgroundColor: themeColors.background,
@@ -347,14 +340,12 @@ function createScheduleFormScreenStyles(themeColors: AppThemeColors) {
       gap: spacing.lg,
       paddingBottom: spacing.xxl,
       paddingHorizontal: spacing.md,
-      paddingTop: spacing.lg,
     },
     scrollView: {
       flex: 1,
     },
     screenRoot: {
       flex: 1,
-      position: "relative",
     },
     subFieldLabel: {
       color: themeColors.text,

@@ -1,15 +1,13 @@
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/entities/schedule";
 import {
-  createCompletionLogFixture,
-  createRecurringItemFixture,
-  createScheduleVersionFixture,
-  type RecurringItemFixtureOverrides,
-  recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+  logFixture,
+  ruleFixture,
+  scheduleFixture,
+  type ScheduleOverrides,
+  testTimezone as timezone,
+} from "~/schedule/fixtures";
+import type { OccurrenceLog } from "~/schedule/rules/occurrence";
+import type { RuleVersion } from "~/schedule/rules/recurrence";
+import type { Schedule } from "~/schedule/schedule";
 
 import {
   buildHistoryPreview,
@@ -18,10 +16,8 @@ import {
   getRecurringItemDetailDeleteReturnPath,
 } from "./schedule-detail-model";
 
-function createItem(
-  overrides: RecurringItemFixtureOverrides = {}
-): RecurringItem {
-  return createRecurringItemFixture({
+function createItem(overrides: ScheduleOverrides = {}): Schedule {
+  return scheduleFixture({
     description: "매일 아침 복용합니다.",
     startDateLocal: "2026-04-08",
     title: "영양제",
@@ -29,19 +25,16 @@ function createItem(
   });
 }
 
-function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return createCompletionLogFixture({
+function createLog(overrides: Partial<OccurrenceLog> = {}): OccurrenceLog {
+  return logFixture({
     actedAtUtc: "2026-04-10T00:05:00.000Z",
-    createdAt: "2026-04-10T00:05:00.000Z",
     scheduledAtUtc: "2026-04-10T00:00:00.000Z",
     ...overrides,
   });
 }
 
-function createVersion(
-  overrides: Partial<RecurringItemScheduleVersion> = {}
-): RecurringItemScheduleVersion {
-  return createScheduleVersionFixture({
+function createVersion(overrides: Partial<RuleVersion> = {}): RuleVersion {
+  return ruleFixture({
     seedStartDateLocal: "2026-04-08",
     ...overrides,
   });
@@ -151,10 +144,7 @@ describe("recurring item detail helpers", () => {
       language: "ko",
       completionLogs: [],
       item: createItem({
-        contentStatus: {
-          reason: "decryption-failed",
-          status: "unrecoverable",
-        },
+        contentStatus: "unrecoverable",
         description: null,
         title: "일정 내용을 복구할 수 없어요",
       }),
@@ -253,19 +243,17 @@ describe("recurring item detail helpers", () => {
     expect(entries.some((entry) => entry.id === "end-date")).toBe(false);
   });
 
-  it("latest schedule version에서 종료일이 제거되면 이전 version 종료일을 표시하지 않는다", () => {
+  it("최신 규칙 버전에서 종료일이 제거되면 이전 version 종료일을 표시하지 않는다", () => {
     const entries = buildSummarySettingBadges(
       createItem({
-        scheduleVersions: [
+        versions: [
           createVersion({
             effectiveFromUtc: "2026-04-01T00:00:00.000Z",
             endDateLocal: "2026-05-10",
-            id: "version-1",
           }),
           createVersion({
             effectiveFromUtc: "2026-04-15T00:00:00.000Z",
             endDateLocal: null,
-            id: "version-2",
           }),
         ],
       })
@@ -317,11 +305,10 @@ describe("recurring item detail helpers", () => {
     expect(entries.map((entry) => entry.id)).toEqual(["start-date"]);
   });
 
-  it("상세 화면도 latest schedule version 기준 현재 규칙과 다음 일정을 보여준다", () => {
+  it("상세 화면도 최신 규칙 버전 기준 현재 규칙과 다음 일정을 보여준다", () => {
     const item = createItem({
-      scheduleVersions: [
+      versions: [
         createVersion({
-          id: "version-1",
           endDateLocal: "2026-04-20",
           intervalValue: 3,
           recurrenceType: "interval_days",
@@ -330,7 +317,6 @@ describe("recurring item detail helpers", () => {
         createVersion({
           endDateLocal: "2026-05-01",
           effectiveFromUtc: "2026-04-14T01:00:00.000Z",
-          id: "version-2",
           intervalValue: 4,
           recurrenceType: "interval_days",
           reminderTimeLocal: "21:30",
@@ -348,7 +334,9 @@ describe("recurring item detail helpers", () => {
     });
 
     expect(viewModel.nextOccurrence?.localDate).toBe("2026-04-16");
-    expect(viewModel.nextOccurrence?.localTime).toBe("21:30");
+    expect(viewModel.nextOccurrence?.scheduledAtUtc).toBe(
+      "2026-04-16T12:30:00.000Z"
+    );
     expect(viewModel.summary.notificationLabel).toBe("오후 9:30");
     expect(viewModel.summary.recurrenceLabel).toBe("4일마다");
     expect(viewModel.summary.notificationsEnabled).toBe(true);

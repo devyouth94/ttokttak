@@ -2,14 +2,13 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/provider";
 
 import { AppText } from "./app-text";
 
 type ScreenHeaderProps = {
   leftSlot?: ReactNode;
-  onHeightChange?: (height: number) => void;
   rightSlot?: ReactNode;
   style?: StyleProp<ViewStyle>;
   title: string;
@@ -18,39 +17,35 @@ type ScreenHeaderProps = {
 
 export function ScreenHeader({
   leftSlot,
-  onHeightChange,
   rightSlot,
   style,
   title,
   titleColor,
 }: ScreenHeaderProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <View
-      onLayout={({ nativeEvent }) => {
-        onHeightChange?.(nativeEvent.layout.height);
-      }}
       style={[
         styles.header,
         { backgroundColor: themeColors.background },
         style,
       ]}
     >
-      {leftSlot ? <View style={styles.leftSlot}>{leftSlot}</View> : null}
+      {leftSlot && <View style={styles.leftSlot}>{leftSlot}</View>}
 
       <View style={styles.copy}>
         <AppText
           ellipsizeMode="tail"
           numberOfLines={leftSlot ? 1 : 2}
-          style={[styles.title, { color: titleColor ?? themeColors.text }]}
+          style={{ color: titleColor ?? themeColors.text }}
           variant="display"
         >
           {title}
         </AppText>
       </View>
 
-      {rightSlot ? <View style={styles.rightSlot}>{rightSlot}</View> : null}
+      {rightSlot && <View style={styles.rightSlot}>{rightSlot}</View>}
     </View>
   );
 }
@@ -79,5 +74,4 @@ const styles = StyleSheet.create({
     position: "relative",
     zIndex: 20,
   },
-  title: {},
 });

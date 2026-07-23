@@ -102,14 +102,14 @@ export function SettingsRow({
         >
           {title}
         </AppText>
-        {description ? (
+        {description && (
           <AppText style={styles.rowDescription} variant="body3">
             {description}
           </AppText>
-        ) : null}
+        )}
       </View>
 
-      {accessory ? <View style={styles.rowAccessory}>{accessory}</View> : null}
+      {accessory && <View style={styles.rowAccessory}>{accessory}</View>}
     </Pressable>
   );
 }
@@ -127,11 +127,11 @@ export function SettingsControlRow({
         <AppText style={styles.rowTitle} variant="body3">
           {title}
         </AppText>
-        {description ? (
+        {description && (
           <AppText style={styles.rowDescription} variant="body3">
             {description}
           </AppText>
-        ) : null}
+        )}
       </View>
 
       <View style={styles.rowAccessory}>{accessory}</View>
@@ -166,7 +166,7 @@ export function SettingsValueRow({
         <AppText style={styles.rowValue} variant="body3">
           {value}
         </AppText>
-        {isPressable ? <Pencil color={iconColor} size={14} /> : null}
+        {isPressable && <Pencil color={iconColor} size={14} />}
       </View>
     </Pressable>
   );

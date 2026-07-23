@@ -3,7 +3,6 @@ import { Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Animated,
   KeyboardAvoidingView,
   type LayoutChangeEvent,
   Platform,
@@ -13,20 +12,16 @@ import {
   TextInput,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/shared/i18n";
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppTheme } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
-import { useCollapsibleHeader } from "~/shared/ui/use-collapsible-header";
+import type { ThemeColors } from "~/theme/colors";
+import { useTheme } from "~/theme/provider";
 
 import {
   AdvancedOptionsSection,
@@ -88,7 +83,7 @@ type SaveButtonContentProps = {
   isEditMode: boolean;
   isSaving: boolean;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
 };
 
 type PickerFieldProps = {
@@ -118,16 +113,8 @@ export function ScheduleFormScreenContent({
 }: ScheduleFormScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const { colors: themeColors, resolvedTheme } = useAppTheme();
-  const insets = useSafeAreaInsets();
+  const { colors: themeColors, resolvedTheme } = useTheme();
   const styles = useScheduleFormScreenStyles();
-  const {
-    headerAnimatedStyle,
-    headerHeight,
-    onHeaderHeightChange,
-    onScroll,
-    scrollEventThrottle,
-  } = useCollapsibleHeader({ hiddenOffset: insets.top });
   const [focusedTextInput, setFocusedTextInput] = useState<
     "description" | "title" | null
   >(null);
@@ -189,14 +176,14 @@ export function ScheduleFormScreenContent({
     requestAnimationFrame(() => {
       scrollViewRef.current?.scrollTo({
         animated: true,
-        y: Math.max(targetOffset - headerHeight - 8, 0),
+        y: Math.max(targetOffset - 8, 0),
       });
 
       if (firstErrorTarget === "title") {
         titleInputRef.current?.focus();
       }
     });
-  }, [errors, headerHeight, view.submitCount]);
+  }, [errors, view.submitCount]);
 
   return (
     <SafeAreaView
@@ -208,23 +195,15 @@ export function ScheduleFormScreenContent({
         style={styles.keyboardAvoidingView}
       >
         <View style={styles.screenRoot}>
-          <Animated.View style={[styles.headerLayer, headerAnimatedStyle]}>
-            <FocusScreenHeader
-              onBack={actions.screen.onBack}
-              onHeightChange={onHeaderHeightChange}
-              title={screenTitle}
-            />
-          </Animated.View>
+          <FocusScreenHeader
+            onBack={actions.screen.onBack}
+            title={screenTitle}
+          />
 
           <ScrollView
-            contentContainerStyle={[
-              styles.scrollContent,
-              { paddingTop: headerHeight },
-            ]}
+            contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
-            onScroll={onScroll}
             ref={scrollViewRef}
-            scrollEventThrottle={scrollEventThrottle}
             showsVerticalScrollIndicator={false}
             style={styles.scrollView}
           >
@@ -264,11 +243,11 @@ export function ScheduleFormScreenContent({
                   />
                 )}
               />
-              {errors.title ? (
+              {errors.title && (
                 <AppText style={styles.fieldError} variant="caption">
                   {errors.title}
                 </AppText>
-              ) : null}
+              )}
             </View>
 
             <View style={styles.field}>
@@ -384,7 +363,7 @@ export function ScheduleFormScreenContent({
                 />
               </View>
 
-              {endDateControlState.isVisible ? (
+              {endDateControlState.isVisible && (
                 <EndDateControl
                   displayValue={endDateDisplayValue}
                   error={errors.endDate}
@@ -395,15 +374,15 @@ export function ScheduleFormScreenContent({
                   styles={styles}
                   themeColors={themeColors}
                 />
-              ) : null}
+              )}
 
-              {firstReminderHelperMessage ? (
+              {firstReminderHelperMessage && (
                 <AppText style={styles.fieldHelper} variant="caption">
                   {firstReminderHelperMessage}
                 </AppText>
-              ) : null}
+              )}
 
-              {picker.isStartDateVisible ? (
+              {picker.isStartDateVisible && (
                 <DateTimePicker
                   accentColor={themeColors.primary}
                   initialInputMode="default"
@@ -414,9 +393,9 @@ export function ScheduleFormScreenContent({
                   themeVariant={resolvedTheme}
                   value={picker.selectedStartDate}
                 />
-              ) : null}
+              )}
 
-              {endDateControlState.isEnabled && picker.isEndDateVisible ? (
+              {endDateControlState.isEnabled && picker.isEndDateVisible && (
                 <DateTimePicker
                   accentColor={themeColors.primary}
                   initialInputMode="default"
@@ -427,9 +406,9 @@ export function ScheduleFormScreenContent({
                   themeVariant={resolvedTheme}
                   value={picker.selectedEndDate}
                 />
-              ) : null}
+              )}
 
-              {picker.isTimeVisible ? (
+              {picker.isTimeVisible && (
                 <DateTimePicker
                   accentColor={themeColors.primary}
                   mode="time"
@@ -438,7 +417,7 @@ export function ScheduleFormScreenContent({
                   themeVariant={resolvedTheme}
                   value={picker.selectedReminderTime}
                 />
-              ) : null}
+              )}
 
               <IosPickerModal
                 minimumDate={picker.iosMinimumDate}
@@ -507,7 +486,7 @@ export function ScheduleFormScreenContent({
                 />
               </Pressable>
 
-              {view.isEditMode ? (
+              {view.isEditMode && (
                 <Pressable
                   accessibilityHint={t("scheduleForm.deleteButton.hint")}
                   accessibilityLabel={t("scheduleForm.deleteButton.label")}
@@ -535,7 +514,7 @@ export function ScheduleFormScreenContent({
                     />
                   )}
                 </Pressable>
-              ) : null}
+              )}
             </View>
           </View>
         </View>
@@ -581,11 +560,11 @@ function PickerField({
 }: PickerFieldProps): React.JSX.Element {
   return (
     <View style={[styles.field, variantStyle]}>
-      {label ? (
+      {label && (
         <AppText style={styles.fieldLabel} variant="body2">
           {label}
         </AppText>
-      ) : null}
+      )}
       <Pressable
         accessibilityHint={accessibilityHint}
         accessibilityLabel={accessibilityLabel}
@@ -605,16 +584,16 @@ function PickerField({
           {value}
         </AppText>
       </Pressable>
-      {description ? (
+      {description && (
         <AppText style={styles.fieldHelper} variant="caption">
           {description}
         </AppText>
-      ) : null}
-      {error ? (
+      )}
+      {error && (
         <AppText style={styles.fieldError} variant="caption">
           {error}
         </AppText>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -624,7 +603,7 @@ type EndDateControlProps = {
   error?: string;
   isEnabled: boolean;
   styles: ScheduleFormScreenStyles;
-  themeColors: AppThemeColors;
+  themeColors: ThemeColors;
   onDisable: () => void;
   onEnable: () => void;
   onOpenPicker: () => void;
@@ -670,7 +649,7 @@ function EndDateControl({
         />
       </View>
 
-      {isEnabled && displayValue ? (
+      {isEnabled && displayValue && (
         <PickerField
           accessibilityHint={t("scheduleForm.picker.endDateHint")}
           accessibilityLabel={t("scheduleForm.picker.endDateLabel")}
@@ -688,7 +667,7 @@ function EndDateControl({
           value={displayValue}
           variantStyle={styles.endDateField}
         />
-      ) : null}
+      )}
     </View>
   );
 }

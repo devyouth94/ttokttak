@@ -8,46 +8,44 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
-import { isAppleSignInAvailable } from "~/features/sign-in";
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
 import { AppScreen } from "~/shared/ui/app-screen";
 import { AppText } from "~/shared/ui/app-text";
 import { AppleLogoIcon, GoogleLogoIcon } from "~/shared/ui/social-icons";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 
 type LoginScreenContentProps = {
-  isConfigured: boolean;
   onApplePress: () => Promise<void>;
   onGooglePress: () => Promise<void>;
 };
 
 export function LoginScreenContent({
-  isConfigured,
   onApplePress,
   onGooglePress,
 }: LoginScreenContentProps): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const styles = useMemo(
     () => createLoginScreenStyles(themeColors),
     [themeColors]
   );
   const legalSuffix = t("login.legalSuffix");
-  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== "ios") {
-      setIsAppleAvailable(false);
+      setAppleAvailable(false);
       return;
     }
 
     const checkAvailability = async () => {
-      const isAvailable = await isAppleSignInAvailable();
-      setIsAppleAvailable(isAvailable);
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      setAppleAvailable(isAvailable);
     };
 
     void checkAvailability();
@@ -114,13 +112,11 @@ export function LoginScreenContent({
               <Pressable
                 accessibilityHint={t("login.googleHint")}
                 accessibilityRole="button"
-                disabled={!isConfigured}
                 onPress={handleGooglePress}
                 style={({ pressed }) => [
                   styles.socialButton,
                   styles.googleButton,
-                  !isConfigured && styles.disabledButton,
-                  pressed && isConfigured && styles.pressedButton,
+                  pressed && styles.pressedButton,
                 ]}
               >
                 <GoogleLogoIcon />
@@ -129,17 +125,15 @@ export function LoginScreenContent({
                 </AppText>
               </Pressable>
 
-              {isAppleAvailable ? (
+              {appleAvailable && (
                 <Pressable
                   accessibilityHint={t("login.appleHint")}
                   accessibilityRole="button"
-                  disabled={!isConfigured}
                   onPress={handleApplePress}
                   style={({ pressed }) => [
                     styles.socialButton,
                     styles.appleButton,
-                    !isConfigured && styles.disabledButton,
-                    pressed && isConfigured && styles.applePressedButton,
+                    pressed && styles.applePressedButton,
                   ]}
                 >
                   <AppleLogoIcon size={17} />
@@ -147,7 +141,7 @@ export function LoginScreenContent({
                     {t("login.appleButton")}
                   </AppText>
                 </Pressable>
-              ) : null}
+              )}
             </View>
 
             <View style={styles.legalRow}>
@@ -185,22 +179,18 @@ export function LoginScreenContent({
                   {t("login.legalPrivacy")}
                 </AppText>
               </Pressable>
-              {legalSuffix ? (
+              {legalSuffix && (
                 <AppText style={styles.legalText}>{legalSuffix}</AppText>
-              ) : null}
+              )}
             </View>
           </View>
-
-          {!isConfigured ? (
-            <AppText style={styles.notice}>{t("login.noticeSupabase")}</AppText>
-          ) : null}
         </View>
       </View>
     </AppScreen>
   );
 }
 
-function createLoginScreenStyles(themeColors: AppThemeColors) {
+function createLoginScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     actions: {
       gap: spacing.xs,
@@ -231,9 +221,6 @@ function createLoginScreenStyles(themeColors: AppThemeColors) {
     },
     content: {
       gap: spacing.xl,
-    },
-    disabledButton: {
-      opacity: 0.45,
     },
     googleButton: {
       backgroundColor: themeColors.surface,
@@ -275,12 +262,6 @@ function createLoginScreenStyles(themeColors: AppThemeColors) {
     },
     loginArea: {
       gap: spacing.sm,
-    },
-    notice: {
-      color: themeColors.textMuted,
-      fontSize: typography.label,
-      lineHeight: 18,
-      textAlign: "center",
     },
     pressedButton: {
       opacity: 0.82,

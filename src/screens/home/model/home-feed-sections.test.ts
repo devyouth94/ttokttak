@@ -1,20 +1,17 @@
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/entities/schedule";
+import { addDays, format, parse } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+
 import {
-  getLatestOverdueItemOccurrenceEntries,
-  getOccurrenceProjectionRequirement,
-  getScheduledItemOccurrenceEntriesInRange,
-} from "~/entities/schedule";
-import {
-  createCompletionLogFixture,
-  createRecurringItemFixture,
-  createScheduleVersionFixture,
-  type RecurringItemFixtureOverrides,
-  recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+  logFixture,
+  ruleFixture,
+  scheduleFixture,
+  type ScheduleOverrides,
+  testTimezone as timezone,
+} from "~/schedule/fixtures";
+import type { OccurrenceLog } from "~/schedule/rules/occurrence";
+import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
+import type { RuleVersion } from "~/schedule/rules/recurrence";
+import type { Schedule } from "~/schedule/schedule";
 
 import {
   buildHomeFeedSections as buildHomeFeedViewSections,
@@ -22,29 +19,24 @@ import {
 } from "./home-feed-sections";
 import { getFeedItemMetaLine } from "../ui/home-feed-item-row";
 
-function createItem(
-  overrides: RecurringItemFixtureOverrides = {}
-): RecurringItem {
-  return createRecurringItemFixture({
-    ...(overrides.scheduleVersions ? {} : { recurrenceType: "once" }),
+function createItem(overrides: ScheduleOverrides = {}): Schedule {
+  return scheduleFixture({
+    ...(overrides.versions ? {} : { recurrenceType: "once" }),
     title: "테스트 항목",
     ...overrides,
   });
 }
 
-function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return createCompletionLogFixture({
+function createLog(overrides: Partial<OccurrenceLog> = {}): OccurrenceLog {
+  return logFixture({
     actedAtUtc: "2026-04-12T01:05:00.000Z",
-    createdAt: "2026-04-12T01:05:00.000Z",
     scheduledAtUtc: "2026-04-12T00:00:00.000Z",
     ...overrides,
   });
 }
 
-function createVersion(
-  overrides: Partial<RecurringItemScheduleVersion> = {}
-): RecurringItemScheduleVersion {
-  return createScheduleVersionFixture({
+function createVersion(overrides: Partial<RuleVersion> = {}): RuleVersion {
+  return ruleFixture({
     seedStartDateLocal: "2026-04-10",
     ...overrides,
   });
@@ -58,50 +50,64 @@ function buildHomeFeedSections({
   selectedDateId,
   timezone,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
+  completionLogs: OccurrenceLog[];
+  items: Schedule[];
   language: "en" | "ko";
   now: Date;
   selectedDateId: string;
   timezone: string;
 }) {
-  const projection = getOccurrenceProjectionRequirement({
-    items,
-    purpose: {
-      now,
-      selectedDateId,
-      type: "homeFeed",
-    },
+  const today = formatInTimeZone(now, timezone, "yyyy-MM-dd");
+  const isToday = selectedDateId === today;
+  const addLocalDays = (localDate: string, amount: number) =>
+    format(
+      addDays(parse(localDate, "yyyy-MM-dd", new Date()), amount),
+      "yyyy-MM-dd"
+    );
+  const occurrences = createOccurrences({
+    logs: completionLogs,
+    now,
+    schedules: items,
     timezone,
-  }).projection;
+  });
+  const overdueEntries = occurrences
+    .range(
+      {
+        endUtc: now.toISOString(),
+        startUtc: toUtcRange(addLocalDays(today, -730), timezone).startUtc,
+      },
+      "overdue"
+    )
+    .sort((left, right) =>
+      right.occurrence.scheduledAtUtc.localeCompare(
+        left.occurrence.scheduledAtUtc
+      )
+    )
+    .filter(
+      (entry, index, entries) =>
+        entries.findIndex(
+          ({ schedule }) => schedule.id === entry.schedule.id
+        ) === index
+    );
 
   return buildHomeFeedViewSections({
     language,
     now,
-    overdueEntries: getLatestOverdueItemOccurrenceEntries({
-      completionLogs,
-      items,
-      lookbackStartLocalDate: projection.overdueLookbackStartLocalDate,
-      now,
-      timezone,
-    }),
-    selectedDateEntries: getScheduledItemOccurrenceEntriesInRange({
-      completionLogs,
-      items,
-      now,
-      range: projection.selectedDateRange,
-      timezone,
-    }),
+    overdueEntries,
+    selectedDateEntries: occurrences.range(
+      toUtcRange(selectedDateId, timezone),
+      "scheduled"
+    ),
     selectedDateId,
     timezone,
-    upcomingEntries: projection.upcomingRange
-      ? getScheduledItemOccurrenceEntriesInRange({
-          completionLogs,
-          items,
-          now,
-          range: projection.upcomingRange,
-          timezone,
-        })
+    upcomingEntries: isToday
+      ? occurrences.range(
+          {
+            endUtc: toUtcRange(addLocalDays(today, 14), timezone).endUtc,
+            startUtc: toUtcRange(addLocalDays(today, 1), timezone).startUtc,
+          },
+          "scheduled"
+        )
       : [],
   });
 }
@@ -335,19 +341,15 @@ describe("buildHomeFeedSections", () => {
       items: [
         createItem({
           id: "edited-item",
-          scheduleVersions: [
+          versions: [
             createVersion({
-              id: "version-1",
               intervalValue: 3,
-              itemId: "edited-item",
               recurrenceType: "interval_days",
               seedStartDateLocal: "2026-04-10",
             }),
             createVersion({
               effectiveFromUtc: "2026-04-14T01:00:00.000Z",
-              id: "version-2",
               intervalValue: 4,
-              itemId: "edited-item",
               recurrenceType: "interval_days",
               seedStartDateLocal: "2026-04-17",
             }),

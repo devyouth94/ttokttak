@@ -1,21 +1,16 @@
 import { endOfMonth, format, parse, startOfMonth } from "date-fns";
 
-import type {
-  CompletionLog,
-  RecurringItem,
-  RecurringItemScheduleVersion,
-} from "~/entities/schedule";
 import {
-  createLocalDateUtcRange,
-  getItemOccurrenceEntriesInRange,
-} from "~/entities/schedule";
-import {
-  createCompletionLogFixture,
-  createRecurringItemFixture,
-  createScheduleVersionFixture,
-  type RecurringItemFixtureOverrides,
-  recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+  logFixture,
+  ruleFixture,
+  scheduleFixture,
+  type ScheduleOverrides,
+  testTimezone as timezone,
+} from "~/schedule/fixtures";
+import type { OccurrenceLog } from "~/schedule/rules/occurrence";
+import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
+import type { RuleVersion } from "~/schedule/rules/recurrence";
+import type { Schedule } from "~/schedule/schedule";
 
 import {
   buildCalendarDayEntries as buildCalendarDayViewEntries,
@@ -28,29 +23,24 @@ import {
   syncCalendarScreenStateToTimezone,
 } from "./calendar-screen-model";
 
-function createItem(
-  overrides: RecurringItemFixtureOverrides = {}
-): RecurringItem {
-  return createRecurringItemFixture({
-    ...(overrides.scheduleVersions ? {} : { recurrenceType: "once" }),
+function createItem(overrides: ScheduleOverrides = {}): Schedule {
+  return scheduleFixture({
+    ...(overrides.versions ? {} : { recurrenceType: "once" }),
     title: "테스트 항목",
     ...overrides,
   });
 }
 
-function createLog(overrides: Partial<CompletionLog> = {}): CompletionLog {
-  return createCompletionLogFixture({
+function createLog(overrides: Partial<OccurrenceLog> = {}): OccurrenceLog {
+  return logFixture({
     actedAtUtc: "2026-04-12T01:05:00.000Z",
-    createdAt: "2026-04-12T01:05:00.000Z",
     scheduledAtUtc: "2026-04-12T00:00:00.000Z",
     ...overrides,
   });
 }
 
-function createVersion(
-  overrides: Partial<RecurringItemScheduleVersion> = {}
-): RecurringItemScheduleVersion {
-  return createScheduleVersionFixture({
+function createVersion(overrides: Partial<RuleVersion> = {}): RuleVersion {
+  return ruleFixture({
     seedStartDateLocal: "2026-04-10",
     ...overrides,
   });
@@ -63,8 +53,8 @@ function buildCalendarDaySummaries({
   timezone,
   visibleMonth,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
+  completionLogs: OccurrenceLog[];
+  items: Schedule[];
   now: Date;
   timezone: string;
   visibleMonth: string;
@@ -80,18 +70,17 @@ function buildCalendarDaySummaries({
   );
   const monthEndLocalDate = format(endOfMonth(visibleMonthDate), "yyyy-MM-dd");
   const monthRange = {
-    endUtc: createLocalDateUtcRange(monthEndLocalDate, timezone).endUtc,
-    startUtc: createLocalDateUtcRange(monthStartLocalDate, timezone).startUtc,
+    endUtc: toUtcRange(monthEndLocalDate, timezone).endUtc,
+    startUtc: toUtcRange(monthStartLocalDate, timezone).startUtc,
   };
 
   return buildCalendarDayViewSummaries({
-    visibleMonthEntries: getItemOccurrenceEntriesInRange({
-      completionLogs,
-      items,
+    visibleMonthEntries: createOccurrences({
+      logs: completionLogs,
       now,
-      range: monthRange,
+      schedules: items,
       timezone,
-    }),
+    }).range(monthRange),
   });
 }
 
@@ -103,24 +92,25 @@ function buildCalendarDayEntries({
   selectedDate,
   timezone,
 }: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
+  completionLogs: OccurrenceLog[];
+  items: Schedule[];
   language: "en" | "ko";
   now: Date;
   selectedDate: string;
   timezone: string;
 }) {
-  const selectedDateRange = createLocalDateUtcRange(selectedDate, timezone);
+  const selectedDateRange = toUtcRange(selectedDate, timezone);
 
   return buildCalendarDayViewEntries({
     language,
-    selectedDateEntries: getItemOccurrenceEntriesInRange({
-      completionLogs,
-      items,
+    selectedDateEntries: createOccurrences({
+      logs: completionLogs,
       now,
-      range: selectedDateRange,
+      schedules: items,
       timezone,
-    }).filter((entry) => entry.occurrence.localDate === selectedDate),
+    })
+      .range(selectedDateRange)
+      .filter((entry) => entry.occurrence.localDate === selectedDate),
     timezone,
   });
 }
@@ -563,19 +553,15 @@ describe("calendar-screen-model", () => {
       items: [
         createItem({
           id: "edited-item",
-          scheduleVersions: [
+          versions: [
             createVersion({
-              id: "version-1",
               intervalValue: 3,
-              itemId: "edited-item",
               recurrenceType: "interval_days",
               seedStartDateLocal: "2026-04-10",
             }),
             createVersion({
               effectiveFromUtc: "2026-04-14T01:00:00.000Z",
-              id: "version-2",
               intervalValue: 4,
-              itemId: "edited-item",
               recurrenceType: "interval_days",
               seedStartDateLocal: "2026-04-17",
             }),

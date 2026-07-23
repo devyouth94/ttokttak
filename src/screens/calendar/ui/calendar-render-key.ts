@@ -1,10 +1,10 @@
-import type { ResolvedAppTheme } from "~/shared/theme";
+import type { ResolvedTheme } from "~/theme/preference";
 
 export function getCalendarRenderKey({
   resolvedTheme,
   visibleMonth,
 }: {
-  resolvedTheme: ResolvedAppTheme;
+  resolvedTheme: ResolvedTheme;
   visibleMonth: string;
 }): string {
   return `${visibleMonth}:${resolvedTheme}`;

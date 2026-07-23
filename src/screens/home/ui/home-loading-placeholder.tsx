@@ -1,14 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/provider";
 
 const HOME_LOADING_PLACEHOLDER_ROW_COUNT = 3;
 
 export function HomeLoadingPlaceholder(): React.JSX.Element {
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <View

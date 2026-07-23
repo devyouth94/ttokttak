@@ -1,1 +1,1 @@
-export { AppBootstrap, handleLocalNotificationResponse } from "./app-bootstrap";
+export { AppBootstrap } from "./app-bootstrap";

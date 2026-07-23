@@ -1,6 +1,6 @@
 import { View, type ViewStyle } from "react-native";
 
-import type { CompletionAction } from "~/entities/schedule";
+import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { spacing } from "~/shared/ui/tokens";
 
 import { HomeFeedSectionBlock } from "./home-feed-section-block";
@@ -16,7 +16,7 @@ type HomeFeedSectionListProps = {
   feedSections: HomeFeedSection[];
   feedViewportHeight: number;
   isLoading: boolean;
-  onAction: (card: HomeFeedCard, action: CompletionAction) => void;
+  onAction: (card: HomeFeedCard, action: OccurrenceAction) => void;
   processingOccurrenceIds: string[];
   selectedDateIsToday: boolean;
 };

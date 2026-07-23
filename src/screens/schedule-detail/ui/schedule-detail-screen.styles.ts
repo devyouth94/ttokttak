@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 
 const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
 
 export function useScheduleDetailScreenStyles() {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return useMemo(
     () => createScheduleDetailScreenStyles(themeColors),
@@ -16,15 +16,8 @@ export function useScheduleDetailScreenStyles() {
   );
 }
 
-function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
+function createScheduleDetailScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
-    headerLayer: {
-      left: 0,
-      position: "absolute",
-      right: 0,
-      top: 0,
-      zIndex: 10,
-    },
     historyDate: {
       color: themeColors.text,
       flex: 1,
@@ -100,9 +93,6 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
       borderRadius: borderRadius.lg,
       padding: MANAGEMENT_MENU_CONTAINER_PADDING,
       width: 80,
-    },
-    managementMenuOverlay: {
-      ...StyleSheet.absoluteFillObject,
     },
     managementMenuItem: {
       alignItems: "center",
@@ -221,12 +211,8 @@ function createScheduleDetailScreenStyles(themeColors: AppThemeColors) {
       height: typography.lineHeight.title,
       width: "48%",
     },
-    screenContent: {
-      flex: 1,
-    },
     screenRoot: {
       flex: 1,
-      position: "relative",
     },
     scrollContent: {
       gap: spacing.xs,

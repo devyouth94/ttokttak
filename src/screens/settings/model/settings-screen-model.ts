@@ -1,16 +1,9 @@
-import {
-  AccountDeletionAppleAuthorizationRequiredError,
-  AccountDeletionSessionRequiredError,
-} from "~/features/delete-account";
-import type { NotificationContextValue } from "~/features/notifications";
+import type { PermissionStatus } from "~/notifications/permission";
 import type { AppLanguage } from "~/shared/i18n";
-import type { AppThemePreference } from "~/shared/theme";
-import type { AppSelectMenuOption } from "~/shared/ui/app-select-menu";
+import type { ThemePreference } from "~/theme/preference";
+import type { SelectOption } from "~/ui/select-menu";
 
 type Translate = (key: string) => string;
-type NotificationPermissionStatus =
-  NotificationContextValue["permission"]["status"];
-
 export function getSettingsDisplayName(params: {
   email?: string;
   fallbackName: string;
@@ -34,7 +27,7 @@ export function getSettingsDisplayName(params: {
 }
 
 export function getNotificationPermissionStatusText(
-  status: NotificationPermissionStatus,
+  status: PermissionStatus,
   t: Translate
 ): string {
   switch (status) {
@@ -52,7 +45,7 @@ export function getNotificationPermissionStatusText(
 }
 
 export function getNotificationStatusText(
-  status: NotificationPermissionStatus,
+  status: PermissionStatus,
   t: Translate
 ): string {
   if (status === "granted") {
@@ -70,13 +63,13 @@ export function getDeleteAccountErrorMessage(
   error: unknown,
   t: Translate
 ): string {
-  if (error instanceof AccountDeletionAppleAuthorizationRequiredError) {
+  if (error instanceof Error && error.name === "AppleAuthRequiredError") {
     return t(
       "settings.accountManagement.deleteError.appleAuthorizationRequired"
     );
   }
 
-  if (error instanceof AccountDeletionSessionRequiredError) {
+  if (error instanceof Error && error.name === "LoginRequiredError") {
     return t("settings.accountManagement.deleteError.sessionRequired");
   }
 
@@ -89,7 +82,7 @@ export function getSettingsErrorMessage(error: unknown): string {
 
 export function getAppLanguageOptions(
   t: Translate
-): AppSelectMenuOption<AppLanguage>[] {
+): SelectOption<AppLanguage>[] {
   return [
     {
       accessibilityHint: t("settings.environment.languageKoreanHint"),
@@ -106,7 +99,7 @@ export function getAppLanguageOptions(
 
 export function getThemePreferenceOptions(
   t: Translate
-): AppSelectMenuOption<AppThemePreference>[] {
+): SelectOption<ThemePreference>[] {
   return [
     {
       accessibilityHint: t("settings.environment.themeSystemHint"),

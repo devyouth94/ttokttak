@@ -1,23 +1,18 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
 
-import type { CompletionAction, CompletionLog } from "~/entities/schedule";
-import { createCompletionLogs } from "~/entities/schedule/api";
-import {
-  completeHomeFeedOccurrence,
-  skipHomeFeedOccurrence,
-  type SyncAfterHomeOccurrenceMutation,
-} from "~/features/home-feed-occurrence-action";
-import { invalidateScheduleReadQueries } from "~/features/read-schedule";
-import { Sentry } from "~/shared/config/sentry";
+import type {
+  OccurrenceAction,
+  OccurrenceLog,
+} from "~/schedule/rules/occurrence";
+import { captureException } from "~/sentry";
 
 import type { HomeFeedCard } from "./home-feed-sections";
+import { resolveOccurrence } from "../action";
 
 type UseHomeOccurrenceActionsOptions = {
-  completionLogs: CompletionLog[];
-  refetchFeed: () => Promise<void>;
-  syncAfterMutation: SyncAfterHomeOccurrenceMutation;
+  completionLogs: OccurrenceLog[];
+  syncNotifications: () => Promise<void>;
   timezone: string;
   userId: string | null;
 };
@@ -27,20 +22,18 @@ type HomeOccurrenceActions = {
   clearActionError: () => void;
   handleOccurrenceAction: (
     card: HomeFeedCard,
-    action: CompletionAction
+    action: OccurrenceAction
   ) => Promise<void>;
   processingOccurrenceIds: string[];
 };
 
 export function useHomeOccurrenceActions({
   completionLogs,
-  refetchFeed,
-  syncAfterMutation,
+  syncNotifications,
   timezone,
   userId,
 }: UseHomeOccurrenceActionsOptions): HomeOccurrenceActions {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
     null
   );
@@ -53,7 +46,7 @@ export function useHomeOccurrenceActions({
   }, []);
 
   const handleOccurrenceAction = useCallback(
-    async (card: HomeFeedCard, action: CompletionAction): Promise<void> => {
+    async (card: HomeFeedCard, action: OccurrenceAction): Promise<void> => {
       if (!userId) {
         return;
       }
@@ -64,27 +57,17 @@ export function useHomeOccurrenceActions({
       setActionErrorMessage(null);
 
       try {
-        const processOccurrence =
-          action === "completed"
-            ? completeHomeFeedOccurrence
-            : skipHomeFeedOccurrence;
-
-        await processOccurrence({
-          captureException: Sentry.captureException,
-          completionLogs,
-          createCompletionLogs,
-          invalidateScheduleReadQueries: async (readyUserId) => {
-            await invalidateScheduleReadQueries(queryClient, readyUserId);
-          },
+        await resolveOccurrence({
+          action,
+          logs: completionLogs,
           now: new Date(),
-          refetchFeed,
-          syncAfterMutation,
+          syncNotifications,
           target: card,
           timezone,
           userId,
         });
       } catch (error) {
-        Sentry.captureException(error);
+        captureException(error);
         setActionErrorMessage(t("home.feed.actionErrorDescription"));
       } finally {
         setProcessingOccurrenceIds((current) =>
@@ -92,15 +75,7 @@ export function useHomeOccurrenceActions({
         );
       }
     },
-    [
-      completionLogs,
-      queryClient,
-      refetchFeed,
-      syncAfterMutation,
-      t,
-      timezone,
-      userId,
-    ]
+    [completionLogs, syncNotifications, t, timezone, userId]
   );
 
   return {

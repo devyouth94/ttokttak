@@ -1,11 +1,9 @@
+import { formatLocal } from "~/schedule/display/date";
 import {
-  formatFullLocalDate,
-  formatLocalTimeLabel,
-  formatWeekdayLocalDateTitle,
-  getFirstOccurrenceLocalDate,
+  firstDate,
   type RecurrenceType,
-} from "~/entities/schedule";
-import { requiresWeekdayMask } from "~/entities/schedule";
+  requiresWeekdays,
+} from "~/schedule/rules/recurrence";
 import type { AppLanguage } from "~/shared/i18n";
 
 import {
@@ -134,14 +132,14 @@ function formatLocalDateForDisplay(
   localDate: string,
   language: AppLanguage
 ): string {
-  return formatFullLocalDate(localDate, language);
+  return formatLocal(localDate, "fullDate", language);
 }
 
 function formatLocalTimeForDisplay(
   localTime: string,
   language: AppLanguage
 ): string {
-  return formatLocalTimeLabel(localTime, language);
+  return formatLocal(localTime, "time", language);
 }
 
 export function getScheduleFormScreenTitle(
@@ -238,8 +236,9 @@ export function getFirstReminderHelperText(
     return null;
   }
 
-  const dateLabel = formatWeekdayLocalDateTitle(
+  const dateLabel = formatLocal(
     firstReminderLocalDate,
+    "weekdayDate",
     language
   );
 
@@ -252,7 +251,7 @@ function getFirstWeeklyOccurrenceLocalDate(formState: {
   startDateLocal: string;
   weekdayMask: number[];
 }): string | null {
-  if (!requiresWeekdayMask(formState.recurrenceType)) {
+  if (!requiresWeekdays(formState.recurrenceType)) {
     return null;
   }
 
@@ -264,7 +263,7 @@ function getFirstWeeklyOccurrenceLocalDate(formState: {
     formState.recurrenceType === "interval_weeks"
       ? parsePositiveInteger(formState.intervalValue)
       : 1;
-  return getFirstOccurrenceLocalDate({
+  return firstDate({
     intervalValue,
     recurrenceType: formState.recurrenceType,
     startDateLocal: formState.startDateLocal,

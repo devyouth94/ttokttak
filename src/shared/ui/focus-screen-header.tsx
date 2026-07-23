@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
-import { useAppThemeColors } from "~/shared/theme";
 import { borderRadius } from "~/shared/ui/tokens";
+import { useThemeColors } from "~/theme/provider";
 
 import { ScreenHeader } from "./screen-header";
 
@@ -11,7 +11,6 @@ type FocusScreenHeaderProps = {
   backAccessibilityHint?: string;
   backAccessibilityLabel?: string;
   onBack: () => void;
-  onHeightChange?: (height: number) => void;
   rightSlot?: ReactNode;
   title: string;
 };
@@ -20,11 +19,10 @@ export function FocusScreenHeader({
   backAccessibilityHint = "이전 화면으로 돌아가요.",
   backAccessibilityLabel = "뒤로 가기",
   onBack,
-  onHeightChange,
   rightSlot,
   title,
 }: FocusScreenHeaderProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
 
   return (
     <ScreenHeader
@@ -44,7 +42,6 @@ export function FocusScreenHeader({
           <ArrowLeft color={themeColors.primaryForeground} size={18} />
         </Pressable>
       }
-      onHeightChange={onHeightChange}
       rightSlot={rightSlot ?? <View style={styles.rightActionSpacer} />}
       title={title}
     />

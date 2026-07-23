@@ -12,10 +12,10 @@ import {
   Settings2,
 } from "lucide-react-native";
 
-import type { AppThemeColors } from "~/shared/theme";
-import { useAppThemeColors } from "~/shared/theme";
 import { AppText } from "~/shared/ui/app-text";
 import { spacing } from "~/shared/ui/tokens";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 
 import { shouldNavigateMainBottomNavRoute } from "./main-bottom-nav.helpers";
 
@@ -36,10 +36,6 @@ type MainBottomNavItemProps = {
   navigation: BottomTabBarProps["navigation"];
   route: BottomTabBarProps["state"]["routes"][number];
   stateKey: string;
-};
-
-type MainBottomNavProps = BottomTabBarProps & {
-  isVisible?: boolean;
 };
 
 type MainBottomNavRoute = BottomTabBarProps["state"]["routes"][number];
@@ -80,22 +76,17 @@ function resolveTabLabel(
 export function MainBottomNav({
   descriptors,
   insets,
-  isVisible = true,
   navigation,
   state,
-}: MainBottomNavProps): React.JSX.Element | null {
+}: BottomTabBarProps): React.JSX.Element {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const styles = useMemo(
     () => createMainBottomNavStyles(themeColors),
     [themeColors]
   );
   const routes = state.routes.filter(isMainTabRoute);
-
-  if (!isVisible) {
-    return null;
-  }
 
   return (
     <View
@@ -169,7 +160,7 @@ function MainBottomNavItem({
   route,
   stateKey,
 }: MainBottomNavItemProps): React.JSX.Element {
-  const themeColors = useAppThemeColors();
+  const themeColors = useThemeColors();
   const styles = useMemo(
     () => createMainBottomNavStyles(themeColors),
     [themeColors]
@@ -225,7 +216,7 @@ function MainBottomNavItem({
   );
 }
 
-function createMainBottomNavStyles(themeColors: AppThemeColors) {
+function createMainBottomNavStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     wrapper: {
       backgroundColor: "transparent",

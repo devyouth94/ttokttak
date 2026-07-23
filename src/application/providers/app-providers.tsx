@@ -4,19 +4,18 @@ import { StatusBar } from "expo-status-bar";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-import { LocalNotificationProvider } from "~/application/notifications";
-import { SessionProvider, useSession } from "~/application/session";
+import { NotificationProvider } from "~/notifications/provider";
+import { SessionProvider, useSession } from "~/session/provider";
 import { AppI18nProvider } from "~/shared/i18n";
 import { queryClient } from "~/shared/lib/query/query-client";
-import { useAppTheme } from "~/shared/theme";
-import { AppThemeProvider } from "~/shared/theme/theme-provider";
+import { ThemeProvider, useTheme } from "~/theme/provider";
 
 export function AppProviders({
   children,
 }: PropsWithChildren): React.JSX.Element {
   return (
     <SafeAreaProvider>
-      <AppThemeProvider>
+      <ThemeProvider>
         <AppI18nProvider>
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
@@ -28,13 +27,13 @@ export function AppProviders({
             </SessionProvider>
           </QueryClientProvider>
         </AppI18nProvider>
-      </AppThemeProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
 
 function ThemeStatusBar(): React.JSX.Element {
-  const { resolvedTheme } = useAppTheme();
+  const { resolvedTheme } = useTheme();
 
   return <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />;
 }
@@ -47,8 +46,8 @@ function SessionNotificationProvider({
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return (
-    <LocalNotificationProvider timezone={timezone} userId={user?.id}>
+    <NotificationProvider timezone={timezone} userId={user?.id}>
       {children}
-    </LocalNotificationProvider>
+    </NotificationProvider>
   );
 }
