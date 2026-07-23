@@ -11,14 +11,14 @@
 일정은 제목, 설명, 시작일, 색상, 보관 여부를 가진다.
 제목과 설명은 도메인에서는 평문으로 다루지만 저장소에서는 암호화된다.
 
-### Schedule Version
+### 규칙 버전
 
-반복 규칙의 source of truth는 schedule version이다.
-하나의 일정은 비어 있지 않은 schedule version 목록을 가진다.
-현재 화면 표시는 최신 schedule version을 기준으로 한다.
+반복 규칙의 source of truth는 규칙 버전이다.
+하나의 일정은 비어 있지 않은 규칙 버전 목록을 가진다.
+현재 화면 표시는 최신 규칙 버전을 기준으로 한다.
 `RecurringItem`은 반복 규칙을 별도 상위 필드로 복사하지 않는다.
 
-schedule version은 다음 값을 가진다.
+규칙 버전은 다음 값을 가진다.
 
 - `effectiveFromUtc`.
 - `recurrenceType`.
@@ -100,7 +100,7 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - completion_based 일정도 종료일을 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
 - 기기 로컬 알림은 종료일 이후 occurrence를 후보로 만들지 않는다.
 
-## Schedule Version Policy
+## 규칙 버전 정책
 
 - 각 version의 활성 시작은 자신의 `effectiveFromUtc`다.
 - 활성 끝은 다음 version의 `effectiveFromUtc` 직전이다.
@@ -110,7 +110,7 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - 일정 수정은 과거 occurrence를 다시 쓰지 않고 future occurrence에만 반영한다.
 - 시작일은 생성 후 수정하지 않는다.
 - 알림 켜기/끄기는 occurrence 생성과 상태를 바꾸지 않는다.
-- 규칙 영향 필드가 바뀌면 새 schedule version을 추가한다.
+- 규칙 영향 필드가 바뀌면 새 규칙 버전을 추가한다.
 
 규칙 영향 필드는 다음과 같다.
 
@@ -178,14 +178,14 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 
 ### fixed
 
-항상 schedule version의 반복 규칙과 기준일을 따른다.
+항상 규칙 버전의 반복 규칙과 기준일을 따른다.
 완료 시점은 다음 occurrence 계산 기준을 바꾸지 않는다.
 
 ### completion_based
 
 마지막 `completed` log의 실제 처리일을 다음 계산 기준으로 사용한다.
 `skipped`는 기준을 이동시키지 않는다.
-새 schedule version 시작 시에는 `effectiveFromUtc` 이전 마지막 완료일을 초기 기준으로 사용할 수 있다.
+새 규칙 버전 시작 시에는 `effectiveFromUtc` 이전 마지막 완료일을 초기 기준으로 사용할 수 있다.
 종료일은 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
 
 미해결 occurrence가 남아 있는 완료일 기준 일정은 다음 알림 후보를 만들지 않는다.
@@ -255,9 +255,9 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 수정은 메타 변경과 규칙 변경을 구분한다.
 
 - 제목, 설명, 색상, 보관 여부만 바뀌면 item 메타만 갱신한다.
-- 규칙 영향 필드가 바뀌면 새 schedule version을 추가한다.
-- 새 version의 `seedStartDateLocal`은 수정 시점 이후 첫 future occurrence local date다.
-- 종료일 변경은 새 schedule version을 추가한다.
+- 규칙 영향 필드가 바뀌면 새 규칙 버전을 추가한다.
+- 새 규칙 버전의 `seedStartDateLocal`은 수정 시점 이후 첫 future occurrence local date다.
+- 종료일 변경은 새 규칙 버전을 추가한다.
 - 종료일 제거는 수정 시점 이전의 occurrence를 새로 만들지 않는다.
 - 과거 completion log는 유지한다.
 

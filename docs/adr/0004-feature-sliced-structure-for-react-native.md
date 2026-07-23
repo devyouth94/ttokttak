@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0005
+---
+
 # React Native Feature-Sliced Structure
 
 Ttokttak은 전체 앱 코드 구조에 React Native와 Expo Router에 맞춘 FSD 계열 구조를 사용한다. 라우트 파일은 루트 `app/`에 두고, FSD의 App layer 역할은 `src/application/`이 맡으며, 실제 화면과 기능 코드는 `src/screens`, `src/features`, `src/entities`, `src/shared`로 나눈다.
@@ -17,7 +21,7 @@ Ttokttak은 전체 앱 코드 구조에 React Native와 Expo Router에 맞춘 FS
 - `src/application/`은 provider 조립, bootstrap, app-level config만 담당한다.
 - `src/screens/`는 route가 렌더링하는 화면 slice를 둔다. 모바일 문맥에 맞춰 `pages` 대신 `screens`를 사용한다.
 - `src/features/`는 화면이 사용하는 제품 기능 흐름, 조회 흐름, 권한, 외부 링크 같은 기능 단위를 둔다.
-- `src/entities/`는 핵심 도메인 slice를 둔다. 일정 도메인은 `schedule` slice로 시작하고 occurrence, completion log, schedule version은 그 내부 개념으로 둔다.
+- `src/entities/`는 핵심 도메인 slice를 둔다. 일정 도메인은 `schedule` slice로 시작하고 occurrence, completion log, 규칙 버전은 그 내부 개념으로 둔다.
 - `src/shared/`는 공통 기반 도구만 둔다. 최상위 segment는 `api`, `config`, `i18n`, `routes`, `ui`, `lib`로 제한한다.
 - `shared/lib` 아래에는 `date`, `errors`, `notifications`, `privacy`, `query`처럼 목적이 분명한 주제 폴더를 둔다.
 - `components`, `hooks`, `utils`, `helpers`, `types`, `constants`는 segment 이름으로 쓰지 않는다.

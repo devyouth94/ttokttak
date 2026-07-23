@@ -47,9 +47,28 @@ src/
     settings/ui/
     login/ui/
   schedule/                  # 여러 화면이 공유하는 일정 코드
-    occurrence/
-    persistence/
+    content/                 # 제목·설명 암호화와 key lifecycle
+      cipher.ts
+      key.ts
+    db/                      # 일정 관련 Supabase 저장
+      content-key.ts
+      items.ts
+      logs.ts
+    display/                 # 화면 공통 표시 값
+      color.ts
+      date.ts
+      label.ts
+    rules/                   # 외부 I/O 없는 일정 규칙
+      edit.ts
+      occurrence.ts
+      recurrence.ts
+      validate.ts
     ui/
+    schedule.ts
+    query.ts                 # 범위 조회와 cache
+    write.ts                 # 생성, 수정과 보관
+    now.ts                   # 화면의 현재 시각 갱신
+    fixtures.ts
   notifications/
   session/                    # 세션 Context와 Apple, Google 인증
   account/                    # profile과 계정 삭제
@@ -83,8 +102,10 @@ src/
 - 한 화면에서만 사용하면 `screens/<화면>/`에 둔다.
 - 화면 전용 UI는 개수와 관계없이 `screens/<화면>/ui/`에 둔다.
 - 두 화면 이상에서 사용하는 일정 코드는 `schedule/`에 둔다.
-- occurrence 계산처럼 화면과 무관한 일정 규칙은 `schedule/`에 둔다.
-- 일정 저장과 암호화 경계는 `schedule/persistence/`에 둔다.
+- occurrence 계산처럼 화면과 무관한 일정 규칙은 `schedule/rules/`에 둔다.
+- 일정 관련 Supabase 저장은 `schedule/db/`에 둔다.
+- 일정 제목과 설명의 암복호화와 key lifecycle은 `schedule/content/`에 둔다.
+- 일정 공통 표시 값은 `schedule/display/`에 둔다.
 - 일정 지식이 필요한 공유 UI는 `schedule/ui/`에 둔다.
 - 일정과 무관한 공용 UI는 `ui/`에 둔다.
 - Supabase의 앱 전역 진입점은 `src/`에 파일 하나로 둔다.
@@ -98,11 +119,22 @@ src/
 
 하위 디렉터리는 기술 계층이 아니라 역할 이름을 사용한다.
 `model`, `api`, `lib`, `hooks`, `components`를 반복 구조로 만들지 않는다.
-일정 공유 모듈에는 `occurrence`, `persistence`, `ui`처럼 실제 역할 이름을 사용한다.
+일정 공유 모듈에는 `content`, `db`, `display`, `rules`, `ui`처럼 실제 역할 이름을 사용한다.
 
 UI 스타일은 기본적으로 해당 컴포넌트 파일에 둔다.
 여러 UI 파일이 같은 스타일을 사용할 때만 `styles.ts`로 분리한다.
 테스트는 구현 파일 옆에 둔다.
+
+일정 공유 모듈은 다음 순서로 교체한다.
+
+1. `schedule/schedule.ts`, `schedule/rules/recurrence.ts`, `schedule/rules/occurrence.ts`로 occurrence 계산을 평면화한다.
+   `createOccurrences`는 `range`, `next`, `find`만 노출한다.
+2. 입력 검사와 수정 결과 생성.
+3. 표시 문구, 색상과 공유 UI.
+4. 일정 DB와 제목·설명 암복호화.
+5. 일정 query와 write를 평면화하고 기존 schedule 관련 `application`, `features`, `entities`를 삭제한다.
+
+각 단계가 끝나면 검토한 뒤 다음 단계로 진행한다.
 
 테마 색상 토큰은 실제 사용 중인 값만 유지하고 `ThemeColors`는 팔레트에서 추론한다.
 테마 Context, Provider와 hook은 `theme/provider.tsx`에서 함께 관리한다.
@@ -226,5 +258,4 @@ docs/adr/                  # 되돌리기 어려운 결정
 
 ## 미정
 
-- 공용 도메인 타입과 함수의 최종 이름.
 - 실제 의존 관계를 확인한 뒤의 최종 파일 구성.

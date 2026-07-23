@@ -24,81 +24,75 @@
 
 ## Architecture
 
-현재 앱은 React Native와 Expo Router에 맞춘 FSD 계열 구조를 사용한다.
-코드 위치는 폴더 템플릿보다 재사용 범위와 제품 의미를 기준으로 정한다.
+현재 앱은 역할 중심 평면 모듈로 전환 중이다.
+`src/schedule`은 전환이 끝났고 `application`, `features`, `shared`에는 아직 교체하지 않은 코드가 남아 있다.
+남은 기존 디렉터리는 현재 위치를 설명할 뿐 새 코드의 기준이 아니다.
 
-- 루트 `app`: Expo Router route 파일.
-- `src/application`: provider, bootstrap, session, navigation 같은 앱 조립.
-- `src/screens`: route가 렌더링하는 화면 slice.
-- `src/features`: 화면이 사용하는 제품 기능 흐름, 조회 흐름, 권한, 외부 링크.
-- `src/entities`: 핵심 도메인 slice와 저장 adapter.
-- `src/shared`: 도메인을 모르는 공통 기반 코드.
+### Current Structure
 
-### Presentation
-
-- `app`: route params를 읽고 screen을 연결하는 thin route shell.
-- `src/screens/home`: 홈 피드 화면, 섹션 view model, 화면 controller.
-- `src/screens/schedule-list`: 일정 목록 화면, 정렬, empty/loading/error 상태.
-- `src/screens/calendar`: 캘린더 화면, 월 상태, 날짜별 일정 표시.
-- `src/screens/schedule-detail`: 일정 상세 화면, 요약, 히스토리, 보관 진입점.
-- `src/screens/schedule-form`: 생성/수정 route가 공유하는 form 화면 구현.
-- `src/screens/login`: 로그인 화면.
-- `src/screens/settings`: 설정 화면, 설정 action controller, 행 렌더링.
-- `src/shared/ui`: 공통 텍스트, 화면, 카드, 버튼, token.
-
-### Application
-
-- `src/application/providers`: provider 조립.
-- `src/application/bootstrap`: session 준비 뒤 splash screen 종료.
+- 루트 `app`: route parameter를 읽고 화면을 연결하는 Expo Router route.
+- `src/screens`: 한 화면이 소유하는 조회, 상태, 동작과 UI.
+- `src/schedule`: 여러 화면이 공유하는 일정 규칙, 저장, 조회, 표시와 UI.
 - `src/session`: Supabase session Context와 Apple, Google 인증.
 - `src/account`: profile 복원, 표시 이름 저장과 계정 삭제.
-- `src/application/navigation`: 탭 layout, 집중 화면 하단 탭 표시 정책.
-- `src/notifications`: 알림 권한 Context, lifecycle, tap 처리와 Expo 예약.
-- `src/application/routes`: route params 정규화.
-- `src/application/schedule-read`: schedule read context wiring.
-- 화면 controller hook이 query, mutation, navigation을 조합한다.
-- React Query가 서버 데이터 조회와 무효화를 담당한다.
-- mutation feature는 저장 성공 뒤 관련 query를 무효화하고 로컬 알림을 다시 맞춘다.
-
-### Domain
-
-- `src/entities/schedule/model`: 일정 타입, 반복 규칙, occurrence 계산, occurrence projection, validation, 수정 정책.
-- `src/entities/schedule/lib`: 일정 날짜, 시간, 반복 규칙 표시 primitive의 기준 경계.
-- `src/entities/schedule/api`: 일정 persistence, Supabase row mapping, RPC 호출, 일정 내용 암복호화 fallback.
-- `src/entities/schedule/ui`: 일정 색상 표시와 일정 요약 row.
-- `src/features/mutate-schedule`: 일정 생성, 수정, 보관 use case와 mutation 이후 query 무효화, 로컬 알림 재동기화 후속 흐름.
-- `src/features/home-feed-occurrence-action`: 홈 피드의 완료와 건너뛰기 use case.
-- `src/features/read-schedule`: 일정 조회 query, 목적별 occurrence projection read hook, query key.
-- `src/features/settings`: 설정 화면의 표시 이름 입력 규칙.
-- `src/features/legal`: 이용약관과 개인정보처리방침 공개 링크.
-- 도메인 함수는 Supabase client 모양을 알지 않는다.
-
-### Infrastructure
-
-- `src/shared/lib/privacy`: AES-GCM primitive, content key 저장/복구 helper, content key 복구 저장소, privacy 공통 helper.
-- `src/supabase.ts`: SecureStore를 사용하는 Supabase client singleton.
+- `src/notifications`: 알림 권한, lifecycle, tap 처리와 Expo 예약.
+- `src/theme`: 테마 저장, 기기 설정 해석과 provider.
+- `src/sentry`: 오류 수집 초기화와 event 전송 정책.
+- `src/ui`: 일정과 무관한 공용 UI.
+- `src/supabase.ts`: Supabase client singleton.
 - `src/database.types.ts`: 생성된 Supabase schema type.
-- `src/sentry`: 오류 수집 초기화, 앱에서 사용하는 Sentry 함수와 event 전송 정책.
-- `src/theme`: 테마 저장, 기기 화면 표시 설정 해석, Context와 provider.
-- `src/shared/lib/*`: QueryClient, error helper, privacy sanitizer 같은 공통 기반 lib.
+- `src/application`, `src/features`, `src/shared`: 아직 교체하지 않은 기존 코드.
+
+### Placement Rules
+
+- 한 화면에서만 사용하는 코드는 `screens/<화면>/`에 둔다.
+- 화면 전용 조회, 상태와 동작은 화면 루트에 둔다.
+- 화면 전용 렌더링 파일은 개수와 관계없이 `screens/<화면>/ui/`에 둔다.
+- 여러 화면이나 앱 전체가 공유하는 코드는 제품 역할 이름의 최상위 모듈에 둔다.
+- 한 파일이면 미래 확장을 위한 디렉터리를 만들지 않고 `src/`에 직접 둔다.
+- 하위 디렉터리는 여러 파일이 독립된 역할을 이룰 때만 만든다.
+- `model`, `hooks`, `components`, `utils`, `helpers`, `types`, `constants`를 반복 구조로 만들지 않는다.
+- 전달만 하는 배럴, 호환 wrapper와 `v2` 구조를 만들지 않는다.
+- 테스트는 구현 파일 옆에 둔다.
+- Supabase, 알림과 SecureStore 같은 외부 시스템은 화면에서 직접 호출하지 않는다.
+
+### Transition
+
+- 페이지가 사용하는 실행 흐름을 끝까지 새 위치로 교체한다.
+- 연결된 기존 파일은 같은 작업에서 삭제한다.
+- 다른 화면의 사용자 동작까지 바뀌면 해당 화면 작업까지 교체를 미룬다.
+- 임시 호환 계층이나 복사본은 만들지 않는다.
+
+### Schedule
+
+- `src/schedule/schedule.ts`: `Schedule`과 생성 입력을 정의한다.
+- `src/schedule/rules/recurrence.ts`: 반복 규칙과 규칙 버전을 정의하고 다음 local date를 계산한다.
+- `src/schedule/rules/occurrence.ts`: occurrence와 처리 기록을 정의하고 `range`, `next`, `find` 조회를 제공한다.
+- `src/schedule/rules/validate.ts`: 일정 입력의 도메인 규칙을 검사한다.
+- `src/schedule/rules/edit.ts`: 일정 수정 입력에서 저장할 값과 새 규칙 버전을 계산한다.
+- `src/schedule/display/date.ts`: local 값과 UTC timestamp의 날짜·시간 표시를 만든다.
+- `src/schedule/display/label.ts`: 일정 반복 규칙과 occurrence 처리 상태의 표시 문구를 만든다.
+- `src/schedule/display/color.ts`: 일정 색상 key, 기본값, swatch와 표시 문구를 정의한다.
+- `src/schedule/content/cipher.ts`: 일정 제목과 설명의 암복호화를 담당한다.
+- `src/schedule/content/key.ts`: 기기의 content key 생성, 저장과 복구를 담당한다.
+- `src/schedule/db/content-key.ts`: wrapped content key 저장과 복구 Edge Function 호출을 담당한다.
+- `src/schedule/db/items.ts`: 일정 조회, 생성, 수정, 보관과 Supabase row/RPC 변환을 담당한다.
+- `src/schedule/db/logs.ts`: occurrence 처리 기록 조회와 생성을 담당한다.
+- `src/schedule/query.ts`: 일정 범위 조회, completion anchor, cache 무효화를 담당한다.
+- `src/schedule/write.ts`: 일정 생성, 수정, 보관 뒤 알림과 query를 다시 맞춘다.
+- `src/schedule/ui`: 일정 지식이 필요한 공유 UI를 둔다.
+- `src/screens/home/action.ts`: 홈 피드의 완료와 건너뛰기를 처리한다.
+- `src/screens/*/query.ts`: 화면별 조회 범위와 occurrence 표시 데이터를 만든다.
+- 도메인 함수는 Supabase client 모양을 알지 않는다.
 
 ### Architecture Rules
 
-- `screens`, `features`, `entities` slice 외부 호출자는 root `index.ts` 공개 진입점을 사용한다.
-- `entities/<slice>/api`는 저장 adapter 공개 진입점이다.
-- `entities/<slice>/testing`은 테스트 fixture 공개 진입점이다.
-- `application`은 segment root를 공개 진입점으로 사용한다.
-- 같은 slice 내부에서는 segment 파일을 직접 import할 수 있다.
-- `shared`는 작은 foundation이므로 `shared/ui`, `shared/api`, `shared/config` 파일 직접 import를 허용한다.
-- `shared/lib/<topic>`은 주제 경계다. Barrel import가 side effect나 bundle coupling을 만들면 leaf 파일 직접 import를 허용한다.
-- FSD 공개 진입점과 layer boundary는 구조 변경 때 agent review로 확인한다.
-- slice segment 이름은 `api`, `assets`, `config`, `i18n`, `lib`, `model`, `routes`, `ui`만 사용한다.
-- `shared` 최상위 segment 이름은 `api`, `config`, `i18n`, `lib`, `routes`, `theme`, `ui`만 사용한다.
-- `components`, `hooks`, `types`, `utils`, `helpers`, `constants`는 segment 이름으로 쓰지 않는다.
-- `widgets` layer는 현재 만들지 않는다. 여러 화면에서 재사용되고 feature와 entity를 조합하는 큰 UI 블록이 생기면 별도 결정으로 추가한다.
-- 앱 문구나 날짜/시간 표시 문구를 만드는 화면 model 경계는 `AppLanguage`를 필수 입력으로 받는다.
-- 한국어 fallback 기본값은 shared/entity 표시 primitive나 테스트 helper처럼 의도적으로 좁은 경계에서만 둔다.
-- 화면 model은 일정 날짜/시간 표시를 직접 format하지 않고 `entities/schedule/lib`의 표시 primitive를 조합한다.
+- `src/schedule`의 역할 모듈은 필요한 파일을 직접 import한다.
+- 전달만 하는 배럴 파일을 만들지 않는다.
+- 테스트 fixture는 `src/schedule/fixtures.ts`에서 직접 import한다.
+- 앱 문구나 날짜/시간 표시 문구를 만드는 화면 표시 변환은 `AppLanguage`를 필수 입력으로 받는다.
+- 한국어 fallback 기본값은 일정 표시 함수나 테스트 fixture처럼 의도적으로 좁은 경계에서만 둔다.
+- 화면은 일정 날짜/시간 표시를 직접 format하지 않고 `schedule/display/date.ts`의 함수를 조합한다.
 - 특정 UI 라이브러리 전역 locale 설정은 해당 화면 내부에 둘 수 있지만 render 중에 변경하지 않는다.
 - 표시 언어 초기화 실패는 앱 진입을 막지 않고 한국어 fallback으로 계속 진행한다.
 - 표시 언어 초기화 실패 상태는 재시도 가능해야 하며 Promise cache에 영구 고정하지 않는다.
@@ -116,20 +110,20 @@
 - 테마 select는 시스템, 라이트, 다크 순서로 표시한다.
 - 테마는 전역 provider와 semantic color token hook으로 적용한다.
 - 컴포넌트는 정적 `colors` 객체를 직접 고정하지 않고 현재 테마의 의미 토큰을 읽는다.
-- 테마 적용 작업은 shared UI, navigation/app shell, settings/login, schedule screens 순서로 넓힌다.
+- 테마 적용 작업은 공용 UI, navigation/app shell, settings/login, schedule screens 순서로 넓힌다.
 - StatusBar는 resolved theme에 맞춰 라이트 테마에서 dark style, 다크 테마에서 light style을 사용한다.
 - 시스템 테마는 실행 중 기기의 화면 표시 설정 변경을 즉시 따른다.
 - 라이트 또는 다크 테마를 직접 고른 상태에서는 기기의 화면 표시 설정 변경을 따르지 않는다.
 - 일정 색상 팔레트는 테마와 무관하게 같은 색상값을 사용한다.
 - 일정 색상은 marker, swatch, line 같은 보조 표시에만 사용한다.
 - 일정 관련 텍스트와 아이콘은 일정 색상 위에 올리지 않고 현재 테마의 text 토큰을 사용한다.
-- 홈 피드 섹션 카드처럼 화면 전용 고정 표현 색상은 해당 screen slice가 소유하고 shared theme token으로 승격하지 않는다.
+- 홈 피드 섹션 카드처럼 화면 전용 고정 표현 색상은 해당 화면 모듈이 소유하고 공용 theme token으로 승격하지 않는다.
 - 배경, 표면, 텍스트, border, divider, disabled text, control track, scrim, shadow, soft container는 테마별 의미 토큰으로 분리한다.
 - accent, error, green, amber, red, blue 계열은 의미와 hue를 유지하되 테마별 대비가 부족하면 tone을 조정한다.
 - 테마 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 테마를 모호하게 두지 않는다.
-- 순수 검증 model은 i18next에 의존하지 않고 `AppLanguage` 기준 사용자-facing 검증 메시지를 만든다.
-- 검증 메시지가 여러 경계에서 반복되면 shared i18n resource가 아니라 해당 feature/entity 표시 primitive로 모은다.
-- 일정 form은 입력 shape를 Zod로 확인하고 반복 규칙은 entity validator 결과를 사용자 문구로 바꿔 표시한다.
+- 순수 검증 코드는 i18next에 의존하지 않고 화면이 오류 코드를 사용자 문구로 바꾼다.
+- 검증 메시지가 여러 경계에서 반복되면 전역 i18n resource가 아니라 해당 역할의 표시 함수로 모은다.
+- 일정 form은 입력 shape를 Zod로 확인하고 반복 규칙은 schedule validator 결과를 사용자 문구로 바꿔 표시한다.
 
 ## Routing
 
@@ -228,8 +222,8 @@ Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge 
 
 ## Recurring Item Flow
 
-repository는 item과 schedule version을 함께 읽는다.
-도메인 `RecurringItem`은 비어 있지 않은 schedule version 목록을 제공한다.
+일정 DB 함수는 item과 규칙 버전을 함께 읽는다.
+도메인 `Schedule`은 비어 있지 않은 규칙 버전 목록을 제공한다.
 화면, 수정 정책, 알림은 공통 accessor로 최신 version을 읽는다.
 DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는다.
 
@@ -237,17 +231,17 @@ DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는
 
 1. form 입력을 검증한다.
 2. 제목과 설명을 암호화한다.
-3. `create_recurring_item_with_initial_version` RPC로 item과 초기 schedule version을 함께 만든다.
+3. `create_recurring_item_with_initial_version` RPC로 item과 초기 규칙 버전을 함께 만든다.
 4. 현재 기기의 기기 로컬 알림을 재동기화한다.
 5. query를 무효화한다.
 
 ### Update
 
-1. 기존 item과 schedule version을 읽는다.
+1. 기존 item과 규칙 버전을 읽는다.
 2. 수정 정책으로 메타 변경과 규칙 변경을 구분한다.
 3. 제목과 설명을 다시 암호화한다.
 4. `update_recurring_item_with_edit_policy` RPC로 item을 갱신한다.
-5. 규칙 변경이면 새 schedule version을 추가한다.
+5. 규칙 변경이면 새 규칙 버전을 추가한다.
 6. 현재 기기의 기기 로컬 알림을 재동기화한다.
 7. query를 무효화한다.
 
@@ -258,7 +252,7 @@ DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는
 
 ### Complete / Skip
 
-홈 피드 occurrence 처리 feature는 `completion_logs`에 기록을 만든다.
+홈 피드 occurrence 처리는 `completion_logs`에 기록을 만든다.
 여러 occurrence를 함께 처리하면 단일 batch insert로 전부 기록하거나 전부 실패한다.
 지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
@@ -269,13 +263,14 @@ completion log 조회는 projection 목적이나 후속 계산에 필요한 범�
 상세 화면의 occurrence projection은 일정 시작 이후 전체 미해결 occurrence를 판정할 수 있는 completion log를 사용한다.
 MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
 `completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
-read-schedule의 목적별 projection read hook은 홈 피드, 일정 목록, 캘린더, 상세 화면의 조회 범위, completion log anchor, occurrence entry 조립을 숨긴다.
+`schedule/query.ts`는 화면이 지정한 범위의 처리 기록과 필요한 completion anchor를 조회한다.
+홈 피드, 일정 목록, 캘린더와 상세 화면은 각 화면 모듈에서 occurrence 표시 데이터를 만든다.
 화면의 날짜 상태는 profile timezone을 기준으로 만든다.
-화면별 문구, 정렬, card, row, marker 구성은 각 screen slice가 맡는다.
+화면별 문구, 정렬, card, row, marker 구성은 각 화면 모듈이 맡는다.
 
 ### 종료일 정책
 
-종료일은 schedule version의 `endDateLocal`로 저장한다.
+종료일은 규칙 버전의 `endDateLocal`로 저장한다.
 종료일이 있으면 occurrence local date가 종료일보다 늦은 occurrence는 만들지 않는다.
 한 번 일정은 종료일을 갖지 않는다.
 종료일은 nullable이며, 기존 일정과 종료일이 없는 반복 일정은 null을 유지한다.
@@ -438,7 +433,7 @@ PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이
 
 - 반복 규칙과 occurrence 계산.
 - 일정 수정 정책.
-- repository mapping.
+- 일정 DB row와 RPC mapping.
 - 홈 occurrence action flow.
 - 로컬 알림 예약과 lifecycle.
 - 알림 tap routing.
