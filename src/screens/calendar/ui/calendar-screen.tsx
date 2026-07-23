@@ -7,16 +7,10 @@ import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
-import { useScheduleReadContext } from "~/application/schedule-read";
-import {
-  formatVisibleMonthTitle,
-  formatWeekdayLocalDateTitle,
-} from "~/entities/schedule";
-import {
-  useCalendarMonthOccurrenceProjectionQuery,
-  useOccurrenceProjectionNow,
-} from "~/features/read-schedule";
+import { formatLocal } from "~/schedule/display/date";
+import { useNow } from "~/schedule/now";
 import { ItemRow } from "~/schedule/ui/item-row";
+import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
@@ -40,6 +34,7 @@ import {
   shiftVisibleMonth,
   syncCalendarScreenStateToTimezone,
 } from "../model/calendar-screen-model";
+import { useCalendarQuery } from "../query";
 
 LocaleConfig.locales.ko = calendarLocaleConfigByLanguage.ko;
 LocaleConfig.locales.en = calendarLocaleConfigByLanguage.en;
@@ -110,18 +105,19 @@ export function CalendarScreen(): React.JSX.Element {
     [themeColors]
   );
   const insets = useSafeAreaInsets();
-  const scheduleReadContext = useScheduleReadContext();
-  const now = useOccurrenceProjectionNow();
+  const { profile } = useSession();
+  const initialTimezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = useNow();
   const [screenState, setScreenState] = useState(() =>
-    createCalendarScreenState(now, scheduleReadContext.timezone)
+    createCalendarScreenState(now, initialTimezone)
   );
   const calendarRenderKey = getCalendarRenderKey({
     resolvedTheme,
     visibleMonth: screenState.visibleMonth,
   });
-  const previousTimezoneRef = useRef(scheduleReadContext.timezone);
-  const projectionQuery = useCalendarMonthOccurrenceProjectionQuery({
-    context: scheduleReadContext,
+  const previousTimezoneRef = useRef(initialTimezone);
+  const projectionQuery = useCalendarQuery({
     now,
     selectedDate: screenState.selectedDate,
     visibleMonth: screenState.visibleMonth,
@@ -133,12 +129,14 @@ export function CalendarScreen(): React.JSX.Element {
     () => getMinimumVisibleMonth(items),
     [items]
   );
-  const selectedDateTitle = formatWeekdayLocalDateTitle(
+  const selectedDateTitle = formatLocal(
     screenState.selectedDate,
+    "weekdayDate",
     language
   );
-  const visibleMonthTitle = formatVisibleMonthTitle(
+  const visibleMonthTitle = formatLocal(
     screenState.visibleMonth,
+    "month",
     language
   );
   const isLoading = projectionQuery.isLoading;

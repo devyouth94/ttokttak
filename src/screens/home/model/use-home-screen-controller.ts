@@ -4,10 +4,9 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { useScheduleReadContext } from "~/application/schedule-read";
-import type { CompletionAction } from "~/entities/schedule";
-import { useHomeFeedOccurrenceProjectionQuery } from "~/features/read-schedule";
 import { useNotifications } from "~/notifications/provider";
+import { useNow } from "~/schedule/now";
+import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 
@@ -18,6 +17,7 @@ import {
   type HomeFeedSection,
 } from "./home-feed-sections";
 import { useHomeOccurrenceActions } from "./use-home-occurrence-actions";
+import { useHomeQuery } from "../query";
 
 let hasShownNotificationPermissionPrompt = false;
 
@@ -36,7 +36,7 @@ type HomeScreenController = {
   isLoading: boolean;
   onOccurrenceAction: (
     card: HomeFeedCard,
-    action: CompletionAction
+    action: OccurrenceAction
   ) => Promise<void>;
   onRetryFeed: () => Promise<void>;
   onSelectDate: (dateId: string) => void;
@@ -75,20 +75,17 @@ export function useHomeScreenController(): HomeScreenController {
   const { profile } = useSession();
   const { permission, requestPermission, syncNotifications } =
     useNotifications();
-  const scheduleReadContext = useScheduleReadContext();
   const isFocused = useIsFocused();
+  const now = useNow();
+  const initialTimezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const [selectedDateId, setSelectedDateId] = useState(() =>
-    formatInTimeZone(new Date(), scheduleReadContext.timezone, "yyyy-MM-dd")
+    formatInTimeZone(new Date(), initialTimezone, "yyyy-MM-dd")
   );
   const hasFocusedOnceRef = useRef(false);
-  const previousTimezoneRef = useRef(scheduleReadContext.timezone);
-  const now = new Date();
-  const projectionQuery = useHomeFeedOccurrenceProjectionQuery({
-    context: scheduleReadContext,
-    now,
-    selectedDateId,
-  });
+  const previousTimezoneRef = useRef(initialTimezone);
+  const projectionQuery = useHomeQuery({ now, selectedDateId });
   const {
     completionLogs,
     isReady,
@@ -111,7 +108,6 @@ export function useHomeScreenController(): HomeScreenController {
     processingOccurrenceIds,
   } = useHomeOccurrenceActions({
     completionLogs,
-    refetchFeed,
     syncNotifications,
     timezone,
     userId,

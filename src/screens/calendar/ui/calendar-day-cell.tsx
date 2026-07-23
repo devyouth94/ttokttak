@@ -2,8 +2,11 @@ import { memo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import type { DateData } from "react-native-calendars";
 
-import type { RecurringItemColorKey } from "~/entities/schedule";
-import { recurringItemColorOptionByKey } from "~/entities/schedule";
+import {
+  colorByKey,
+  type ColorKey,
+  getColorLabel,
+} from "~/schedule/display/color";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, typography } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
@@ -14,7 +17,7 @@ type CalendarDayCellProps = {
   date: DateData;
   isSelected: boolean;
   isToday: boolean;
-  markerColorKeys: RecurringItemColorKey[];
+  markerColorKeys: ColorKey[];
   overflowCount: number;
   onPress: (date: DateData) => void;
 };
@@ -46,7 +49,7 @@ function CalendarDayCellComponent({
   const isSunday = dayOfWeek === 0;
   const isSaturday = dayOfWeek === 6;
   const colorLabel = markerColorKeys
-    .map((colorKey) => recurringItemColorOptionByKey[colorKey].label)
+    .map((colorKey) => getColorLabel(colorKey))
     .join(", ");
   const accessibilityLabels = [`${date.month}월 ${date.day}일`];
 
@@ -138,10 +141,10 @@ function CalendarColorMarker({
   colorKey,
   isSelected = false,
 }: {
-  colorKey: RecurringItemColorKey;
+  colorKey: ColorKey;
   isSelected?: boolean;
 }): React.JSX.Element {
-  const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
+  const markerColor = colorByKey[colorKey].swatchColor;
 
   return (
     <View

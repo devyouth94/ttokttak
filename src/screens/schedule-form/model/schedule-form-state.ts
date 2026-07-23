@@ -1,22 +1,25 @@
 import { format, parse } from "date-fns";
 import { z } from "zod/v4";
 
+import { colorKeys, defaultColorKey } from "~/schedule/display/color";
 import {
   type AnchorType,
   anchorTypes,
-  defaultRecurringItemColorKey,
-  getCurrentScheduleVersion,
   type RecurrenceType,
   recurrenceTypes,
-  type RecurringItem,
-  recurringItemColorKeys,
-  type RecurringItemDraft,
-  requiresIntervalValue,
-  requiresWeekdayMask,
-  supportsCompletionBased,
-  validateRecurringItemDraft,
+  requiresInterval,
+  requiresWeekdays,
+  supportsCompletion,
+} from "~/schedule/rules/recurrence";
+import {
+  validateInput,
   type ValidationIssueCode,
-} from "~/entities/schedule";
+} from "~/schedule/rules/validate";
+import {
+  type CreateScheduleInput,
+  currentRule,
+  type Schedule,
+} from "~/schedule/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
@@ -26,7 +29,7 @@ export type PickerMode = "date" | "time";
 const decimalIntegerPattern = /^\d+$/;
 const recurringItemFormBaseSchema = z.object({
   anchorType: z.enum(anchorTypes),
-  colorKey: z.enum(recurringItemColorKeys),
+  colorKey: z.enum(colorKeys),
   description: z.string(),
   endDateLocal: z.string().nullable(),
   intervalValue: z.string(),
@@ -46,7 +49,6 @@ const FORM_ERROR_MESSAGES = {
   en: {
     anchor_type_not_allowed:
       "Completion-based scheduling is not available for this repeat setting.",
-    color_key_invalid: "Choose the item color again.",
     end_date_before_minimum_date: "Choose an end date from today onward.",
     end_date_before_start_date: "Choose an end date after the start date.",
     end_date_invalid: "Choose the end date again.",
@@ -57,9 +59,7 @@ const FORM_ERROR_MESSAGES = {
     interval_value_missing: "Enter a repeat interval.",
     interval_value_not_allowed: "Choose the repeat setting again.",
     reminder_time_invalid: "Choose a reminder time.",
-    reminder_time_missing: "Choose a reminder time.",
     start_date_invalid: "Choose the start date again.",
-    timezone_missing: "Check the timezone.",
     title_missing: "Enter a title.",
     weekday_mask_invalid: "Choose repeat weekdays again.",
     weekday_mask_missing: "Choose repeat weekdays.",
@@ -67,7 +67,6 @@ const FORM_ERROR_MESSAGES = {
   },
   ko: {
     anchor_type_not_allowed: "완료일 기준은 이 반복 설정에서 사용할 수 없어요.",
-    color_key_invalid: "일정 색상을 다시 선택해 주세요.",
     end_date_before_minimum_date: "종료일은 오늘 이후로 선택해 주세요.",
     end_date_before_start_date: "종료일은 시작일 이후로 선택해 주세요.",
     end_date_invalid: "종료일을 다시 선택해 주세요.",
@@ -77,9 +76,7 @@ const FORM_ERROR_MESSAGES = {
     interval_value_missing: "반복 간격을 입력해 주세요.",
     interval_value_not_allowed: "반복 설정을 다시 선택해 주세요.",
     reminder_time_invalid: "알림 시간을 선택해 주세요.",
-    reminder_time_missing: "알림 시간을 선택해 주세요.",
     start_date_invalid: "시작일을 다시 선택해 주세요.",
-    timezone_missing: "시간대를 확인해 주세요.",
     title_missing: "제목을 입력해 주세요.",
     weekday_mask_invalid: "반복할 요일을 다시 선택해 주세요.",
     weekday_mask_missing: "반복할 요일을 선택해 주세요.",
@@ -114,7 +111,7 @@ export function formatDateToLocalTime(date: Date): string {
 export function createDefaultFormState(): RecurringItemFormValues {
   return {
     anchorType: "fixed",
-    colorKey: defaultRecurringItemColorKey,
+    colorKey: defaultColorKey,
     description: "",
     endDateLocal: null,
     intervalValue: "",
@@ -231,25 +228,21 @@ export function createRecurringItemFormSchema(params: {
   isEditMode: boolean;
   language: AppLanguage;
   todayLocalDate: string;
-  timezone: string;
 }) {
   const messages = FORM_ERROR_MESSAGES[params.language];
 
   return recurringItemFormBaseSchema.superRefine((formState, context) => {
-    const issues = validateRecurringItemDraft(
-      toDraft(formState, params.timezone),
-      {
-        minimumEndDateLocal: params.isEditMode
-          ? params.todayLocalDate
-          : undefined,
-      }
-    );
+    const issues = validateInput(toInput(formState), {
+      minimumEndDateLocal: params.isEditMode
+        ? params.todayLocalDate
+        : undefined,
+    });
 
     for (const issue of issues) {
       context.addIssue({
         code: "custom",
         message: messages[issue.code],
-        path: issue.field === "timezone" ? [] : [issue.field],
+        path: [issue.field],
       });
     }
   });
@@ -286,7 +279,7 @@ export function getNextStartDateFormState(
         : current.endDateLocal,
     startDateLocal: nextValue,
     weekdayMask:
-      requiresWeekdayMask(current.recurrenceType) &&
+      requiresWeekdays(current.recurrenceType) &&
       current.weekdayMask.length === 0
         ? getWeekdayMaskFromDate(nextValue)
         : current.weekdayMask,
@@ -315,7 +308,7 @@ export function getNextRecurrenceFormState(
   current: RecurringItemFormValues,
   nextRecurrenceType: RecurrenceType
 ): RecurringItemFormValues {
-  const nextWeekdayMask = requiresWeekdayMask(nextRecurrenceType)
+  const nextWeekdayMask = requiresWeekdays(nextRecurrenceType)
     ? current.weekdayMask.length > 0
       ? current.weekdayMask
       : getWeekdayMaskFromDate(current.startDateLocal)
@@ -328,7 +321,7 @@ export function getNextRecurrenceFormState(
       nextRecurrenceType === "once" || current.recurrenceType === "once"
         ? null
         : current.endDateLocal,
-    intervalValue: requiresIntervalValue(nextRecurrenceType)
+    intervalValue: requiresInterval(nextRecurrenceType)
       ? current.intervalValue || "1"
       : "",
     recurrenceType: nextRecurrenceType,
@@ -398,33 +391,30 @@ function normalizeOptionalText(value: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export function toDraft(
-  formState: RecurringItemFormValues,
-  timezone: string
-): RecurringItemDraft {
+export function toInput(
+  formState: RecurringItemFormValues
+): CreateScheduleInput {
   return {
     anchorType: formState.anchorType,
     colorKey: formState.colorKey,
     description: normalizeOptionalText(formState.description),
     endDateLocal: formState.endDateLocal,
-    intervalValue: requiresIntervalValue(formState.recurrenceType)
+    intervalValue: requiresInterval(formState.recurrenceType)
       ? parseIntervalValue(formState.intervalValue)
       : null,
-    isArchived: false,
     notificationsEnabled: formState.notificationsEnabled,
     recurrenceType: formState.recurrenceType,
     reminderTimeLocal: formState.reminderTimeLocal.trim(),
     startDateLocal: formState.startDateLocal.trim(),
-    timezone,
     title: formState.title.trim(),
-    weekdayMask: requiresWeekdayMask(formState.recurrenceType)
+    weekdayMask: requiresWeekdays(formState.recurrenceType)
       ? [...formState.weekdayMask].sort((left, right) => left - right)
       : null,
   };
 }
 
-export function toFormState(item: RecurringItem): RecurringItemFormValues {
-  const schedule = getCurrentScheduleVersion(item);
+export function toFormState(item: Schedule): RecurringItemFormValues {
+  const schedule = currentRule(item);
 
   return {
     anchorType: getNormalizedAnchorType(
@@ -482,7 +472,7 @@ function getNormalizedAnchorType(
 
   if (
     anchorType === "completion_based" &&
-    !supportsCompletionBased(recurrenceType)
+    !supportsCompletion(recurrenceType)
   ) {
     return "fixed";
   }

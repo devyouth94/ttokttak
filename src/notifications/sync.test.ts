@@ -1,9 +1,7 @@
 import * as Notifications from "expo-notifications";
 
-import {
-  listCompletionLogs,
-  listRecurringItems,
-} from "~/entities/schedule/api";
+import { listItems } from "~/schedule/db/items";
+import { listLogs } from "~/schedule/db/logs";
 
 import type { Candidate } from "./candidates";
 import { getCandidates } from "./candidates";
@@ -17,10 +15,8 @@ jest.mock("expo-notifications", () => ({
   getAllScheduledNotificationsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
 }));
-jest.mock("~/entities/schedule/api", () => ({
-  listCompletionLogs: jest.fn(),
-  listRecurringItems: jest.fn(),
-}));
+jest.mock("~/schedule/db/items", () => ({ listItems: jest.fn() }));
+jest.mock("~/schedule/db/logs", () => ({ listLogs: jest.fn() }));
 jest.mock("./candidates", () => ({ getCandidates: jest.fn() }));
 jest.mock("./permission", () => ({ getPermission: jest.fn() }));
 
@@ -32,8 +28,8 @@ describe("알림 동기화", () => {
       canRequest: false,
       status: "granted",
     });
-    jest.mocked(listCompletionLogs).mockResolvedValue([]);
-    jest.mocked(listRecurringItems).mockResolvedValue([]);
+    jest.mocked(listLogs).mockResolvedValue([]);
+    jest.mocked(listItems).mockResolvedValue([]);
     jest.mocked(getCandidates).mockReturnValue([]);
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
@@ -52,7 +48,7 @@ describe("알림 동기화", () => {
 
     await syncNotifications(params);
 
-    expect(listRecurringItems).not.toHaveBeenCalled();
+    expect(listItems).not.toHaveBeenCalled();
     expect(
       Notifications.getAllScheduledNotificationsAsync
     ).not.toHaveBeenCalled();

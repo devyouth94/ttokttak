@@ -6,19 +6,19 @@ import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
+import { useNotifications } from "~/notifications/provider";
+import { getItem } from "~/schedule/db/items";
+import type { ColorKey } from "~/schedule/display/color";
 import {
   type AnchorType,
   type RecurrenceType,
-  type RecurringItemColorKey,
-} from "~/entities/schedule";
-import { supportsCompletionBased } from "~/entities/schedule";
-import { getRecurringItemById } from "~/entities/schedule/api";
+  supportsCompletion,
+} from "~/schedule/rules/recurrence";
 import {
   archiveSchedule,
   createSchedule,
   updateSchedule,
-} from "~/features/mutate-schedule";
-import { useNotifications } from "~/notifications/provider";
+} from "~/schedule/write";
 import { useSession } from "~/session/provider";
 import { useAppLanguage } from "~/shared/i18n";
 
@@ -41,9 +41,9 @@ import {
   getScheduleFormPickerDates,
   getTodayLocalDate,
   type RecurringItemFormValues,
-  toDraft,
   toFormState,
   toggleWeekdayMask,
+  toInput,
 } from "./schedule-form-state";
 
 type UseScheduleFormScreenControllerParams = {
@@ -90,9 +90,8 @@ export function useScheduleFormScreenController({
         isEditMode,
         language,
         todayLocalDate,
-        timezone,
       }),
-    [isEditMode, language, timezone, todayLocalDate]
+    [isEditMode, language, todayLocalDate]
   );
 
   const {
@@ -124,7 +123,7 @@ export function useScheduleFormScreenController({
     startDateLocal = defaultValues.startDateLocal,
     weekdayMask = defaultValues.weekdayMask,
   } = formValues;
-  const completionBasedEnabled = supportsCompletionBased(recurrenceType);
+  const completionBasedEnabled = supportsCompletion(recurrenceType);
 
   function getErrorMessage(
     name: keyof RecurringItemFormValues
@@ -391,7 +390,7 @@ export function useScheduleFormScreenController({
     setField("title", value);
   }
 
-  function handleSelectColorKey(nextColorKey: RecurringItemColorKey): void {
+  function handleSelectColorKey(nextColorKey: ColorKey): void {
     setField("colorKey", nextColorKey);
   }
 
@@ -443,7 +442,7 @@ export function useScheduleFormScreenController({
       return;
     }
 
-    const draft = toDraft(values, timezone);
+    const input = toInput(values);
 
     setRequestState((current) => ({
       ...current,
@@ -456,17 +455,16 @@ export function useScheduleFormScreenController({
         await updateSchedule({
           itemId,
           patch: {
-            anchorType: draft.anchorType,
-            colorKey: draft.colorKey,
-            description: draft.description,
-            endDateLocal: draft.endDateLocal,
-            intervalValue: draft.intervalValue,
-            isArchived: draft.isArchived,
-            notificationsEnabled: draft.notificationsEnabled,
-            recurrenceType: draft.recurrenceType,
-            reminderTimeLocal: draft.reminderTimeLocal,
-            title: draft.title,
-            weekdayMask: draft.weekdayMask,
+            anchorType: input.anchorType,
+            colorKey: input.colorKey,
+            description: input.description,
+            endDateLocal: input.endDateLocal,
+            intervalValue: input.intervalValue,
+            notificationsEnabled: input.notificationsEnabled,
+            recurrenceType: input.recurrenceType,
+            reminderTimeLocal: input.reminderTimeLocal,
+            title: input.title,
+            weekdayMask: input.weekdayMask,
           },
           syncNotifications,
           timezone,
@@ -474,8 +472,9 @@ export function useScheduleFormScreenController({
         });
       } else {
         await createSchedule({
-          draft,
+          input,
           syncNotifications,
+          timezone,
           userId: user.id,
         });
       }
@@ -508,7 +507,6 @@ export function useScheduleFormScreenController({
       await archiveSchedule({
         itemId: currentItemId,
         syncNotifications,
-        userId,
       });
 
       router.replace("/");
@@ -544,7 +542,6 @@ export function useScheduleFormScreenController({
     }
 
     const currentItemId = itemId;
-    const profileTimezone = profile.timezone;
     const userId = user.id;
 
     async function loadItem(): Promise<void> {
@@ -555,9 +552,8 @@ export function useScheduleFormScreenController({
       }));
 
       try {
-        const item = await getRecurringItemById({
+        const item = await getItem({
           id: currentItemId,
-          timezone: profileTimezone,
           userId,
         });
 

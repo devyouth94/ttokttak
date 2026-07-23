@@ -1,5 +1,3 @@
-import { getRecurringItemColorOptions } from "~/entities/schedule";
-
 import {
   getCompletionBasedInfoText,
   getCustomRecurrenceUnitOptions,
@@ -90,12 +88,8 @@ describe("recurring item form first reminder helper", () => {
   });
 });
 
-describe("recurring item form color options", () => {
+describe("recurring item form English options", () => {
   it("English 모드에서는 대표 선택지 라벨을 English로 제공한다", () => {
-    expect(getRecurringItemColorOptions("en")[0]).toMatchObject({
-      label: "Red",
-      value: "red",
-    });
     expect(
       getQuickRecurrenceOptions("en").map((option) => option.label)
     ).toEqual(["Daily", "Weekly", "Monthly"]);

@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
-import type { CompletionAction } from "~/entities/schedule";
+import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
@@ -19,7 +19,7 @@ import type {
 type HomeFeedSectionBlockProps = {
   bottomOverlapInset: number;
   isLoading: boolean;
-  onAction: (card: HomeFeedCard, action: CompletionAction) => void;
+  onAction: (card: HomeFeedCard, action: OccurrenceAction) => void;
   processingOccurrenceIds: string[];
   selectedDateIsToday: boolean;
   section: HomeFeedSection;

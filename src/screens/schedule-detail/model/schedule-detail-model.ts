@@ -1,24 +1,13 @@
 import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
-import type {
-  CompletionLog,
-  DerivedOccurrence,
-  ItemOccurrenceProjection,
-  RecurringItem,
-  RecurringItemColorKey,
-} from "~/entities/schedule";
-import {
-  createItemOccurrenceProjection,
-  formatFullLocalDate,
-  formatLocalDateTitle,
-  formatLocalTimeLabel,
-  formatUtcDateTitleInTimezone,
-  formatUtcTimeInTimezone,
-  getCompletionActionLabel,
-  getCurrentScheduleVersion,
-  getRecurrenceLabel,
-} from "~/entities/schedule";
+import type { ColorKey } from "~/schedule/display/color";
+import { formatLocal, formatTimestamp } from "~/schedule/display/date";
+import { getActionLabel, getRecurrenceLabel } from "~/schedule/display/label";
+import type { Occurrence, OccurrenceLog } from "~/schedule/rules/occurrence";
+import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
+import type { Schedule } from "~/schedule/schedule";
+import { currentRule } from "~/schedule/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 const OVERDUE_LOOKBACK_DAYS = 730;
@@ -122,7 +111,7 @@ const overdueCountLabelFormatters = {
 type RecurringItemDetailReturnPath = "/" | "/calendar" | "/home" | "/schedule";
 
 export type ItemDetailHistoryEntry = {
-  action: CompletionLog["action"];
+  action: OccurrenceLog["action"];
   id: string;
   scheduledAtUtc: string;
   statusLabel: string;
@@ -150,12 +139,12 @@ export type ItemDetailContentRecovery = {
 export type ItemDetailViewModel = {
   contentRecovery?: ItemDetailContentRecovery;
   historyPreview: ItemDetailHistoryEntry[];
-  nextOccurrence: DerivedOccurrence | null;
-  overdueOccurrences: DerivedOccurrence[];
-  primaryOccurrence: DerivedOccurrence | null;
+  nextOccurrence: Occurrence | null;
+  overdueOccurrences: Occurrence[];
+  primaryOccurrence: Occurrence | null;
   statusCard: ItemDetailStatusCard;
   summary: {
-    colorKey: RecurringItemColorKey;
+    colorKey: ColorKey;
     notificationLabel: string;
     notificationsEnabled: boolean;
     recurrenceLabel: string;
@@ -186,15 +175,16 @@ export function buildOccurrenceStatusCard({
 }: {
   language: AppLanguage;
   now: Date;
-  occurrence: DerivedOccurrence;
+  occurrence: Occurrence;
   timezone: string;
 }): ItemDetailStatusCard {
   const titleByStatus = getOccurrenceStatusTitleByStatus(language);
 
   return {
-    dateLabel: formatUtcDateTitleInTimezone(
+    dateLabel: formatTimestamp(
       occurrence.scheduledAtUtc,
       timezone,
+      "date",
       language
     ),
     metaLabel: getOccurrenceStatusMetaLabel({
@@ -203,9 +193,10 @@ export function buildOccurrenceStatusCard({
       occurrence,
       timezone,
     }),
-    timeLabel: formatUtcTimeInTimezone(
+    timeLabel: formatTimestamp(
       occurrence.scheduledAtUtc,
       timezone,
+      "time",
       language
     ),
     title: titleByStatus[occurrence.status],
@@ -221,29 +212,28 @@ export function buildRecurringItemDetailViewModel({
   overdueOccurrences: providedOverdueOccurrences,
   timezone,
 }: {
-  completionLogs: CompletionLog[];
-  item: RecurringItem;
+  completionLogs: OccurrenceLog[];
+  item: Schedule;
   language: AppLanguage;
-  nextOccurrence?: DerivedOccurrence | null;
+  nextOccurrence?: Occurrence | null;
   now: Date;
-  overdueOccurrences?: DerivedOccurrence[];
+  overdueOccurrences?: Occurrence[];
   timezone: string;
 }): ItemDetailViewModel {
-  const projection =
+  const occurrences =
     providedOverdueOccurrences === undefined ||
     providedNextOccurrence === undefined
-      ? createItemOccurrenceProjection({
-          completionLogs,
-          item,
+      ? createOccurrences({
+          logs: completionLogs,
           now,
+          schedules: [item],
           timezone,
         })
       : null;
   const overdueOccurrences =
     providedOverdueOccurrences ??
-    getOverdueOccurrences(projection!, now, timezone);
-  const nextOccurrence =
-    providedNextOccurrence ?? projection!.getNextOccurrence();
+    getOverdueOccurrences(occurrences!, now, timezone);
+  const nextOccurrence = providedNextOccurrence ?? occurrences!.next(item.id);
   const primaryOccurrence = overdueOccurrences[0] ?? nextOccurrence;
 
   return {
@@ -271,10 +261,10 @@ export function buildRecurringItemDetailViewModel({
 }
 
 function getContentRecoveryState(
-  item: RecurringItem,
+  item: Schedule,
   language: AppLanguage
 ): ItemDetailContentRecovery | undefined {
-  if (item.contentStatus?.status !== "unrecoverable") {
+  if (item.contentStatus !== "unrecoverable") {
     return undefined;
   }
 
@@ -282,7 +272,7 @@ function getContentRecoveryState(
 }
 
 export function buildHistoryPreview(
-  completionLogs: CompletionLog[],
+  completionLogs: OccurrenceLog[],
   timezone: string,
   language: AppLanguage = "ko"
 ): ItemDetailHistoryEntry[] {
@@ -294,7 +284,7 @@ export function buildHistoryPreview(
       action: log.action,
       id: log.id,
       scheduledAtUtc: log.scheduledAtUtc,
-      statusLabel: getCompletionActionLabel(log.action, language),
+      statusLabel: getActionLabel(log.action, language),
       timeLabel: formatHistoryPreviewTime(
         log.scheduledAtUtc,
         timezone,
@@ -304,10 +294,10 @@ export function buildHistoryPreview(
 }
 
 export function buildSummarySettingBadges(
-  item: RecurringItem,
+  item: Schedule,
   language: AppLanguage = "ko"
 ): ItemDetailSummaryBadge[] {
-  const currentSchedule = getCurrentScheduleVersion(item);
+  const currentSchedule = currentRule(item);
   const anchorType = currentSchedule.anchorType;
   const endDateLocal = currentSchedule.endDateLocal ?? null;
   const copy = summaryBadgeCopyByLanguage[language];
@@ -315,7 +305,7 @@ export function buildSummarySettingBadges(
     {
       id: "start-date",
       label: copy.startDateLabel,
-      value: formatFullLocalDate(item.startDateLocal, language),
+      value: formatLocal(item.startDateLocal, "fullDate", language),
     },
   ];
 
@@ -323,7 +313,7 @@ export function buildSummarySettingBadges(
     badges.push({
       id: "end-date",
       label: copy.endDateLabel,
-      value: formatFullLocalDate(endDateLocal, language),
+      value: formatLocal(endDateLocal, "fullDate", language),
     });
   }
 
@@ -347,8 +337,8 @@ function buildStatusCard({
 }: {
   language: AppLanguage;
   now: Date;
-  nextOccurrence: DerivedOccurrence | null;
-  overdueOccurrences: DerivedOccurrence[];
+  nextOccurrence: Occurrence | null;
+  overdueOccurrences: Occurrence[];
   timezone: string;
 }): ItemDetailStatusCard {
   const copy = statusCardCopyByLanguage[language];
@@ -365,18 +355,20 @@ function buildStatusCard({
     );
 
     return {
-      dateLabel: formatUtcDateTitleInTimezone(
+      dateLabel: formatTimestamp(
         latestOverdueOccurrence.scheduledAtUtc,
         timezone,
+        "date",
         language
       ),
       metaLabel:
         overdueOccurrences.length === 1
           ? getOverdueDaysLabel(overdueDays, language)
           : getOverdueCountLabel(overdueOccurrences.length, language),
-      timeLabel: formatUtcTimeInTimezone(
+      timeLabel: formatTimestamp(
         latestOverdueOccurrence.scheduledAtUtc,
         timezone,
+        "time",
         language
       ),
       title: copy.overdue,
@@ -393,9 +385,10 @@ function buildStatusCard({
   }
 
   return {
-    dateLabel: formatUtcDateTitleInTimezone(
+    dateLabel: formatTimestamp(
       nextOccurrence.scheduledAtUtc,
       timezone,
+      "date",
       language
     ),
     metaLabel: getRelativeDayLabel(
@@ -404,9 +397,10 @@ function buildStatusCard({
       timezone,
       language
     ),
-    timeLabel: formatUtcTimeInTimezone(
+    timeLabel: formatTimestamp(
       nextOccurrence.scheduledAtUtc,
       timezone,
+      "time",
       language
     ),
     title: copy.nextItem,
@@ -414,10 +408,10 @@ function buildStatusCard({
 }
 
 function getOverdueOccurrences(
-  projection: ItemOccurrenceProjection,
+  occurrences: ReturnType<typeof createOccurrences>,
   now: Date,
   timezone: string
-): DerivedOccurrence[] {
+): Occurrence[] {
   const nowLocalDate = formatInTimeZone(now, timezone, "yyyy-MM-dd");
   const lookbackStartLocalDate = format(
     addDays(
@@ -426,11 +420,18 @@ function getOverdueOccurrences(
     ),
     "yyyy-MM-dd"
   );
-  return projection.getOverdueOccurrences({
-    lookbackStartLocalDate,
-    order: "scheduledAtDesc",
-    rangeEndUtc: now.toISOString(),
-  });
+  return occurrences
+    .range(
+      {
+        endUtc: now.toISOString(),
+        startUtc: toUtcRange(lookbackStartLocalDate, timezone).startUtc,
+      },
+      "overdue"
+    )
+    .map(({ occurrence }) => occurrence)
+    .sort((left, right) =>
+      right.scheduledAtUtc.localeCompare(left.scheduledAtUtc)
+    );
 }
 
 function formatHistoryPreviewTime(
@@ -438,31 +439,29 @@ function formatHistoryPreviewTime(
   timezone: string,
   language: AppLanguage
 ): string {
-  return `${formatLocalDateTitle(
+  return `${formatLocal(
     formatInTimeZone(scheduledAtUtc, timezone, "yyyy-MM-dd"),
+    "date",
     language
-  )} ${formatUtcTimeInTimezone(scheduledAtUtc, timezone, language)}`;
+  )} ${formatTimestamp(scheduledAtUtc, timezone, "time", language)}`;
 }
 
 function compareLogsByScheduledAtUtcDesc(
-  left: CompletionLog,
-  right: CompletionLog
+  left: OccurrenceLog,
+  right: OccurrenceLog
 ): number {
   return right.scheduledAtUtc.localeCompare(left.scheduledAtUtc);
 }
 
 function getSummaryNotificationLabel(
-  item: RecurringItem,
+  item: Schedule,
   language: AppLanguage
 ): string {
-  return formatLocalTimeLabel(
-    getCurrentScheduleVersion(item).reminderTimeLocal,
-    language
-  );
+  return formatLocal(currentRule(item).reminderTimeLocal, "time", language);
 }
 
-function getSummaryNotificationsEnabled(item: RecurringItem): boolean {
-  return getCurrentScheduleVersion(item).notificationsEnabled;
+function getSummaryNotificationsEnabled(item: Schedule): boolean {
+  return currentRule(item).notificationsEnabled;
 }
 
 function getRelativeDayLabel(
@@ -501,15 +500,15 @@ function getOccurrenceStatusMetaLabel({
 }: {
   language: AppLanguage;
   now: Date;
-  occurrence: DerivedOccurrence;
+  occurrence: Occurrence;
   timezone: string;
 }): string {
   if (occurrence.status === "completed") {
-    return getCompletionActionLabel("completed", language);
+    return getActionLabel("completed", language);
   }
 
   if (occurrence.status === "skipped") {
-    return getCompletionActionLabel("skipped", language);
+    return getActionLabel("skipped", language);
   }
 
   if (occurrence.status === "overdue") {
@@ -535,7 +534,7 @@ function getOccurrenceStatusMetaLabel({
 
 function getOccurrenceStatusTitleByStatus(
   language: AppLanguage
-): Record<DerivedOccurrence["status"], string> {
+): Record<Occurrence["status"], string> {
   const copy = statusCardCopyByLanguage[language];
 
   return {

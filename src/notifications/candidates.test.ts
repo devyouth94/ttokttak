@@ -1,7 +1,7 @@
 import {
-  createRecurringItemFixture as createItem,
-  recurringTestTimezone as timezone,
-} from "~/entities/schedule/testing";
+  scheduleFixture as createItem,
+  testTimezone as timezone,
+} from "~/schedule/fixtures";
 
 import { getCandidates } from "./candidates";
 
@@ -52,10 +52,7 @@ describe("알림 후보", () => {
         createItem({ id: "archived", isArchived: true }),
         createItem({ id: "disabled", notificationsEnabled: false }),
         createItem({
-          contentStatus: {
-            reason: "decryption-failed",
-            status: "unrecoverable",
-          },
+          contentStatus: "unrecoverable",
           id: "unrecoverable",
         }),
         createItem({

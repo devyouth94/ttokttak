@@ -7,19 +7,11 @@ import {
 } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
-import type {
-  DerivedOccurrence,
-  ItemOccurrenceProjectionEntry,
-  RecurringItem,
-} from "~/entities/schedule";
-import {
-  formatLocalDateTitle,
-  formatLocalTimeLabel,
-  getCurrentScheduleVersion,
-  getDateFnsLocale,
-  getOccurrenceIdentity,
-  getRecurrenceLabel,
-} from "~/entities/schedule";
+import { formatLocal } from "~/schedule/display/date";
+import { getRecurrenceLabel } from "~/schedule/display/label";
+import type { Occurrence, OccurrenceEntry } from "~/schedule/rules/occurrence";
+import type { Schedule } from "~/schedule/schedule";
+import { currentRule } from "~/schedule/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 const HOME_DATE_RANGE_DAYS = 15;
@@ -74,9 +66,9 @@ export type HomeDateOption = {
 export type HomeFeedCard = {
   dateSeparatorLabel: string | null;
   id: string;
-  item: RecurringItem;
+  item: Schedule;
   metaLabel: string;
-  occurrence: DerivedOccurrence;
+  occurrence: Occurrence;
   recurrenceLabel: string;
   sectionId: HomeFeedSection["id"];
   timeLabel: string | null;
@@ -93,15 +85,15 @@ export type HomeFeedSection = {
 type BuildHomeFeedSectionsOptions = {
   language: AppLanguage;
   now: Date;
-  overdueEntries: ItemOccurrenceProjectionEntry[];
+  overdueEntries: OccurrenceEntry[];
   selectedDateId: string;
-  selectedDateEntries: ItemOccurrenceProjectionEntry[];
+  selectedDateEntries: OccurrenceEntry[];
   timezone: string;
-  upcomingEntries: ItemOccurrenceProjectionEntry[];
+  upcomingEntries: OccurrenceEntry[];
 };
 
 type BuildSectionCardsOptions = {
-  entries: ItemOccurrenceProjectionEntry[];
+  entries: OccurrenceEntry[];
   language: AppLanguage;
   sectionId: HomeFeedSection["id"];
   todayLocalDate: string;
@@ -128,7 +120,6 @@ export function createHomeDateOptions(
   today: Date,
   language: AppLanguage = "ko"
 ): HomeDateOption[] {
-  const locale = getDateFnsLocale(language);
   const copy = homeFeedCopyByLanguage[language];
 
   return Array.from({ length: HOME_DATE_RANGE_DAYS }, (_, index) => {
@@ -136,12 +127,12 @@ export function createHomeDateOptions(
     const id = format(date, "yyyy-MM-dd");
 
     return {
-      dayLabel: format(date, "EEE", { locale }),
+      dayLabel: formatLocal(id, "weekday", language),
       id,
       isToday: index === 0,
       title: isSameDay(date, today)
         ? copy.sections.today
-        : formatLocalDateTitle(id, language),
+        : formatLocal(id, "date", language),
       value: format(date, "d"),
     };
   });
@@ -228,8 +219,8 @@ function buildOverdueCards({
   todayLocalDate,
 }: BuildRelativeCardsOptions): HomeFeedCard[] {
   return entries
-    .map(({ item, occurrence }) =>
-      toHomeFeedCard(item, occurrence, "overdue", todayLocalDate, language)
+    .map(({ schedule, occurrence }) =>
+      toHomeFeedCard(schedule, occurrence, "overdue", todayLocalDate, language)
     )
     .sort(compareByScheduledAtUtcDesc);
 }
@@ -254,8 +245,8 @@ function buildScheduledCards({
   todayLocalDate,
 }: BuildSectionCardsOptions): HomeFeedCard[] {
   return entries
-    .map(({ item, occurrence }) =>
-      toHomeFeedCard(item, occurrence, sectionId, todayLocalDate, language)
+    .map(({ schedule, occurrence }) =>
+      toHomeFeedCard(schedule, occurrence, sectionId, todayLocalDate, language)
     )
     .sort(compareByScheduledAtUtcAsc);
 }
@@ -269,18 +260,18 @@ function getSelectedDateTitle(
     return homeFeedCopyByLanguage[language].sections.today;
   }
 
-  return formatLocalDateTitle(selectedDateId, language);
+  return formatLocal(selectedDateId, "date", language);
 }
 
 function toHomeFeedCard(
-  item: RecurringItem,
-  occurrence: DerivedOccurrence,
+  item: Schedule,
+  occurrence: Occurrence,
   sectionId: HomeFeedSection["id"],
   todayLocalDate: string,
   language: AppLanguage
 ): HomeFeedCard {
   const reminderTimeLocal = getReminderTimeLocal(item);
-  const timeLabel = formatLocalTimeLabel(reminderTimeLocal, language);
+  const timeLabel = formatLocal(reminderTimeLocal, "time", language);
 
   return {
     dateSeparatorLabel: getDateSeparatorLabel(
@@ -289,7 +280,7 @@ function toHomeFeedCard(
       todayLocalDate,
       language
     ),
-    id: getOccurrenceIdentity(item.id, occurrence.scheduledAtUtc),
+    id: `${item.id}:${occurrence.scheduledAtUtc}`,
     item,
     metaLabel: getMetaLabel(
       sectionId,
@@ -307,7 +298,7 @@ function toHomeFeedCard(
 
 function getMetaLabel(
   sectionId: HomeFeedSection["id"],
-  occurrence: DerivedOccurrence,
+  occurrence: Occurrence,
   todayLocalDate: string,
   timeLabel: string,
   language: AppLanguage
@@ -332,7 +323,7 @@ function getMetaLabel(
 
 function getDateSeparatorLabel(
   sectionId: HomeFeedSection["id"],
-  occurrence: DerivedOccurrence,
+  occurrence: Occurrence,
   todayLocalDate: string,
   language: AppLanguage
 ): string | null {
@@ -347,11 +338,11 @@ function getDateSeparatorLabel(
 
   return dayDiff === 1
     ? homeFeedCopyByLanguage[language].tomorrow
-    : formatLocalDateTitle(occurrence.localDate, language);
+    : formatLocal(occurrence.localDate, "date", language);
 }
 
-function getReminderTimeLocal(item: RecurringItem): string {
-  return getCurrentScheduleVersion(item).reminderTimeLocal;
+function getReminderTimeLocal(item: Schedule): string {
+  return currentRule(item).reminderTimeLocal;
 }
 
 function compareByScheduledAtUtcAsc(

@@ -5,15 +5,13 @@ import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
-import { useScheduleReadContext } from "~/application/schedule-read";
-import type { RecurringItemColorKey } from "~/entities/schedule";
-import {
-  getRecurringItemColorLabel,
-  recurringItemColorOptionByKey,
-} from "~/entities/schedule";
-import { archiveSchedule } from "~/features/mutate-schedule";
-import { useScheduleDetailReadModelQuery } from "~/features/read-schedule";
 import { useNotifications } from "~/notifications/provider";
+import {
+  colorByKey,
+  type ColorKey,
+  getColorLabel,
+} from "~/schedule/display/color";
+import { archiveSchedule } from "~/schedule/write";
 import { useAppLanguage } from "~/shared/i18n";
 import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
 import { AppScreen } from "~/shared/ui/app-screen";
@@ -31,6 +29,7 @@ import {
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
 } from "../model/schedule-detail-model";
+import { useDetailQuery } from "../query";
 
 const DETAIL_PLACEHOLDER_HISTORY_ROW_COUNT = 3;
 const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
@@ -71,7 +70,7 @@ function DetailSummarySection({
   settingBadges,
   title,
 }: {
-  colorKey: RecurringItemColorKey;
+  colorKey: ColorKey;
   notificationLabel: string;
   notificationsEnabled: boolean;
   recurrenceLabel: string;
@@ -83,8 +82,8 @@ function DetailSummarySection({
   const styles = useScheduleDetailScreenStyles();
   const themeColors = useThemeColors();
   const NotificationIcon = notificationsEnabled ? Bell : BellOff;
-  const colorOption = recurringItemColorOptionByKey[colorKey];
-  const colorLabel = getRecurringItemColorLabel(colorKey, language);
+  const colorOption = colorByKey[colorKey];
+  const colorLabel = getColorLabel(colorKey, language);
   const notificationStatusLabel = notificationsEnabled
     ? t("scheduleDetail.summary.notificationEnabled")
     : t("scheduleDetail.summary.notificationDisabled");
@@ -422,20 +421,18 @@ export function ScheduleDetailScreen({
   const { syncNotifications } = useNotifications();
   const styles = useScheduleDetailScreenStyles();
   const themeColors = useThemeColors();
-  const scheduleReadContext = useScheduleReadContext();
-  const { timezone, userId } = scheduleReadContext;
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(
     null
   );
   const [isArchiving, setIsArchiving] = useState(false);
 
   const now = new Date();
-  const detailQuery = useScheduleDetailReadModelQuery({
-    context: scheduleReadContext,
+  const detailQuery = useDetailQuery({
     itemId: itemId ?? null,
     now,
     scheduledAtUtc,
   });
+  const { timezone, userId } = detailQuery;
   const isLoading = detailQuery.isLoading;
   const queryErrorMessage = !itemId
     ? t("scheduleDetail.error.missingPath")
@@ -465,8 +462,7 @@ export function ScheduleDetailScreen({
         })
       : viewModel?.statusCard;
   const isMutating = isArchiving;
-  const isContentUnrecoverable =
-    item?.contentStatus?.status === "unrecoverable";
+  const isContentUnrecoverable = item?.contentStatus === "unrecoverable";
   const isNotFound =
     !item &&
     !isLoading &&
@@ -509,7 +505,6 @@ export function ScheduleDetailScreen({
       await archiveSchedule({
         itemId: item.id,
         syncNotifications,
-        userId,
       });
 
       router.replace(getRecurringItemDetailDeleteReturnPath(returnTo));

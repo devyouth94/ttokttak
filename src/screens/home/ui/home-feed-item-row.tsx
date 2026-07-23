@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
-import type { CompletionAction } from "~/entities/schedule";
+import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 
@@ -17,7 +17,7 @@ type HomeFeedItemRowProps = {
   card: HomeFeedCard;
   isLast: boolean;
   isProcessing: boolean;
-  onAction: (card: HomeFeedCard, action: CompletionAction) => void;
+  onAction: (card: HomeFeedCard, action: OccurrenceAction) => void;
   showsActions: boolean;
 };
 

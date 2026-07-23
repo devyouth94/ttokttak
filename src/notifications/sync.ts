@@ -1,9 +1,7 @@
 import * as Notifications from "expo-notifications";
 
-import {
-  listCompletionLogs,
-  listRecurringItems,
-} from "~/entities/schedule/api";
+import { listItems } from "~/schedule/db/items";
+import { listLogs } from "~/schedule/db/logs";
 import type { AppLanguage } from "~/shared/i18n";
 
 import { type Candidate, getCandidates } from "./candidates";
@@ -101,13 +99,12 @@ export async function syncNotifications(params: {
     return;
   }
 
-  const items = await listRecurringItems({
-    timezone: params.timezone,
+  const items = await listItems({
     userId: params.userId,
   });
   const itemIds = items.map((item) => item.id);
   const completionLogs = itemIds.length
-    ? await listCompletionLogs({ itemIds, userId: params.userId })
+    ? await listLogs({ itemIds, userId: params.userId })
     : [];
   const candidates = getCandidates({
     completionLogs,

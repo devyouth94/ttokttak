@@ -1,14 +1,12 @@
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
-import type { CompletionLog, RecurringItem } from "~/entities/schedule";
-import {
-  completionBasedRecurrenceTypes,
-  formatUtcTimeInTimezone,
-  getCurrentScheduleVersion,
-  getNextOccurrence,
-  getOccurrencesInRange,
-} from "~/entities/schedule";
+import { formatTimestamp } from "~/schedule/display/date";
+import type { OccurrenceLog } from "~/schedule/rules/occurrence";
+import { createOccurrences } from "~/schedule/rules/occurrence";
+import { supportsCompletion } from "~/schedule/rules/recurrence";
+import type { Schedule } from "~/schedule/schedule";
+import { currentRule } from "~/schedule/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 export type Candidate = {
@@ -19,28 +17,26 @@ export type Candidate = {
 };
 
 /** 보관·알림 설정·복호화 상태를 확인해 예약 가능한 일정만 남긴다. */
-function canSchedule(item: RecurringItem): boolean {
+function canSchedule(item: Schedule): boolean {
   return (
     !item.isArchived &&
-    getCurrentScheduleVersion(item).notificationsEnabled &&
-    item.contentStatus?.status !== "unrecoverable"
+    currentRule(item).notificationsEnabled &&
+    item.contentStatus !== "unrecoverable"
   );
 }
 
 /** 미처리 occurrence가 남아 다음 알림을 만들 수 없는 완료일 기준 일정인지 확인한다. */
 function hasUnresolvedOccurrence(
-  item: RecurringItem,
-  completionLogs: CompletionLog[],
+  item: Schedule,
+  completionLogs: OccurrenceLog[],
   nowUtc: string,
   timezone: string
 ): boolean {
-  const schedule = getCurrentScheduleVersion(item);
+  const schedule = currentRule(item);
 
   if (
     schedule.anchorType !== "completion_based" ||
-    !completionBasedRecurrenceTypes.includes(
-      schedule.recurrenceType as (typeof completionBasedRecurrenceTypes)[number]
-    )
+    !supportsCompletion(schedule.recurrenceType)
   ) {
     return false;
   }
@@ -50,24 +46,25 @@ function hasUnresolvedOccurrence(
     timezone
   ).toISOString();
 
-  return getOccurrencesInRange(
-    item,
-    historyStartUtc,
-    nowUtc,
+  return createOccurrences({
+    logs: completionLogs,
+    now: new Date(nowUtc),
+    schedules: [item],
     timezone,
-    completionLogs,
-    nowUtc
-  ).some(
-    (occurrence) =>
-      occurrence.scheduledAtUtc < nowUtc &&
-      (occurrence.status === "scheduled" || occurrence.status === "overdue")
-  );
+  })
+    .range({ endUtc: nowUtc, startUtc: historyStartUtc })
+    .some(
+      (occurrence) =>
+        occurrence.occurrence.scheduledAtUtc < nowUtc &&
+        (occurrence.occurrence.status === "scheduled" ||
+          occurrence.occurrence.status === "overdue")
+    );
 }
 
 /** 한 일정에서 30일 범위와 그 이후 첫 occurrence의 알림 후보를 만든다. */
 function getItemCandidates(params: {
-  completionLogs: CompletionLog[];
-  item: RecurringItem;
+  completionLogs: OccurrenceLog[];
+  item: Schedule;
   language: AppLanguage;
   rangeEndUtc: string;
   rangeStartUtc: string;
@@ -89,20 +86,16 @@ function getItemCandidates(params: {
     return [];
   }
 
-  const occurrences = getOccurrencesInRange(
-    item,
-    rangeStartUtc,
-    rangeEndUtc,
+  const projection = createOccurrences({
+    logs: completionLogs,
+    now: new Date(rangeStartUtc),
+    schedules: [item],
     timezone,
-    completionLogs,
-    rangeStartUtc
-  ).filter((occurrence) => occurrence.status === "scheduled");
-  const nextOccurrence = getNextOccurrence(
-    item,
-    rangeStartUtc,
-    timezone,
-    completionLogs
-  );
+  });
+  const occurrences = projection
+    .range({ endUtc: rangeEndUtc, startUtc: rangeStartUtc }, "scheduled")
+    .map(({ occurrence }) => occurrence);
+  const nextOccurrence = projection.next(item.id);
   const candidates = nextOccurrence
     ? [...occurrences, nextOccurrence]
     : occurrences;
@@ -111,9 +104,10 @@ function getItemCandidates(params: {
     new Map(
       candidates.map((occurrence) => {
         const candidate: Candidate = {
-          body: formatUtcTimeInTimezone(
+          body: formatTimestamp(
             occurrence.scheduledAtUtc,
             timezone,
+            "time",
             language
           ),
           itemId: item.id,
@@ -129,14 +123,14 @@ function getItemCandidates(params: {
 
 /** 완료 기록을 일정별로 묶고 모든 일정의 알림 후보를 만든다. */
 export function getCandidates(params: {
-  completionLogs: CompletionLog[];
-  items: RecurringItem[];
+  completionLogs: OccurrenceLog[];
+  items: Schedule[];
   language: AppLanguage;
   now: Date;
   timezone: string;
 }): Candidate[] {
   const { completionLogs, items, language, now, timezone } = params;
-  const logsByItem = new Map<string, CompletionLog[]>();
+  const logsByItem = new Map<string, OccurrenceLog[]>();
 
   for (const log of completionLogs) {
     const logs = logsByItem.get(log.itemId) ?? [];

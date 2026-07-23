@@ -1,13 +1,10 @@
 import { useTranslation } from "react-i18next";
 
-import { useScheduleReadContext } from "~/application/schedule-read";
-import type { RecurringItem } from "~/entities/schedule";
-import {
-  createRecurringItemFixture,
-  type RecurringItemFixtureOverrides,
-} from "~/entities/schedule/testing";
-import { useOccurrenceProjectionNow } from "~/features/read-schedule/model/use-occurrence-projection-now";
-import { useOccurrenceProjectionQuery } from "~/features/read-schedule/model/use-occurrence-projection-query";
+import { scheduleFixture, type ScheduleOverrides } from "~/schedule/fixtures";
+import { useNow } from "~/schedule/now";
+import { useScheduleRange } from "~/schedule/query";
+import type { Schedule } from "~/schedule/schedule";
+import { useSession } from "~/session/provider";
 
 import { type Sort, useItems } from "./list";
 
@@ -18,24 +15,12 @@ jest.mock("react", () => ({
 jest.mock("react-i18next", () => ({
   useTranslation: jest.fn(),
 }));
-jest.mock("~/application/schedule-read", () => ({
-  useScheduleReadContext: jest.fn(),
-}));
-jest.mock(
-  "~/features/read-schedule/model/use-occurrence-projection-now",
-  () => ({ useOccurrenceProjectionNow: jest.fn() })
-);
-jest.mock(
-  "~/features/read-schedule/model/use-occurrence-projection-query",
-  () => ({ useOccurrenceProjectionQuery: jest.fn() })
-);
+jest.mock("~/schedule/now", () => ({ useNow: jest.fn() }));
+jest.mock("~/schedule/query", () => ({ useScheduleRange: jest.fn() }));
+jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
 
 const now = new Date("2026-04-20T03:00:00.000Z");
-const context = {
-  isReady: true,
-  timezone: "Asia/Seoul",
-  userId: "user-1",
-};
+const timezone = "Asia/Seoul";
 const refetch = jest.fn();
 
 describe("일정 목록", () => {
@@ -74,9 +59,9 @@ describe("일정 목록", () => {
       refetch,
       status: "ready",
     });
-    expect(useOccurrenceProjectionQuery).toHaveBeenCalledWith({
-      context,
-      purpose: { now, type: "scheduleList" },
+    expect(useScheduleRange).toHaveBeenCalledWith({
+      endLocalDate: "2026-04-20",
+      startLocalDate: "2024-04-20",
     });
   });
 
@@ -145,35 +130,35 @@ function useList({
 }: {
   error?: Error | null;
   isLoading?: boolean;
-  items: RecurringItem[];
+  items: Schedule[];
   language?: "en" | "ko";
   sort?: Sort;
 }) {
   jest.mocked(useTranslation).mockReturnValue({
     i18n: { language, resolvedLanguage: language },
   } as never);
-  jest.mocked(useScheduleReadContext).mockReturnValue(context);
-  jest.mocked(useOccurrenceProjectionNow).mockReturnValue(now);
-  jest.mocked(useOccurrenceProjectionQuery).mockReturnValue({
-    completionLogs: [],
+  jest.mocked(useSession).mockReturnValue({
+    profile: { timezone },
+  } as never);
+  jest.mocked(useNow).mockReturnValue(now);
+  jest.mocked(useScheduleRange).mockReturnValue({
     error,
     isLoading,
-    isRefreshing: false,
     items,
+    logs: [],
     refetch,
-    timezone: context.timezone,
+    timezone,
   } as never);
 
   return useItems(sort);
 }
 
 function item(
-  overrides: RecurringItemFixtureOverrides & Pick<RecurringItem, "id" | "title">
-): RecurringItem {
-  return createRecurringItemFixture({
+  overrides: ScheduleOverrides & Pick<Schedule, "id" | "title">
+): Schedule {
+  return scheduleFixture({
     createdAt: "2026-04-20T00:00:00.000Z",
     startDateLocal: "2026-04-22",
-    updatedAt: "2026-04-20T00:00:00.000Z",
     ...overrides,
   });
 }

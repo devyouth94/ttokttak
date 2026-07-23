@@ -1,13 +1,13 @@
 import { addMonths, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
+import type { ColorKey } from "~/schedule/display/color";
+import { formatTimestamp } from "~/schedule/display/date";
 import type {
-  ItemOccurrenceProjectionEntry,
+  OccurrenceEntry,
   OccurrenceStatus,
-  RecurringItem,
-  RecurringItemColorKey,
-} from "~/entities/schedule";
-import { formatUtcTimeInTimezone } from "~/entities/schedule";
+} from "~/schedule/rules/occurrence";
+import type { Schedule } from "~/schedule/schedule";
 import type { AppLanguage } from "~/shared/i18n";
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
@@ -34,13 +34,13 @@ const calendarDayEntryCountFormatters = {
 
 export type CalendarDaySummary = {
   localDate: string;
-  markerColorKeys: RecurringItemColorKey[];
+  markerColorKeys: ColorKey[];
   occurrenceCount: number;
   overflowCount: number;
 };
 
 export type CalendarDayEntry = {
-  colorKey: RecurringItemColorKey;
+  colorKey: ColorKey;
   itemId: string;
   scheduledAtUtc: string;
   status: OccurrenceStatus;
@@ -200,7 +200,7 @@ export function shiftVisibleMonth(
   );
 }
 
-export function getMinimumVisibleMonth(items: RecurringItem[]): string | null {
+export function getMinimumVisibleMonth(items: Schedule[]): string | null {
   if (items.length === 0) {
     return null;
   }
@@ -226,14 +226,14 @@ export function clampVisibleMonth(
 export function buildCalendarDaySummaries({
   visibleMonthEntries,
 }: {
-  visibleMonthEntries: ItemOccurrenceProjectionEntry[];
+  visibleMonthEntries: OccurrenceEntry[];
 }): Record<string, CalendarDaySummary> {
   const summaryMap = new Map<
     string,
     { markerItems: CalendarMarkerItem[]; occurrenceCount: number }
   >();
 
-  visibleMonthEntries.forEach(({ item, occurrence }) => {
+  visibleMonthEntries.forEach(({ schedule, occurrence }) => {
     const summary = summaryMap.get(occurrence.localDate) ?? {
       markerItems: [],
       occurrenceCount: 0,
@@ -241,7 +241,7 @@ export function buildCalendarDaySummaries({
 
     summary.occurrenceCount += 1;
     summary.markerItems.push({
-      colorKey: item.colorKey,
+      colorKey: schedule.colorKey,
       scheduledAtUtc: occurrence.scheduledAtUtc,
     });
     summaryMap.set(occurrence.localDate, summary);
@@ -269,34 +269,35 @@ export function buildCalendarDayEntries({
   timezone,
 }: {
   language: AppLanguage;
-  selectedDateEntries: ItemOccurrenceProjectionEntry[];
+  selectedDateEntries: OccurrenceEntry[];
   timezone: string;
 }): CalendarDayEntry[] {
   return selectedDateEntries
-    .map(({ item, occurrence }) => ({
-      colorKey: item.colorKey,
-      itemId: item.id,
+    .map(({ schedule, occurrence }) => ({
+      colorKey: schedule.colorKey,
+      itemId: schedule.id,
       scheduledAtUtc: occurrence.scheduledAtUtc,
       status: occurrence.status,
       statusLabel: calendarStatusLabelByStatus[language][occurrence.status],
-      timeLabel: formatUtcTimeInTimezone(
+      timeLabel: formatTimestamp(
         occurrence.scheduledAtUtc,
         timezone,
+        "time",
         language
       ),
-      title: item.title,
+      title: schedule.title,
     }))
     .sort((left, right) => compareCalendarEntries(left, right, language));
 }
 
 type CalendarMarkerItem = {
-  colorKey: RecurringItemColorKey;
+  colorKey: ColorKey;
   scheduledAtUtc: string;
 };
 
 function getCalendarMarkerColorKeysByTime(
   markerItems: CalendarMarkerItem[]
-): RecurringItemColorKey[] {
+): ColorKey[] {
   return markerItems
     .slice()
     .sort(compareCalendarMarkerItemsByScheduledAtUtc)

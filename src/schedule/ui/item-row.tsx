@@ -1,16 +1,15 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
-import type { RecurringItemColorKey } from "~/entities/schedule/model/types";
-import { recurringItemColorOptionByKey } from "~/entities/schedule/ui/color-palette";
+import { colorByKey, type ColorKey } from "~/schedule/display/color";
 import { AppText } from "~/shared/ui/app-text";
 import { borderRadius, spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
 
 type Props = {
   accessibilityHint: string;
-  accessibilityLabel?: string;
-  colorKey: RecurringItemColorKey;
+  accessibilityLabel: string;
+  colorKey: ColorKey;
   isLast: boolean;
   metaLine: string;
   onPress: () => void;
@@ -27,12 +26,12 @@ export function ItemRow({
   title,
 }: Props): React.JSX.Element {
   const themeColors = useThemeColors();
-  const markerColor = recurringItemColorOptionByKey[colorKey].swatchColor;
+  const markerColor = colorByKey[colorKey].swatchColor;
 
   return (
     <Pressable
       accessibilityHint={accessibilityHint}
-      accessibilityLabel={accessibilityLabel ?? `${title} 상세 보기`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [

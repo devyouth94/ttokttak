@@ -1,25 +1,24 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { addDays, format, parse } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
-import { useScheduleReadContext } from "~/application/schedule-read";
-import type {
-  ItemNextOccurrenceProjectionEntry,
-  RecurringItemColorKey,
-} from "~/entities/schedule";
-import {
-  formatUtcTimeInTimezone,
-  getNextItemOccurrenceEntries,
-  getRecurrenceLabel,
-} from "~/entities/schedule";
-import { useOccurrenceProjectionNow } from "~/features/read-schedule/model/use-occurrence-projection-now";
-import { useOccurrenceProjectionQuery } from "~/features/read-schedule/model/use-occurrence-projection-query";
+import type { ColorKey } from "~/schedule/display/color";
+import { formatTimestamp } from "~/schedule/display/date";
+import { getRecurrenceLabel } from "~/schedule/display/label";
+import { useNow } from "~/schedule/now";
+import { useScheduleRange } from "~/schedule/query";
+import type { Occurrence } from "~/schedule/rules/occurrence";
+import { createOccurrences } from "~/schedule/rules/occurrence";
+import type { Schedule } from "~/schedule/schedule";
+import { useSession } from "~/session/provider";
 import {
   type AppLanguage,
   normalizeAppLanguage,
 } from "~/shared/i18n/app-language";
 
 type Row = {
-  colorKey: RecurringItemColorKey;
+  colorKey: ColorKey;
   id: string;
   nextOccurrenceTimeLabel: string;
   nextScheduledAtUtc: string | null;
@@ -34,31 +33,42 @@ const noNextOccurrenceLabelByLanguage = {
   ko: "예정 없음",
 } as const satisfies Record<AppLanguage, string>;
 
+const lookbackDays = 730;
+
 export function useItems(sort: Sort) {
   const { i18n } = useTranslation();
   const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
-  const context = useScheduleReadContext();
-  const now = useOccurrenceProjectionNow();
-  const query = useOccurrenceProjectionQuery({
-    context,
-    purpose: { now, type: "scheduleList" },
+  const { profile } = useSession();
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = useNow();
+  const today = formatInTimeZone(now, timezone, "yyyy-MM-dd");
+  const query = useScheduleRange({
+    endLocalDate: today,
+    startLocalDate: format(
+      addDays(parse(today, "yyyy-MM-dd", new Date()), -lookbackDays),
+      "yyyy-MM-dd"
+    ),
   });
-  const { completionLogs, items, timezone } = query;
-  const rows = useMemo(
-    () =>
-      toRows({
-        language,
-        nextOccurrenceEntries: getNextItemOccurrenceEntries({
-          completionLogs,
-          items,
-          now,
-          timezone,
-        }),
-        sort,
-        timezone,
-      }),
-    [completionLogs, items, language, now, sort, timezone]
-  );
+  const { items, logs, timezone: queryTimezone } = query;
+  const rows = useMemo(() => {
+    const occurrences = createOccurrences({
+      logs,
+      now,
+      schedules: items,
+      timezone: queryTimezone,
+    });
+
+    return toRows({
+      language,
+      nextOccurrenceEntries: items.map((schedule) => ({
+        occurrence: occurrences.next(schedule.id),
+        schedule,
+      })),
+      sort,
+      timezone: queryTimezone,
+    });
+  }, [items, language, logs, now, queryTimezone, sort]);
   const status = query.isLoading ? "loading" : query.error ? "error" : "ready";
 
   return {
@@ -75,29 +85,35 @@ function toRows({
   timezone,
 }: {
   language: AppLanguage;
-  nextOccurrenceEntries: ItemNextOccurrenceProjectionEntry[];
+  nextOccurrenceEntries: {
+    occurrence: Occurrence | null;
+    schedule: Schedule;
+  }[];
   sort?: Sort;
   timezone: string;
 }): Row[] {
   return [...nextOccurrenceEntries]
     .sort((left, right) => {
-      const byCreatedAt = right.item.createdAt.localeCompare(
-        left.item.createdAt
+      const byCreatedAt = right.schedule.createdAt.localeCompare(
+        left.schedule.createdAt
       );
-      const byTitle = left.item.title.localeCompare(right.item.title, language);
+      const byTitle = left.schedule.title.localeCompare(
+        right.schedule.title,
+        language
+      );
 
       return sort === "createdDesc"
         ? byCreatedAt || byTitle
         : byTitle || byCreatedAt;
     })
-    .map(({ item, occurrence }) => ({
-      colorKey: item.colorKey,
-      id: item.id,
+    .map(({ schedule, occurrence }) => ({
+      colorKey: schedule.colorKey,
+      id: schedule.id,
       nextOccurrenceTimeLabel: occurrence
-        ? formatUtcTimeInTimezone(occurrence.scheduledAtUtc, timezone, language)
+        ? formatTimestamp(occurrence.scheduledAtUtc, timezone, "time", language)
         : noNextOccurrenceLabelByLanguage[language],
       nextScheduledAtUtc: occurrence?.scheduledAtUtc ?? null,
-      recurrenceLabel: getRecurrenceLabel(item, language),
-      title: item.title,
+      recurrenceLabel: getRecurrenceLabel(schedule, language),
+      title: schedule.title,
     }));
 }

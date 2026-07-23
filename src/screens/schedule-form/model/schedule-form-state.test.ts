@@ -1,4 +1,4 @@
-import { createRecurringItemFixture } from "~/entities/schedule/testing";
+import { scheduleFixture } from "~/schedule/fixtures";
 
 import {
   createDefaultFormState,
@@ -18,8 +18,8 @@ import {
   getScheduleFormPickerDates,
   normalizeStartDateSelection,
   type RecurringItemFormValues,
-  toDraft,
   toFormState,
+  toInput,
 } from "./schedule-form-state";
 
 function getValidationMessages(
@@ -33,7 +33,6 @@ function getValidationMessages(
   const schema = createRecurringItemFormSchema({
     isEditMode: options.isEditMode ?? false,
     language: options.language ?? "ko",
-    timezone: "Asia/Seoul",
     todayLocalDate: options.todayLocalDate ?? "2026-05-06",
   });
   const result = schema.safeParse({
@@ -223,54 +222,45 @@ describe("recurring item form validation messages", () => {
   });
 });
 
-describe("recurring item form draft", () => {
-  it("종료일 없음은 form state와 draft에서 null로 표현한다", () => {
+describe("recurring item form input", () => {
+  it("종료일 없음은 form state와 input에서 null로 표현한다", () => {
     const formState = createDefaultFormState();
-    const draft = toDraft(
-      {
-        ...formState,
-        reminderTimeLocal: "09:00",
-        startDateLocal: "2026-05-06",
-        title: "물 마시기",
-      },
-      "Asia/Seoul"
-    );
+    const input = toInput({
+      ...formState,
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-05-06",
+      title: "물 마시기",
+    });
 
     expect(formState.endDateLocal).toBeNull();
-    expect(draft.endDateLocal).toBeNull();
+    expect(input.endDateLocal).toBeNull();
   });
 
-  it("신규 일정 draft는 기본 일정 색상 red를 가진다", () => {
-    const draft = toDraft(
-      {
-        ...createDefaultFormState(),
-        reminderTimeLocal: "09:00",
-        startDateLocal: "2026-05-06",
-        title: "물 마시기",
-      },
-      "Asia/Seoul"
-    );
+  it("신규 일정 input는 기본 일정 색상 red를 가진다", () => {
+    const input = toInput({
+      ...createDefaultFormState(),
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-05-06",
+      title: "물 마시기",
+    });
 
-    expect(draft.colorKey).toBe("red");
+    expect(input.colorKey).toBe("red");
   });
 
-  it("선택한 일정 색상 key를 draft에 반영한다", () => {
-    const draft = toDraft(
-      {
-        ...createDefaultFormState(),
-        colorKey: "purple",
-        reminderTimeLocal: "09:00",
-        startDateLocal: "2026-05-06",
-        title: "물 마시기",
-      },
-      "Asia/Seoul"
-    );
+  it("선택한 일정 색상 key를 input에 반영한다", () => {
+    const input = toInput({
+      ...createDefaultFormState(),
+      colorKey: "purple",
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-05-06",
+      title: "물 마시기",
+    });
 
-    expect(draft.colorKey).toBe("purple");
+    expect(input.colorKey).toBe("purple");
   });
 
   it("수정 화면 form state는 저장된 일정 색상 key를 유지한다", () => {
-    const item = createRecurringItemFixture({
+    const item = scheduleFixture({
       colorKey: "green",
       createdAt: "2026-05-06T00:00:00.000Z",
       description: null,
@@ -279,15 +269,13 @@ describe("recurring item form draft", () => {
       startDateLocal: "2026-05-06",
       timezone: "Asia/Seoul",
       title: "물 마시기",
-      updatedAt: "2026-05-06T00:00:00.000Z",
-      userId: "user-1",
     });
 
     expect(toFormState(item).colorKey).toBe("green");
   });
 
   it("수정 화면 form state는 저장된 종료일을 유지한다", () => {
-    const item = createRecurringItemFixture({
+    const item = scheduleFixture({
       colorKey: "green",
       createdAt: "2026-05-06T00:00:00.000Z",
       description: null,
@@ -297,8 +285,6 @@ describe("recurring item form draft", () => {
       startDateLocal: "2026-05-06",
       timezone: "Asia/Seoul",
       title: "물 마시기",
-      updatedAt: "2026-05-06T00:00:00.000Z",
-      userId: "user-1",
     });
 
     expect(toFormState(item).endDateLocal).toBe("2026-05-10");

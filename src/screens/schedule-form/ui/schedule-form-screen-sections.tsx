@@ -14,13 +14,12 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { Info } from "lucide-react-native";
 
+import { type ColorKey, getColorOptions } from "~/schedule/display/color";
 import {
   type AnchorType,
-  getRecurringItemColorOptions,
   type RecurrenceType,
-  type RecurringItemColorKey,
-  supportsCompletionBased,
-} from "~/entities/schedule";
+  supportsCompletion,
+} from "~/schedule/rules/recurrence";
 import { useAppLanguage } from "~/shared/i18n";
 import { AppText } from "~/shared/ui/app-text";
 import type { ThemeColors } from "~/theme/colors";
@@ -76,9 +75,9 @@ type RecurrenceModeTabButtonProps = {
 };
 
 type ColorPickerSectionProps = {
-  selectedColorKey: RecurringItemColorKey;
+  selectedColorKey: ColorKey;
   styles: ScheduleFormScreenStyles;
-  onSelectColorKey: (colorKey: RecurringItemColorKey) => void;
+  onSelectColorKey: (colorKey: ColorKey) => void;
 };
 
 export function RecurrenceSection({
@@ -240,7 +239,7 @@ export function ColorPickerSection({
 }: ColorPickerSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const colorOptions = getRecurringItemColorOptions(language).map((option) => ({
+  const colorOptions = getColorOptions(language).map((option) => ({
     accessibilityHint: t("scheduleForm.color.optionHint", {
       color: option.label,
     }),
@@ -251,7 +250,7 @@ export function ColorPickerSection({
       />
     ),
     value: option.value,
-  })) satisfies SelectOption<RecurringItemColorKey>[];
+  })) satisfies SelectOption<ColorKey>[];
   const selectedOption =
     colorOptions.find((option) => option.value === selectedColorKey) ??
     colorOptions[0]!;
@@ -477,8 +476,7 @@ export function AdvancedOptionsSection({
 }: AdvancedOptionsSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const isCompletionBasedSwitchEnabled =
-    supportsCompletionBased(recurrenceType);
+  const isCompletionBasedSwitchEnabled = supportsCompletion(recurrenceType);
 
   const isCompletionBasedSelected =
     isCompletionBasedSwitchEnabled && anchorType === "completion_based";
