@@ -1,3 +1,7 @@
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+import type { Database } from "~/database.types";
+
 import {
   createLogs,
   getAnchor,
@@ -173,8 +177,8 @@ describe("schedule logs DB", () => {
   });
 
   it("여러 occurrence 처리 기록을 한 요청으로 생성한다", async () => {
-    const insert = jest.fn().mockResolvedValue({ error: null });
-    const client = { from: jest.fn(() => ({ insert })) } as never;
+    const upsert = jest.fn().mockResolvedValue({ error: null });
+    const client = { from: jest.fn(() => ({ upsert })) } as never;
 
     await createLogs(
       [
@@ -194,18 +198,69 @@ describe("schedule logs DB", () => {
       client
     );
 
-    expect(insert).toHaveBeenCalledWith([
-      expect.objectContaining({
-        action: "completed",
-        item_id: "item-1",
-        user_id: "user-1",
-      }),
-      expect.objectContaining({
-        action: "skipped",
-        item_id: "item-1",
-        user_id: "user-1",
-      }),
-    ]);
+    expect(upsert).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          action: "completed",
+          item_id: "item-1",
+          user_id: "user-1",
+        }),
+        expect.objectContaining({
+          action: "skipped",
+          item_id: "item-1",
+          user_id: "user-1",
+        }),
+      ],
+      {
+        ignoreDuplicates: true,
+        onConflict: "item_id,scheduled_at_utc",
+      }
+    );
+  });
+
+  it("여러 처리 기록은 중복을 무시하고 DB 처리 시각을 사용한다", async () => {
+    let columns: string | null = null;
+    let onConflict: string | null = null;
+    let prefer: string | null = null;
+    const fetch = jest.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = new URL(String(input));
+
+        columns = url.searchParams.get("columns");
+        onConflict = url.searchParams.get("on_conflict");
+        prefer = new Headers(init?.headers).get("Prefer");
+        return new Response(null, { status: 201 });
+      }
+    );
+    const client = createSupabaseClient<Database>(
+      "https://example.supabase.co",
+      "test-key",
+      {
+        auth: {
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          persistSession: false,
+        },
+        global: { fetch },
+      }
+    );
+
+    await createLogs(
+      [
+        {
+          action: "completed",
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-03T00:00:00.000Z",
+          userId: "user-1",
+        },
+      ],
+      client
+    );
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(columns).not.toContain('"acted_at_utc"');
+    expect(onConflict).toBe("item_id,scheduled_at_utc");
+    expect(prefer).toContain("resolution=ignore-duplicates");
   });
 
   it("현재 조회 경계에 필요한 복합 index를 유지한다", () => {

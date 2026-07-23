@@ -7,7 +7,6 @@ type LogInsert = Database["public"]["Tables"]["completion_logs"]["Insert"];
 type Client = typeof supabase;
 
 export type CreateLogInput = {
-  actedAtUtc?: string;
   action: OccurrenceLog["action"];
   itemId: string;
   scheduledAtUtc: string;
@@ -30,7 +29,6 @@ function toLog(row: LogRow): OccurrenceLog {
 
 function toInsert(input: CreateLogInput): LogInsert {
   return {
-    acted_at_utc: input.actedAtUtc ? normalizeUtc(input.actedAtUtc) : undefined,
     action: input.action,
     item_id: input.itemId,
     scheduled_at_utc: normalizeUtc(input.scheduledAtUtc),
@@ -174,7 +172,10 @@ export async function createLogs(
 ): Promise<void> {
   const { error } = await client
     .from("completion_logs")
-    .insert(inputs.map(toInsert));
+    .upsert(inputs.map(toInsert), {
+      ignoreDuplicates: true,
+      onConflict: "item_id,scheduled_at_utc",
+    });
 
   if (error) {
     throw error;
