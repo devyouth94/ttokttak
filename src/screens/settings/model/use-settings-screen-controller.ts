@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Alert, Linking } from "react-native";
 import Constants from "expo-constants";
 
-import type { AppLanguage } from "~/i18n/app-language";
-import { useAppLanguage } from "~/i18n/use-app-language";
+import type { AppLanguage } from "~/i18n/language";
+import { useAppLanguage } from "~/i18n/provider";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/legal";
 import { useNotifications } from "~/notifications/provider";
 import {

@@ -1,4 +1,4 @@
-import type { AppLanguage } from "./app-language";
+import type { AppLanguage } from "./language";
 
 type AppI18nTranslationShape<T> = {
   readonly [Key in keyof T]: T[Key] extends string

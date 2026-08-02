@@ -5,7 +5,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-import { AppI18nProvider } from "~/i18n/i18n-provider";
+import { AppI18nProvider } from "~/i18n/provider";
 import { SessionNotificationProvider } from "~/notifications/session-provider";
 import { queryClient } from "~/query-client";
 import { wrap } from "~/sentry";

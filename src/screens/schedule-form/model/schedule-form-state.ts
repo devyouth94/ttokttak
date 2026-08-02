@@ -1,7 +1,7 @@
 import { format, parse } from "date-fns";
 import { z } from "zod/v4";
 
-import type { AppLanguage } from "~/i18n/app-language";
+import type { AppLanguage } from "~/i18n/language";
 import { colorKeys, defaultColorKey } from "~/schedule/display/color";
 import {
   type AnchorType,

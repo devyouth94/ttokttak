@@ -1,7 +1,7 @@
 import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
-import type { AppLanguage } from "~/i18n/app-language";
+import type { AppLanguage } from "~/i18n/language";
 import type { ColorKey } from "~/schedule/display/color";
 import { formatLocal, formatTimestamp } from "~/schedule/display/date";
 import { getActionLabel, getRecurrenceLabel } from "~/schedule/display/label";

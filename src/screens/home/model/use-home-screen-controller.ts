@@ -4,7 +4,7 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
 import { useNow } from "~/schedule/now";
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";

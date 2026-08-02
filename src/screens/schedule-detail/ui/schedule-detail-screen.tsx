@@ -6,7 +6,7 @@ import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
 import { getErrorMessage } from "~/errors";
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
 import {
   colorByKey,

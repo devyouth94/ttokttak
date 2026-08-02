@@ -7,7 +7,7 @@ import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { getErrorMessage } from "~/errors";
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
 import { useNow } from "~/schedule/now";
 import { ItemRow } from "~/schedule/ui/item-row";

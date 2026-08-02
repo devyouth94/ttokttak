@@ -3,7 +3,7 @@ import { AppState } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 
 import { NotificationProvider } from "./provider";
 import { cancelNotifications, syncNotifications } from "./sync";
@@ -35,7 +35,7 @@ jest.mock("expo-notifications", () => ({
   setNotificationHandler: jest.fn(),
 }));
 jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
-jest.mock("~/i18n/use-app-language", () => ({ useAppLanguage: jest.fn() }));
+jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
 jest.mock("./sync", () => ({
   cancelNotifications: jest.fn(),
   syncNotifications: jest.fn(),

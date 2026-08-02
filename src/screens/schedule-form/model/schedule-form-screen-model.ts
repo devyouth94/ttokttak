@@ -1,4 +1,4 @@
-import type { AppLanguage } from "~/i18n/app-language";
+import type { AppLanguage } from "~/i18n/language";
 import { formatLocal } from "~/schedule/display/date";
 import {
   firstDate,

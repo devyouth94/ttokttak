@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 
-import type { AppLanguage } from "~/i18n/app-language";
+import type { AppLanguage } from "~/i18n/language";
 import { listItems } from "~/schedule/db/items";
 import { listLogs } from "~/schedule/db/logs";
 

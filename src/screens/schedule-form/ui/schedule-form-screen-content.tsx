@@ -17,7 +17,7 @@ import type { DateTimePickerEvent } from "@react-native-community/datetimepicker
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarDays, Clock3, Trash2 } from "lucide-react-native";
 
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import type { ThemeColors } from "~/theme/colors";
 import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";

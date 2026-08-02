@@ -1,4 +1,4 @@
-import type { AppLanguage } from "~/i18n/app-language";
+import type { AppLanguage } from "~/i18n/language";
 
 const MAX_PROFILE_DISPLAY_NAME_LENGTH = 30;
 

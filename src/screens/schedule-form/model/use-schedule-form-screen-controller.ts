@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
 import { getItem } from "~/schedule/db/items";
 import type { ColorKey } from "~/schedule/display/color";

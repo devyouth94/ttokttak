@@ -14,7 +14,7 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { Info } from "lucide-react-native";
 
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import { type ColorKey, getColorOptions } from "~/schedule/display/color";
 import {
   type AnchorType,

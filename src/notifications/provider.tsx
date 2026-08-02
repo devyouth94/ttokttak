@@ -3,7 +3,7 @@ import { createContext, use, useCallback, useEffect, useState } from "react";
 import { AppState, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
-import { useAppLanguage } from "~/i18n/use-app-language";
+import { useAppLanguage } from "~/i18n/provider";
 import { captureException } from "~/sentry";
 
 import {

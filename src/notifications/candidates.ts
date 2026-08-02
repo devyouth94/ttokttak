@@ -1,7 +1,7 @@
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
-import type { AppLanguage } from "~/i18n/app-language";
+import type { AppLanguage } from "~/i18n/language";
 import { formatTimestamp } from "~/schedule/display/date";
 import type { OccurrenceLog } from "~/schedule/rules/occurrence";
 import { createOccurrences } from "~/schedule/rules/occurrence";
