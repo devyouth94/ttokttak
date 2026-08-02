@@ -4,10 +4,10 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
-import { useAppLanguage } from "~/shared/i18n";
-import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { useAppLanguage } from "~/i18n/use-app-language";
 import { useThemeColors } from "~/theme/provider";
+import { AppText } from "~/ui/app-text";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 import { createHomeDateOptions } from "../model/home-feed-sections";
 

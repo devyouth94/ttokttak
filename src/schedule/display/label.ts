@@ -1,4 +1,4 @@
-import type { AppLanguage } from "~/shared/i18n";
+import type { AppLanguage } from "~/i18n/app-language";
 
 import type { OccurrenceAction } from "../rules/occurrence";
 import type { Schedule } from "../schedule";

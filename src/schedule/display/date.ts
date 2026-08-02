@@ -3,7 +3,7 @@ import { format, parse } from "date-fns";
 import { enUS, ko } from "date-fns/locale";
 import { formatInTimeZone } from "date-fns-tz";
 
-import type { AppLanguage } from "~/shared/i18n";
+import type { AppLanguage } from "~/i18n/app-language";
 
 const localeByLanguage = {
   en: enUS,

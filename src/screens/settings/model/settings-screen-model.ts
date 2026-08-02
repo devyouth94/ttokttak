@@ -1,5 +1,5 @@
+import type { AppLanguage } from "~/i18n/app-language";
 import type { PermissionStatus } from "~/notifications/permission";
-import type { AppLanguage } from "~/shared/i18n";
 import type { ThemePreference } from "~/theme/preference";
 import type { SelectOption } from "~/ui/select-menu";
 

@@ -7,12 +7,12 @@ import {
 } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
+import type { AppLanguage } from "~/i18n/app-language";
 import { formatLocal } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
 import type { Occurrence, OccurrenceEntry } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
 import { currentRule } from "~/schedule/schedule";
-import type { AppLanguage } from "~/shared/i18n";
 
 const HOME_DATE_RANGE_DAYS = 15;
 

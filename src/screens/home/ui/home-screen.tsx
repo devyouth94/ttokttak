@@ -2,8 +2,8 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
-import { AppScreen } from "~/shared/ui/app-screen";
+import { AppScreen } from "~/ui/app-screen";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
 
 import { HomeFeedError } from "./home-feed-error";
 import { HomeFeedSectionList } from "./home-feed-section-list";

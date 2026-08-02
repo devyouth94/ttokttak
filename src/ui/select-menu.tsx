@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
-import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { AppText } from "~/ui/app-text";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 export type SelectOption<Value extends string> = {
   accessibilityHint?: string;

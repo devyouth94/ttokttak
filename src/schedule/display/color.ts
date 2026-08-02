@@ -1,4 +1,4 @@
-import type { AppLanguage } from "~/shared/i18n";
+import type { AppLanguage } from "~/i18n/app-language";
 
 export const colorKeys = [
   "red",

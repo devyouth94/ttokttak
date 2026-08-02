@@ -8,7 +8,7 @@ import {
 import { I18nextProvider } from "react-i18next";
 import { StyleSheet } from "react-native";
 
-import { AppScreen } from "~/shared/ui/app-screen";
+import { AppScreen } from "~/ui/app-screen";
 import { StateMessage } from "~/ui/state-message";
 
 import { appI18n, ensureAppI18nInitialized } from "./app-i18n";

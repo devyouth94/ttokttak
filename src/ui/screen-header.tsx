@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
-import { spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { spacing } from "~/ui/tokens";
 
 import { AppText } from "./app-text";
 

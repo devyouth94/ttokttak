@@ -1,7 +1,7 @@
 import { View, type ViewStyle } from "react-native";
 
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";
-import { spacing } from "~/shared/ui/tokens";
+import { spacing } from "~/ui/tokens";
 
 import { HomeFeedSectionBlock } from "./home-feed-section-block";
 import type {

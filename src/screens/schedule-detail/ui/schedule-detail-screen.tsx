@@ -5,6 +5,8 @@ import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 
+import { getErrorMessage } from "~/errors";
+import { useAppLanguage } from "~/i18n/use-app-language";
 import { useNotifications } from "~/notifications/provider";
 import {
   colorByKey,
@@ -12,14 +14,12 @@ import {
   getColorLabel,
 } from "~/schedule/display/color";
 import { archiveSchedule } from "~/schedule/write";
-import { useAppLanguage } from "~/shared/i18n";
-import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
-import { AppScreen } from "~/shared/ui/app-screen";
-import { AppText } from "~/shared/ui/app-text";
-import { FocusScreenHeader } from "~/shared/ui/focus-screen-header";
-import { spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { AppScreen } from "~/ui/app-screen";
+import { AppText } from "~/ui/app-text";
+import { FocusScreenHeader } from "~/ui/focus-screen-header";
 import { StateMessage } from "~/ui/state-message";
+import { spacing } from "~/ui/tokens";
 
 import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";
 import {

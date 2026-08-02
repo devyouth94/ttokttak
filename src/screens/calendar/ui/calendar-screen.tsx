@@ -6,20 +6,20 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
+import { getErrorMessage } from "~/errors";
+import { useAppLanguage } from "~/i18n/use-app-language";
 import { formatLocal } from "~/schedule/display/date";
 import { useNow } from "~/schedule/now";
 import { ItemRow } from "~/schedule/ui/item-row";
 import { useSession } from "~/session/provider";
-import { useAppLanguage } from "~/shared/i18n";
-import { getErrorMessage } from "~/shared/lib/errors/get-error-message";
-import { AppScreen } from "~/shared/ui/app-screen";
-import { AppText } from "~/shared/ui/app-text";
-import { ScreenHeader } from "~/shared/ui/screen-header";
-import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
 import { useTheme, useThemeColors } from "~/theme/provider";
+import { AppScreen } from "~/ui/app-screen";
+import { AppText } from "~/ui/app-text";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { ScreenHeader } from "~/ui/screen-header";
 import { StateMessage } from "~/ui/state-message";
+import { borderRadius, spacing, typography } from "~/ui/tokens";
 
 import { CALENDAR_DAY_CELL_HEIGHT, CalendarDayCell } from "./calendar-day-cell";
 import { getCalendarRenderKey } from "./calendar-render-key";

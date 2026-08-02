@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Pencil } from "lucide-react-native";
 
-import { AppText } from "~/shared/ui/app-text";
+import { AppText } from "~/ui/app-text";
 
 import type { SettingsScreenStyles } from "./settings-screen-styles";
 

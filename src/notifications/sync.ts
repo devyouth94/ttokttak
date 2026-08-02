@@ -1,8 +1,8 @@
 import * as Notifications from "expo-notifications";
 
+import type { AppLanguage } from "~/i18n/app-language";
 import { listItems } from "~/schedule/db/items";
 import { listLogs } from "~/schedule/db/logs";
-import type { AppLanguage } from "~/shared/i18n";
 
 import { type Candidate, getCandidates } from "./candidates";
 import { getPermission } from "./permission";

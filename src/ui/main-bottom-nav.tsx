@@ -12,12 +12,10 @@ import {
   Settings2,
 } from "lucide-react-native";
 
-import { AppText } from "~/shared/ui/app-text";
-import { spacing } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
-
-import { shouldNavigateMainBottomNavRoute } from "./main-bottom-nav.helpers";
+import { AppText } from "~/ui/app-text";
+import { spacing } from "~/ui/tokens";
 
 export const MAIN_BOTTOM_NAV_RESERVED_HEIGHT = 92;
 
@@ -186,9 +184,7 @@ function MainBottomNavItem({
           type: "tabPress",
         });
 
-        if (
-          shouldNavigateMainBottomNavRoute(isActive, event.defaultPrevented)
-        ) {
+        if (!isActive && !event.defaultPrevented) {
           navigation.dispatch({
             ...CommonActions.navigate(route),
             target: stateKey,

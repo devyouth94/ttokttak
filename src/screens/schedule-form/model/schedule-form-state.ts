@@ -1,6 +1,7 @@
 import { format, parse } from "date-fns";
 import { z } from "zod/v4";
 
+import type { AppLanguage } from "~/i18n/app-language";
 import { colorKeys, defaultColorKey } from "~/schedule/display/color";
 import {
   type AnchorType,
@@ -20,7 +21,6 @@ import {
   currentRule,
   type Schedule,
 } from "~/schedule/schedule";
-import type { AppLanguage } from "~/shared/i18n";
 
 export type CustomRecurrenceUnit = "days" | "weeks" | "months";
 export type DatePickerTarget = "endDate" | "startDate";

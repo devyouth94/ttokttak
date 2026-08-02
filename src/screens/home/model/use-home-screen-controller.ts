@@ -4,11 +4,11 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
+import { useAppLanguage } from "~/i18n/use-app-language";
 import { useNotifications } from "~/notifications/provider";
 import { useNow } from "~/schedule/now";
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { useSession } from "~/session/provider";
-import { useAppLanguage } from "~/shared/i18n";
 
 import {
   buildHomeFeedSections,

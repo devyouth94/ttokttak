@@ -13,7 +13,7 @@ jest.mock("react", () => ({
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }));
 jest.mock("./db/items", () => ({ listItems: jest.fn() }));
 jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
-jest.mock("~/shared/lib/query/query-client", () => ({
+jest.mock("~/query-client", () => ({
   queryClient: { invalidateQueries: jest.fn() },
 }));
 

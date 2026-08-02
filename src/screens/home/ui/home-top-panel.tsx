@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { spacing } from "~/shared/ui/tokens";
+import { spacing } from "~/ui/tokens";
 
 import { HomeDateCarousel } from "./home-date-carousel";
 import { HomeHeader } from "./home-header";

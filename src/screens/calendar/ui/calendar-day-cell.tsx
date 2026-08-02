@@ -7,9 +7,9 @@ import {
   type ColorKey,
   getColorLabel,
 } from "~/schedule/display/color";
-import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, typography } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { AppText } from "~/ui/app-text";
+import { borderRadius, typography } from "~/ui/tokens";
 
 import { CALENDAR_MAX_VISIBLE_MARKERS } from "../model/calendar-screen-model";
 

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
-import { AppText } from "~/shared/ui/app-text";
+import { AppText } from "~/ui/app-text";
 
 type HomeHeaderProps = {
   profileName: string;
