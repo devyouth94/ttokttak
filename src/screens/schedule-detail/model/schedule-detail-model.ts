@@ -108,14 +108,19 @@ const overdueCountLabelFormatters = {
   ko: (count: number) => `지난 일정 ${count}건`,
 } as const satisfies Record<AppLanguage, (count: number) => string>;
 
+const scheduledDateLabelFormatters = {
+  en: (dateLabel: string) => `Scheduled ${dateLabel}`,
+  ko: (dateLabel: string) => `예정 ${dateLabel}`,
+} as const satisfies Record<AppLanguage, (dateLabel: string) => string>;
+
 type RecurringItemDetailReturnPath = "/" | "/calendar" | "/home" | "/schedule";
 
 export type ItemDetailHistoryEntry = {
   action: OccurrenceLog["action"];
+  actedDateLabel: string;
   id: string;
-  scheduledAtUtc: string;
+  scheduledDateLabel: string | null;
   statusLabel: string;
-  timeLabel: string;
 };
 
 export type ItemDetailSummaryBadge = {
@@ -278,19 +283,33 @@ export function buildHistoryPreview(
 ): ItemDetailHistoryEntry[] {
   return completionLogs
     .slice()
-    .sort(compareLogsByScheduledAtUtcDesc)
+    .sort(compareLogsByActedAtUtcDesc)
     .slice(0, 5)
-    .map((log) => ({
-      action: log.action,
-      id: log.id,
-      scheduledAtUtc: log.scheduledAtUtc,
-      statusLabel: getActionLabel(log.action, language),
-      timeLabel: formatHistoryPreviewTime(
+    .map((log) => {
+      const actedDate = formatInTimeZone(
+        log.actedAtUtc,
+        timezone,
+        "yyyy-MM-dd"
+      );
+      const scheduledDate = formatInTimeZone(
         log.scheduledAtUtc,
         timezone,
-        language
-      ),
-    }));
+        "yyyy-MM-dd"
+      );
+
+      return {
+        action: log.action,
+        actedDateLabel: formatLocal(actedDate, "date", language),
+        id: log.id,
+        scheduledDateLabel:
+          actedDate === scheduledDate
+            ? null
+            : scheduledDateLabelFormatters[language](
+                formatLocal(scheduledDate, "date", language)
+              ),
+        statusLabel: getActionLabel(log.action, language),
+      };
+    });
 }
 
 export function buildSummarySettingBadges(
@@ -434,23 +453,11 @@ function getOverdueOccurrences(
     );
 }
 
-function formatHistoryPreviewTime(
-  scheduledAtUtc: string,
-  timezone: string,
-  language: AppLanguage
-): string {
-  return `${formatLocal(
-    formatInTimeZone(scheduledAtUtc, timezone, "yyyy-MM-dd"),
-    "date",
-    language
-  )} ${formatTimestamp(scheduledAtUtc, timezone, "time", language)}`;
-}
-
-function compareLogsByScheduledAtUtcDesc(
+function compareLogsByActedAtUtcDesc(
   left: OccurrenceLog,
   right: OccurrenceLog
 ): number {
-  return right.scheduledAtUtc.localeCompare(left.scheduledAtUtc);
+  return right.actedAtUtc.localeCompare(left.actedAtUtc);
 }
 
 function getSummaryNotificationLabel(

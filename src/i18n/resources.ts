@@ -132,8 +132,8 @@ export const appI18nResources = {
         },
         headerTitle: "Item detail",
         history: {
-          empty: "No completion history yet",
-          title: "Recent history",
+          empty: "No processing history yet",
+          title: "Recent activity",
         },
         inlineErrorTitle: "Could not complete the action",
         loadingA11yLabel: "Loading item detail",
@@ -478,8 +478,8 @@ export const appI18nResources = {
         },
         headerTitle: "일정 상세",
         history: {
-          empty: "아직 완료 기록이 없어요",
-          title: "최근 히스토리",
+          empty: "아직 처리 기록이 없어요",
+          title: "최근 처리 기록",
         },
         inlineErrorTitle: "처리를 완료하지 못했어요",
         loadingA11yLabel: "일정 상세를 불러오는 중",

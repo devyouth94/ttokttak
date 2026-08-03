@@ -372,9 +372,16 @@ function DetailHistoryCard({
 
   return (
     <View style={[styles.historyRow, !isFirst && styles.historyRowDivider]}>
-      <AppText style={styles.historyDate} variant="body3">
-        {entry.timeLabel}
-      </AppText>
+      <View style={styles.historyDateGroup}>
+        <AppText style={styles.historyDate} variant="body3">
+          {entry.actedDateLabel}
+        </AppText>
+        {entry.scheduledDateLabel ? (
+          <AppText style={styles.historyScheduledDate} variant="label">
+            {entry.scheduledDateLabel}
+          </AppText>
+        ) : null}
+      </View>
       <View style={[styles.historyStatusChip, statusChipStyle]}>
         <AppText
           style={[styles.historyStatusChipText, statusChipTextStyle]}

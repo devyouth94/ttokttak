@@ -258,8 +258,8 @@ DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는
 기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
 
 completion log 조회는 projection 목적이나 후속 계산에 필요한 범위로 제한한다.
-상세 화면의 최근 히스토리는 최신 5건만 표시한다.
-상세 화면의 최근 히스토리 조회와 occurrence projection 조회는 분리한다.
+상세 화면의 최근 처리 기록은 최신 5건만 표시한다.
+상세 화면의 최근 처리 기록 조회와 occurrence projection 조회는 분리한다.
 상세 화면의 occurrence projection은 일정 시작 이후 전체 미해결 occurrence를 판정할 수 있는 completion log를 사용한다.
 MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
 `completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.

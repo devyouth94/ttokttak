@@ -20,6 +20,8 @@ function createScheduleDetailScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     historyDate: {
       color: themeColors.text,
+    },
+    historyDateGroup: {
       flex: 1,
     },
     historyEmptyText: {
@@ -45,6 +47,9 @@ function createScheduleDetailScreenStyles(themeColors: ThemeColors) {
     },
     historySectionLabel: {
       color: themeColors.text,
+    },
+    historyScheduledDate: {
+      color: themeColors.textMuted,
     },
     historyStatusChip: {
       alignItems: "center",

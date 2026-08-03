@@ -280,9 +280,11 @@ export function CalendarScreen(): React.JSX.Element {
             <AppText style={styles.selectedDateTitle} variant="body2">
               {selectedDateTitle}
             </AppText>
-            <AppText style={styles.selectedDateCount} variant="body3">
-              {formatCalendarDayEntryCount(selectedEntries.length, language)}
-            </AppText>
+            {isLoading ? null : (
+              <AppText style={styles.selectedDateCount} variant="body3">
+                {formatCalendarDayEntryCount(selectedEntries.length, language)}
+              </AppText>
+            )}
           </View>
 
           {isLoading ? (

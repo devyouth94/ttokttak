@@ -232,7 +232,9 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 상세는 지난 일정이 있으면 최신 overdue occurrence를 대표 상태로 사용한다.
 지난 일정이 없으면 다음 occurrence를 사용한다.
 지난 일정 개수는 일정 시작 이후의 전체 미해결 overdue occurrence를 기준으로 한다.
-최근 히스토리 5건은 표시 범위이며 occurrence 상태 계산 범위를 제한하지 않는다.
+최근 처리 기록 5건은 실제 처리 시점 최신순으로 표시한다.
+처리일을 주 정보로 보여주고 occurrence 예정일이 다르면 예정일을 함께 보여준다.
+최근 처리 기록의 표시 범위는 occurrence 상태 계산 범위를 제한하지 않는다.
 
 ## Occurrence Actions
 
