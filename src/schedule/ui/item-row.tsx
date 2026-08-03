@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
 import { colorByKey, type ColorKey } from "~/schedule/display/color";
-import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { AppText } from "~/ui/app-text";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 type Props = {
   accessibilityHint: string;

@@ -2,9 +2,9 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { Redirect, Tabs } from "expo-router";
 
-import { MainBottomNav } from "~/application/navigation";
 import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
+import { MainBottomNav } from "~/ui/main-bottom-nav";
 
 export default function TabsLayout(): React.JSX.Element {
   const { t } = useTranslation();

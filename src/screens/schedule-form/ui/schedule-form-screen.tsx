@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AppText } from "~/shared/ui/app-text";
 import { useThemeColors } from "~/theme/provider";
+import { AppText } from "~/ui/app-text";
 
 import { ScheduleFormScreenContent } from "./schedule-form-screen-content";
 import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";

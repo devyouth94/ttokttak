@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { addDays, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
+import { type AppLanguage, normalizeAppLanguage } from "~/i18n/language";
 import type { ColorKey } from "~/schedule/display/color";
 import { formatTimestamp } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
@@ -12,10 +13,6 @@ import type { Occurrence } from "~/schedule/rules/occurrence";
 import { createOccurrences } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
 import { useSession } from "~/session/provider";
-import {
-  type AppLanguage,
-  normalizeAppLanguage,
-} from "~/shared/i18n/app-language";
 
 type Row = {
   colorKey: ColorKey;

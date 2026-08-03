@@ -19,6 +19,10 @@ export function useCalendarQuery({
   const endLocalDate = format(endOfMonth(month), "yyyy-MM-dd");
   const query = useScheduleRange({ endLocalDate, startLocalDate });
   const entries = useMemo(() => {
+    if (query.isLoading) {
+      return { selectedDateEntries: [], visibleMonthEntries: [] };
+    }
+
     const occurrences = createOccurrences({
       logs: query.logs,
       now,
@@ -39,6 +43,7 @@ export function useCalendarQuery({
     endLocalDate,
     now,
     query.items,
+    query.isLoading,
     query.logs,
     query.timezone,
     selectedDate,

@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 
-import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
+import { borderRadius, spacing, typography } from "~/ui/tokens";
 
 const MANAGEMENT_MENU_CONTAINER_PADDING = 4;
 
@@ -20,6 +20,8 @@ function createScheduleDetailScreenStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     historyDate: {
       color: themeColors.text,
+    },
+    historyDateGroup: {
       flex: 1,
     },
     historyEmptyText: {
@@ -45,6 +47,9 @@ function createScheduleDetailScreenStyles(themeColors: ThemeColors) {
     },
     historySectionLabel: {
       color: themeColors.text,
+    },
+    historyScheduledDate: {
+      color: themeColors.textMuted,
     },
     historyStatusChip: {
       alignItems: "center",

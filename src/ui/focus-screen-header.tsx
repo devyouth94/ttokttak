@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
-import { borderRadius } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { borderRadius } from "~/ui/tokens";
 
 import { ScreenHeader } from "./screen-header";
 

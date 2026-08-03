@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import { queryClient } from "~/query-client";
 import { useSession } from "~/session/provider";
-import { queryClient } from "~/shared/lib/query/query-client";
 
 import { getItem, listItems } from "./db/items";
 import {

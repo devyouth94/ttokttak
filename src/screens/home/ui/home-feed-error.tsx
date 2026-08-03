@@ -2,9 +2,9 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { RotateCw } from "lucide-react-native";
 
-import { spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
 import { StateMessage } from "~/ui/state-message";
+import { spacing } from "~/ui/tokens";
 
 type HomeFeedErrorProps = {
   message: string;

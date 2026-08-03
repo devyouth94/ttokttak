@@ -1,6 +1,7 @@
 import { addMonths, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
+import type { AppLanguage } from "~/i18n/language";
 import type { ColorKey } from "~/schedule/display/color";
 import { formatTimestamp } from "~/schedule/display/date";
 import type {
@@ -8,7 +9,6 @@ import type {
   OccurrenceStatus,
 } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
-import type { AppLanguage } from "~/shared/i18n";
 
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 

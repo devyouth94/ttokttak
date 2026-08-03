@@ -104,7 +104,7 @@ describe("schedule logs DB", () => {
     expect(second.range).toHaveBeenCalledWith(1000, 1999);
   });
 
-  it("상세 히스토리는 최신 예정 시각 5건만 조회한다", async () => {
+  it("최근 처리 기록은 실제 처리 시각 최신순으로 5건만 조회한다", async () => {
     const query = createQuery({ data: [row], error: null }, [
       "eq",
       "limit",
@@ -116,7 +116,7 @@ describe("schedule logs DB", () => {
       createClient(query)
     );
 
-    expect(query.order).toHaveBeenCalledWith("scheduled_at_utc", {
+    expect(query.order).toHaveBeenCalledWith("acted_at_utc", {
       ascending: false,
     });
     expect(query.limit).toHaveBeenCalledWith(5);

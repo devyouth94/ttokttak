@@ -1,13 +1,13 @@
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
+import type { AppLanguage } from "~/i18n/language";
 import { formatTimestamp } from "~/schedule/display/date";
 import type { OccurrenceLog } from "~/schedule/rules/occurrence";
 import { createOccurrences } from "~/schedule/rules/occurrence";
 import { supportsCompletion } from "~/schedule/rules/recurrence";
 import type { Schedule } from "~/schedule/schedule";
 import { currentRule } from "~/schedule/schedule";
-import type { AppLanguage } from "~/shared/i18n";
 
 export type Candidate = {
   body: string;

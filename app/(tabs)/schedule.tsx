@@ -4,17 +4,17 @@ import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
 import { ItemRow } from "~/schedule/ui/item-row";
 import { type Sort, useItems } from "~/screens/schedule-list/list";
 import { ListEmpty } from "~/screens/schedule-list/ui/empty";
 import { ListLoading } from "~/screens/schedule-list/ui/loading";
 import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
-import { AppScreen } from "~/shared/ui/app-screen";
-import { ScreenHeader } from "~/shared/ui/screen-header";
-import { spacing } from "~/shared/ui/tokens";
 import { useThemeColors } from "~/theme/provider";
+import { AppScreen } from "~/ui/app-screen";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { ScreenHeader } from "~/ui/screen-header";
 import { StateMessage } from "~/ui/state-message";
+import { spacing } from "~/ui/tokens";
 
 export default function ScheduleTabPage(): React.JSX.Element {
   const { t } = useTranslation();

@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
-import { spacing } from "~/shared/ui/tokens";
 import { SelectMenu, type SelectOption } from "~/ui/select-menu";
+import { spacing } from "~/ui/tokens";
 
 import type { Sort } from "../list";
 

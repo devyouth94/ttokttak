@@ -10,11 +10,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ExternalLink } from "lucide-react-native";
 
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/application/navigation";
-import { AppScreen } from "~/shared/ui/app-screen";
-import { AppText } from "~/shared/ui/app-text";
-import { ScreenHeader } from "~/shared/ui/screen-header";
 import { useTheme } from "~/theme/provider";
+import { AppScreen } from "~/ui/app-screen";
+import { AppText } from "~/ui/app-text";
+import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { ScreenHeader } from "~/ui/screen-header";
 import { SelectMenu } from "~/ui/select-menu";
 
 import {

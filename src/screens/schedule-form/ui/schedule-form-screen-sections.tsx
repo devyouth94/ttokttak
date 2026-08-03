@@ -14,16 +14,16 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { Info } from "lucide-react-native";
 
+import { useAppLanguage } from "~/i18n/provider";
 import { type ColorKey, getColorOptions } from "~/schedule/display/color";
 import {
   type AnchorType,
   type RecurrenceType,
   supportsCompletion,
 } from "~/schedule/rules/recurrence";
-import { useAppLanguage } from "~/shared/i18n";
-import { AppText } from "~/shared/ui/app-text";
 import type { ThemeColors } from "~/theme/colors";
 import type { ResolvedTheme } from "~/theme/preference";
+import { AppText } from "~/ui/app-text";
 import { SelectMenu, type SelectOption } from "~/ui/select-menu";
 
 import type { ScheduleFormScreenStyles } from "./schedule-form-screen-styles";

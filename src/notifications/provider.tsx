@@ -3,8 +3,8 @@ import { createContext, use, useCallback, useEffect, useState } from "react";
 import { AppState, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
+import { useAppLanguage } from "~/i18n/provider";
 import { captureException } from "~/sentry";
-import { useAppLanguage } from "~/shared/i18n";
 
 import {
   getPermission,
@@ -45,7 +45,7 @@ const initialPermission: Permission = {
 
 /**
  * 앱의 알림 권한과 재동기화 lifecycle을 제공한다.
- * AppProviders에서 세션 사용자와 timezone을 받아 모든 화면을 감싼다.
+ * 앱 루트에서 세션 사용자와 timezone을 받아 모든 화면을 감싼다.
  */
 export function NotificationProvider({
   children,

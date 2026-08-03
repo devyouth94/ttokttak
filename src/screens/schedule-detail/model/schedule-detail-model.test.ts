@@ -160,31 +160,37 @@ describe("recurring item detail helpers", () => {
     expect(viewModel.summary.title).toBe("일정 내용을 복구할 수 없어요");
   });
 
-  it("최근 히스토리 5건만 최신 예정 시각 순으로 만든다", () => {
+  it("최근 처리 기록 5건만 실제 처리 시각 최신순으로 만든다", () => {
     const entries = buildHistoryPreview(
       [
         createLog({
+          actedAtUtc: "2026-04-12T00:00:00.000Z",
           id: "log-1",
           scheduledAtUtc: "2026-04-08T00:00:00.000Z",
         }),
         createLog({
           action: "skipped",
+          actedAtUtc: "2026-04-10T00:00:00.000Z",
           id: "log-2",
           scheduledAtUtc: "2026-04-10T00:00:00.000Z",
         }),
         createLog({
+          actedAtUtc: "2026-04-13T00:00:00.000Z",
           id: "log-3",
           scheduledAtUtc: "2026-04-09T00:00:00.000Z",
         }),
         createLog({
+          actedAtUtc: "2026-04-09T00:00:00.000Z",
           id: "log-4",
           scheduledAtUtc: "2026-04-07T00:00:00.000Z",
         }),
         createLog({
+          actedAtUtc: "2026-04-08T00:00:00.000Z",
           id: "log-5",
           scheduledAtUtc: "2026-04-06T00:00:00.000Z",
         }),
         createLog({
+          actedAtUtc: "2026-04-07T00:00:00.000Z",
           id: "log-6",
           scheduledAtUtc: "2026-04-05T00:00:00.000Z",
         }),
@@ -193,13 +199,22 @@ describe("recurring item detail helpers", () => {
     );
 
     expect(entries.map((entry) => entry.id)).toEqual([
-      "log-2",
       "log-3",
       "log-1",
+      "log-2",
       "log-4",
       "log-5",
     ]);
-    expect(entries[0]?.statusLabel).toBe("건너뜀");
+    expect(entries[0]).toMatchObject({
+      actedDateLabel: "4월 13일",
+      scheduledDateLabel: "예정 4월 9일",
+      statusLabel: "완료",
+    });
+    expect(entries[2]).toMatchObject({
+      actedDateLabel: "4월 10일",
+      scheduledDateLabel: null,
+      statusLabel: "건너뜀",
+    });
   });
 
   it("요약 설정 뱃지를 상세 화면 기준으로 만든다", () => {
@@ -388,8 +403,9 @@ describe("recurring item detail helpers", () => {
       },
     ]);
     expect(viewModel.historyPreview[0]).toMatchObject({
+      actedDateLabel: "Apr 10",
+      scheduledDateLabel: "Scheduled Apr 9",
       statusLabel: "Skip",
-      timeLabel: "Apr 9 9:00 AM",
     });
   });
 });

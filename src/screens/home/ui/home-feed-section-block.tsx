@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";
-import { AppText } from "~/shared/ui/app-text";
-import { borderRadius, spacing } from "~/shared/ui/tokens";
+import { AppText } from "~/ui/app-text";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 import {
   getHomeFeedSectionCardStyle,

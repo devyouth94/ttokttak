@@ -1,10 +1,10 @@
+import type { AppLanguage } from "~/i18n/language";
 import { formatLocal } from "~/schedule/display/date";
 import {
   firstDate,
   type RecurrenceType,
   requiresWeekdays,
 } from "~/schedule/rules/recurrence";
-import type { AppLanguage } from "~/shared/i18n";
 
 import {
   type CustomRecurrenceUnit,

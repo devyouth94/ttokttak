@@ -94,7 +94,7 @@ export async function listItemLogs(
   }
 }
 
-/** 상세 화면에 표시할 최근 occurrence 처리 기록 5개를 조회한다. */
+/** 상세 화면에 표시할 최근 occurrence 처리 기록 5개를 실제 처리 시각순으로 조회한다. */
 export async function listHistory(
   input: { itemId: string; userId: string },
   client: Client = supabase
@@ -104,7 +104,7 @@ export async function listHistory(
     .select("*")
     .eq("item_id", input.itemId)
     .eq("user_id", input.userId)
-    .order("scheduled_at_utc", { ascending: false })
+    .order("acted_at_utc", { ascending: false })
     .limit(5);
 
   if (error) {

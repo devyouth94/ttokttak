@@ -3,14 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Alert, Linking } from "react-native";
 import Constants from "expo-constants";
 
-import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
+import type { AppLanguage } from "~/i18n/language";
+import { useAppLanguage } from "~/i18n/provider";
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/legal";
+import { useNotifications } from "~/notifications/provider";
 import {
   getEditableProfileDisplayName,
   validateProfileDisplayName,
-} from "~/features/settings";
-import { useNotifications } from "~/notifications/provider";
+} from "~/screens/settings/profile-display-name";
 import { useSession } from "~/session/provider";
-import { type AppLanguage, useAppLanguage } from "~/shared/i18n";
 import type { ThemePreference } from "~/theme/preference";
 import { useTheme } from "~/theme/provider";
 

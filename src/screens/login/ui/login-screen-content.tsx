@@ -10,14 +10,15 @@ import {
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 
-import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/features/legal";
-import { AppLogoIcon } from "~/shared/ui/app-logo-icon";
-import { AppScreen } from "~/shared/ui/app-screen";
-import { AppText } from "~/shared/ui/app-text";
-import { AppleLogoIcon, GoogleLogoIcon } from "~/shared/ui/social-icons";
-import { borderRadius, spacing, typography } from "~/shared/ui/tokens";
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/legal";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
+import { AppScreen } from "~/ui/app-screen";
+import { AppText } from "~/ui/app-text";
+import { borderRadius, spacing, typography } from "~/ui/tokens";
+
+import { AppLogoIcon } from "./app-logo-icon";
+import { AppleLogoIcon, GoogleLogoIcon } from "./social-icons";
 
 type LoginScreenContentProps = {
   onApplePress: () => Promise<void>;
