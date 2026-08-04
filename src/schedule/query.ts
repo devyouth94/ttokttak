@@ -23,17 +23,6 @@ function userKey(userId: string): readonly string[] {
   return [...rootKey, userId];
 }
 
-function useScheduleSession() {
-  const { profile, status, user } = useSession();
-
-  return {
-    isReady: status === "ready",
-    timezone:
-      profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-    userId: user?.id ?? null,
-  };
-}
-
 function getAnchorItemIds(items: Schedule[]): string[] {
   return items
     .filter((item) => {
@@ -55,7 +44,14 @@ export function useScheduleRange({
   endLocalDate: string;
   startLocalDate: string;
 }) {
-  const { isReady, timezone, userId } = useScheduleSession();
+  const { profile, status: sessionStatus, user } = useSession();
+
+  const isReady = sessionStatus === "ready";
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userId = user?.id ?? null;
+  const enabled = isReady && Boolean(userId);
+
   const range = useMemo(
     () => ({
       endUtc: toUtcRange(endLocalDate, timezone).endUtc,
@@ -63,16 +59,19 @@ export function useScheduleRange({
     }),
     [endLocalDate, startLocalDate, timezone]
   );
+
   const itemsQuery = useQuery({
-    enabled: isReady && Boolean(userId),
+    enabled,
     queryFn: () => listItems({ userId: userId! }),
     queryKey: [...userKey(userId ?? "signed-out"), "items"],
   });
+
   const items = itemsQuery.data ?? emptyItems;
   const itemIds = useMemo(() => items.map((item) => item.id), [items]);
   const anchorItemIds = useMemo(() => getAnchorItemIds(items), [items]);
+
   const logsQuery = useQuery({
-    enabled: isReady && Boolean(userId) && itemIds.length > 0,
+    enabled: enabled && itemIds.length > 0,
     queryFn: async () => {
       const logs = await listLogsInRange({
         itemIds,
@@ -104,8 +103,10 @@ export function useScheduleRange({
       range.endUtc,
     ],
   });
+
   const refetchItems = itemsQuery.refetch;
   const refetchLogs = logsQuery.refetch;
+
   const refetch = useCallback(async (): Promise<void> => {
     await refetchItems();
 
@@ -117,9 +118,9 @@ export function useScheduleRange({
   return {
     error: itemsQuery.error ?? logsQuery.error,
     isLoading:
-      !isReady ||
-      itemsQuery.isPending ||
-      (itemIds.length > 0 && logsQuery.isPending),
+      sessionStatus === "loading" ||
+      (enabled &&
+        (itemsQuery.isPending || (itemIds.length > 0 && logsQuery.isPending))),
     isReady,
     items,
     logs: logsQuery.data ?? emptyLogs,
@@ -129,44 +130,72 @@ export function useScheduleRange({
   };
 }
 
-/** 상세 화면에 필요한 일정, 최근 기록과 전체 계산 기록을 조회한다. */
-export function useScheduleItem(itemId: string | null) {
-  const { isReady, timezone, userId } = useScheduleSession();
+/** 지정한 일정 하나를 조회한다. */
+export function useScheduleById(itemId: string | null) {
+  const { profile, status: sessionStatus, user } = useSession();
+
+  const isReady = sessionStatus === "ready";
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userId = user?.id ?? null;
   const enabled = isReady && Boolean(userId) && Boolean(itemId);
+
   const itemQuery = useQuery({
     enabled,
     queryFn: () => getItem({ id: itemId!, userId: userId! }),
     queryKey: [...userKey(userId ?? "signed-out"), "item", itemId],
   });
-  const historyQuery = useQuery({
-    enabled,
-    queryFn: () => listHistory({ itemId: itemId!, userId: userId! }),
-    queryKey: [...userKey(userId ?? "signed-out"), "history", itemId],
-  });
-  const logsQuery = useQuery({
-    enabled,
-    queryFn: () => listItemLogs({ itemId: itemId!, userId: userId! }),
-    queryKey: [...userKey(userId ?? "signed-out"), "logs", itemId],
-  });
-  const refetch = useCallback(async (): Promise<void> => {
-    await Promise.all([
-      itemQuery.refetch(),
-      historyQuery.refetch(),
-      logsQuery.refetch(),
-    ]);
-  }, [historyQuery, itemQuery, logsQuery]);
 
   return {
-    error: itemQuery.error ?? historyQuery.error ?? logsQuery.error,
-    history: historyQuery.data ?? emptyLogs,
+    error: itemQuery.error,
     isLoading:
-      !isReady ||
-      !userId ||
-      itemQuery.isPending ||
-      (Boolean(itemQuery.data) &&
-        (historyQuery.isPending || logsQuery.isPending)),
+      Boolean(itemId) &&
+      (sessionStatus === "loading" || (enabled && itemQuery.isPending)),
+    isReady,
     item: itemQuery.data ?? null,
-    logs: logsQuery.data ?? emptyLogs,
+    refetch: itemQuery.refetch,
+    timezone,
+    userId,
+  };
+}
+
+/** 상세 화면에 필요한 일정, 최근 기록과 전체 계산 기록을 조회한다. */
+export function useScheduleDetail(itemId: string | null) {
+  const scheduleQuery = useScheduleById(itemId);
+  const { isReady, item, timezone, userId } = scheduleQuery;
+
+  const detailQuery = useQuery({
+    enabled: isReady && Boolean(userId) && Boolean(itemId) && Boolean(item),
+    queryFn: async () => {
+      const [history, logs] = await Promise.all([
+        listHistory({ itemId: itemId!, userId: userId! }),
+        listItemLogs({ itemId: itemId!, userId: userId! }),
+      ]);
+
+      return { history, logs };
+    },
+    queryKey: [...userKey(userId ?? "signed-out"), "detail", itemId],
+  });
+
+  const refetchSchedule = scheduleQuery.refetch;
+  const refetchDetail = detailQuery.refetch;
+
+  const refetch = useCallback(async (): Promise<void> => {
+    if (!item) {
+      await refetchSchedule();
+      return;
+    }
+
+    await Promise.all([refetchSchedule(), refetchDetail()]);
+  }, [item, refetchDetail, refetchSchedule]);
+
+  return {
+    error: scheduleQuery.error ?? detailQuery.error,
+    history: detailQuery.data?.history ?? emptyLogs,
+    isLoading:
+      scheduleQuery.isLoading || (Boolean(item) && detailQuery.isPending),
+    item,
+    logs: detailQuery.data?.logs ?? emptyLogs,
     refetch,
     timezone,
     userId,

@@ -13,7 +13,6 @@ import {
   buildHistoryPreview,
   buildRecurringItemDetailViewModel,
   buildSummarySettingBadges,
-  getRecurringItemDetailDeleteReturnPath,
 } from "./schedule-detail-model";
 
 function createItem(overrides: ScheduleOverrides = {}): Schedule {
@@ -41,17 +40,6 @@ function createVersion(overrides: Partial<RuleVersion> = {}): RuleVersion {
 }
 
 describe("recurring item detail helpers", () => {
-  it("상세 삭제 뒤 목록 진입 경로로 돌아간다", () => {
-    expect(getRecurringItemDetailDeleteReturnPath("/schedule")).toBe(
-      "/schedule"
-    );
-  });
-
-  it("상세 삭제 returnTo가 허용 경로가 아니면 홈으로 돌아간다", () => {
-    expect(getRecurringItemDetailDeleteReturnPath("/items/item-1")).toBe("/");
-    expect(getRecurringItemDetailDeleteReturnPath()).toBe("/");
-  });
-
   it("overdue가 있으면 대표 상태로 overdue를 선택한다", () => {
     const item = createItem();
 

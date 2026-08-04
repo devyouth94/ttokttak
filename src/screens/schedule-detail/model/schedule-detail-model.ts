@@ -113,8 +113,6 @@ const scheduledDateLabelFormatters = {
   ko: (dateLabel: string) => `예정 ${dateLabel}`,
 } as const satisfies Record<AppLanguage, (dateLabel: string) => string>;
 
-type RecurringItemDetailReturnPath = "/" | "/calendar" | "/home" | "/schedule";
-
 export type ItemDetailHistoryEntry = {
   action: OccurrenceLog["action"];
   actedDateLabel: string;
@@ -157,20 +155,6 @@ export type ItemDetailViewModel = {
     title: string;
   };
 };
-
-export function getRecurringItemDetailDeleteReturnPath(
-  returnTo?: string
-): RecurringItemDetailReturnPath {
-  if (
-    returnTo === "/calendar" ||
-    returnTo === "/home" ||
-    returnTo === "/schedule"
-  ) {
-    return returnTo;
-  }
-
-  return "/";
-}
 
 export function buildOccurrenceStatusCard({
   language,

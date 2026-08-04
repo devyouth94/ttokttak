@@ -1,5 +1,5 @@
 import { logFixture, scheduleFixture, testTimezone } from "~/schedule/fixtures";
-import { useScheduleItem } from "~/schedule/query";
+import { useScheduleDetail } from "~/schedule/query";
 
 import { useDetailQuery } from "./query";
 
@@ -7,7 +7,7 @@ jest.mock("react", () => ({
   ...jest.requireActual("react"),
   useMemo: <T>(factory: () => T): T => factory(),
 }));
-jest.mock("~/schedule/query", () => ({ useScheduleItem: jest.fn() }));
+jest.mock("~/schedule/query", () => ({ useScheduleDetail: jest.fn() }));
 
 it("상세 계산에는 최근 표시 기록과 별개로 전체 기록을 사용한다", () => {
   const item = scheduleFixture({ startDateLocal: "2026-04-08" });
@@ -17,7 +17,7 @@ it("상세 계산에는 최근 표시 기록과 별개로 전체 기록을 사�
   });
   const recentLog = logFixture();
 
-  jest.mocked(useScheduleItem).mockReturnValue({
+  jest.mocked(useScheduleDetail).mockReturnValue({
     history: [recentLog],
     item,
     logs: [oldLog, recentLog],

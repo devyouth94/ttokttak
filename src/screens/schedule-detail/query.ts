@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { useScheduleItem } from "~/schedule/query";
+import { useScheduleDetail } from "~/schedule/query";
 import {
   createOccurrences,
   type Occurrence,
@@ -17,7 +17,7 @@ export function useDetailQuery({
   now: Date;
   scheduledAtUtc?: string;
 }) {
-  const query = useScheduleItem(itemId);
+  const query = useScheduleDetail(itemId);
   const projection = useMemo(() => {
     if (!query.item) {
       return {

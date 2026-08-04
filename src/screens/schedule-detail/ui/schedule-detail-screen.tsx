@@ -8,6 +8,7 @@ import { Bell, BellOff, EllipsisVertical } from "lucide-react-native";
 import { getErrorMessage } from "~/errors";
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
+import { getScheduleReturnPath } from "~/route-param";
 import {
   colorByKey,
   type ColorKey,
@@ -25,7 +26,6 @@ import { useScheduleDetailScreenStyles } from "./schedule-detail-screen.styles";
 import {
   buildOccurrenceStatusCard,
   buildRecurringItemDetailViewModel,
-  getRecurringItemDetailDeleteReturnPath,
   type ItemDetailHistoryEntry,
   type ItemDetailSummaryBadge,
 } from "../model/schedule-detail-model";
@@ -514,7 +514,7 @@ export function ScheduleDetailScreen({
         syncNotifications,
       });
 
-      router.replace(getRecurringItemDetailDeleteReturnPath(returnTo));
+      router.replace(getScheduleReturnPath(returnTo));
     } catch (error) {
       setActionErrorMessage(getErrorMessage(error));
     } finally {
