@@ -35,11 +35,14 @@ const lookbackDays = 730;
 export function useItems(sort: Sort) {
   const { i18n } = useTranslation();
   const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
+
   const { profile } = useSession();
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const now = useNow();
   const today = formatInTimeZone(now, timezone, "yyyy-MM-dd");
+
   const query = useScheduleRange({
     endLocalDate: today,
     startLocalDate: format(
@@ -48,6 +51,7 @@ export function useItems(sort: Sort) {
     ),
   });
   const { items, logs, timezone: queryTimezone } = query;
+
   const rows = useMemo(() => {
     const occurrences = createOccurrences({
       logs,
@@ -66,6 +70,7 @@ export function useItems(sort: Sort) {
       timezone: queryTimezone,
     });
   }, [items, language, logs, now, queryTimezone, sort]);
+
   const status = query.isLoading ? "loading" : query.error ? "error" : "ready";
 
   return {

@@ -8,32 +8,31 @@ import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { homeFeedCardPalette } from "./home-feed-card-palette";
-import type { HomeFeedCard } from "../model/home-feed-sections";
+import type { HomeFeedCard } from "../sections";
 
-const FEED_ITEM_ACTION_BORDER_WIDTH = 1;
-const FEED_ITEM_ACTION_STROKE_WIDTH = 2;
+const ACTION_BORDER_WIDTH = 1;
+const ACTION_STROKE_WIDTH = 2;
 
-type HomeFeedItemRowProps = {
+type HomeFeedItemProps = {
   card: HomeFeedCard;
   isLast: boolean;
-  isProcessing: boolean;
   onAction: (card: HomeFeedCard, action: OccurrenceAction) => void;
   showsActions: boolean;
 };
 
-export function HomeFeedItemRow({
+/** 홈 피드 카드 한 항목과 사용 가능한 처리 동작을 표시한다. */
+export function HomeFeedItem({
   card,
   isLast,
-  isProcessing,
   onAction,
   showsActions,
-}: HomeFeedItemRowProps): React.JSX.Element {
+}: HomeFeedItemProps): React.JSX.Element {
   const { t } = useTranslation();
 
   return (
     <View
       style={[
-        styles.feedItemRow,
+        styles.row,
         !isLast && {
           borderBottomColor: homeFeedCardPalette.divider,
           borderBottomWidth: StyleSheet.hairlineWidth,
@@ -47,12 +46,9 @@ export function HomeFeedItemRow({
         })}
         accessibilityRole="button"
         onPress={() => {
-          openHomeFeedCard(card);
+          openDetails(card);
         }}
-        style={({ pressed }) => [
-          styles.feedItemCopyButton,
-          pressed && styles.feedItemPressed,
-        ]}
+        style={({ pressed }) => [styles.copyButton, pressed && styles.pressed]}
       >
         <AppText
           ellipsizeMode="tail"
@@ -61,41 +57,38 @@ export function HomeFeedItemRow({
         >
           {card.item.title}
         </AppText>
-        <View style={styles.feedItemMetaSlot}>
+        <View style={styles.meta}>
           <AppText
             ellipsizeMode="tail"
             numberOfLines={1}
             style={{ color: homeFeedCardPalette.text }}
             variant="caption"
           >
-            {getFeedItemMetaLine(card)}
+            {card.metaLine}
           </AppText>
         </View>
       </Pressable>
       {showsActions && (
-        <View style={styles.feedItemActions}>
+        <View style={styles.actions}>
           <Pressable
             accessibilityHint={t("home.feed.skipHint")}
             accessibilityLabel={t("home.feed.skipLabel", {
               title: card.item.title,
             })}
             accessibilityRole="button"
-            accessibilityState={{ disabled: isProcessing }}
-            disabled={isProcessing}
             onPress={() => {
               onAction(card, "skipped");
             }}
             style={({ pressed }) => [
-              styles.feedItemActionIcon,
+              styles.actionIcon,
               { borderColor: homeFeedCardPalette.actionBorder },
-              isProcessing && styles.feedItemActionDisabled,
-              pressed && !isProcessing && styles.feedItemPressed,
+              pressed && styles.pressed,
             ]}
           >
             <SkipForward
               color={homeFeedCardPalette.text}
               size={15}
-              strokeWidth={FEED_ITEM_ACTION_STROKE_WIDTH}
+              strokeWidth={ACTION_STROKE_WIDTH}
             />
           </Pressable>
           <Pressable
@@ -104,22 +97,19 @@ export function HomeFeedItemRow({
               title: card.item.title,
             })}
             accessibilityRole="button"
-            accessibilityState={{ disabled: isProcessing }}
-            disabled={isProcessing}
             onPress={() => {
               onAction(card, "completed");
             }}
             style={({ pressed }) => [
-              styles.feedItemActionIcon,
+              styles.actionIcon,
               { borderColor: homeFeedCardPalette.actionBorder },
-              isProcessing && styles.feedItemActionDisabled,
-              pressed && !isProcessing && styles.feedItemPressed,
+              pressed && styles.pressed,
             ]}
           >
             <Check
               color={homeFeedCardPalette.text}
               size={16}
-              strokeWidth={FEED_ITEM_ACTION_STROKE_WIDTH}
+              strokeWidth={ACTION_STROKE_WIDTH}
             />
           </Pressable>
         </View>
@@ -128,7 +118,7 @@ export function HomeFeedItemRow({
   );
 }
 
-function openHomeFeedCard(card: HomeFeedCard): void {
+function openDetails(card: HomeFeedCard): void {
   router.push({
     params: {
       itemId: card.item.id,
@@ -139,45 +129,32 @@ function openHomeFeedCard(card: HomeFeedCard): void {
   });
 }
 
-export function getFeedItemMetaLine(card: HomeFeedCard): string {
-  const scheduledDateTimeLabel = [card.metaLabel, card.timeLabel]
-    .filter((value): value is string => Boolean(value))
-    .join(" · ");
-
-  return [scheduledDateTimeLabel, card.recurrenceLabel]
-    .filter((value): value is string => Boolean(value))
-    .join(" · ");
-}
-
 const styles = StyleSheet.create({
-  feedItemActionIcon: {
+  actionIcon: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
-    borderWidth: FEED_ITEM_ACTION_BORDER_WIDTH,
+    borderWidth: ACTION_BORDER_WIDTH,
     height: 34,
     justifyContent: "center",
     width: 34,
   },
-  feedItemActionDisabled: {
-    opacity: 0.42,
-  },
-  feedItemActions: {
+  actions: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.xs,
   },
-  feedItemCopyButton: {
+  copyButton: {
     flex: 1,
     minWidth: 0,
   },
-  feedItemMetaSlot: {
+  meta: {
     marginTop: spacing.xxs,
     opacity: 0.72,
   },
-  feedItemPressed: {
+  pressed: {
     opacity: 0.72,
   },
-  feedItemRow: {
+  row: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.md,

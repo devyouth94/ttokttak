@@ -6,6 +6,7 @@ import { getActionLabel, getRecurrenceLabel } from "./label";
 
 describe("schedule display", () => {
   it("local 날짜와 시간을 언어별 형식으로 만든다", () => {
+    expect(formatLocal("2026-04-16", "day")).toBe("16");
     expect(formatLocal("2026-04", "month")).toBe("2026년 4월");
     expect(formatLocal("2026-04-16", "weekdayDate")).toBe("4월 16일 목요일");
     expect(formatLocal("2026-04", "month", "en")).toBe("April 2026");

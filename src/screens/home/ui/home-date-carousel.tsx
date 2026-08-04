@@ -1,21 +1,24 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { startOfDay } from "date-fns";
+import { addDays, format, startOfDay } from "date-fns";
 import { Undo2 } from "lucide-react-native";
 
+import type { AppLanguage } from "~/i18n/language";
 import { useAppLanguage } from "~/i18n/provider";
+import { formatLocal } from "~/schedule/display/date";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
-import { createHomeDateOptions } from "../model/home-feed-sections";
+const DATE_RANGE_DAYS = 15;
 
 type HomeDateCarouselProps = {
   onSelectDate: (dateId: string) => void;
   selectedDateId: string;
 };
 
+/** 오늘부터 15일을 선택할 수 있는 홈 날짜 캐러셀을 표시한다. */
 export function HomeDateCarousel({
   onSelectDate,
   selectedDateId,
@@ -24,7 +27,11 @@ export function HomeDateCarousel({
   const { language } = useAppLanguage();
   const themeColors = useThemeColors();
   const dateScrollRef = useRef<ScrollView>(null);
-  const dateOptions = createHomeDateOptions(startOfDay(new Date()), language);
+  const dateOptions = createHomeDateOptions(
+    startOfDay(new Date()),
+    language,
+    t("home.date.today")
+  );
   const todayOption = dateOptions[0];
   const selectedDateOption =
     dateOptions.find((option) => option.id === selectedDateId) ?? todayOption;
@@ -43,6 +50,7 @@ export function HomeDateCarousel({
   };
 
   useEffect(() => {
+    // 조회 범위 밖의 날짜가 남으면 화면과 실제 선택 항목이 어긋난다.
     if (selectedDateId === selectedDateOption.id) {
       return;
     }
@@ -51,6 +59,7 @@ export function HomeDateCarousel({
   }, [onSelectDate, selectedDateId, selectedDateOption.id, todayOption.id]);
 
   useEffect(() => {
+    // 오늘로 돌아올 때 오늘 칩도 함께 첫 위치로 되돌린다.
     if (!selectedDateOption.isToday) {
       return;
     }
@@ -63,14 +72,14 @@ export function HomeDateCarousel({
   ]);
 
   return (
-    <View style={styles.carouselSection}>
-      <View style={styles.dateSelectorRow}>
+    <View style={styles.root}>
+      <View style={styles.row}>
         <ScrollView
-          contentContainerStyle={styles.carouselContent}
+          contentContainerStyle={styles.content}
           horizontal
           ref={dateScrollRef}
           showsHorizontalScrollIndicator={false}
-          style={styles.carouselScroll}
+          style={styles.scroll}
         >
           {dateOptions.map((option) => {
             const isSelected = option.id === selectedDateOption.id;
@@ -93,10 +102,10 @@ export function HomeDateCarousel({
                   onSelectDate(option.id);
                 }}
                 style={({ pressed }) => [
-                  styles.dateChip,
+                  styles.chip,
                   { borderColor: themeColors.primary },
                   isSelected && { backgroundColor: themeColors.primary },
-                  pressed && styles.dateChipPressed,
+                  pressed && styles.chipPressed,
                 ]}
               >
                 <AppText
@@ -131,9 +140,9 @@ export function HomeDateCarousel({
             accessibilityRole="button"
             onPress={selectToday}
             style={({ pressed }) => [
-              styles.todayShortcutButton,
+              styles.todayButton,
               { borderColor: themeColors.primary },
-              pressed && styles.todayShortcutButtonPressed,
+              pressed && styles.todayButtonPressed,
             ]}
           >
             <Undo2 color={themeColors.text} size={13} />
@@ -147,19 +156,27 @@ export function HomeDateCarousel({
   );
 }
 
+/** 오늘을 시작으로 홈 날짜 선택 항목 15개를 만든다. */
+export function createHomeDateOptions(
+  today: Date,
+  language: AppLanguage,
+  todayTitle: string
+) {
+  return Array.from({ length: DATE_RANGE_DAYS }, (_, index) => {
+    const id = format(addDays(today, index), "yyyy-MM-dd");
+
+    return {
+      dayLabel: formatLocal(id, "weekday", language),
+      id,
+      isToday: index === 0,
+      title: index === 0 ? todayTitle : formatLocal(id, "date", language),
+      value: formatLocal(id, "day", language),
+    };
+  });
+}
+
 const styles = StyleSheet.create({
-  carouselContent: {
-    gap: spacing.xs,
-    paddingRight: spacing.xs,
-  },
-  carouselScroll: {
-    flex: 1,
-    minWidth: 0,
-  },
-  carouselSection: {
-    gap: spacing.md,
-  },
-  dateChip: {
+  chip: {
     alignItems: "center",
     backgroundColor: "transparent",
     borderRadius: borderRadius.pill,
@@ -171,16 +188,27 @@ const styles = StyleSheet.create({
     minWidth: 52,
     paddingHorizontal: spacing.sm,
   },
-  dateChipPressed: {
+  chipPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.97 }],
   },
-  dateSelectorRow: {
+  content: {
+    gap: spacing.xs,
+    paddingRight: spacing.xs,
+  },
+  root: {
+    gap: spacing.md,
+  },
+  row: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
   },
-  todayShortcutButton: {
+  scroll: {
+    flex: 1,
+    minWidth: 0,
+  },
+  todayButton: {
     alignItems: "center",
     backgroundColor: "transparent",
     borderRadius: borderRadius.pill,
@@ -192,7 +220,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: spacing.sm,
   },
-  todayShortcutButtonPressed: {
+  todayButtonPressed: {
     opacity: 0.88,
   },
 });

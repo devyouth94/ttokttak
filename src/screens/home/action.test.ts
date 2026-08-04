@@ -1,3 +1,5 @@
+import { createElement, type ReactElement } from "react";
+
 import { createLogs } from "~/schedule/db/logs";
 import {
   logFixture,
@@ -8,13 +10,22 @@ import { refreshSchedules } from "~/schedule/query";
 import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
 import { captureException } from "~/sentry";
 
-import { resolveOccurrence } from "./action";
+import { processHomeOccurrence, useHomeActions } from "./action";
 
+declare const require: (moduleName: string) => unknown;
+
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
 jest.mock("~/schedule/db/logs", () => ({ createLogs: jest.fn() }));
 jest.mock("~/schedule/query", () => ({ refreshSchedules: jest.fn() }));
 jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 
 const now = new Date("2026-04-10T03:00:00.000Z");
+const TestRenderer = require("react-test-renderer") as {
+  act: (callback: () => Promise<void> | void) => Promise<void>;
+  create: (element: ReactElement) => unknown;
+};
 
 function occurrence(item = scheduleFixture({ recurrenceType: "once" })) {
   return createOccurrences({
@@ -36,7 +47,7 @@ describe("홈 occurrence 처리", () => {
     const item = scheduleFixture({ id: "item-1", recurrenceType: "once" });
     const syncNotifications = jest.fn(async () => undefined);
 
-    await resolveOccurrence({
+    await processHomeOccurrence({
       action: "completed",
       logs: [],
       now,
@@ -80,7 +91,7 @@ describe("홈 occurrence 처리", () => {
       )
       .at(-1)!.occurrence;
 
-    await resolveOccurrence({
+    await processHomeOccurrence({
       action: "skipped",
       logs: [
         logFixture({
@@ -109,7 +120,7 @@ describe("홈 occurrence 처리", () => {
     const error = new Error("알림 동기화 실패");
     const item = scheduleFixture({ recurrenceType: "once" });
 
-    await resolveOccurrence({
+    await processHomeOccurrence({
       action: "completed",
       logs: [],
       now,
@@ -129,4 +140,54 @@ describe("홈 occurrence 처리", () => {
     });
     expect(refreshSchedules).toHaveBeenCalledTimes(1);
   });
+
+  it("처리 실패 메시지를 남기고 처리 상태를 해제한다", async () => {
+    const error = new Error("처리 실패");
+    const item = scheduleFixture({ id: "item-1", recurrenceType: "once" });
+    let actions!: ReturnType<typeof useHomeActions>;
+
+    jest.mocked(createLogs).mockRejectedValueOnce(error);
+
+    await TestRenderer.act(async () => {
+      TestRenderer.create(
+        createElement(HomeActionsProbe, {
+          onChange: (nextActions) => {
+            actions = nextActions;
+          },
+        })
+      );
+    });
+
+    await TestRenderer.act(async () => {
+      await actions.runAction(
+        {
+          id: "item-1:2026-04-10T00:00:00.000Z",
+          item,
+          occurrence: occurrence(item),
+        },
+        "completed"
+      );
+    });
+
+    expect(captureException).toHaveBeenCalledWith(error);
+    expect(actions.errorMessage).toBe("home.feed.actionErrorDescription");
+    expect(actions.processingIds).toEqual([]);
+  });
 });
+
+function HomeActionsProbe({
+  onChange,
+}: {
+  onChange: (actions: ReturnType<typeof useHomeActions>) => void;
+}): null {
+  onChange(
+    useHomeActions({
+      completionLogs: [],
+      syncNotifications: jest.fn(async () => undefined),
+      timezone,
+      userId: "user-1",
+    })
+  );
+
+  return null;
+}
