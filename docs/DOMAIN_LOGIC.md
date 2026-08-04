@@ -107,6 +107,8 @@ completion log는 특정 occurrence에 대한 처리 기록이다.
 - version은 자신의 `seedStartDateLocal`부터 occurrence를 만든다.
 - version은 종료일이 있으면 자신의 `endDateLocal`까지 occurrence를 만든다.
 - 계산 결과 중 `scheduledAtUtc < effectiveFromUtc`인 occurrence는 버린다.
+- 수정으로 추가하는 version의 `effectiveFromUtc`는 저장을 시작한 기기 시각을 사용한다.
+- 기기 시각은 모바일 OS의 자동 시각을 전제로 하며 서버 시각으로 별도 보정하지 않는다.
 - 일정 수정은 과거 occurrence를 다시 쓰지 않고 future occurrence에만 반영한다.
 - 시작일은 생성 후 수정하지 않는다.
 - 알림 켜기/끄기는 occurrence 생성과 상태를 바꾸지 않는다.

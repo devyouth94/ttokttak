@@ -354,10 +354,10 @@ begin
       p_content_encryption_metadata,
       '{}'::jsonb
     ),
-    color_key = coalesce(p_color_key, 'red'),
-    is_archived = p_is_archived
+    color_key = coalesce(p_color_key, 'red')
   where id = p_item_id
     and user_id = p_user_id
+    and not is_archived
   returning id into v_updated_item_id;
 
   if v_updated_item_id is null then

@@ -76,10 +76,10 @@
 - `src/schedule/content/cipher.ts`: 일정 제목과 설명의 암복호화를 담당한다.
 - `src/schedule/content/key.ts`: 기기의 content key 생성, 저장과 복구를 담당한다.
 - `src/schedule/db/content-key.ts`: wrapped content key 저장과 복구 Edge Function 호출을 담당한다.
-- `src/schedule/db/items.ts`: 일정 조회, 생성, 수정, 보관과 Supabase row/RPC 변환을 담당한다.
+- `src/schedule/db/items.ts`: 일정 조회와 암호화된 Supabase row/RPC 변환을 담당한다.
 - `src/schedule/db/logs.ts`: occurrence 처리 기록 조회와 생성을 담당한다.
 - `src/schedule/query.ts`: 일정 범위 조회, completion anchor, cache 무효화를 담당한다.
-- `src/schedule/write.ts`: 일정 생성, 수정, 보관 뒤 알림과 query를 다시 맞춘다.
+- `src/schedule/write.ts`: 일정 생성 검증과 수정 정책을 적용하고, 저장 뒤 알림과 query를 다시 맞춘다.
 - `src/schedule/ui`: 일정 지식이 필요한 공유 UI를 둔다.
 - `src/screens/home/action.ts`: 홈 피드의 완료와 건너뛰기를 처리한다.
 - `src/screens/*/query.ts`: 화면별 조회 범위와 occurrence 표시 데이터를 만든다.

@@ -164,6 +164,7 @@ describe("일정 폼", () => {
 
     expect(createSchedule).toHaveBeenCalledWith({
       input: expect.objectContaining({
+        colorKey: "red",
         recurrenceType: "daily",
         startDateLocal: "2026-08-04",
         title: "아침 영양제",

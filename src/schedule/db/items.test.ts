@@ -11,7 +11,6 @@ import {
   listItems,
   updateItem,
 } from "./items";
-import { listItemLogs } from "./logs";
 
 jest.mock("~/supabase", () => ({ supabase: {} }));
 jest.mock("~/schedule/content/cipher", () => ({
@@ -19,7 +18,6 @@ jest.mock("~/schedule/content/cipher", () => ({
   decryptContent: jest.fn(),
   encryptContent: jest.fn(),
 }));
-jest.mock("./logs", () => ({ listItemLogs: jest.fn() }));
 
 const row = {
   color_key: "blue",
@@ -77,6 +75,7 @@ function createClient(query = createQuery(), rpc = jest.fn()) {
 
 const input = {
   anchorType: "fixed" as const,
+  colorKey: "red" as const,
   description: "하루 8잔",
   endDateLocal: null,
   intervalValue: null,
@@ -104,7 +103,6 @@ describe("schedule items DB", () => {
       metadata: { algorithm: "test" },
       titleCiphertext: "encrypted-title",
     });
-    jest.mocked(listItemLogs).mockResolvedValue([]);
   });
 
   it("일정 목록을 조회하고 row와 암호문을 일정으로 변환한다", async () => {
@@ -130,9 +128,9 @@ describe("schedule items DB", () => {
     });
   });
 
-  it("복호화 실패를 복구 불가 일정으로 제공하고 수정을 막는다", async () => {
+  it("복호화 실패를 복구 불가 일정으로 제공한다", async () => {
     jest.mocked(decryptContent).mockRejectedValue(new Error("복호화 실패"));
-    const { client, rpc } = createClient();
+    const { client } = createClient();
 
     await expect(
       getItem({ id: "item-1", userId: "user-1" }, client)
@@ -141,28 +139,13 @@ describe("schedule items DB", () => {
       description: null,
       title: "일정 내용을 복구할 수 없어요",
     });
-    await expect(
-      updateItem(
-        {
-          id: "item-1",
-          patch: { title: "다시 저장" },
-          timezone: "Asia/Seoul",
-          userId: "user-1",
-        },
-        client
-      )
-    ).rejects.toThrow("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
-    expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("새 일정을 암호화하고 기본 색상과 초기 규칙 버전을 RPC로 저장한다", async () => {
+  it("새 일정을 암호화하고 초기 규칙 버전을 RPC로 저장한다", async () => {
     const rpc = jest.fn().mockResolvedValue({ data: "item-1", error: null });
     const { client } = createClient(createQuery(), rpc);
 
-    await createItem(
-      { ...input, endDateLocal: "2026-05-09", recurrenceType: "once" },
-      client
-    );
+    await createItem(input, client);
 
     expect(rpc).toHaveBeenCalledWith(
       "create_recurring_item_with_initial_version",
@@ -183,9 +166,15 @@ describe("schedule items DB", () => {
 
     await updateItem(
       {
+        edit: {
+          item: {
+            colorKey: "purple",
+            description: "하루 8잔",
+            title: "영양제",
+          },
+          version: null,
+        },
         id: "item-1",
-        patch: { colorKey: "purple", title: "영양제" },
-        timezone: "Asia/Seoul",
         userId: "user-1",
       },
       client
