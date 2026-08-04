@@ -171,6 +171,8 @@ export const appI18nResources = {
           optionHint: "Set item color to {{color}}.",
         },
         completionBased: {
+          description:
+            "Recalculates the next item from the date you complete it. Disabled for once and weekly settings.",
           infoHint: "Show completion-based scheduling information.",
           infoLabel: "Completion-based information",
           title: "Completion-based",
@@ -224,10 +226,27 @@ export const appI18nResources = {
         recurrence: {
           basicTab: "Basic",
           customTab: "Custom",
+          daily: "Daily",
           intervalA11y: "Interval value",
           intervalLabel: "Repeat interval",
+          monthly: "Monthly",
           once: "Once",
+          unitDays: "days",
+          unitMonths: "months",
+          unitWeeks: "weeks",
+          weekdayFri: "Fri",
           weekdayLabel: "Repeat weekdays",
+          weekdayMon: "Mon",
+          weekdaySat: "Sat",
+          weekdaySun: "Sun",
+          weekdayThu: "Thu",
+          weekdayTue: "Tue",
+          weekdayWed: "Wed",
+          weekly: "Weekly",
+        },
+        title: {
+          create: "Add item",
+          edit: "Edit item",
         },
         saveUnavailable: {
           message: "Check your session information first.",
@@ -514,6 +533,8 @@ export const appI18nResources = {
           optionHint: "{{color}} 일정 색상으로 설정해요.",
         },
         completionBased: {
+          description:
+            "완료한 날짜를 기준으로 다음 일정을 다시 계산합니다. 한 번 설정과 주 단위 설정에서는 비활성화됩니다.",
           infoHint: "완료일 기준 설명을 확인해요.",
           infoLabel: "완료일 기준 설명",
           title: "완료일 기준",
@@ -567,10 +588,27 @@ export const appI18nResources = {
         recurrence: {
           basicTab: "기본 설정",
           customTab: "직접 설정",
+          daily: "매일",
           intervalA11y: "간격값",
           intervalLabel: "반복 간격",
+          monthly: "매달",
           once: "한 번",
+          unitDays: "일",
+          unitMonths: "달",
+          unitWeeks: "주",
+          weekdayFri: "금",
           weekdayLabel: "반복할 요일",
+          weekdayMon: "월",
+          weekdaySat: "토",
+          weekdaySun: "일",
+          weekdayThu: "목",
+          weekdayTue: "화",
+          weekdayWed: "수",
+          weekly: "매주",
+        },
+        title: {
+          create: "일정 추가",
+          edit: "일정 수정",
         },
         saveUnavailable: {
           message: "세션 정보를 먼저 확인해주세요.",

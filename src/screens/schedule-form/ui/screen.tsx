@@ -5,9 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 
-import { ScheduleFormScreenContent } from "./schedule-form-screen-content";
-import { useScheduleFormScreenStyles } from "./schedule-form-screen-styles";
-import { useScheduleFormScreenController } from "../model/use-schedule-form-screen-controller";
+import { ScheduleFormScreenContent } from "./content";
+import { useScheduleFormScreenStyles } from "./styles";
+import { useScheduleForm } from "../form";
 
 type ScheduleFormScreenProps = {
   itemId?: string;
@@ -18,27 +18,16 @@ export function ScheduleFormScreen({
   itemId,
   returnTo,
 }: ScheduleFormScreenProps): React.JSX.Element {
-  const screenModel = useScheduleFormScreenController({
+  const form = useScheduleForm({
     itemId,
     returnTo,
   });
-  const iosPickerChangeHandler =
-    screenModel.picker.iosMode === "time"
-      ? screenModel.actions.picker.onTimePickerChange
-      : screenModel.picker.iosDateTarget === "endDate"
-        ? screenModel.actions.picker.onEndDatePickerChange
-        : screenModel.actions.picker.onStartDatePickerChange;
 
-  if (screenModel.view.isBootstrapping) {
+  if (form.state.isLoading) {
     return <ScheduleFormScreenLoading />;
   }
 
-  return (
-    <ScheduleFormScreenContent
-      {...screenModel}
-      iosPickerChangeHandler={iosPickerChangeHandler}
-    />
-  );
+  return <ScheduleFormScreenContent {...form} />;
 }
 
 function ScheduleFormScreenLoading(): React.JSX.Element {

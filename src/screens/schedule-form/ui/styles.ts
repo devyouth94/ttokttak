@@ -64,15 +64,6 @@ function createScheduleFormScreenStyles(themeColors: ThemeColors) {
     chipPressed: {
       opacity: 0.88,
     },
-    chipSelected: {
-      backgroundColor: themeColors.primary,
-    },
-    chipText: {
-      color: themeColors.textMuted,
-    },
-    chipTextSelected: {
-      color: themeColors.primaryForeground,
-    },
     compactInput: {
       minHeight: 48,
     },
