@@ -6,7 +6,7 @@ import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { AppI18nProvider } from "~/i18n/provider";
-import { SessionNotificationProvider } from "~/notifications/session-provider";
+import { NotificationProvider } from "~/notifications/provider";
 import { queryClient } from "~/query-client";
 import { wrap } from "~/sentry";
 import { SessionProvider, useSession } from "~/session/provider";
@@ -23,11 +23,7 @@ function RootLayout(): React.JSX.Element {
         <AppI18nProvider>
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
-              <SessionNotificationProvider>
-                <ThemeStatusBar />
-                <RootStack />
-                <PortalHost />
-              </SessionNotificationProvider>
+              <RootStack />
             </SessionProvider>
           </QueryClientProvider>
         </AppI18nProvider>
@@ -39,8 +35,10 @@ function RootLayout(): React.JSX.Element {
 function RootStack(): React.JSX.Element {
   const { t } = useTranslation();
 
-  const { retry, status } = useSession();
+  const { profile, retry, status, user } = useSession();
   const themeColors = useThemeColors();
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
     if (status !== "loading") {
@@ -49,7 +47,9 @@ function RootStack(): React.JSX.Element {
   }, [status]);
 
   return (
-    <>
+    <NotificationProvider timezone={timezone} userId={user?.id}>
+      <ThemeStatusBar />
+
       {status === "error" && (
         <StateMessage
           action={{
@@ -75,7 +75,9 @@ function RootStack(): React.JSX.Element {
           <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
         </Stack>
       )}
-    </>
+
+      <PortalHost />
+    </NotificationProvider>
   );
 }
 
