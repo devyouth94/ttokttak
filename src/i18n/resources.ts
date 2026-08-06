@@ -308,6 +308,7 @@ export const appI18nResources = {
           },
           section: "Account management",
           signOut: "Sign out",
+          signOutErrorMessage: "Could not sign out. Please try again later.",
           signOutErrorTitle: "Sign-out failed",
         },
         appInfo: {
@@ -323,7 +324,6 @@ export const appI18nResources = {
         environment: {
           appLanguage: "Display language",
           appLanguageHint: "Choose the display language on this device.",
-          appLanguageLocalOnly: "Saved only on this device.",
           languageEnglishHint: "Set the display language to English.",
           languageKoreanHint: "Set the display language to Korean.",
           saveErrorMessage:
@@ -339,7 +339,6 @@ export const appI18nResources = {
           themeHint: "Choose the theme on this device.",
           themeLight: "Light",
           themeLightHint: "Use light theme on this device.",
-          themeLocalOnly: "Saved only on this device.",
           themeSaveErrorMessage:
             "Could not save the theme. Please try again later.",
           themeSaveErrorTitle: "Could not save theme",
@@ -350,13 +349,15 @@ export const appI18nResources = {
         headerTitle: "Settings",
         nameEditor: {
           cancel: "Cancel",
+          emptyError: "Enter a name.",
           placeholder: "Name",
           save: "Save",
+          saveErrorMessage: "Could not save the name. Please try again later.",
           saveErrorTitle: "Could not save name",
           title: "Edit name",
+          tooLongError: "Enter a name with 30 characters or fewer.",
         },
         notifications: {
-          appNotification: "App notifications",
           openSettings: "Open system settings",
           openSettingsDescription:
             "If permission is off, enable it again in system settings.",
@@ -365,6 +366,8 @@ export const appI18nResources = {
           permissionRequest: "Request permission",
           permissionRequestDescription:
             "Notification permission is required for this device to remind you on time.",
+          permissionRequestErrorMessage:
+            "Could not request notification permission. Please try again later.",
           permissionRequestErrorTitle: "Permission request failed",
           permissionStatus: "Permission status",
           section: "Notifications",
@@ -670,6 +673,8 @@ export const appI18nResources = {
           },
           section: "계정 관리",
           signOut: "로그아웃",
+          signOutErrorMessage:
+            "로그아웃할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           signOutErrorTitle: "로그아웃 실패",
         },
         appInfo: {
@@ -685,7 +690,6 @@ export const appI18nResources = {
         environment: {
           appLanguage: "표시 언어",
           appLanguageHint: "현재 기기의 표시 언어를 선택해요.",
-          appLanguageLocalOnly: "현재 기기에만 저장됩니다.",
           languageEnglishHint: "표시 언어를 English로 설정해요.",
           languageKoreanHint: "표시 언어를 한국어로 설정해요.",
           saveErrorMessage:
@@ -701,7 +705,6 @@ export const appI18nResources = {
           themeHint: "현재 기기의 테마를 선택해요.",
           themeLight: "라이트",
           themeLightHint: "현재 기기에서 라이트 테마를 사용해요.",
-          themeLocalOnly: "현재 기기에만 저장됩니다.",
           themeSaveErrorMessage:
             "테마를 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           themeSaveErrorTitle: "테마 저장 실패",
@@ -712,13 +715,16 @@ export const appI18nResources = {
         headerTitle: "설정",
         nameEditor: {
           cancel: "취소",
+          emptyError: "이름을 입력해 주세요.",
           placeholder: "이름",
           save: "저장",
+          saveErrorMessage:
+            "이름을 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           saveErrorTitle: "이름 저장 실패",
           title: "이름 수정",
+          tooLongError: "이름은 30자 이하로 입력해 주세요.",
         },
         notifications: {
-          appNotification: "앱 알림",
           openSettings: "시스템 설정 열기",
           openSettingsDescription:
             "권한이 꺼져 있으면 시스템 설정에서 다시 허용해야 합니다.",
@@ -727,6 +733,8 @@ export const appI18nResources = {
           permissionRequest: "권한 요청",
           permissionRequestDescription:
             "정해둔 시간에 현재 기기에서 알려드리려면 알림 권한이 필요합니다.",
+          permissionRequestErrorMessage:
+            "알림 권한을 요청할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           permissionRequestErrorTitle: "권한 요청 실패",
           permissionStatus: "권한 상태",
           section: "알림",
