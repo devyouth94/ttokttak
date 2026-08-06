@@ -30,8 +30,8 @@
 
 ### Current Structure
 
-- 루트 `app`: route parameter를 읽고 화면을 연결하는 Expo Router route.
-- `src/screens`: 한 화면이 소유하는 조회, 상태, 동작과 UI.
+- 루트 `app`: Expo Router route와 page 컴포넌트. 탭 page는 작은 화면 상태, 동작과 UI 조립을 직접 소유할 수 있다.
+- `src/screens`: page에서 분리할 가치가 있는 화면 전용 조회, 상태, 동작과 UI.
 - `src/schedule`: 여러 화면이 공유하는 일정 규칙, 저장, 조회, 표시와 UI.
 - `src/session`: Supabase session Context와 Apple, Google 인증.
 - `src/account`: profile 복원, 표시 이름 저장과 계정 삭제.
@@ -45,9 +45,9 @@
 
 ### Placement Rules
 
-- 한 화면에서만 사용하는 코드는 `screens/<화면>/`에 둔다.
-- 화면 전용 조회, 상태와 동작은 화면 루트에 둔다.
-- 화면 전용 렌더링 파일은 개수와 관계없이 `screens/<화면>/ui/`에 둔다.
+- 탭 page에서 바로 읽히는 화면 상태, 동작과 UI 조립은 route 파일에 둘 수 있다.
+- 별도 검증이나 역할 분리가 필요한 화면 전용 코드는 `screens/<화면>/`에 둔다.
+- page가 재사용하는 화면 전용 UI는 `screens/<화면>/ui/`에 둔다.
 - 여러 화면이나 앱 전체가 공유하는 코드는 제품 역할 이름의 최상위 모듈에 둔다.
 - 한 파일이면 미래 확장을 위한 디렉터리를 만들지 않고 `src/`에 직접 둔다.
 - 하위 디렉터리는 여러 파일이 독립된 역할을 이룰 때만 만든다.

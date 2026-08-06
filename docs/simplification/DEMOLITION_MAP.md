@@ -29,7 +29,7 @@
 | 일정 상세             | 재작성      | 대표 상태, 최근 기록, 수정과 삭제 진입 | view model과 700줄 화면을 사용자 상태 단위로 다시 나눈다.        |
 | 알림                  | 유지        | 권한, 후보 계산, lifecycle, tap        | 동기화 코어를 유지한다. session 전달 wrapper만 제거 후보로 둔다. |
 | 세션과 계정           | 유지        | 세션 상태, profile 준비, 계정 삭제     | 보안 경계를 유지한다. 화면 소유 훅이나 route에서 직접 사용한다.  |
-| 설정                  | 재작성      | 언어, 테마, 계정 동작과 현재 UI        | controller와 screen model을 화면 소유 훅 하나로 교체한다.        |
+| 설정                  | 재작성      | 언어, 테마, 계정 동작과 설정 항목      | route page가 상태, 동작과 UI 조립을 직접 소유한다.               |
 | 로그인                | 유지        | Apple, Google과 법적 문구              | 배럴만 제거하고 UI는 유지한다.                                   |
 | 테마, i18n, 공용 UI   | 유지        | 앱 전역 provider와 의미 토큰           | 화면 model의 별도 번역 사전을 i18n 경계로 되돌린다.              |
 | route와 screen 배럴   | 삭제        | route parameter와 화면 연결            | route가 실제 화면 파일을 직접 import한다.                        |
@@ -159,7 +159,7 @@ Zod schema는 입력 shape를 확인하고 `validateInput`의 도메인 오류�
 - 생성과 수정 제출 payload.
 - 생성, 수정과 삭제 호출.
 
-## 실행 순서
+## 첫 흐름 실행 순서
 
 1. 현재 생성·수정 UI와 제출 payload를 기준 자료로 고정한다.
 2. `schedule/rules`와 암호화 테스트는 그대로 둔다.
@@ -171,6 +171,67 @@ Zod schema는 입력 shape를 확인하고 `validateInput`의 도메인 오류�
 8. 첫 흐름 결과를 승인한다.
 9. `write.ts`와 `db/items.ts` 재작성을 시작한다.
 
+## 다음 흐름: 설정
+
+설정은 다른 화면의 occurrence projection과 무관하다.
+사용자 동작을 유지하면서 화면 전달 계층과 중복 정보를 제거한다.
+
+### 유지할 계약
+
+- 표시 언어, 테마와 알림 권한 상태를 현재 기기 기준으로 관리한다.
+- 현재 시간대, 계정 이름, 이메일과 앱 버전을 표시한다.
+- 표시 이름 수정, 법적 문서 열기와 시스템 설정 이동을 유지한다.
+- 표시 이름 수정은 Android와 iOS에서 같은 Modal 흐름을 사용한다.
+- 알림 상태는 권한 상태 한 행으로 표시한다.
+- 로그아웃과 계정 삭제의 중복 실행 방지와 실패 안내를 유지한다.
+- 계정 삭제 확인 문구와 세션 오류 구분을 유지한다.
+- 세션, 알림, 테마와 계정 삭제 provider 경계는 변경하지 않는다.
+- 일반 실패는 내부 오류 대신 i18n의 사용자 문구로 안내한다.
+- 각 설정 섹션은 자신이 소유한 비동기 동작의 중복 실행을 막는다.
+
+### 파일 판정
+
+| 파일                                                           | 판정   | 처리                                                               |
+| -------------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
+| `app/(tabs)/settings.tsx`                                      | 재작성 | 헤더, 스크롤과 설정 섹션 순서만 직접 소유한다.                     |
+| `src/screens/settings/model/use-settings-screen-controller.ts` | 삭제   | page가 필요한 provider와 상태를 직접 사용한다.                     |
+| `src/screens/settings/model/settings-screen-model.ts`          | 삭제   | 번역, 옵션과 표시값 재포장을 page와 기존 경계로 되돌린다.          |
+| `src/screens/settings/model/settings-screen-model.test.ts`     | 삭제   | helper 반환 shape 대신 page의 사용자 동작을 검증한다.              |
+| `src/screens/settings/ui/settings-screen.tsx`                  | 삭제   | 별도 screen 컴포넌트 없이 route page가 화면을 렌더링한다.          |
+| `src/screens/settings/ui/account-section.tsx`                  | 신규   | 계정 정보 표시와 표시 이름 수정 흐름을 소유한다.                   |
+| `src/screens/settings/ui/account-section.test.tsx`             | 신규   | 표시 이름 열기, 검증과 저장을 사용자 동작으로 확인한다.            |
+| `src/screens/settings/ui/account-management-section.tsx`       | 신규   | 로그아웃과 계정 삭제 확인 흐름을 소유한다.                         |
+| `src/screens/settings/ui/account-management-section.test.tsx`  | 신규   | 계정 삭제 확인과 실행을 사용자 동작으로 확인한다.                  |
+| `src/screens/settings/ui/app-info-section.tsx`                 | 신규   | 앱 버전과 법적 문서 열기 흐름을 소유한다.                          |
+| `src/screens/settings/ui/name-editor.tsx`                      | 신규   | 이름 수정 Modal의 표현만 소유한다.                                 |
+| `src/screens/settings/ui/environment-section.tsx`              | 신규   | 표시 언어, 테마와 시간대 상태와 동작을 소유한다.                   |
+| `src/screens/settings/ui/notifications-section.tsx`            | 신규   | 알림 권한 상태와 관련 동작과 오류 처리를 소유한다.                 |
+| `src/screens/settings/ui/settings-screen-rows.tsx`             | 재작성 | 중복 row 종류와 pressable 상태 prop을 줄이고 설정 UI에 재사용한다. |
+| `src/screens/settings/ui/settings-screen-styles.ts`            | 삭제   | 각 UI 파일이 사용하는 정적 스타일을 직접 소유한다.                 |
+| `src/screens/settings/profile-display-name.ts`                 | 재작성 | 이름 정규화와 검증만 남기고 번역 문구 대신 오류 종류를 반환한다.   |
+| `src/screens/settings/profile-display-name.test.ts`            | 유지   | 이름 정규화와 검증 계약을 확인한다.                                |
+| `src/i18n/resources.ts`                                        | 수정   | 표시 이름 검증 문구를 기존 설정 i18n 경계에 추가한다.              |
+| `src/screens/settings/settings-page.test.tsx`                  | 삭제   | 사용자 동작 테스트를 실제 동작을 소유한 섹션으로 옮긴다.           |
+
+### 테스트 판정
+
+새 섹션 테스트는 다음 동작을 확인한다.
+
+- 표시 이름 열기, 검증과 저장.
+- 계정 삭제 확인과 실행.
+
+옵션 배열, `actions`, `values`, `view` 같은 내부 반환 shape는 테스트하지 않는다.
+표시 언어, 테마, 알림, 세션과 계정 삭제 lifecycle은 기존 provider와 account 테스트를 유지한다.
+
+### 실행 순서
+
+1. 현재 설정 UI와 사용자 동작을 섹션 테스트 기준으로 고정한다.
+2. 각 설정 섹션이 필요한 provider, 상태, 동작과 오류 처리를 직접 소유하게 한다.
+3. 표시 이름 검증 문구를 기존 i18n 리소스로 옮긴다.
+4. controller, screen model, 별도 screen 컴포넌트와 helper shape 테스트를 삭제한다.
+5. 전체 테스트, 타입 검사, lint와 설정 화면 수동 확인을 실행한다.
+6. 설정 흐름 결과를 승인한다.
+
 ## Ponytail 판정
 
 `yagni:` 일정 폼의 state, screen model, controller 삼중 계층을 삭제한다. React Hook Form과 `validateInput`을 연결하는 화면 소유 폼 하나로 교체한다. [`src/screens/schedule-form`]
@@ -181,7 +242,7 @@ Zod schema는 입력 shape를 확인하고 `validateInput`의 도메인 오류�
 
 `delete:` 화면을 다시 export하기만 하는 배럴 다섯 개를 삭제한다. route가 실제 화면 파일을 직접 import한다. [`src/screens/*/index.ts`]
 
-`yagni:` 설정의 screen model과 313줄 controller를 화면 소유 훅 하나로 교체한다. [`src/screens/settings/model`]
+`yagni:` 설정의 screen model, 313줄 controller와 별도 screen 컴포넌트를 삭제한다. route page가 provider, 화면 상태, 동작과 UI 조립을 직접 소유하고 재사용 UI와 표시 이름 검증만 남긴다. [`app/(tabs)/settings.tsx`, `src/screens/settings`]
 
 `shrink:` 캘린더의 329줄 model과 581줄 helper 테스트를 월 상태와 occurrence projection 중심으로 다시 쓴다. [`src/screens/calendar/model`]
 
