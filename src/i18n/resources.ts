@@ -88,7 +88,16 @@ export const appI18nResources = {
         termsOpenErrorTitle: "Terms of Service unavailable",
       },
       calendar: {
+        day: {
+          overflow: "{{count}} more",
+          selectHint: "Change the selected date.",
+          selected: "Selected",
+          today: "Today",
+        },
         emptyTitle: "No items on this date",
+        entryCount: "{{count}} items",
+        entryCount_one: "{{count}} item",
+        entryCount_other: "{{count}} items",
         error: {
           retryHint: "Try loading the calendar again.",
           retryLabel: "Reload calendar",
@@ -96,12 +105,15 @@ export const appI18nResources = {
         },
         headerTitle: "Calendar",
         loadingA11yLabel: "Loading items",
-        monthArrowHint: "Move the visible month.",
-        nextMonthLabel: "Show next month",
-        previousMonthLabel: "Show previous month",
         row: {
           detailHint: "Open the item detail screen.",
           detailLabel: "View {{title}} details",
+        },
+        status: {
+          completed: "Complete",
+          overdue: "Overdue",
+          scheduled: "Scheduled",
+          skipped: "Skip",
         },
       },
       navigation: {
@@ -453,7 +465,16 @@ export const appI18nResources = {
         termsOpenErrorTitle: "이용약관 열기 실패",
       },
       calendar: {
+        day: {
+          overflow: "외 {{count}}개",
+          selectHint: "선택 날짜를 바꿉니다.",
+          selected: "선택됨",
+          today: "오늘",
+        },
         emptyTitle: "선택한 날짜에 일정이 없어요",
+        entryCount: "{{count}}개",
+        entryCount_one: "{{count}}개",
+        entryCount_other: "{{count}}개",
         error: {
           retryHint: "캘린더 조회를 다시 시도해요.",
           retryLabel: "캘린더 다시 불러오기",
@@ -461,12 +482,15 @@ export const appI18nResources = {
         },
         headerTitle: "캘린더",
         loadingA11yLabel: "일정을 불러오는 중",
-        monthArrowHint: "보이는 월을 이동해요.",
-        nextMonthLabel: "다음 달 보기",
-        previousMonthLabel: "이전 달 보기",
         row: {
           detailHint: "반복 항목 상세 화면으로 이동해요.",
           detailLabel: "{{title}} 상세 보기",
+        },
+        status: {
+          completed: "완료",
+          overdue: "지남",
+          scheduled: "예정",
+          skipped: "건너뜀",
         },
       },
       navigation: {

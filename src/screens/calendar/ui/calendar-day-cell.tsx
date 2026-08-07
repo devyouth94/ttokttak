@@ -1,17 +1,17 @@
-import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import type { DateData } from "react-native-calendars";
 
+import { useAppLanguage } from "~/i18n/provider";
 import {
   colorByKey,
   type ColorKey,
   getColorLabel,
 } from "~/schedule/display/color";
+import { formatLocal } from "~/schedule/display/date";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, typography } from "~/ui/tokens";
-
-import { CALENDAR_MAX_VISIBLE_MARKERS } from "../model/calendar-screen-model";
 
 type CalendarDayCellProps = {
   date: DateData;
@@ -22,21 +22,9 @@ type CalendarDayCellProps = {
   onPress: (date: DateData) => void;
 };
 
-const cellMarkerLineGap = 1;
-const cellMarkerLineHeight = 3;
-const cellOverflowGap = 2;
-const cellOverflowLabelHeight = 9;
-const cellDaySurfaceSize = 28;
-const cellMarkerTopGap = 4;
-const cellMarkerStackHeight =
-  CALENDAR_MAX_VISIBLE_MARKERS * cellMarkerLineHeight +
-  (CALENDAR_MAX_VISIBLE_MARKERS - 1) * cellMarkerLineGap;
-const cellMarkerAreaHeight =
-  cellMarkerStackHeight + cellOverflowGap + cellOverflowLabelHeight;
-export const CALENDAR_DAY_CELL_HEIGHT =
-  cellDaySurfaceSize + cellMarkerTopGap + cellMarkerAreaHeight + 1;
+export const CALENDAR_DAY_CELL_HEIGHT = 63;
 
-function CalendarDayCellComponent({
+export function CalendarDayCell({
   date,
   isSelected,
   isToday,
@@ -44,36 +32,29 @@ function CalendarDayCellComponent({
   overflowCount,
   onPress,
 }: CalendarDayCellProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const themeColors = useThemeColors();
+
   const dayOfWeek = new Date(date.year, date.month - 1, date.day).getDay();
-  const isSunday = dayOfWeek === 0;
-  const isSaturday = dayOfWeek === 6;
   const colorLabel = markerColorKeys
-    .map((colorKey) => getColorLabel(colorKey))
+    .map((colorKey) => getColorLabel(colorKey, language))
     .join(", ");
-  const accessibilityLabels = [`${date.month}월 ${date.day}일`];
-
-  if (isToday) {
-    accessibilityLabels.push("오늘");
-  }
-
-  if (isSelected) {
-    accessibilityLabels.push("선택됨");
-  }
-
-  if (colorLabel) {
-    accessibilityLabels.push(colorLabel);
-  }
-
-  if (overflowCount > 0) {
-    accessibilityLabels.push(`외 ${overflowCount}개`);
-  }
-
-  const accessibilityLabel = accessibilityLabels.join(", ");
+  const accessibilityLabel = [
+    formatLocal(date.dateString, "weekdayDate", language),
+    isToday ? t("calendar.day.today") : null,
+    isSelected ? t("calendar.day.selected") : null,
+    colorLabel || null,
+    overflowCount > 0
+      ? t("calendar.day.overflow", { count: overflowCount })
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Pressable
-      accessibilityHint="선택 날짜를 바꿉니다."
+      accessibilityHint={t("calendar.day.selectHint")}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       hitSlop={4}
@@ -100,8 +81,8 @@ function CalendarDayCellComponent({
           style={[
             styles.dayLabel,
             { color: themeColors.text },
-            isSunday && { color: themeColors.red },
-            isSaturday && { color: themeColors.blue },
+            dayOfWeek === 0 && { color: themeColors.red },
+            dayOfWeek === 6 && { color: themeColors.blue },
             isToday && styles.todayLabel,
             isSelected && {
               color: themeColors.primaryForeground,
@@ -113,51 +94,30 @@ function CalendarDayCellComponent({
         </AppText>
       </View>
 
-      <View style={styles.markerArea}>
-        <View style={styles.markerStack}>
-          {markerColorKeys.map((colorKey, index) => (
-            <CalendarColorMarker
-              colorKey={colorKey}
-              key={`${colorKey}-${index}`}
-              isSelected={isSelected}
-            />
-          ))}
-        </View>
-        <View style={styles.overflowSlot}>
-          {overflowCount > 0 && (
-            <AppText
-              style={[styles.overflowLabel, { color: themeColors.textMuted }]}
-            >
-              +{overflowCount}
-            </AppText>
-          )}
-        </View>
+      <View style={styles.markerStack}>
+        {markerColorKeys.map((colorKey, index) => (
+          <View
+            key={`${colorKey}-${index}`}
+            style={[
+              styles.markerLine,
+              { backgroundColor: colorByKey[colorKey].swatchColor },
+              isSelected && styles.selectedMarker,
+            ]}
+          />
+        ))}
+      </View>
+      <View style={styles.overflowSlot}>
+        {overflowCount > 0 && (
+          <AppText
+            style={[styles.overflowLabel, { color: themeColors.textMuted }]}
+          >
+            +{overflowCount}
+          </AppText>
+        )}
       </View>
     </Pressable>
   );
 }
-
-function CalendarColorMarker({
-  colorKey,
-  isSelected = false,
-}: {
-  colorKey: ColorKey;
-  isSelected?: boolean;
-}): React.JSX.Element {
-  const markerColor = colorByKey[colorKey].swatchColor;
-
-  return (
-    <View
-      style={[
-        styles.markerLine,
-        { backgroundColor: markerColor },
-        isSelected && styles.selectedMarker,
-      ]}
-    />
-  );
-}
-
-export const CalendarDayCell = memo(CalendarDayCellComponent);
 
 const styles = StyleSheet.create({
   container: {
@@ -176,39 +136,32 @@ const styles = StyleSheet.create({
   daySurface: {
     alignItems: "center",
     borderRadius: borderRadius.pill,
-    height: cellDaySurfaceSize,
+    height: 28,
     justifyContent: "center",
-    width: cellDaySurfaceSize,
-  },
-  markerArea: {
-    alignItems: "center",
-    gap: cellOverflowGap,
-    height: cellMarkerAreaHeight,
-    justifyContent: "flex-start",
-    marginTop: cellMarkerTopGap,
-    width: "100%",
+    width: 28,
   },
   markerLine: {
     borderRadius: borderRadius.pill,
-    height: cellMarkerLineHeight,
+    height: 3,
     width: "85%",
   },
   markerStack: {
     alignItems: "center",
-    gap: cellMarkerLineGap,
-    height: cellMarkerStackHeight,
+    gap: 1,
+    height: 19,
     justifyContent: "flex-end",
+    marginTop: 4,
     width: "100%",
   },
   overflowLabel: {
     fontSize: 9,
     lineHeight: 9,
-    marginBottom: 0,
   },
   overflowSlot: {
     alignItems: "center",
-    height: cellOverflowLabelHeight,
+    height: 9,
     justifyContent: "center",
+    marginTop: 2,
   },
   selectedMarker: {
     opacity: 0.96,

@@ -26,6 +26,9 @@ describe("app i18n resources", () => {
     );
     expect(i18n.t("home.feed.sectionCount", { count: 1 })).toBe("1 item");
     expect(i18n.t("home.feed.sectionCount", { count: 2 })).toBe("2 items");
+    expect(i18n.t("calendar.entryCount", { count: 1 })).toBe("1 item");
+    expect(i18n.t("calendar.entryCount", { count: 2 })).toBe("2 items");
+    expect(i18n.t("calendar.status.completed")).toBe("Complete");
   });
 
   it("한국어 리소스는 핵심 문구와 interpolation을 제공한다", async () => {
@@ -37,5 +40,7 @@ describe("app i18n resources", () => {
       "비타민 건너뛰기"
     );
     expect(i18n.t("navigation.createItemLabel")).toBe("일정 추가");
+    expect(i18n.t("calendar.entryCount", { count: 2 })).toBe("2개");
+    expect(i18n.t("calendar.status.skipped")).toBe("건너뜀");
   });
 });
