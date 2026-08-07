@@ -61,9 +61,9 @@ export function MainBottomNav({
 
           return (
             <Fragment key={route.key}>
-              {index === 2 ? (
+              {index === 2 && (
                 <View pointerEvents="none" style={styles.createSlot} />
-              ) : null}
+              )}
 
               <Pressable
                 accessibilityLabel={label}

@@ -376,11 +376,11 @@ function DetailHistoryCard({
         <AppText style={styles.historyDate} variant="body3">
           {entry.actedDateLabel}
         </AppText>
-        {entry.scheduledDateLabel ? (
+        {entry.scheduledDateLabel && (
           <AppText style={styles.historyScheduledDate} variant="label">
             {entry.scheduledDateLabel}
           </AppText>
-        ) : null}
+        )}
       </View>
       <View style={[styles.historyStatusChip, statusChipStyle]}>
         <AppText
