@@ -232,6 +232,67 @@ Zod schema는 입력 shape를 확인하고 `validateInput`의 도메인 오류�
 5. 전체 테스트, 타입 검사, lint와 설정 화면 수동 확인을 실행한다.
 6. 설정 흐름 결과를 승인한다.
 
+## 다음 흐름: 캘린더
+
+캘린더는 하나의 조회 흐름과 두 표시 영역으로 구성한다.
+page가 선택 날짜와 query를 소유하고 월간 캘린더와 선택 날짜 목록을 조립한다.
+
+### 유지할 계약
+
+- 현재 날짜와 profile 시간대로 초기 선택 날짜를 정한다.
+- 시간대가 바뀌어도 사용자가 다른 날짜를 보고 있으면 선택을 유지한다.
+- 월 이동은 외부 캘린더의 기본 화살표를 사용하고 이동한 달의 1일을 선택한다.
+- 날짜별 marker는 시간순으로 최대 5개를 표시하고 나머지 개수를 표시한다.
+- 선택 날짜 일정은 시간과 제목 순으로 정렬한다.
+- 로딩, 오류, 빈 상태와 상세 진입 동작을 유지한다.
+
+### 파일 판정
+
+| 파일                                                       | 판정   | 처리                                                                |
+| ---------------------------------------------------------- | ------ | ------------------------------------------------------------------- |
+| `app/(tabs)/calendar.tsx`                                  | 재작성 | 선택 날짜, query, 시간대 동기화, 탐색과 두 UI 섹션 조립을 소유한다. |
+| `src/screens/calendar/model/calendar-screen-model.ts`      | 삭제   | 순수 상태와 projection만 `calendar.ts`에 남긴다.                    |
+| `src/screens/calendar/model/calendar-screen-model.test.ts` | 삭제   | occurrence 계산 중복을 없앤 작은 projection 테스트로 교체한다.      |
+| `src/screens/calendar/calendar.ts`                         | 신규   | 시간대 날짜 보정과 두 occurrence projection을 제공한다.             |
+| `src/screens/calendar/calendar.test.ts`                    | 신규   | 시간대 날짜 보정과 두 occurrence projection을 확인한다.             |
+| `src/screens/calendar/query.ts`                            | 유지   | 선택 날짜가 속한 월의 occurrence를 한 번 조회한다.                  |
+| `src/screens/calendar/query.test.ts`                       | 유지   | 월 조회 범위와 로딩 중 occurrence 미노출을 확인한다.                |
+| `src/screens/calendar/ui/calendar-screen.tsx`              | 삭제   | 별도 screen 없이 route page가 화면을 직접 렌더링한다.               |
+| `src/screens/calendar/ui/calendar-render-key.ts`           | 삭제   | page의 단순 문자열 조합으로 대체한다.                               |
+| `src/screens/calendar/ui/calendar-day-cell.tsx`            | 유지   | 날짜 선택, marker와 접근성 표현을 소유한다.                         |
+| `src/screens/calendar/ui/calendar-month-section.tsx`       | 신규   | 월간 marker projection, 외부 캘린더 설정과 날짜 셀을 소유한다.      |
+| `src/screens/calendar/ui/selected-date-section.tsx`        | 신규   | 선택 날짜 목록 projection과 로딩, 오류, 빈 상태를 소유한다.         |
+| `src/i18n/resources.ts`                                    | 수정   | 일정 개수와 occurrence 상태 문구를 calendar 번역에 추가한다.        |
+
+### 새 경계
+
+```text
+calendar route page
+├─ calendar query
+├─ selected date
+├─ CalendarMonthSection
+│  ├─ 외부 캘린더 월 이동
+│  ├─ 월간 marker projection
+│  └─ CalendarDayCell
+└─ SelectedDateSection
+   └─ 선택 날짜 목록 projection
+```
+
+page는 선택 날짜, provider, query와 탐색을 소유한다.
+두 섹션은 query가 만든 occurrence entry와 callback을 받아 각자 표시 값을 만든다.
+`calendar.ts`는 React와 번역 문구에 의존하지 않는다.
+`CalendarDayCell`은 독립된 UI와 스타일을 유지한다.
+
+### 실행 순서
+
+1. 현재 UI와 사용자 동작을 유지 계약으로 고정한다.
+2. projection을 `calendar.ts`로 옮긴다.
+3. route page가 선택 날짜와 query를 소유하고 두 UI 섹션을 직접 조립하게 한다.
+4. 일정 개수와 상태 문구를 i18n 리소스로 옮긴다.
+5. screen, model과 전달 helper를 삭제한다.
+6. 캘린더 테스트, 전체 테스트, 타입 검사와 lint를 실행한다.
+7. 캘린더 화면을 수동 확인한다.
+
 ## Ponytail 판정
 
 `yagni:` 일정 폼의 state, screen model, controller 삼중 계층을 삭제한다. React Hook Form과 `validateInput`을 연결하는 화면 소유 폼 하나로 교체한다. [`src/screens/schedule-form`]
@@ -244,7 +305,7 @@ Zod schema는 입력 shape를 확인하고 `validateInput`의 도메인 오류�
 
 `yagni:` 설정의 screen model, 313줄 controller와 별도 screen 컴포넌트를 삭제한다. route page가 provider, 화면 상태, 동작과 UI 조립을 직접 소유하고 재사용 UI와 표시 이름 검증만 남긴다. [`app/(tabs)/settings.tsx`, `src/screens/settings`]
 
-`shrink:` 캘린더의 329줄 model과 581줄 helper 테스트를 월 상태와 occurrence projection 중심으로 다시 쓴다. [`src/screens/calendar/model`]
+`shrink:` 캘린더의 329줄 model과 581줄 helper 테스트를 occurrence projection 중심으로 다시 쓴다. [`src/screens/calendar/model`]
 
 `shrink:` 상세 화면의 568줄 view model과 411줄 helper 테스트를 대표 상태 projection과 화면 상태 테스트로 교체한다. [`src/screens/schedule-detail/model`]
 
