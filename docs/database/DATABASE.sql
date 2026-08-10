@@ -1,8 +1,9 @@
 -- DATABASE.sql
--- 이 파일은 확정된 제품/설계/도메인 결정을 저장 구조로 옮긴 스키마다.
--- 제품 범위와 용어의 기준은 PRODUCT_SPEC.md를 따른다.
--- 구성요소 책임과 데이터 흐름의 기준은 SYSTEM_DESIGN.md를 따른다.
--- 반복 계산, 상태 판정, 알림 동기화 규칙의 기준은 DOMAIN_LOGIC.md를 따른다.
+-- 이 파일은 현재 운영 Supabase 스키마를 읽기 위한 snapshot이다.
+-- 배포 변경 이력은 supabase/migrations에 두고 운영 DB와 맞춰 갱신한다.
+-- 제품 범위는 docs/PRODUCT_SPEC.md를 따른다.
+-- 구현 경계와 데이터 흐름은 docs/SYSTEM_DESIGN.md를 따른다.
+-- 반복 계산과 상태 판정은 docs/DOMAIN_LOGIC.md를 따른다.
 
 create extension if not exists pgcrypto;
 
@@ -612,12 +613,6 @@ drop policy if exists "recurring_items_update_own" on public.recurring_items;
 create policy "recurring_items_update_own"
 on public.recurring_items
 for update
-using (auth.uid() = user_id);
-
-drop policy if exists "recurring_items_delete_own" on public.recurring_items;
-create policy "recurring_items_delete_own"
-on public.recurring_items
-for delete
 using (auth.uid() = user_id);
 
 -- recurring_item_schedule_versions

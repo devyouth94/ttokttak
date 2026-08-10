@@ -2,6 +2,7 @@ allowBuilds:
   "@sentry/cli": true
   unrs-resolver: true
 overrides:
+  # Expo 55 Metro가 7.29.7에서 expo-asset을 해석하지 못해 고정한다. Expo가 지원하면 제거한다.
   "@babel/core": "7.29.0"
   "@tootallnate/once@>=2.0.0 <2.0.1": "2.0.1"
   "brace-expansion@>=5.0.0 <5.0.6": "5.0.6"

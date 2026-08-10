@@ -1,269 +1,131 @@
 # Domain Logic
 
-이 문서는 현재 코드에서 사용하는 반복 일정 규칙과 상태 계산만 정의한다.
-제품 범위는 `PRODUCT_SPEC.md`, 구현 구조는 `SYSTEM_DESIGN.md`를 따른다.
+이 문서는 일정의 반복 규칙, occurrence 계산, 상태 판정과 수정 규칙을 정의한다.
+제품에서 보이는 동작은 [`PRODUCT_SPEC.md`](PRODUCT_SPEC.md), 구현 경계는 [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md)를 따른다.
 
-## Core Model
+## 모델
 
-### Recurring Item
+### 일정과 규칙 버전
 
-일정은 사용자가 관리하는 반복 생활 항목이다.
-일정은 제목, 설명, 시작일, 색상, 보관 여부를 가진다.
-제목과 설명은 도메인에서는 평문으로 다루지만 저장소에서는 암호화된다.
+- 일정은 시작일과 비어 있지 않은 규칙 버전 목록을 가진다.
+- 반복 규칙의 기준은 규칙 버전이며 현재 값은 최신 버전에서 읽는다.
+- 규칙 버전은 적용 시각, 반복 방식, 간격, 요일, 알림 시각, 계산 기준, occurrence 시작일, 종료일과 알림 사용 여부를 가진다.
+- 각 버전은 자신의 적용 시각부터 다음 버전 적용 직전까지 유효하다.
 
-### 규칙 버전
+### occurrence와 처리 기록
 
-반복 규칙의 source of truth는 규칙 버전이다.
-하나의 일정은 비어 있지 않은 규칙 버전 목록을 가진다.
-현재 화면 표시는 최신 규칙 버전을 기준으로 한다.
-`RecurringItem`은 반복 규칙을 별도 상위 필드로 복사하지 않는다.
+- occurrence는 저장 row가 아니라 일정과 처리 기록에서 계산한다.
+- occurrence 식별자는 `(itemId, scheduledAtUtc)`다.
+- occurrence 처리 기록은 `completed` 또는 `skipped`다.
+- 하나의 occurrence에는 최대 하나의 처리 기록이 존재한다.
+- 처리 기록은 예정 시각과 실제 처리 시각을 함께 가진다.
 
-규칙 버전은 다음 값을 가진다.
+## 반복 규칙
 
-- `effectiveFromUtc`.
-- `recurrenceType`.
-- `intervalValue`.
-- `weekdayMask`.
-- `reminderTimeLocal`.
-- `anchorType`.
-- `seedStartDateLocal`.
-- `endDateLocal`.
-- `notificationsEnabled`.
+| 값                | 의미                          | 필요한 값            |
+| ----------------- | ----------------------------- | -------------------- |
+| `once`            | 시작일에 한 번                | 없음                 |
+| `daily`           | 매일                          | 없음                 |
+| `interval_days`   | 기준일에서 n일마다            | 1 이상의 간격        |
+| `weekly`          | 매주 선택 요일                | 하나 이상의 요일     |
+| `interval_weeks`  | 기준 주에서 n주마다 선택 요일 | 1 이상의 간격과 요일 |
+| `monthly`         | 매달 기준 날짜                | 없음                 |
+| `interval_months` | 기준 달에서 n달마다 기준 날짜 | 1 이상의 간격        |
 
-### Occurrence
+주간 계산에서 한 주는 일요일에 시작한다.
+첫 주간 occurrence는 시작일 이상인 가장 가까운 선택 요일이다.
+간격 주간 반복은 시작일이 속한 주를 기준으로 계산한다.
 
-occurrence는 저장 row가 아니라 계산 결과다.
-식별자는 `(itemId, scheduledAtUtc)`이다.
+월 단위 반복에서 대상 달에 기준 날짜가 없으면 그 달의 마지막 날을 사용한다.
+예를 들어 1월 31일 매달 반복은 2월 28일 또는 29일, 3월 31일, 4월 30일로 이어진다.
 
-### Completion Log
+## 계산 기준
 
-completion log는 특정 occurrence에 대한 처리 기록이다.
-`action`은 `completed` 또는 `skipped`만 가진다.
-하나의 occurrence에는 최대 하나의 completion log만 연결된다.
+### 고정형
 
-## Supported Values
+`fixed`는 규칙 버전의 기준일에서 다음 occurrence를 계산한다.
+완료 또는 건너뛴 시각은 다음 occurrence를 바꾸지 않는다.
 
-### Recurrence Type
+### 완료일 기준
 
-- `once`.
-- `daily`.
-- `interval_days`.
-- `weekly`.
-- `interval_weeks`.
-- `monthly`.
-- `interval_months`.
+`completion_based`는 마지막 완료의 실제 처리 local date를 다음 계산 기준으로 사용한다.
+건너뛰기는 기준을 이동시키지 않는다.
 
-### Anchor Type
+완료일 기준은 `daily`, `interval_days`, `monthly`, `interval_months`에서만 허용한다.
+새 규칙 버전은 적용 시각 이전의 마지막 완료를 초기 기준으로 사용할 수 있다.
 
-- `fixed`: 원래 반복 규칙 기준으로 다음 occurrence를 계산한다.
-- `completion_based`: 마지막 완료일을 기준으로 다음 occurrence를 계산한다.
+## 날짜와 시각
 
-`completion_based`는 `daily`, `interval_days`, `monthly`, `interval_months`에서만 허용한다.
-`once`, `weekly`, `interval_weeks`는 고정 패턴을 유지한다.
+- 날짜와 알림 시각은 사용자 profile timezone의 local 의미로 해석한다.
+- 저장과 비교에는 UTC ISO 시각을 사용한다.
+- 지난 일정 여부는 시각이 아니라 timezone 기준 local date로 판정한다.
+- 오늘 occurrence는 알림 시각이 지났어도 같은 local date 동안 `scheduled`다.
 
-### Occurrence Status
+local date와 알림 시각으로 occurrence를 만들 때는 다음 순서를 사용한다.
 
-- `scheduled`: 아직 처리되지 않았고 local date가 오늘 또는 이후다.
-- `completed`: 완료 log가 있다.
-- `skipped`: 건너뛰기 log가 있다.
-- `overdue`: 처리 log가 없고 local date가 오늘보다 이전이다.
+1. `localDate`와 `reminderTimeLocal`을 결합한다.
+2. profile timezone에서 해석한다.
+3. UTC 시각으로 변환한다.
 
-### Color Key
-
-일정 색상은 `red`, `orange`, `yellow`, `green`, `blue`, `indigo`, `purple` 중 하나다.
-새 일정의 기본값은 `red`다.
-일정 색상은 occurrence 상태에 따라 바뀌지 않는다.
-
-## Validation
-
-- 제목은 빈 문자열일 수 없다.
-- 시작일은 `YYYY-MM-DD` 형식이다.
-- 종료일이 있으면 `YYYY-MM-DD` 형식이다.
-- 알림 시간은 필수이며 `HH:mm` 형식이다.
-- 시간대는 비어 있을 수 없다.
-- `interval_days`, `interval_weeks`, `interval_months`는 1 이상의 `intervalValue`가 필요하다.
-- interval 규칙이 아니면 `intervalValue`를 저장하지 않는다.
-- `weekly`, `interval_weeks`는 중복 없는 0~6 범위의 `weekdayMask`가 필요하다.
-- weekly 규칙이 아니면 `weekdayMask`를 저장하지 않는다.
-- `once`는 종료일을 저장하지 않는다.
-- 종료일이 있으면 시작일보다 빠를 수 없다.
-- 종료일이 있으면 시작일과 종료일 사이에 최소 1개 occurrence가 있어야 한다.
-- 생성 중 시작일을 종료일보다 뒤로 바꾸면 종료일을 새 시작일로 보정한다.
-- 수정 중 종료일은 수정하는 날보다 빠를 수 없다.
-
-## 종료일 정책
+## 종료일
 
 - 종료일은 occurrence local date 기준의 inclusive cutoff다.
 - 한 번 일정은 종료일을 갖지 않는다.
-- 종료일은 nullable이며, 기존 일정과 종료일이 없는 반복 일정은 null을 유지한다.
-- 종료일 변경은 future-only 규칙 변경으로 처리하고 과거 occurrence와 completion log를 다시 쓰지 않는다.
-- completion_based 일정도 종료일을 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
-- 기기 로컬 알림은 종료일 이후 occurrence를 후보로 만들지 않는다.
+- 종료일이 없는 반복 일정은 `null`을 유지한다.
+- 종료일 변경은 이후 occurrence에만 적용하고 과거 처리 기록을 바꾸지 않는다.
+- 완료일 기준도 실제 완료일이 아니라 occurrence local date에 종료일을 적용한다.
 
-## 규칙 버전 정책
+## 입력 검증
 
-- 각 version의 활성 시작은 자신의 `effectiveFromUtc`다.
-- 활성 끝은 다음 version의 `effectiveFromUtc` 직전이다.
-- version은 자신의 `seedStartDateLocal`부터 occurrence를 만든다.
-- version은 종료일이 있으면 자신의 `endDateLocal`까지 occurrence를 만든다.
-- 계산 결과 중 `scheduledAtUtc < effectiveFromUtc`인 occurrence는 버린다.
-- 수정으로 추가하는 version의 `effectiveFromUtc`는 저장을 시작한 기기 시각을 사용한다.
-- 기기 시각은 모바일 OS의 자동 시각을 전제로 하며 서버 시각으로 별도 보정하지 않는다.
-- 일정 수정은 과거 occurrence를 다시 쓰지 않고 future occurrence에만 반영한다.
-- 시작일은 생성 후 수정하지 않는다.
-- 알림 켜기/끄기는 occurrence 생성과 상태를 바꾸지 않는다.
-- 규칙 영향 필드가 바뀌면 새 규칙 버전을 추가한다.
+- 제목은 공백일 수 없다.
+- 시작일과 종료일은 `YYYY-MM-DD` 형식이다.
+- 알림 시각은 `HH:mm` 형식이다.
+- 간격 반복은 1 이상의 정수 간격을 요구하고 다른 반복은 간격을 저장하지 않는다.
+- 주간 반복은 중복 없는 0~6 범위의 요일을 요구하고 다른 반복은 요일을 저장하지 않는다.
+- 한 번 일정은 종료일을 저장하지 않는다.
+- 종료일은 시작일보다 빠를 수 없다.
+- 생성 시 시작일과 종료일 사이에 최소 하나의 occurrence가 있어야 한다.
+- 수정으로 새 종료일을 설정하면 수정하는 날보다 빠를 수 없다.
 
-규칙 영향 필드는 다음과 같다.
+생성 화면에서 시작일을 종료일 뒤로 옮기면 종료일을 새 시작일로 맞춘다.
 
-- 반복 규칙.
-- interval 값.
-- 요일 목록.
-- 알림 시간.
-- 알림 켜기/끄기.
-- anchor type.
+## 규칙 버전 계산
+
+- 버전은 자신의 occurrence 시작일부터 계산한다.
+- 계산한 occurrence가 버전 적용 시각보다 이르면 버린다.
+- 다음 버전 적용 시각 이상인 occurrence는 현재 버전에서 만들지 않는다.
+- 규칙 변경은 새 규칙 버전을 추가하고 과거 occurrence를 다시 쓰지 않는다.
+- 새 버전의 occurrence 시작일은 수정 시점 이후 첫 future occurrence local date다.
+- 일정 시작일은 생성 후 바꾸지 않는다.
+- 알림 사용 여부는 occurrence 생성과 상태를 바꾸지 않는다.
+
+다음 값이 바뀌면 새 규칙 버전을 만든다.
+
+- 반복 방식.
+- 간격.
+- 요일.
+- 알림 시각.
+- 알림 사용 여부.
+- 계산 기준.
 - 종료일.
 
-## Recurrence Rules
+제목, 설명 또는 일정 색상만 바뀌면 새 규칙 버전을 만들지 않는다.
+변경된 값이 없으면 저장할 수정 결과도 만들지 않는다.
 
-### once
+## 상태 판정
 
-`seedStartDateLocal`과 `reminderTimeLocal`에 한 번 발생한다.
+상태는 다음 순서로 정한다.
 
-### daily
+1. 같은 `scheduledAtUtc`의 occurrence 처리 기록을 찾는다.
+2. 완료 기록이 있으면 `completed`다.
+3. 건너뛰기 기록이 있으면 `skipped`다.
+4. 기록이 없고 local date가 오늘보다 이전이면 `overdue`다.
+5. 나머지는 `scheduled`다.
 
-매일 같은 local time에 발생한다.
+## occurrence 처리
 
-### interval_days
-
-기준일에서 `n`일마다 발생한다.
-
-### weekly
-
-선택한 요일에 매주 발생한다.
-첫 occurrence는 `seedStartDateLocal` 이상인 가장 가까운 선택 요일이다.
-
-### interval_weeks
-
-`seedStartDateLocal`이 속한 주를 기준으로 `n`주마다 선택 요일에 발생한다.
-주의 시작은 일요일이다.
-이미 지난 선택 요일은 첫 occurrence로 만들지 않는다.
-
-### monthly
-
-기준일의 day-of-month로 매달 발생한다.
-
-### interval_months
-
-기준일의 day-of-month로 `n`달마다 발생한다.
-
-## Day Correction
-
-월 단위 반복에서 대상 월에 같은 날짜가 없으면 그 달의 마지막 날로 보정한다.
-
-예시:
-
-- 1월 31일 매달 반복은 2월 28일 또는 29일, 3월 31일, 4월 30일로 이어진다.
-
-## Time Construction
-
-입력 날짜와 시각은 사용자 timezone의 local 의미로 해석한다.
-저장과 비교는 UTC ISO 문자열을 사용한다.
-
-절차:
-
-1. `localDate`와 `reminderTimeLocal`을 결합한다.
-2. 사용자 timezone에서 해석한다.
-3. UTC로 변환한다.
-
-## Anchor Rules
-
-### fixed
-
-항상 규칙 버전의 반복 규칙과 기준일을 따른다.
-완료 시점은 다음 occurrence 계산 기준을 바꾸지 않는다.
-
-### completion_based
-
-마지막 `completed` log의 실제 처리일을 다음 계산 기준으로 사용한다.
-`skipped`는 기준을 이동시키지 않는다.
-새 규칙 버전 시작 시에는 `effectiveFromUtc` 이전 마지막 완료일을 초기 기준으로 사용할 수 있다.
-종료일은 완료한 날짜가 아니라 occurrence local date 기준으로 적용한다.
-
-미해결 occurrence가 남아 있는 완료일 기준 일정은 다음 알림 후보를 만들지 않는다.
-사용자가 완료 또는 건너뛰기 처리한 뒤 다음 occurrence가 다시 계산된다.
-
-## Status Resolution
-
-상태 계산 순서는 다음과 같다.
-
-1. 같은 `scheduledAtUtc`의 completion log를 찾는다.
-2. log가 `completed`면 `completed`.
-3. log가 `skipped`면 `skipped`.
-4. log가 없고 scheduled local date가 오늘보다 이전이면 `overdue`.
-5. 나머지는 `scheduled`.
-
-오늘 날짜의 예정 시각이 이미 지나도 같은 local date이면 `scheduled`로 남는다.
-지난 일정 여부는 시각이 아니라 local date 기준이다.
-
-## Projections
-
-### Home
-
-홈은 occurrence 처리를 위한 projection을 만든다.
-
-- 선택 날짜 섹션은 해당 local date의 `scheduled` occurrence를 보여준다.
-- 오늘을 선택하면 지난 일정과 다가오는 일정도 함께 보여준다.
-- 지난 일정은 각 일정별 최신 overdue occurrence를 우선 보여준다.
-- 다가오는 일정은 오늘 이후 14일 범위의 `scheduled` occurrence를 보여준다.
-
-### Schedule List
-
-목록은 각 일정의 다음 `scheduled` occurrence를 계산한다.
-다음 occurrence가 없으면 `예정 없음`으로 표시한다.
-종료일이 지난 일정도 보관되지 않았으면 목록에 남긴다.
-
-### Calendar
-
-달력은 보이는 월 범위의 occurrence를 계산한다.
-날짜 셀 marker는 일정 색상을 사용한다.
-선택 날짜 목록은 occurrence 상태를 함께 보여준다.
-
-### Detail
-
-상세는 지난 일정이 있으면 최신 overdue occurrence를 대표 상태로 사용한다.
-지난 일정이 없으면 다음 occurrence를 사용한다.
-지난 일정 개수는 일정 시작 이후의 전체 미해결 overdue occurrence를 기준으로 한다.
-최근 처리 기록 5건은 실제 처리 시점 최신순으로 표시한다.
-처리일을 주 정보로 보여주고 occurrence 예정일이 다르면 예정일을 함께 보여준다.
-최근 처리 기록의 표시 범위는 occurrence 상태 계산 범위를 제한하지 않는다.
-
-## Occurrence Actions
-
-완료와 건너뛰기는 홈에서만 수행한다.
-
-처리 절차:
-
-1. 대상 occurrence를 확정한다.
-2. 이미 completion log가 있는 occurrence는 새 기록을 만들지 않는다.
-3. 지난 일정이면 대상 이전의 미해결 overdue occurrence도 함께 처리한다.
-4. completion log를 생성한다.
-5. 관련 쿼리를 무효화한다.
-6. 현재 기기의 로컬 알림을 다시 맞춘다.
-
-`completion_based` 일정의 `completed`는 완료일 기준 anchor를 이동시킨다.
-`skipped`는 해당 occurrence만 소비하고 anchor를 이동시키지 않는다.
-
-## Edit And Archive
-
-수정은 메타 변경과 규칙 변경을 구분한다.
-
-- 제목, 설명, 색상, 보관 여부만 바뀌면 item 메타만 갱신한다.
-- 규칙 영향 필드가 바뀌면 새 규칙 버전을 추가한다.
-- 새 규칙 버전의 `seedStartDateLocal`은 수정 시점 이후 첫 future occurrence local date다.
-- 종료일 변경은 새 규칙 버전을 추가한다.
-- 종료일 제거는 수정 시점 이전의 occurrence를 새로 만들지 않는다.
-- 과거 completion log는 유지한다.
-
-삭제는 물리 삭제가 아니라 `isArchived = true`로 저장한다.
-보관된 일정은 활성 화면과 기기 로컬 알림 후보에서 제외한다.
+- 이미 처리 기록이 있는 occurrence에는 새 기록을 만들지 않는다.
+- 지난 일정을 처리하면 선택한 occurrence까지의 이전 미해결 지난 일정도 같은 동작으로 처리한다.
+- 여러 occurrence는 한 번에 모두 저장하거나 모두 실패한다.
+- `completed`는 완료일 기준 anchor를 이동시킨다.
+- `skipped`는 occurrence를 소비하지만 anchor를 이동시키지 않는다.
