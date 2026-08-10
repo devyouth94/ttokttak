@@ -30,7 +30,7 @@
 | 알림                  | 유지        | 권한, 후보 계산, lifecycle, tap        | 동기화 코어를 유지한다. session 전달 wrapper만 제거 후보로 둔다. |
 | 세션과 계정           | 유지        | 세션 상태, profile 준비, 계정 삭제     | 보안 경계를 유지한다. 화면 소유 훅이나 route에서 직접 사용한다.  |
 | 설정                  | 재작성      | 언어, 테마, 계정 동작과 설정 항목      | route page가 상태, 동작과 UI 조립을 직접 소유한다.               |
-| 로그인                | 유지        | Apple, Google과 법적 문구              | 배럴만 제거하고 UI는 유지한다.                                   |
+| 로그인                | 재작성      | Apple, Google과 법적 문구              | route page가 세션 상태와 UI를 직접 소유하고 SVG 아이콘만 남긴다. |
 | 테마, i18n, 공용 UI   | 유지        | 앱 전역 provider와 의미 토큰           | 화면 model의 별도 번역 사전을 i18n 경계로 되돌린다.              |
 | route와 screen 배럴   | 삭제        | route parameter와 화면 연결            | route가 실제 화면 파일을 직접 import한다.                        |
 
