@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 
 import { handleDeleteAccountRequest } from "../delete-account/handler.ts";
 import { handleRecoverContentKeyRequest } from "../recover-content-key/handler.ts";
@@ -63,21 +63,32 @@ Deno.test({
     const originalFetch = globalThis.fetch;
     const userId = crypto.randomUUID();
     let authenticatedUserId = userId;
+    const deletedUserIds: string[] = [];
 
     try {
-      globalThis.fetch = async (input, init) => {
+      globalThis.fetch = (input, init) => {
         const request =
-          input instanceof Request ? input : new Request(input, init);
+          input instanceof Request
+            ? input
+            : new Request(
+                input,
+                init as ConstructorParameters<typeof Request>[1]
+              );
         const url = new URL(request.url);
 
         if (url.pathname === "/auth/v1/user") {
-          return Response.json({
-            user: createAuthenticatedUser(authenticatedUserId),
-          });
+          return Promise.resolve(
+            Response.json({
+              user: createAuthenticatedUser(authenticatedUserId),
+            })
+          );
         }
 
         if (url.pathname === `/auth/v1/admin/users/${authenticatedUserId}`) {
-          return Response.json({});
+          assertEquals(request.method, "DELETE");
+          assertEquals(request.headers.get("apikey"), "test-service-role-key");
+          deletedUserIds.push(authenticatedUserId);
+          return Promise.resolve(Response.json({}));
         }
 
         throw new Error(`예상하지 못한 요청: ${request.method} ${request.url}`);
@@ -94,12 +105,14 @@ Deno.test({
       assertEquals(response?.status, 429);
       assertEquals(await response!.json(), { error: "rate_limited" });
 
-      authenticatedUserId = crypto.randomUUID();
+      const otherUserId = crypto.randomUUID();
+      authenticatedUserId = otherUserId;
       const otherUserResponse = await handleDeleteAccountRequest(
         createPostRequest({ confirm: true })
       );
 
       assertEquals(otherUserResponse.status, 200);
+      assertEquals(deletedUserIds, [userId, userId, userId, otherUserId]);
     } finally {
       globalThis.fetch = originalFetch;
       restoreEnvironment();
@@ -121,7 +134,12 @@ Deno.test({
     try {
       globalThis.fetch = async (input, init) => {
         const request =
-          input instanceof Request ? input : new Request(input, init);
+          input instanceof Request
+            ? input
+            : new Request(
+                input,
+                init as ConstructorParameters<typeof Request>[1]
+              );
         const url = new URL(request.url);
 
         if (url.pathname === "/auth/v1/user") {

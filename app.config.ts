@@ -121,7 +121,7 @@ export default function getAppConfig(): ExpoConfig {
         "expo-splash-screen",
         {
           backgroundColor: iconBackgroundColor,
-          image: "./assets/splash.png",
+          image: "./assets/icon.png",
           imageWidth: 200,
         },
       ],

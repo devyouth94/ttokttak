@@ -61,7 +61,7 @@
 - 내부 helper의 반환 shape나 구현 문자열은 고정하지 않는다. 문자열 자체가 구조 계약일 때만 소스 기반 테스트를 사용한다.
 - 문서만 수정하면 최소 `pnpm exec prettier --check <files>`와 `git diff --check`를 확인한다.
 - 코드 변경이면 필요에 따라 `pnpm jest --runInBand`, `npx tsc --noEmit`, `pnpm lint`를 실행한다.
-- Supabase Edge Function을 수정하면 `pnpm supabase:functions:check`를 실행한다.
+- Supabase Edge Function을 수정하면 `pnpm supabase:functions:check`와 `pnpm supabase:functions:test`를 실행한다.
 - 로컬에 Deno가 없으면 설치가 필요한 검증 환경 문제로 보고, 미실행 사유에 적는다.
 - 실행하지 못한 검증은 최종 응답에 이유를 적는다.
 

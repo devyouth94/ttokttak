@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 type JsonRecord = Record<string, unknown>;
 type Database = {
@@ -98,7 +98,7 @@ function encodeBase64(bytes: Uint8Array<ArrayBuffer>): string {
   return btoa(binary);
 }
 
-async function getWrappingKey(): Promise<CryptoKey> {
+function getWrappingKey(): Promise<CryptoKey> {
   const encodedSecret = Deno.env.get("TTOKTTAK_CONTENT_KEY_WRAP_SECRET_BASE64");
 
   if (!encodedSecret) {

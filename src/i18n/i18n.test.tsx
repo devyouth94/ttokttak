@@ -7,10 +7,6 @@ import { AppI18nProvider } from "./provider";
 
 declare const require: (moduleName: string) => unknown;
 
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-}));
 jest.mock("expo-router", () => ({
   SplashScreen: { hideAsync: jest.fn() },
 }));
@@ -22,7 +18,7 @@ const TestRenderer = require("react-test-renderer") as {
   create: (element: ReactElement) => { unmount: () => void };
 };
 
-describe("i18n 초기화", () => {
+describe("표시 언어 초기화", () => {
   it("선택한 언어로 초기화한다", async () => {
     const apply = jest.fn<Promise<void>, ["ko" | "en"]>().mockResolvedValue();
 

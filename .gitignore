@@ -9,7 +9,6 @@ expo-env.d.ts
 
 # Build output
 dist/
-web-build/
 
 # Generated native folders
 /android
@@ -55,9 +54,6 @@ yarn-error.*
 
 # macOS
 .DS_Store
-
-# Examples
-app-example
 
 # Private articles
 docs/articles/

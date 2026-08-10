@@ -5,10 +5,6 @@ declare const require: (moduleName: string) => unknown;
 jest.mock("react-native", () => ({
   useColorScheme: jest.fn(),
 }));
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-}));
 
 type UseColorScheme = typeof import("react-native").useColorScheme;
 
@@ -71,7 +67,7 @@ async function renderTheme(): Promise<() => ReturnType<typeof useTheme>> {
   return () => requireThemeContext(theme);
 }
 
-describe("ThemeProvider", () => {
+describe("테마 제공자", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useColorScheme.mockReturnValue("light");

@@ -13,6 +13,7 @@ describe("알림 후보", () => {
       completionLogs: [],
       items: [
         createItem({
+          description: "복용 설명",
           id: "item-1",
           reminderTimeLocal: "21:00",
           startDateLocal: "2026-04-21",

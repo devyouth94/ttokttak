@@ -1,4 +1,6 @@
 {
+  "deno.config": "./supabase/functions/deno.json",
+  "deno.enablePaths": ["./supabase/functions"],
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
   }

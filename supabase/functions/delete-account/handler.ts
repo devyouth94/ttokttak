@@ -1,4 +1,4 @@
-import { createClient, type User } from "npm:@supabase/supabase-js@2";
+import { createClient, type User } from "@supabase/supabase-js";
 
 type JsonRecord = Record<string, unknown>;
 type AppleIdentity = {

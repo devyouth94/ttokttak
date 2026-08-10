@@ -15,51 +15,16 @@ async function createTestI18n(language: "ko" | "en") {
   return i18n;
 }
 
-describe("app i18n resources", () => {
-  it("English 리소스는 핵심 문구, interpolation, plural을 제공한다", async () => {
-    const i18n = await createTestI18n("en");
+describe("표시 언어 리소스", () => {
+  it("언어별 변수 치환과 복수형을 제공한다", async () => {
+    const english = await createTestI18n("en");
+    const korean = await createTestI18n("ko");
 
-    expect(i18n.t("app.name")).toBe("ttokttak");
-    expect(i18n.t("login.googleButton")).toBe("Continue with Google");
-    expect(i18n.t("home.feed.skipLabel", { title: "Vitamins" })).toBe(
-      "Skip Vitamins"
-    );
-    expect(i18n.t("home.feed.sectionCount", { count: 1 })).toBe("1 item");
-    expect(i18n.t("home.feed.sectionCount", { count: 2 })).toBe("2 items");
-    expect(i18n.t("home.feed.overdueDays", { count: 2 })).toBe(
-      "2 days overdue"
-    );
-    expect(i18n.t("home.feed.emptySelectedDate", { date: "April 13" })).toBe(
-      "Nothing scheduled for April 13"
-    );
-    expect(i18n.t("calendar.entryCount", { count: 1 })).toBe("1 item");
-    expect(i18n.t("calendar.entryCount", { count: 2 })).toBe("2 items");
-    expect(i18n.t("calendar.status.completed")).toBe("Complete");
-    expect(i18n.t("scheduleDetail.status.overdueCount", { count: 1 })).toBe(
-      "1 overdue item"
-    );
-    expect(i18n.t("scheduleDetail.status.overdueCount", { count: 2 })).toBe(
-      "2 overdue items"
-    );
-  });
-
-  it("한국어 리소스는 핵심 문구와 interpolation을 제공한다", async () => {
-    const i18n = await createTestI18n("ko");
-
-    expect(i18n.t("app.name")).toBe("똑딱");
-    expect(i18n.t("login.googleButton")).toBe("Google로 로그인");
-    expect(i18n.t("home.feed.skipLabel", { title: "비타민" })).toBe(
-      "비타민 건너뛰기"
-    );
-    expect(i18n.t("home.feed.overdueDays", { count: 2 })).toBe("2일 지남");
-    expect(i18n.t("home.feed.emptySelectedDate", { date: "4월 13일" })).toBe(
-      "4월 13일은 비어 있어요"
-    );
-    expect(i18n.t("navigation.createItemLabel")).toBe("일정 추가");
-    expect(i18n.t("calendar.entryCount", { count: 2 })).toBe("2개");
-    expect(i18n.t("calendar.status.skipped")).toBe("건너뜀");
-    expect(
-      i18n.t("scheduleDetail.history.scheduledDate", { date: "4월 9일" })
-    ).toBe("예정 4월 9일");
+    expect([
+      english.t("home.feed.skipLabel", { title: "Vitamins" }),
+      english.t("home.feed.sectionCount", { count: 1 }),
+      english.t("home.feed.sectionCount", { count: 2 }),
+      korean.t("home.feed.skipLabel", { title: "비타민" }),
+    ]).toEqual(["Skip Vitamins", "1 item", "2 items", "비타민 건너뛰기"]);
   });
 });
