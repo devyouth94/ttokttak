@@ -82,13 +82,13 @@ describe("홈 피드", () => {
       startLocalDate: "2024-04-10",
     });
     expect(home.sections.map((section) => section.title)).toEqual([
-      "지난 일정",
-      "오늘",
-      "다가오는 일정",
+      "home.feed.sectionOverdue",
+      "home.feed.sectionToday",
+      "home.feed.sectionUpcoming",
     ]);
     expect(home.sections[0]?.items[0]).toMatchObject({
       dateSeparatorLabel: null,
-      metaLine: "2일 지남 · 오전 9:00 · 한 번",
+      metaLine: "home.feed.overdueDays · 오전 9:00 · 한 번",
     });
     expect(home.sections[1]?.items[0]?.metaLine).toBe("오후 6:00 · 한 번");
     expect(home.sections[2]?.items[0]).toMatchObject({
@@ -127,7 +127,7 @@ describe("홈 피드", () => {
     });
   });
 
-  it("English 문구와 날짜·시간을 만든다", () => {
+  it("English 날짜·시간을 만든다", () => {
     const home = useFeed({
       items: [
         item({
@@ -150,17 +150,17 @@ describe("홈 피드", () => {
     });
 
     expect(home.sections.map((section) => section.title)).toEqual([
-      "Overdue",
-      "Today",
-      "Upcoming",
+      "home.feed.sectionOverdue",
+      "home.feed.sectionToday",
+      "home.feed.sectionUpcoming",
     ]);
     expect(home.sections[0]?.items[0]?.metaLine).toBe(
-      "2 days overdue · 9:00 AM · Once"
+      "home.feed.overdueDays · 9:00 AM · Once"
     );
     expect(home.sections[1]?.items[0]?.metaLine).toBe("6:00 PM · Once");
     expect(home.sections[2]).toMatchObject({
-      caption: "Home shows items for the next 14 days",
-      emptyMessage: "No upcoming items",
+      caption: "home.feed.upcomingCaption",
+      emptyMessage: "home.feed.emptyUpcoming",
     });
   });
 
@@ -180,7 +180,7 @@ describe("홈 피드", () => {
     expect(home.sections[0]?.items).toHaveLength(1);
     expect(home.sections[0]?.items[0]).toMatchObject({
       item: { title: "치약 교체" },
-      metaLine: "3일 지남 · 오전 9:00 · 3일마다",
+      metaLine: "home.feed.overdueDays · 오전 9:00 · 3일마다",
     });
   });
 
@@ -197,7 +197,7 @@ describe("홈 피드", () => {
     const upcoming = home.sections[2];
 
     expect(upcoming?.items).toHaveLength(14);
-    expect(upcoming?.items[0]?.dateSeparatorLabel).toBe("내일");
+    expect(upcoming?.items[0]?.dateSeparatorLabel).toBe("home.feed.tomorrow");
     expect(upcoming?.items[13]?.dateSeparatorLabel).toBe("4월 24일");
   });
 

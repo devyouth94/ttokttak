@@ -1,5 +1,6 @@
 import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
+import type { TFunction } from "i18next";
 
 import type { AppLanguage } from "~/i18n/language";
 import { formatLocal } from "~/schedule/display/date";
@@ -16,45 +17,6 @@ import { currentRule } from "~/schedule/schedule";
 
 const OVERDUE_LOOKBACK_DAYS = 730;
 const UPCOMING_DAYS = 14;
-
-const copyByLanguage = {
-  en: {
-    empty: {
-      overdue: "No overdue items",
-      selectedDate: (title: string, isToday: boolean) =>
-        isToday
-          ? "Nothing scheduled for today"
-          : `Nothing scheduled for ${title}`,
-      upcoming: "No upcoming items",
-    },
-    overdueToday: "Overdue today",
-    overdueDays: (days: number) => `${days} days overdue`,
-    sections: {
-      overdue: "Overdue",
-      today: "Today",
-      upcoming: "Upcoming",
-    },
-    tomorrow: "Tomorrow",
-    upcomingCaption: "Home shows items for the next 14 days",
-  },
-  ko: {
-    empty: {
-      overdue: "지난 일정은 없어요",
-      selectedDate: (title: string, isToday: boolean) =>
-        isToday ? "오늘은 비어 있어요" : `${title}은 비어 있어요`,
-      upcoming: "다가오는 일정은 없어요",
-    },
-    overdueToday: "오늘 지남",
-    overdueDays: (days: number) => `${days}일 지남`,
-    sections: {
-      overdue: "지난 일정",
-      today: "오늘",
-      upcoming: "다가오는 일정",
-    },
-    tomorrow: "내일",
-    upcomingCaption: "홈에서는 앞으로 14일간의 일정만 보여요",
-  },
-} as const;
 
 export type HomeFeedCard = {
   dateSeparatorLabel: string | null;
@@ -78,6 +40,7 @@ type HomeSectionsInput = {
   now: Date;
   schedules: Schedule[];
   selectedDateId: string;
+  t: TFunction;
   timezone: string;
 };
 
@@ -85,6 +48,7 @@ type HomeSectionContext = {
   dates: ReturnType<typeof getHomeDates>;
   language: AppLanguage;
   occurrences: ReturnType<typeof createOccurrences>;
+  t: TFunction;
   timezone: string;
 };
 
@@ -112,11 +76,12 @@ export function createHomeSections({
   now,
   schedules,
   selectedDateId,
+  t,
   timezone,
 }: HomeSectionsInput): HomeFeedSection[] {
   const dates = getHomeDates(now, selectedDateId, timezone);
   const occurrences = createOccurrences({ logs, now, schedules, timezone });
-  const context = { dates, language, occurrences, timezone };
+  const context = { dates, language, occurrences, t, timezone };
 
   if (!dates.isToday) {
     return [createSelectedDateSection(context, selectedDateId)];
@@ -152,8 +117,7 @@ function createOverdueSection(
   context: HomeSectionContext,
   now: Date
 ): HomeFeedSection {
-  const { dates, language, occurrences, timezone } = context;
-  const copy = copyByLanguage[language];
+  const { dates, language, occurrences, t, timezone } = context;
   const entries = keepLatestOverdueBySchedule(
     occurrences.range(
       {
@@ -165,10 +129,10 @@ function createOverdueSection(
   );
 
   return {
-    emptyMessage: copy.empty.overdue,
+    emptyMessage: t("home.feed.emptyOverdue"),
     id: "overdue",
-    items: createCards(entries, "overdue", dates.today, language, "desc"),
-    title: copy.sections.overdue,
+    items: createCards(entries, "overdue", dates.today, language, t, "desc"),
+    title: t("home.feed.sectionOverdue"),
   };
 }
 
@@ -176,11 +140,10 @@ function createSelectedDateSection(
   context: HomeSectionContext,
   selectedDateId: string
 ): HomeFeedSection {
-  const { dates, language, occurrences, timezone } = context;
-  const copy = copyByLanguage[language];
+  const { dates, language, occurrences, t, timezone } = context;
   const isToday = selectedDateId === dates.today;
   const title = isToday
-    ? copy.sections.today
+    ? t("home.feed.sectionToday")
     : formatLocal(selectedDateId, "date", language);
   const entries = occurrences.range(
     toUtcRange(selectedDateId, timezone),
@@ -188,16 +151,17 @@ function createSelectedDateSection(
   );
 
   return {
-    emptyMessage: copy.empty.selectedDate(title, isToday),
+    emptyMessage: isToday
+      ? t("home.feed.emptyToday")
+      : t("home.feed.emptySelectedDate", { date: title }),
     id: "selected-date",
-    items: createCards(entries, "selected-date", dates.today, language),
+    items: createCards(entries, "selected-date", dates.today, language, t),
     title,
   };
 }
 
 function createUpcomingSection(context: HomeSectionContext): HomeFeedSection {
-  const { dates, language, occurrences, timezone } = context;
-  const copy = copyByLanguage[language];
+  const { dates, language, occurrences, t, timezone } = context;
   const entries = occurrences.range(
     {
       endUtc: toUtcRange(dates.upcomingEnd, timezone).endUtc,
@@ -207,11 +171,11 @@ function createUpcomingSection(context: HomeSectionContext): HomeFeedSection {
   );
 
   return {
-    caption: copy.upcomingCaption,
-    emptyMessage: copy.empty.upcoming,
+    caption: t("home.feed.upcomingCaption"),
+    emptyMessage: t("home.feed.emptyUpcoming"),
     id: "upcoming",
-    items: createCards(entries, "upcoming", dates.today, language),
-    title: copy.sections.upcoming,
+    items: createCards(entries, "upcoming", dates.today, language, t),
+    title: t("home.feed.sectionUpcoming"),
   };
 }
 
@@ -243,11 +207,12 @@ function createCards(
   sectionId: HomeFeedSection["id"],
   today: string,
   language: AppLanguage,
+  t: TFunction,
   order: "asc" | "desc" = "asc"
 ): HomeFeedCard[] {
   return entries
     .map(({ schedule, occurrence }) =>
-      createCard(schedule, occurrence, sectionId, today, language)
+      createCard(schedule, occurrence, sectionId, today, language, t)
     )
     .sort((left, right) =>
       order === "asc"
@@ -265,7 +230,8 @@ function createCard(
   occurrence: Occurrence,
   sectionId: HomeFeedSection["id"],
   today: string,
-  language: AppLanguage
+  language: AppLanguage,
+  t: TFunction
 ): HomeFeedCard {
   const timeLabel = formatLocal(
     currentRule(item).reminderTimeLocal,
@@ -276,7 +242,7 @@ function createCard(
   const metaLine =
     sectionId === "overdue"
       ? [
-          getOverdueLabel(occurrence, today, language),
+          getOverdueLabel(occurrence, today, t),
           timeLabel,
           recurrenceLabel,
         ].join(" · ")
@@ -285,7 +251,7 @@ function createCard(
   return {
     dateSeparatorLabel:
       sectionId === "upcoming"
-        ? getUpcomingDateLabel(occurrence, today, language)
+        ? getUpcomingDateLabel(occurrence, today, language, t)
         : null,
     id: `${item.id}:${occurrence.scheduledAtUtc}`,
     item,
@@ -297,21 +263,22 @@ function createCard(
 function getOverdueLabel(
   occurrence: Occurrence,
   today: string,
-  language: AppLanguage
+  t: TFunction
 ): string {
   const overdueDays = differenceInCalendarDays(
     parse(today, "yyyy-MM-dd", new Date()),
     parse(occurrence.localDate, "yyyy-MM-dd", new Date())
   );
-  const copy = copyByLanguage[language];
-
-  return overdueDays === 0 ? copy.overdueToday : copy.overdueDays(overdueDays);
+  return overdueDays === 0
+    ? t("home.feed.overdueToday")
+    : t("home.feed.overdueDays", { count: overdueDays });
 }
 
 function getUpcomingDateLabel(
   occurrence: Occurrence,
   today: string,
-  language: AppLanguage
+  language: AppLanguage,
+  t: TFunction
 ): string {
   const dayDiff = differenceInCalendarDays(
     parse(occurrence.localDate, "yyyy-MM-dd", new Date()),
@@ -319,6 +286,6 @@ function getUpcomingDateLabel(
   );
 
   return dayDiff === 1
-    ? copyByLanguage[language].tomorrow
+    ? t("home.feed.tomorrow")
     : formatLocal(occurrence.localDate, "date", language);
 }

@@ -54,6 +54,7 @@ export function useHomeFeed() {
     now,
     schedules: query.items,
     selectedDateId,
+    t,
     timezone: query.timezone,
   }).map((section) => ({
     ...section,
