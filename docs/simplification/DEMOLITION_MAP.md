@@ -293,6 +293,82 @@ page는 선택 날짜, provider, query와 탐색을 소유한다.
 6. 캘린더 테스트, 전체 테스트, 타입 검사와 lint를 실행한다.
 7. 캘린더 화면을 수동 확인한다.
 
+## 다음 흐름: 일정 상세
+
+일정 상세는 query가 occurrence를 계산하고 route page가 화면 상태를 소유한다.
+관리 메뉴는 수정과 삭제 동작을 소유한다.
+요약, 대표 상태와 최근 기록은 각 UI 섹션이 필요한 표시 값만 만든다.
+
+### 유지할 계약
+
+- 지난 일정이 있으면 최신 overdue occurrence를 대표 상태로 표시한다.
+- 지난 일정이 없으면 다음 occurrence를 대표 상태로 표시한다.
+- 상세 진입 맥락의 occurrence가 있으면 해당 상태를 표시한다.
+- 최근 처리 기록 5건은 실제 처리 시점 최신순으로 표시한다.
+- 처리일과 occurrence 예정일이 다르면 예정일을 함께 표시한다.
+- 수정, 삭제, 재시도와 복구 불가 일정 안내를 유지한다.
+- 복구 불가 일정은 수정을 제공하지 않고 삭제만 허용한다.
+- 완료와 건너뛰기 동작은 상세 화면에 추가하지 않는다.
+- 로딩, 오류와 미존재 상태를 유지한다.
+
+### 파일 판정
+
+| 파일                                                              | 판정   | 처리                                                                |
+| ----------------------------------------------------------------- | ------ | ------------------------------------------------------------------- |
+| `app/items/[itemId]/index.tsx`                                    | 재작성 | params, query, 재시도와 UI 섹션 조립을 직접 소유한다.               |
+| `src/screens/schedule-detail/query.ts`                            | 유지   | occurrence 계산의 단일 경계로 사용한다.                             |
+| `src/screens/schedule-detail/query.test.ts`                       | 유지   | 대표 occurrence 선택과 전체 처리 기록 사용을 확인한다.              |
+| `src/screens/schedule-detail/model/schedule-detail-model.ts`      | 삭제   | 중복 occurrence 계산과 중앙 view model을 제거한다.                  |
+| `src/screens/schedule-detail/model/schedule-detail-model.test.ts` | 삭제   | helper shape 대신 query와 route page 사용자 동작 테스트로 교체한다. |
+| `src/screens/schedule-detail/ui/schedule-detail-screen.tsx`       | 삭제   | 별도 screen 없이 route page가 화면을 직접 렌더링한다.               |
+| `src/screens/schedule-detail/ui/schedule-detail-screen.styles.ts` | 삭제   | route와 각 UI 파일이 사용하는 정적 스타일을 직접 소유한다.          |
+| `src/screens/schedule-detail/ui/summary-section.tsx`              | 신규   | 일정 요약과 현재 규칙 표시를 소유한다.                              |
+| `src/screens/schedule-detail/ui/status-section.tsx`               | 신규   | 진입 맥락 또는 대표 occurrence 상태 표시를 소유한다.                |
+| `src/screens/schedule-detail/ui/status-section.test.tsx`          | 신규   | 지난 날짜 수가 시간대 기준으로 표시되는지 확인한다.                 |
+| `src/screens/schedule-detail/ui/history-section.tsx`              | 신규   | 최근 처리 기록 표시를 소유한다.                                     |
+| `src/screens/schedule-detail/ui/management-menu.tsx`              | 신규   | 수정, 삭제와 실패 안내를 소유한다.                                  |
+| `src/screens/schedule-detail/ui/management-menu.test.tsx`         | 신규   | 수정, 삭제와 삭제 실패를 확인한다.                                  |
+| `src/screens/schedule-detail/ui/summary-section.test.tsx`         | 신규   | 복구 불가 일정 안내를 확인한다.                                     |
+| `src/i18n/resources.ts`                                           | 수정   | 화면 model의 상세 문구를 기존 i18n 경계로 옮긴다.                   |
+
+### 새 경계
+
+```text
+detail route page
+├─ detail query
+├─ 로딩·오류·미존재·재시도
+├─ ManagementMenu: 수정·삭제
+├─ SummarySection
+├─ StatusSection
+└─ HistorySection
+```
+
+query는 일정 시작일부터 전체 처리 기록을 사용해 overdue, next와 상세 진입 occurrence를 계산한다.
+route page는 query 결과를 각 섹션에 전달하고 상태별 화면을 조립한다.
+관리 메뉴는 수정과 삭제 탐색, 보관과 실패 안내를 처리한다.
+각 섹션은 기존 날짜와 label 함수를 재사용하고 사용자 문구는 i18n resource에서 읽는다.
+중앙 view model, 별도 screen과 공용 styles 파일은 만들지 않는다.
+
+### 테스트 판정
+
+- query 테스트는 overdue 우선, overdue가 없을 때 next 선택과 상세 진입 occurrence 우선을 확인한다.
+- status section 테스트는 지난 날짜 수 계산을 확인한다.
+- summary section 테스트는 복구 불가 일정 안내를 확인한다.
+- management menu 테스트는 수정 진입, 삭제 성공과 삭제 실패를 확인한다.
+- 섹션 스타일과 내부 formatter 반환 shape는 테스트하지 않는다.
+
+### 실행 순서
+
+1. 현재 상세 UI와 사용자 동작을 유지 계약으로 고정한다.
+2. query를 유일한 occurrence 계산 경계로 정리한다.
+3. 요약, 대표 상태, 최근 기록과 관리 메뉴 UI를 역할 파일로 옮긴다.
+4. route page가 조회, 화면 상태, 재시도와 UI 조립을 직접 소유하게 한다.
+5. 관리 메뉴가 수정, 삭제와 실패 안내를 소유하게 한다.
+6. 상세 문구를 i18n resource로 옮긴다.
+7. 기존 model, screen, 공용 styles와 helper shape 테스트를 삭제한다.
+8. query와 UI section 테스트, 전체 테스트, 타입 검사와 lint를 실행한다.
+9. 상세 화면을 수동 확인한다.
+
 ## Ponytail 판정
 
 `yagni:` 일정 폼의 state, screen model, controller 삼중 계층을 삭제한다. React Hook Form과 `validateInput`을 연결하는 화면 소유 폼 하나로 교체한다. [`src/screens/schedule-form`]
