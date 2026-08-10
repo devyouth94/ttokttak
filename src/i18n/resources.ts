@@ -127,6 +127,11 @@ export const appI18nResources = {
         },
       },
       scheduleDetail: {
+        contentRecovery: {
+          description:
+            "There is a problem with the encryption key or saved content. You can delete this item if needed.",
+          title: "Could not recover item content",
+        },
         deleteAlert: {
           cancel: "Cancel",
           confirm: "Delete",
@@ -142,6 +147,7 @@ export const appI18nResources = {
         headerTitle: "Item detail",
         history: {
           empty: "No processing history yet",
+          scheduledDate: "Scheduled {{date}}",
           title: "Recent activity",
         },
         inlineErrorTitle: "Could not complete the action",
@@ -168,6 +174,28 @@ export const appI18nResources = {
           notificationDisabled: "Off",
           notificationEnabled: "On",
           recurrence: "Repeat",
+          anchorType: "Schedule",
+          completionBased: "Completion-based",
+          endDate: "End date",
+          startDate: "Start",
+        },
+        status: {
+          completed: "Completed item",
+          inDays_one: "In {{count}} day",
+          inDays_other: "In {{count}} days",
+          nextItem: "Next item",
+          noFollowingItem: "No following item",
+          noUpcomingDate: "None",
+          noUpcomingTitle: "No upcoming item",
+          overdue: "Overdue",
+          overdueCount_one: "{{count}} overdue item",
+          overdueCount_other: "{{count}} overdue items",
+          overdueDays_one: "{{count}} day overdue",
+          overdueDays_other: "{{count}} days overdue",
+          scheduled: "Scheduled item",
+          skipped: "Skipped item",
+          today: "Today",
+          tomorrow: "Tomorrow",
         },
       },
       scheduleForm: {
@@ -504,6 +532,11 @@ export const appI18nResources = {
         },
       },
       scheduleDetail: {
+        contentRecovery: {
+          description:
+            "암호화 키 또는 저장된 내용에 문제가 있어 내용을 열 수 없어요. 필요하면 이 일정을 삭제할 수 있어요.",
+          title: "일정 내용을 복구하지 못했어요",
+        },
         deleteAlert: {
           cancel: "취소",
           confirm: "삭제",
@@ -519,6 +552,7 @@ export const appI18nResources = {
         headerTitle: "일정 상세",
         history: {
           empty: "아직 처리 기록이 없어요",
+          scheduledDate: "예정 {{date}}",
           title: "최근 처리 기록",
         },
         inlineErrorTitle: "처리를 완료하지 못했어요",
@@ -545,6 +579,28 @@ export const appI18nResources = {
           notificationDisabled: "중지",
           notificationEnabled: "사용",
           recurrence: "반복",
+          anchorType: "계산",
+          completionBased: "완료일 기준",
+          endDate: "종료",
+          startDate: "시작",
+        },
+        status: {
+          completed: "완료한 일정",
+          inDays_one: "{{count}}일 후",
+          inDays_other: "{{count}}일 후",
+          nextItem: "다음 일정",
+          noFollowingItem: "후속 일정 없음",
+          noUpcomingDate: "없음",
+          noUpcomingTitle: "다음 일정 없음",
+          overdue: "지난 일정",
+          overdueCount_one: "지난 일정 {{count}}건",
+          overdueCount_other: "지난 일정 {{count}}건",
+          overdueDays_one: "{{count}}일 지남",
+          overdueDays_other: "{{count}}일 지남",
+          scheduled: "예정 일정",
+          skipped: "건너뛴 일정",
+          today: "오늘",
+          tomorrow: "내일",
         },
       },
       scheduleForm: {

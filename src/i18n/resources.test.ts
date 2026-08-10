@@ -29,6 +29,12 @@ describe("app i18n resources", () => {
     expect(i18n.t("calendar.entryCount", { count: 1 })).toBe("1 item");
     expect(i18n.t("calendar.entryCount", { count: 2 })).toBe("2 items");
     expect(i18n.t("calendar.status.completed")).toBe("Complete");
+    expect(i18n.t("scheduleDetail.status.overdueCount", { count: 1 })).toBe(
+      "1 overdue item"
+    );
+    expect(i18n.t("scheduleDetail.status.overdueCount", { count: 2 })).toBe(
+      "2 overdue items"
+    );
   });
 
   it("한국어 리소스는 핵심 문구와 interpolation을 제공한다", async () => {
@@ -42,5 +48,8 @@ describe("app i18n resources", () => {
     expect(i18n.t("navigation.createItemLabel")).toBe("일정 추가");
     expect(i18n.t("calendar.entryCount", { count: 2 })).toBe("2개");
     expect(i18n.t("calendar.status.skipped")).toBe("건너뜀");
+    expect(
+      i18n.t("scheduleDetail.history.scheduledDate", { date: "4월 9일" })
+    ).toBe("예정 4월 9일");
   });
 });
