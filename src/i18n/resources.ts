@@ -47,20 +47,28 @@ export const appI18nResources = {
           dateSeparatorCount_other: "{{count}} items",
           errorDescription: "Could not load the home feed. Please try again.",
           errorTitle: "Could not load items",
+          emptyOverdue: "No overdue items",
+          emptySelectedDate: "Nothing scheduled for {{date}}",
+          emptyToday: "Nothing scheduled for today",
+          emptyUpcoming: "No upcoming items",
           itemDetailHint: "Open the item detail screen.",
           itemDetailLabel: "View {{title}} details",
           loading: "Loading",
           loadingA11yLabel: "Loading home feed",
+          overdueDays: "{{count}} days overdue",
+          overdueToday: "Overdue today",
           retryHint: "Load items again.",
           retryLabel: "Retry loading items",
+          sectionOverdue: "Overdue",
+          sectionToday: "Today",
+          sectionUpcoming: "Upcoming",
           sectionCount: "{{count}} items",
           sectionCount_one: "{{count}} item",
           sectionCount_other: "{{count}} items",
-          sectionSummary: "{{count}} items scheduled",
-          sectionSummary_one: "{{count}} item scheduled",
-          sectionSummary_other: "{{count}} items scheduled",
           skipHint: "Skip this item.",
           skipLabel: "Skip {{title}}",
+          tomorrow: "Tomorrow",
+          upcomingCaption: "Home shows items for the next 14 days",
         },
         header: {
           greeting: "Hello,\n{{name}}!",
@@ -91,7 +99,16 @@ export const appI18nResources = {
         termsOpenErrorTitle: "Terms of Service unavailable",
       },
       calendar: {
+        day: {
+          overflow: "{{count}} more",
+          selectHint: "Change the selected date.",
+          selected: "Selected",
+          today: "Today",
+        },
         emptyTitle: "No items on this date",
+        entryCount: "{{count}} items",
+        entryCount_one: "{{count}} item",
+        entryCount_other: "{{count}} items",
         error: {
           retryHint: "Try loading the calendar again.",
           retryLabel: "Reload calendar",
@@ -99,12 +116,15 @@ export const appI18nResources = {
         },
         headerTitle: "Calendar",
         loadingA11yLabel: "Loading items",
-        monthArrowHint: "Move the visible month.",
-        nextMonthLabel: "Show next month",
-        previousMonthLabel: "Show previous month",
         row: {
           detailHint: "Open the item detail screen.",
           detailLabel: "View {{title}} details",
+        },
+        status: {
+          completed: "Complete",
+          overdue: "Overdue",
+          scheduled: "Scheduled",
+          skipped: "Skip",
         },
       },
       navigation: {
@@ -118,6 +138,11 @@ export const appI18nResources = {
         },
       },
       scheduleDetail: {
+        contentRecovery: {
+          description:
+            "There is a problem with the encryption key or saved content. You can delete this item if needed.",
+          title: "Could not recover item content",
+        },
         deleteAlert: {
           cancel: "Cancel",
           confirm: "Delete",
@@ -133,6 +158,7 @@ export const appI18nResources = {
         headerTitle: "Item detail",
         history: {
           empty: "No processing history yet",
+          scheduledDate: "Scheduled {{date}}",
           title: "Recent activity",
         },
         inlineErrorTitle: "Could not complete the action",
@@ -159,6 +185,28 @@ export const appI18nResources = {
           notificationDisabled: "Off",
           notificationEnabled: "On",
           recurrence: "Repeat",
+          anchorType: "Schedule",
+          completionBased: "Completion-based",
+          endDate: "End date",
+          startDate: "Start",
+        },
+        status: {
+          completed: "Completed item",
+          inDays_one: "In {{count}} day",
+          inDays_other: "In {{count}} days",
+          nextItem: "Next item",
+          noFollowingItem: "No following item",
+          noUpcomingDate: "None",
+          noUpcomingTitle: "No upcoming item",
+          overdue: "Overdue",
+          overdueCount_one: "{{count}} overdue item",
+          overdueCount_other: "{{count}} overdue items",
+          overdueDays_one: "{{count}} day overdue",
+          overdueDays_other: "{{count}} days overdue",
+          scheduled: "Scheduled item",
+          skipped: "Skipped item",
+          today: "Today",
+          tomorrow: "Tomorrow",
         },
       },
       scheduleForm: {
@@ -174,6 +222,8 @@ export const appI18nResources = {
           optionHint: "Set item color to {{color}}.",
         },
         completionBased: {
+          description:
+            "Recalculates the next item from the date you complete it. Disabled for once and weekly settings.",
           infoHint: "Show completion-based scheduling information.",
           infoLabel: "Completion-based information",
           title: "Completion-based",
@@ -227,10 +277,27 @@ export const appI18nResources = {
         recurrence: {
           basicTab: "Basic",
           customTab: "Custom",
+          daily: "Daily",
           intervalA11y: "Interval value",
           intervalLabel: "Repeat interval",
+          monthly: "Monthly",
           once: "Once",
+          unitDays: "days",
+          unitMonths: "months",
+          unitWeeks: "weeks",
+          weekdayFri: "Fri",
           weekdayLabel: "Repeat weekdays",
+          weekdayMon: "Mon",
+          weekdaySat: "Sat",
+          weekdaySun: "Sun",
+          weekdayThu: "Thu",
+          weekdayTue: "Tue",
+          weekdayWed: "Wed",
+          weekly: "Weekly",
+        },
+        title: {
+          create: "Add item",
+          edit: "Edit item",
         },
         saveUnavailable: {
           message: "Check your session information first.",
@@ -292,6 +359,7 @@ export const appI18nResources = {
           },
           section: "Account management",
           signOut: "Sign out",
+          signOutErrorMessage: "Could not sign out. Please try again later.",
           signOutErrorTitle: "Sign-out failed",
         },
         appInfo: {
@@ -307,7 +375,6 @@ export const appI18nResources = {
         environment: {
           appLanguage: "Display language",
           appLanguageHint: "Choose the display language on this device.",
-          appLanguageLocalOnly: "Saved only on this device.",
           languageEnglishHint: "Set the display language to English.",
           languageKoreanHint: "Set the display language to Korean.",
           saveErrorMessage:
@@ -323,7 +390,6 @@ export const appI18nResources = {
           themeHint: "Choose the theme on this device.",
           themeLight: "Light",
           themeLightHint: "Use light theme on this device.",
-          themeLocalOnly: "Saved only on this device.",
           themeSaveErrorMessage:
             "Could not save the theme. Please try again later.",
           themeSaveErrorTitle: "Could not save theme",
@@ -334,13 +400,15 @@ export const appI18nResources = {
         headerTitle: "Settings",
         nameEditor: {
           cancel: "Cancel",
+          emptyError: "Enter a name.",
           placeholder: "Name",
           save: "Save",
+          saveErrorMessage: "Could not save the name. Please try again later.",
           saveErrorTitle: "Could not save name",
           title: "Edit name",
+          tooLongError: "Enter a name with 30 characters or fewer.",
         },
         notifications: {
-          appNotification: "App notifications",
           openSettings: "Open system settings",
           openSettingsDescription:
             "If permission is off, enable it again in system settings.",
@@ -349,6 +417,8 @@ export const appI18nResources = {
           permissionRequest: "Request permission",
           permissionRequestDescription:
             "Notification permission is required for this device to remind you on time.",
+          permissionRequestErrorMessage:
+            "Could not request notification permission. Please try again later.",
           permissionRequestErrorTitle: "Permission request failed",
           permissionStatus: "Permission status",
           section: "Notifications",
@@ -393,20 +463,28 @@ export const appI18nResources = {
           dateSeparatorCount_other: "{{count}}개",
           errorDescription: "홈 피드를 불러오지 못했어요. 다시 시도해주세요.",
           errorTitle: "일정을 불러오지 못했어요",
+          emptyOverdue: "지난 일정은 없어요",
+          emptySelectedDate: "{{date}}은 비어 있어요",
+          emptyToday: "오늘은 비어 있어요",
+          emptyUpcoming: "다가오는 일정은 없어요",
           itemDetailHint: "반복 항목 상세 화면으로 이동해요.",
           itemDetailLabel: "{{title}} 상세 보기",
           loading: "불러오고 있어요",
           loadingA11yLabel: "홈 피드를 불러오는 중",
+          overdueDays: "{{count}}일 지남",
+          overdueToday: "오늘 지남",
           retryHint: "일정을 다시 불러와요.",
           retryLabel: "일정 다시 시도",
+          sectionOverdue: "지난 일정",
+          sectionToday: "오늘",
+          sectionUpcoming: "다가오는 일정",
           sectionCount: "{{count}}개",
           sectionCount_one: "{{count}}개",
           sectionCount_other: "{{count}}개",
-          sectionSummary: "{{count}}개의 일정이 있어요",
-          sectionSummary_one: "{{count}}개의 일정이 있어요",
-          sectionSummary_other: "{{count}}개의 일정이 있어요",
           skipHint: "이 일정을 건너뛰어요.",
           skipLabel: "{{title}} 건너뛰기",
+          tomorrow: "내일",
+          upcomingCaption: "홈에서는 앞으로 14일간의 일정만 보여요",
         },
         header: {
           greeting: "안녕하세요,\n{{name}}님!",
@@ -437,7 +515,16 @@ export const appI18nResources = {
         termsOpenErrorTitle: "이용약관 열기 실패",
       },
       calendar: {
+        day: {
+          overflow: "외 {{count}}개",
+          selectHint: "선택 날짜를 바꿉니다.",
+          selected: "선택됨",
+          today: "오늘",
+        },
         emptyTitle: "선택한 날짜에 일정이 없어요",
+        entryCount: "{{count}}개",
+        entryCount_one: "{{count}}개",
+        entryCount_other: "{{count}}개",
         error: {
           retryHint: "캘린더 조회를 다시 시도해요.",
           retryLabel: "캘린더 다시 불러오기",
@@ -445,12 +532,15 @@ export const appI18nResources = {
         },
         headerTitle: "캘린더",
         loadingA11yLabel: "일정을 불러오는 중",
-        monthArrowHint: "보이는 월을 이동해요.",
-        nextMonthLabel: "다음 달 보기",
-        previousMonthLabel: "이전 달 보기",
         row: {
           detailHint: "반복 항목 상세 화면으로 이동해요.",
           detailLabel: "{{title}} 상세 보기",
+        },
+        status: {
+          completed: "완료",
+          overdue: "지남",
+          scheduled: "예정",
+          skipped: "건너뜀",
         },
       },
       navigation: {
@@ -464,6 +554,11 @@ export const appI18nResources = {
         },
       },
       scheduleDetail: {
+        contentRecovery: {
+          description:
+            "암호화 키 또는 저장된 내용에 문제가 있어 내용을 열 수 없어요. 필요하면 이 일정을 삭제할 수 있어요.",
+          title: "일정 내용을 복구하지 못했어요",
+        },
         deleteAlert: {
           cancel: "취소",
           confirm: "삭제",
@@ -479,6 +574,7 @@ export const appI18nResources = {
         headerTitle: "일정 상세",
         history: {
           empty: "아직 처리 기록이 없어요",
+          scheduledDate: "예정 {{date}}",
           title: "최근 처리 기록",
         },
         inlineErrorTitle: "처리를 완료하지 못했어요",
@@ -505,6 +601,28 @@ export const appI18nResources = {
           notificationDisabled: "중지",
           notificationEnabled: "사용",
           recurrence: "반복",
+          anchorType: "계산",
+          completionBased: "완료일 기준",
+          endDate: "종료",
+          startDate: "시작",
+        },
+        status: {
+          completed: "완료한 일정",
+          inDays_one: "{{count}}일 후",
+          inDays_other: "{{count}}일 후",
+          nextItem: "다음 일정",
+          noFollowingItem: "후속 일정 없음",
+          noUpcomingDate: "없음",
+          noUpcomingTitle: "다음 일정 없음",
+          overdue: "지난 일정",
+          overdueCount_one: "지난 일정 {{count}}건",
+          overdueCount_other: "지난 일정 {{count}}건",
+          overdueDays_one: "{{count}}일 지남",
+          overdueDays_other: "{{count}}일 지남",
+          scheduled: "예정 일정",
+          skipped: "건너뛴 일정",
+          today: "오늘",
+          tomorrow: "내일",
         },
       },
       scheduleForm: {
@@ -520,6 +638,8 @@ export const appI18nResources = {
           optionHint: "{{color}} 일정 색상으로 설정해요.",
         },
         completionBased: {
+          description:
+            "완료한 날짜를 기준으로 다음 일정을 다시 계산합니다. 한 번 설정과 주 단위 설정에서는 비활성화됩니다.",
           infoHint: "완료일 기준 설명을 확인해요.",
           infoLabel: "완료일 기준 설명",
           title: "완료일 기준",
@@ -573,10 +693,27 @@ export const appI18nResources = {
         recurrence: {
           basicTab: "기본 설정",
           customTab: "직접 설정",
+          daily: "매일",
           intervalA11y: "간격값",
           intervalLabel: "반복 간격",
+          monthly: "매달",
           once: "한 번",
+          unitDays: "일",
+          unitMonths: "달",
+          unitWeeks: "주",
+          weekdayFri: "금",
           weekdayLabel: "반복할 요일",
+          weekdayMon: "월",
+          weekdaySat: "토",
+          weekdaySun: "일",
+          weekdayThu: "목",
+          weekdayTue: "화",
+          weekdayWed: "수",
+          weekly: "매주",
+        },
+        title: {
+          create: "일정 추가",
+          edit: "일정 수정",
         },
         saveUnavailable: {
           message: "세션 정보를 먼저 확인해주세요.",
@@ -638,6 +775,8 @@ export const appI18nResources = {
           },
           section: "계정 관리",
           signOut: "로그아웃",
+          signOutErrorMessage:
+            "로그아웃할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           signOutErrorTitle: "로그아웃 실패",
         },
         appInfo: {
@@ -653,7 +792,6 @@ export const appI18nResources = {
         environment: {
           appLanguage: "표시 언어",
           appLanguageHint: "현재 기기의 표시 언어를 선택해요.",
-          appLanguageLocalOnly: "현재 기기에만 저장됩니다.",
           languageEnglishHint: "표시 언어를 English로 설정해요.",
           languageKoreanHint: "표시 언어를 한국어로 설정해요.",
           saveErrorMessage:
@@ -669,7 +807,6 @@ export const appI18nResources = {
           themeHint: "현재 기기의 테마를 선택해요.",
           themeLight: "라이트",
           themeLightHint: "현재 기기에서 라이트 테마를 사용해요.",
-          themeLocalOnly: "현재 기기에만 저장됩니다.",
           themeSaveErrorMessage:
             "테마를 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           themeSaveErrorTitle: "테마 저장 실패",
@@ -680,13 +817,16 @@ export const appI18nResources = {
         headerTitle: "설정",
         nameEditor: {
           cancel: "취소",
+          emptyError: "이름을 입력해 주세요.",
           placeholder: "이름",
           save: "저장",
+          saveErrorMessage:
+            "이름을 저장할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           saveErrorTitle: "이름 저장 실패",
           title: "이름 수정",
+          tooLongError: "이름은 30자 이하로 입력해 주세요.",
         },
         notifications: {
-          appNotification: "앱 알림",
           openSettings: "시스템 설정 열기",
           openSettingsDescription:
             "권한이 꺼져 있으면 시스템 설정에서 다시 허용해야 합니다.",
@@ -695,6 +835,8 @@ export const appI18nResources = {
           permissionRequest: "권한 요청",
           permissionRequestDescription:
             "정해둔 시간에 현재 기기에서 알려드리려면 알림 권한이 필요합니다.",
+          permissionRequestErrorMessage:
+            "알림 권한을 요청할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
           permissionRequestErrorTitle: "권한 요청 실패",
           permissionStatus: "권한 상태",
           section: "알림",

@@ -34,7 +34,9 @@
 - `docs/DOMAIN_LOGIC.md`: 반복 규칙, occurrence 계산, 상태 판정.
 - `docs/SYSTEM_DESIGN.md`: 구현 구조, 데이터 흐름, Supabase, 알림, 암호화 경계.
 - `docs/adr/`: 되돌리기 어렵고 맥락 없이는 놀라운 설계 결정.
-- `docs/database/DATABASE.sql`: 현재 기준 스키마 설명.
+- `docs/database/DATABASE.sql`: 현재 운영 스키마 snapshot.
+- `docs/release/RELEASE.md`: build, 제출, OTA와 복구 절차.
+- `docs/release/STORE_METADATA.md`: 스토어 입력 원문과 공개 URL.
 
 도메인 용어를 새로 만들거나 바꿀 때는 `grill-with-docs` 흐름으로 `CONTEXT.md`와 필요한 ADR을 먼저 확인한다.
 
@@ -55,6 +57,8 @@
 ## Verification
 
 - 변경 범위에 맞는 테스트를 실행한다.
+- 테스트는 깊은 모듈의 공개 interface와 사용자가 관찰하는 결과를 확인한다.
+- 내부 helper의 반환 shape나 구현 문자열은 고정하지 않는다. 문자열 자체가 구조 계약일 때만 소스 기반 테스트를 사용한다.
 - 문서만 수정하면 최소 `pnpm exec prettier --check <files>`와 `git diff --check`를 확인한다.
 - 코드 변경이면 필요에 따라 `pnpm jest --runInBand`, `npx tsc --noEmit`, `pnpm lint`를 실행한다.
 - Supabase Edge Function을 수정하면 `pnpm supabase:functions:check`를 실행한다.

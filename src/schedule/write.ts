@@ -1,8 +1,10 @@
 import { captureException } from "~/sentry";
 
 import * as db from "./db/items";
+import { listItemLogs } from "./db/logs";
 import { refreshSchedules } from "./query";
-import type { EditScheduleInput } from "./rules/edit";
+import { type EditScheduleInput, resolveEdit } from "./rules/edit";
+import { assertInput } from "./rules/validate";
 import type { CreateScheduleInput, Schedule } from "./schedule";
 
 type CommonOptions = {
@@ -31,6 +33,8 @@ export async function createSchedule({
   input: CreateScheduleInput;
   timezone: string;
 }): Promise<Schedule> {
+  assertInput(input);
+
   const schedule = await db.createItem({
     ...input,
     timezone,
@@ -52,12 +56,26 @@ export async function updateSchedule({
   patch: EditScheduleInput;
   timezone: string;
 }): Promise<Schedule> {
-  const schedule = await db.updateItem({
-    id: itemId,
-    patch,
+  const item = await db.getItem({ id: itemId, userId });
+
+  if (item.contentStatus === "unrecoverable") {
+    throw new Error("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
+  }
+
+  const edit = resolveEdit({
+    completionLogs: await listItemLogs({ itemId, userId }),
+    input: patch,
+    item,
+    now: new Date(),
     timezone,
-    userId,
   });
+  const schedule = edit
+    ? await db.updateItem({
+        edit,
+        id: itemId,
+        userId,
+      })
+    : item;
 
   await finish(syncNotifications);
   return schedule;

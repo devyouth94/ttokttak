@@ -1,445 +1,202 @@
 # System Design
 
-이 문서는 현재 코드의 구현 구조와 데이터 흐름만 설명한다.
-제품 범위는 `PRODUCT_SPEC.md`, 도메인 계산 규칙은 `DOMAIN_LOGIC.md`를 따른다.
+이 문서는 현재 코드의 구현 경계와 데이터 흐름을 설명한다.
+제품 동작은 [`PRODUCT_SPEC.md`](PRODUCT_SPEC.md), 계산 규칙은 [`DOMAIN_LOGIC.md`](DOMAIN_LOGIC.md)를 따른다.
 
-## Stack
+## 구조
 
-- Expo.
-- React Native.
-- Expo Router.
-- Expo Updates.
-- TypeScript.
-- React Hook Form.
-- Zod.
-- TanStack Query.
-- Supabase Auth.
-- Supabase Postgres.
-- Supabase Edge Functions.
-- Expo Notifications.
-- Expo SecureStore.
-- Expo Crypto.
-- date-fns / date-fns-tz.
-- Sentry.
+앱은 Expo Router와 역할 중심의 평면 모듈을 사용한다.
 
-## Architecture
+- `app/`: route와 페이지 컴포넌트.
+- `src/screens/`: 한 화면이 소유하는 조회, 상태, 동작과 UI.
+- `src/schedule/`: 여러 화면이 공유하는 일정 규칙, 저장, 조회와 표시.
+- `src/session/`: 세션 상태와 Apple·Google 인증.
+- `src/account/`: profile과 계정 삭제.
+- `src/notifications/`: 권한, 후보 계산, 예약 동기화와 tap 처리.
+- `src/i18n/`, `src/theme/`, `src/sentry/`: 앱 전역 provider와 정책.
+- `src/ui/`: 일정 지식이 없는 공용 UI.
 
-현재 앱은 역할 중심 평면 모듈로 전환 중이다.
-`src/schedule`은 전환이 끝났고 `application`, `features`, `shared`에는 아직 교체하지 않은 코드가 남아 있다.
-남은 기존 디렉터리는 현재 위치를 설명할 뿐 새 코드의 기준이 아니다.
+### 배치 규칙
 
-### Current Structure
-
-- 루트 `app`: route parameter를 읽고 화면을 연결하는 Expo Router route.
-- `src/screens`: 한 화면이 소유하는 조회, 상태, 동작과 UI.
-- `src/schedule`: 여러 화면이 공유하는 일정 규칙, 저장, 조회, 표시와 UI.
-- `src/session`: Supabase session Context와 Apple, Google 인증.
-- `src/account`: profile 복원, 표시 이름 저장과 계정 삭제.
-- `src/notifications`: 알림 권한, lifecycle, tap 처리와 Expo 예약.
-- `src/theme`: 테마 저장, 기기 설정 해석과 provider.
-- `src/sentry`: 오류 수집 초기화와 event 전송 정책.
-- `src/ui`: 일정과 무관한 공용 UI.
-- `src/supabase.ts`: Supabase client singleton.
-- `src/database.types.ts`: 생성된 Supabase schema type.
-- `src/application`, `src/features`, `src/shared`: 아직 교체하지 않은 기존 코드.
-
-### Placement Rules
-
-- 한 화면에서만 사용하는 코드는 `screens/<화면>/`에 둔다.
-- 화면 전용 조회, 상태와 동작은 화면 루트에 둔다.
-- 화면 전용 렌더링 파일은 개수와 관계없이 `screens/<화면>/ui/`에 둔다.
-- 여러 화면이나 앱 전체가 공유하는 코드는 제품 역할 이름의 최상위 모듈에 둔다.
-- 한 파일이면 미래 확장을 위한 디렉터리를 만들지 않고 `src/`에 직접 둔다.
-- 하위 디렉터리는 여러 파일이 독립된 역할을 이룰 때만 만든다.
-- `model`, `hooks`, `components`, `utils`, `helpers`, `types`, `constants`를 반복 구조로 만들지 않는다.
-- 전달만 하는 배럴, 호환 wrapper와 `v2` 구조를 만들지 않는다.
+- route에서 짧게 읽히는 화면 상태와 UI 조립은 페이지에 직접 둔다.
+- 별도 검증이나 응집된 역할이 있는 화면 코드는 `screens/<화면>/`에 둔다.
+- 화면 전용 UI는 `screens/<화면>/ui/`에 둔다.
+- 화면 모듈끼리 직접 import하지 않는다. 여러 화면이 사용하는 코드는 공유 역할 모듈로 옮긴다.
+- 여러 화면이 공유하는 코드는 제품 역할 이름의 최상위 모듈에 둔다.
+- 외부 I/O는 화면에서 직접 호출하지 않고 해당 역할 모듈을 거친다.
+- 한 파일을 위한 디렉터리, 전달만 하는 배럴, 호환 wrapper와 `v2` 구조는 만들지 않는다.
+- `model`, `hooks`, `components`, `utils`, `helpers` 같은 기술 이름을 반복 계층으로 사용하지 않는다.
 - 테스트는 구현 파일 옆에 둔다.
-- Supabase, 알림과 SecureStore 같은 외부 시스템은 화면에서 직접 호출하지 않는다.
+- 스타일은 사용하는 UI 파일에 두고 여러 UI가 실제로 공유할 때만 분리한다.
 
-### Transition
+화면의 배타적 상태는 가능하면 하나의 status로 정한다.
+JSX에서는 중첩 삼항보다 상태별 `&&` 블록을 사용한다.
+오류, 안내와 빈 상태는 공용 `StateMessage`로 표현한다.
 
-- 페이지가 사용하는 실행 흐름을 끝까지 새 위치로 교체한다.
-- 연결된 기존 파일은 같은 작업에서 삭제한다.
-- 다른 화면의 사용자 동작까지 바뀌면 해당 화면 작업까지 교체를 미룬다.
-- 임시 호환 계층이나 복사본은 만들지 않는다.
+## 앱 경계
 
-### Schedule
+하단 탭은 홈, 목록, 캘린더와 설정을 연결한다.
+일정 상세, 생성과 수정은 탭 밖의 집중 화면이다.
+가운데 `+`는 탭이 아니라 일정 생성 동작이다.
 
-- `src/schedule/schedule.ts`: `Schedule`과 생성 입력을 정의한다.
-- `src/schedule/rules/recurrence.ts`: 반복 규칙과 규칙 버전을 정의하고 다음 local date를 계산한다.
-- `src/schedule/rules/occurrence.ts`: occurrence와 처리 기록을 정의하고 `range`, `next`, `find` 조회를 제공한다.
-- `src/schedule/rules/validate.ts`: 일정 입력의 도메인 규칙을 검사한다.
-- `src/schedule/rules/edit.ts`: 일정 수정 입력에서 저장할 값과 새 규칙 버전을 계산한다.
-- `src/schedule/display/date.ts`: local 값과 UTC timestamp의 날짜·시간 표시를 만든다.
-- `src/schedule/display/label.ts`: 일정 반복 규칙과 occurrence 처리 상태의 표시 문구를 만든다.
-- `src/schedule/display/color.ts`: 일정 색상 key, 기본값, swatch와 표시 문구를 정의한다.
-- `src/schedule/content/cipher.ts`: 일정 제목과 설명의 암복호화를 담당한다.
-- `src/schedule/content/key.ts`: 기기의 content key 생성, 저장과 복구를 담당한다.
-- `src/schedule/db/content-key.ts`: wrapped content key 저장과 복구 Edge Function 호출을 담당한다.
-- `src/schedule/db/items.ts`: 일정 조회, 생성, 수정, 보관과 Supabase row/RPC 변환을 담당한다.
-- `src/schedule/db/logs.ts`: occurrence 처리 기록 조회와 생성을 담당한다.
-- `src/schedule/query.ts`: 일정 범위 조회, completion anchor, cache 무효화를 담당한다.
-- `src/schedule/write.ts`: 일정 생성, 수정, 보관 뒤 알림과 query를 다시 맞춘다.
-- `src/schedule/ui`: 일정 지식이 필요한 공유 UI를 둔다.
-- `src/screens/home/action.ts`: 홈 피드의 완료와 건너뛰기를 처리한다.
-- `src/screens/*/query.ts`: 화면별 조회 범위와 occurrence 표시 데이터를 만든다.
-- 도메인 함수는 Supabase client 모양을 알지 않는다.
+앱 루트는 테마, 표시 언어, query, 세션과 알림 provider를 조립한다.
+세션과 profile이 준비되기 전에는 인증된 화면을 열지 않는다.
 
-### Architecture Rules
+## 데이터 기준
 
-- `src/schedule`의 역할 모듈은 필요한 파일을 직접 import한다.
-- 전달만 하는 배럴 파일을 만들지 않는다.
-- 테스트 fixture는 `src/schedule/fixtures.ts`에서 직접 import한다.
-- 앱 문구나 날짜/시간 표시 문구를 만드는 화면 표시 변환은 `AppLanguage`를 필수 입력으로 받는다.
-- 한국어 fallback 기본값은 일정 표시 함수나 테스트 fixture처럼 의도적으로 좁은 경계에서만 둔다.
-- 화면은 일정 날짜/시간 표시를 직접 format하지 않고 `schedule/display/date.ts`의 함수를 조합한다.
-- 특정 UI 라이브러리 전역 locale 설정은 해당 화면 내부에 둘 수 있지만 render 중에 변경하지 않는다.
-- 표시 언어 초기화 실패는 앱 진입을 막지 않고 한국어 fallback으로 계속 진행한다.
-- 표시 언어 초기화 실패 상태는 재시도 가능해야 하며 Promise cache에 영구 고정하지 않는다.
-- 한국어 fallback 초기화까지 실패하면 i18n에 의존하지 않는 한국어 bootstrap 오류 화면과 재시도 액션만 보여준다.
-- 지원 언어의 기준은 `appLanguages`와 `fallbackAppLanguage`다.
-- 표시 언어 resource는 모든 `AppLanguage` key를 가져야 하며 타입으로 드리프트를 막는다.
-- 앱 내부 public 경계는 `locale`이 아니라 `AppLanguage`를 노출한다.
-- `locale`은 date-fns, Expo Localization, React Native Calendar 같은 외부 라이브러리 adapter 경계에서만 사용한다.
-- 네이티브 번들 localization 선언은 지원 언어와 맞춘다.
-- 네이티브 앱 표시명 다국어화는 필요가 확인될 때 별도 범위로 다룬다.
-- 표시 언어 변경은 런타임 적용과 저장된 설정이 갈라지지 않게 처리한다.
-- 표시 언어 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 언어를 모호하게 두지 않는다.
-- 테마 provider는 session과 무관하게 로그인 전 화면과 로그인 후 화면을 모두 감싼다.
-- 테마 초기화 실패는 앱 진입을 막지 않고 시스템 fallback으로 계속 진행한다.
-- 테마 select는 시스템, 라이트, 다크 순서로 표시한다.
-- 테마는 전역 provider와 semantic color token hook으로 적용한다.
-- 컴포넌트는 정적 `colors` 객체를 직접 고정하지 않고 현재 테마의 의미 토큰을 읽는다.
-- 테마 적용 작업은 공용 UI, navigation/app shell, settings/login, schedule screens 순서로 넓힌다.
-- StatusBar는 resolved theme에 맞춰 라이트 테마에서 dark style, 다크 테마에서 light style을 사용한다.
-- 시스템 테마는 실행 중 기기의 화면 표시 설정 변경을 즉시 따른다.
-- 라이트 또는 다크 테마를 직접 고른 상태에서는 기기의 화면 표시 설정 변경을 따르지 않는다.
-- 일정 색상 팔레트는 테마와 무관하게 같은 색상값을 사용한다.
-- 일정 색상은 marker, swatch, line 같은 보조 표시에만 사용한다.
-- 일정 관련 텍스트와 아이콘은 일정 색상 위에 올리지 않고 현재 테마의 text 토큰을 사용한다.
-- 홈 피드 섹션 카드처럼 화면 전용 고정 표현 색상은 해당 화면 모듈이 소유하고 공용 theme token으로 승격하지 않는다.
-- 배경, 표면, 텍스트, border, divider, disabled text, control track, scrim, shadow, soft container는 테마별 의미 토큰으로 분리한다.
-- accent, error, green, amber, red, blue 계열은 의미와 hue를 유지하되 테마별 대비가 부족하면 tone을 조정한다.
-- 테마 저장 실패는 사용자에게 알리고 다음 시작 때 적용될 테마를 모호하게 두지 않는다.
-- 순수 검증 코드는 i18next에 의존하지 않고 화면이 오류 코드를 사용자 문구로 바꾼다.
-- 검증 메시지가 여러 경계에서 반복되면 전역 i18n resource가 아니라 해당 역할의 표시 함수로 모은다.
-- 일정 form은 입력 shape를 Zod로 확인하고 반복 규칙은 schedule validator 결과를 사용자 문구로 바꿔 표시한다.
+Supabase Postgres가 계정, profile, 일정과 occurrence 처리 기록의 최종 기준이다.
+클라이언트는 서버 데이터를 읽고 화면에 필요한 occurrence를 런타임에서 계산한다.
 
-## Routing
+다음 값은 서버에 별도 row로 저장하지 않는다.
 
-하단 탭은 홈, 목록, 캘린더, 설정으로 구성한다.
-상세, 생성, 수정은 하단 탭을 숨기는 집중 화면이다.
+- occurrence.
+- 홈 섹션과 캘린더 marker.
+- 기기 로컬 알림 예약 상태.
 
-주요 route:
+[`database/DATABASE.sql`](database/DATABASE.sql)은 현재 운영 스키마를 읽기 위한 snapshot이다.
+배포 변경 이력은 `supabase/migrations/`에 두고, 스키마 변경 전에는 운영 DB와 snapshot을 함께 확인한다.
 
-- `/`: 로그인 또는 인증 후 홈 redirect.
-- `/(tabs)/home`: 홈.
-- `/(tabs)/schedule`: 일정 목록.
-- `/(tabs)/calendar`: 캘린더.
-- `/(tabs)/settings`: 설정.
-- `/items/new`: 일정 생성.
-- `/items/[itemId]`: 일정 상세.
-- `/items/[itemId]/edit`: 일정 수정.
+## 세션과 profile
 
-## Source Of Truth
+Supabase Auth 세션은 SecureStore 기반 auth storage에 보존한다.
+초기 세션과 이후 변경은 `onAuthStateChange` 한 경로에서 처리한다.
 
-Supabase Postgres가 서버 데이터의 최종 기준이다.
-클라이언트는 서버 row를 읽고, 화면에 필요한 occurrence를 런타임에서 계산한다.
+세션 상태는 `loading`, `signedOut`, `ready`, `error` 중 하나다.
+`ready`는 사용자와 profile이 모두 준비된 상태다.
 
-저장하지 않는 값:
+로그인한 사용자의 profile이 없으면 현재 기기 timezone과 provider 표시 이름으로 생성한다.
+사용자가 수정한 표시 이름은 provider metadata로 덮어쓰지 않는다.
+세션이 바뀐 뒤 늦게 끝난 이전 profile 요청은 현재 상태에 적용하지 않는다.
+profile 준비 실패는 기록하고 재시도 화면을 보여준다.
 
-- occurrence row.
-- 홈 섹션 row.
-- 달력 marker row.
-- 로컬 알림 예약 metadata row.
+## 일정 저장과 조회
 
-기기 로컬 알림은 현재 기기 OS에 예약된 파생 상태다.
-알림 예약은 source of truth가 아니다.
+일정 row와 초기 규칙 버전은 하나의 RPC로 함께 만든다.
+수정은 현재 일정과 처리 기록에서 메타 변경과 규칙 변경을 계산한 뒤 하나의 RPC로 저장한다.
+규칙 변경일 때만 새 규칙 버전을 추가한다.
+일정 삭제는 `is_archived = true`를 저장하는 RPC를 사용한다.
+새 규칙 버전의 적용 시각은 수정한 기기의 현재 시각을 사용하며 서버 시각으로 별도 보정하지 않는다.
 
-## Update Delivery
+일정 생성, 수정과 보관은 다음 순서를 따른다.
 
-앱은 `expo-updates`와 EAS Update를 사용한다.
-production 빌드는 `production` channel을 사용한다.
-preview 빌드는 `preview` channel을 사용한다.
-`runtimeVersion`은 `appVersion` 정책을 사용한다.
-
-같은 앱 버전과 runtime 안에서는 JS와 asset 변경을 OTA로 받을 수 있다.
-네이티브 코드, 권한, entitlements, native dependency 변경은 새 스토어 빌드가 필요하다.
-현재 OTA 운영 대상은 iOS와 Android다.
-web export는 운영 대상이 아니므로 EAS Update는 플랫폼별로 발행한다.
-
-## Data Model
-
-현재 주요 table은 다음과 같다.
-
-- `profiles`: 사용자 timezone과 앱 표시 이름.
-- `recurring_items`: 일정 메타, 보관 여부, 색상, 암호화된 제목/설명.
-- `recurring_item_schedule_versions`: 반복 규칙 version.
-- `completion_logs`: occurrence 처리 기록.
-- `user_content_encryption_keys`: content key 복구용 wrapped key.
-- `content_key_recovery_audit_events`: 서버 측 내용 복구 호출 감사 이벤트.
-
-기준 스키마에는 원격 푸시용 `device_push_tokens`, `notification_delivery_jobs`, `notification_delivery_attempts`, `notification_inbox_items`를 두지 않는다.
-
-## Auth And Session
-
-Supabase Auth를 사용한다.
-Supabase URL과 publishable key는 앱 실행에 필요한 public env다.
-세션은 `expo-secure-store` 기반 Supabase auth storage에 보존한다.
-초기 세션과 이후 auth 변경은 `onAuthStateChange` 단일 경로로 적용한다.
-늦게 완료된 이전 세션의 profile 조회 결과는 현재 세션에 적용하지 않는다.
-
-세션 복원 시 profile을 확인한다.
-profile이 없으면 현재 기기 timezone과 provider metadata 이름으로 생성한다.
-사용자가 설정에서 수정한 표시 이름은 provider metadata로 덮어쓰지 않는다.
-profile 준비 실패는 Sentry에 기록하고 앱 진입을 막는다.
-사용자에게 내부 오류를 노출하지 않고 다시 시도 동작을 제공한다.
-
-### Account Deletion
-
-로그인된 사용자의 계정 삭제는 JWT 검증이 켜진 `delete-account` Supabase Edge Function에서 처리한다.
-클라이언트는 service role key를 절대 보유하지 않는다.
-
-처리 흐름:
-
-1. 앱은 사용자 확인 UI를 거친 뒤 Edge Function을 호출한다.
-2. Apple 계정이면 앱은 삭제 직전에 Apple 재인증을 요청하고 authorization code를 Edge Function에 전달한다.
-3. Edge Function은 현재 JWT로 사용자 id와 provider를 확인한다.
-4. Edge Function은 Apple 계정인데 authorization code가 없으면 삭제를 거부한다.
-5. Apple authorization code가 있으면 Edge Function이 Apple token revoke를 먼저 처리하고 Apple identity 일치를 확인한다.
-6. Edge Function은 service role 권한으로 Supabase Auth user를 삭제한다.
-7. `auth.users` 삭제는 `profiles`와 사용자 데이터의 cascade 삭제를 발생시킨다.
-8. 앱은 로컬 세션과 현재 기기의 Ttokttak 로컬 알림을 정리한다.
-
-계정 삭제 실패 응답은 내부 삭제 단계나 service role key 경계를 노출하지 않는다.
-앱은 세션 없음 또는 만료만 별도 안내하고, 그 외 실패는 단순 실패 안내로 표시한다.
-
-Apple token revoke에 필요한 Team ID, Key ID, Client ID, private key는 Edge Function secret으로만 관리한다.
-클라이언트는 Apple private key나 service role key를 절대 보유하지 않는다.
-
-공개 웹의 계정 삭제 요청은 로그인할 수 없는 사용자를 위한 접수 경로다.
-해당 요청은 자동 삭제가 아니라 운영 확인 뒤 처리한다.
-
-## Recurring Item Flow
-
-일정 DB 함수는 item과 규칙 버전을 함께 읽는다.
-도메인 `Schedule`은 비어 있지 않은 규칙 버전 목록을 제공한다.
-화면, 수정 정책, 알림은 공통 accessor로 최신 version을 읽는다.
-DB schema와 RPC의 규칙 필드를 별도 현재 값으로 복사하지 않는다.
-
-### Create
-
-1. form 입력을 검증한다.
+1. 입력과 수정 정책을 확인한다.
 2. 제목과 설명을 암호화한다.
-3. `create_recurring_item_with_initial_version` RPC로 item과 초기 규칙 버전을 함께 만든다.
-4. 현재 기기의 기기 로컬 알림을 재동기화한다.
-5. query를 무효화한다.
+3. RPC로 서버 상태를 저장한다.
+4. 현재 기기의 알림을 전체 재동기화한다.
+5. 일정 query를 무효화해 서버 상태를 다시 읽는다.
 
-### Update
+알림 동기화 실패는 이미 저장된 변경을 되돌리지 않는다.
+실패를 기록한 뒤 query 갱신을 계속한다.
 
-1. 기존 item과 규칙 버전을 읽는다.
-2. 수정 정책으로 메타 변경과 규칙 변경을 구분한다.
-3. 제목과 설명을 다시 암호화한다.
-4. `update_recurring_item_with_edit_policy` RPC로 item을 갱신한다.
-5. 규칙 변경이면 새 규칙 버전을 추가한다.
-6. 현재 기기의 기기 로컬 알림을 재동기화한다.
-7. query를 무효화한다.
+홈의 완료와 건너뛰기도 처리 기록 저장, 알림 전체 재동기화, query 갱신 순서를 사용한다.
+여러 처리 기록은 단일 insert로 원자적으로 저장한다.
 
-### Archive
+화면 query는 필요한 일정, 처리 기록과 완료일 기준 anchor를 조회하고 화면 모듈이 표시 projection을 만든다.
+상세의 대표 상태 계산은 일정 시작 이후 처리 기록을 사용한다.
+상세 진입 시 `scheduledAtUtc`가 있으면 해당 occurrence를 우선하고, 없으면 최신 지난 일정과 다음 occurrence 순서로 선택한다.
+최근 처리 기록은 별도 query에서 실제 처리 시각 최신순 5건만 읽는다.
 
-삭제 UX는 `archive_recurring_item` RPC로 `is_archived = true`를 저장한다.
-보관 후 현재 기기의 기기 로컬 알림을 재동기화하고 query를 무효화한다.
+## 내용 암호화와 복구
 
-### Complete / Skip
+일정 제목과 설명은 앱에서 사용자별 content key를 사용해 AES-GCM으로 암호화한다.
+암호문과 wrapped content key만 서버 DB에 저장한다.
 
-홈 피드 occurrence 처리는 `completion_logs`에 기록을 만든다.
-여러 occurrence를 함께 처리하면 단일 batch insert로 전부 기록하거나 전부 실패한다.
-지난 일정 action은 이전 미해결 overdue occurrence도 함께 기록할 수 있다.
-기록 후 query를 무효화하고 로컬 알림을 다시 맞춘다.
+content key 흐름은 다음과 같다.
 
-completion log 조회는 projection 목적이나 후속 계산에 필요한 범위로 제한한다.
-상세 화면의 최근 처리 기록은 최신 5건만 표시한다.
-상세 화면의 최근 처리 기록 조회와 occurrence projection 조회는 분리한다.
-상세 화면의 occurrence projection은 일정 시작 이후 전체 미해결 occurrence를 판정할 수 있는 completion log를 사용한다.
-MVP는 전체 completion log 탐색이나 무한 스크롤을 제공하지 않는다.
-`completion_based` 일정의 다음 occurrence 계산에는 표시 범위 이전의 최신 완료 기록 1건을 별도 anchor로 사용할 수 있다.
-`schedule/query.ts`는 화면이 지정한 범위의 처리 기록과 필요한 completion anchor를 조회한다.
-홈 피드, 일정 목록, 캘린더와 상세 화면은 각 화면 모듈에서 occurrence 표시 데이터를 만든다.
-화면의 날짜 상태는 profile timezone을 기준으로 만든다.
-화면별 문구, 정렬, card, row, marker 구성은 각 화면 모듈이 맡는다.
+1. 앱은 SecureStore에서 content key를 읽거나 새로 만든다.
+2. Edge Function은 서버 secret으로 content key를 wrap한다.
+3. wrapped key는 사용자 소유 row로 저장한다.
+4. 새 기기에서 SecureStore key가 없으면 인증된 Edge Function 호출로 복구한다.
+5. 복구한 key는 현재 기기 SecureStore에 저장한다.
 
-### 종료일 정책
+기존 SecureStore key에 대응하는 wrapped key가 서버에 없으면 현재 key를 wrap해 서버 row를 보충한다.
+기기 key로 복호화하지 못하면 서버 key를 복구해 한 번 다시 시도한다.
 
-종료일은 규칙 버전의 `endDateLocal`로 저장한다.
-종료일이 있으면 occurrence local date가 종료일보다 늦은 occurrence는 만들지 않는다.
-한 번 일정은 종료일을 갖지 않는다.
-종료일은 nullable이며, 기존 일정과 종료일이 없는 반복 일정은 null을 유지한다.
-종료일 변경은 규칙 변경으로 처리한다.
-종료일 변경은 수정 시점 이후 occurrence에만 적용하고 과거 completion log를 다시 쓰지 않는다.
-`completion_based` 일정도 완료한 날짜가 아니라 occurrence local date 기준으로 종료일을 적용한다.
-anchor 조회는 화면 히스토리 조회와 섞지 않는다.
+서버 DB table만으로 content key와 제목·설명 평문을 복구할 수 없어야 한다.
+Edge Function은 content key만 wrap하거나 recover하며 일정 암호문을 복호화하지 않는다.
+이 구조는 서버 실행 경계를 신뢰하므로 strict E2EE가 아니다.
 
-일정 목록은 MVP에서 active 일정 최대 500개를 조회한다.
-500개를 넘는 사용자를 위한 검색과 페이지네이션은 후속 범위로 둔다.
+복구 호출은 사용자, 동작, key version과 낮은 해상도 결과만 감사 이벤트로 남긴다.
+평문, content key, wrapped key, 암호문과 내부 예외 메시지는 기록하지 않는다.
+감사 이벤트는 authenticated 사용자가 직접 조회할 수 없다.
 
-조회 인덱스는 필터, 정렬, limit 패턴을 함께 기준으로 둔다.
-일정 목록은 `user_id`, `is_archived`, `created_at desc` 순서를 기준으로 조회한다.
-completion log 최신 히스토리는 `user_id`, `item_id`, `scheduled_at_utc desc` 순서를 기준으로 조회한다.
-`completion_based` anchor 조회는 `user_id`, `item_id`, `action`, `acted_at_utc desc` 순서를 기준으로 조회한다.
+복구 불가 일정은 목록에서 숨기지 않는다.
+fallback 제목과 빈 설명을 사용하고, 상세에서는 삭제만 허용하며 알림 후보에서는 제외한다.
 
-## Content Privacy
+## 계정 삭제
 
-일정 제목과 설명은 앱에서 AES-GCM으로 암호화한다.
-암호화 key는 사용자별 content key다.
+로그인한 사용자의 계정 삭제는 JWT를 검증하는 `delete-account` Edge Function에서 처리한다.
+클라이언트는 service role key를 보유하지 않는다.
 
-content key 흐름:
+1. 앱이 사용자 확인을 받는다.
+2. Apple 계정이면 삭제 직전에 Apple 재인증 code를 받는다.
+3. Edge Function이 JWT의 사용자와 provider를 확인한다.
+4. Apple 계정이면 token revoke와 identity 일치를 먼저 확인한다.
+5. service role 권한으로 Auth user를 삭제한다.
+6. 외래 키 cascade가 profile과 사용자 데이터를 삭제한다.
+7. 앱이 로컬 세션과 현재 기기의 알림을 정리한다.
 
-1. 앱은 content key를 생성하거나 SecureStore에서 읽는다.
-2. 서버 복구를 위해 content key를 Edge Function secret으로 wrap한다.
-3. wrapped key는 `user_content_encryption_keys`에 저장한다.
-4. 새 기기에서 SecureStore key가 없으면 Edge Function으로 content key를 복구한다.
-5. 복구된 key는 다시 SecureStore에 저장한다.
+실패 응답은 내부 삭제 단계와 secret 경계를 노출하지 않는다.
+Apple private key, service role key와 OAuth secret은 Edge Function secret으로만 관리한다.
 
-제한:
+## 기기 로컬 알림
 
-- 서버 DB table만으로 제목과 설명 평문을 복구할 수 없어야 한다.
-- Edge Function은 content key만 wrap/recover하고 제목/설명 ciphertext를 복호화하지 않는다.
-- strict E2EE는 아니다. 서버 실행 경계가 악의적이면 복구 순간 평문 접근 가능성이 있다.
+알림은 서버 데이터에서 계산해 현재 기기 OS에 예약하는 파생 상태다.
+동기화는 Ttokttak identifier를 가진 기존 예약과 원하는 후보를 비교해 달라진 항목만 취소하거나 추가한다.
 
-복구 감사:
+후보는 다음 조건을 모두 만족해야 한다.
 
-- `recover-content-key`는 호출 결과를 `content_key_recovery_audit_events`에 남긴다.
-- 감사 이벤트는 user, action, key version, 낮은 해상도 result만 저장한다.
-- 감사 이벤트는 제목, 설명, ciphertext, wrapped key, content key, exception message를 저장하지 않는다.
-- 감사 이벤트 table은 authenticated 사용자에게 직접 조회 권한을 주지 않는다.
-
-복호화 실패:
-
-- 목록에서 일정은 숨기지 않는다.
-- 제목은 복구 실패 fallback 문구로 표시한다.
-- 설명은 비워 둔다.
-- 상세 화면은 복구 실패 안내와 삭제 동작을 제공한다.
-- 로컬 알림 예약 대상에서는 제외한다.
-
-## Local Notifications
-
-알림은 Expo Notifications 기반 기기 로컬 알림이다.
-서버 원격 푸시는 사용하지 않는다.
-추후 필요하면 별도 작업으로 설계한다.
-
-예약 조건:
-
-- OS 알림 권한이 `granted`.
+- OS 권한이 허용됨.
 - 일정이 보관되지 않음.
-- 일정의 `notificationsEnabled`가 true.
-- 일정 내용이 복구 불가 상태가 아님.
-- occurrence 상태가 `scheduled`.
-- occurrence local date가 종료일 이하이거나 종료일이 없음.
+- 현재 규칙의 알림이 켜짐.
+- 일정 내용을 복구할 수 있음.
+- occurrence가 `scheduled`임.
+- occurrence가 종료일 이내임.
 
-예약 범위:
+완료일 기준 일정에 미해결 occurrence가 남아 있으면 다음 알림 후보를 만들지 않는다.
+기본 후보 범위는 현재부터 30일이며, 각 일정의 그 이후 첫 occurrence도 포함한다.
+기기 전체 예약 한도 안에서 최대 60개까지 가까운 시각을 우선한다.
 
-- 기본 범위는 현재부터 30일이다.
-- 각 일정의 다음 occurrence는 30일 밖이어도 후보에 추가한다.
-- pending notification 상한은 코드 기준 60개다.
-- 상한에 가까우면 예정 시각이 가까운 후보를 우선한다.
+identifier는 사용자, 일정과 occurrence 예정 시각을 포함한다.
+payload는 알림 종류와 일정 알림 source만 가진다.
+표시 내용은 복호화한 제목과 profile timezone 기준 예정 시각이며 설명은 포함하지 않는다.
 
-identifier:
+다음 변화는 현재 사용자의 전체 알림 동기화를 실행한다.
 
-```txt
-ttokttak:reminder:{userId}:{itemId}:{scheduledAtUtc}
-```
-
-payload:
-
-- `notificationKind = "reminder"`.
-- `source = "recurring-item"`.
-
-표시 content:
-
-- title: 복호화한 일정 제목.
-- body: 사용자 timezone 기준 예정 시각.
-- 설명은 알림에 넣지 않는다.
-
-## Notification Lifecycle
-
-전체 재동기화 trigger:
-
-- 세션 복원.
+- 세션, profile timezone 또는 표시 언어 변경.
 - 앱 foreground 복귀.
 - 알림 tap.
-- 표시 언어 변경.
+- 일정 생성, 수정 또는 보관.
+- occurrence 완료 또는 건너뛰기.
 
-범위 재동기화 trigger:
+세션이 없으면 현재 기기의 Ttokttak 알림을 모두 취소한다.
+동기화와 정리 실패는 기록하지만 사용자 동작이나 로그아웃을 되돌리지 않는다.
+알림 tap payload가 유효하면 홈으로 이동한다.
 
-- 일정 생성.
-- 일정 수정.
-- 일정 보관.
-- occurrence 완료.
-- occurrence 건너뛰기.
+## 표시 언어와 테마
 
-세션이 없으면 알림 tap 동기화를 보류한다.
-로그아웃 또는 세션 없음 상태가 되면 현재 기기의 Ttokttak 로컬 알림을 모두 취소한다.
-취소 실패는 Sentry에 기록하되 로그아웃 자체를 막지 않는다.
-기기 로컬 알림은 파생 예약 상태이므로 재동기화 실패 시 부분 rollback 모델을 만들지 않는다.
-재동기화 실패는 기록하고 다음 lifecycle trigger에서 다시 맞춘다.
+표시 언어와 테마 provider는 세션 밖에서 로그인 전후 화면을 모두 감싼다.
+설정은 현재 기기 저장소에 보존한다.
 
-## Notification Tap Routing
+선택한 표시 언어 초기화에 실패하면 한국어로 다시 시도한다.
+한국어 초기화도 실패하면 앱 진입 대신 재시도 화면을 보여준다.
+번역 resource는 모든 지원 언어 key를 가져야 한다.
+날짜 라이브러리 locale은 외부 adapter 경계에서만 사용한다.
 
-알림 tap은 payload를 검증한 뒤 `/home`으로 이동한다.
-지원하지 않는 payload는 navigation을 수행하지 않는다.
+테마 초기화에 실패하면 시스템 설정을 사용한다.
+화면은 정적 색상 대신 semantic theme token을 읽는다.
+일정 색상은 theme token과 분리해 모든 테마에서 같은 identity를 유지한다.
 
-## Security And Observability
+## 보안과 오류 수집
 
-앱 번들에는 `EXPO_PUBLIC_*` public env만 포함한다.
-service role key, private key, OAuth client secret, Sentry auth token은 앱 번들에 넣지 않는다.
+앱 번들에는 `EXPO_PUBLIC_*` public 설정만 넣는다.
+service role key, private key, OAuth client secret과 Sentry auth token은 앱 번들에 넣지 않는다.
 
-Sentry event는 오류 타입과 stack trace, symbolication 정보, release, environment, `feature`와 `reason` tag만 전송한다.
-오류 메시지, user, request, breadcrumb, context와 extra는 전송하지 않는다.
+Sentry event는 오류 타입, stack, release, environment와 허용한 tag만 전송한다.
+사용자 정보, request, breadcrumb, context, extra와 원본 오류 메시지는 전송하지 않는다.
 
-Edge Function secret은 Supabase 서버 실행 환경에만 둔다.
-`recover-content-key`와 `delete-account`는 JWT 검증을 켠 상태로 배포한다.
-두 함수는 인증된 `POST` 호출만 처리하고 응답에는 `Cache-Control: no-store`를 둔다.
-
-민감 Edge Function에는 공개 health check endpoint를 만들지 않는다.
-native 앱 호출 기준이므로 CORS `OPTIONS` 응답과 origin allowlist는 MVP에서 구현하지 않는다.
-Expo web 또는 공개 웹 자동 처리 요구가 생기면 CORS를 별도 범위로 추가한다.
-
-`recover-content-key`는 persistent 감사 이벤트와 사용자별 best-effort rate limit을 가진다.
-`delete-account`는 사용자별 best-effort rate limit을 가진다.
-두 rate limit은 Edge Function instance 메모리 기준이며 분산 전역 제한은 아니다.
-분산 제한이 필요하면 Redis 같은 외부 저장소 기반 제한을 별도 강화 범위로 둔다.
-
-## Operational Data Protection
-
-Supabase Postgres 백업은 출시 전 운영 확인 대상이다.
-운영 프로젝트는 자동 백업이 켜져 있어야 한다.
-
-PITR(Point-in-Time Recovery, 특정 시점 복구)은 권장 설정이다.
-PITR을 유료 기능으로만 사용할 수 있으면 첫 출시는 PITR 없이 진행할 수 있다.
-이 경우 Supabase Dashboard에서 최신 자동 백업 상태와 보존 기간을 확인한다.
-
-출시 전 확인 기록에는 다음을 남긴다.
-
-- 확인 일시.
-- Supabase project ref.
-- 자동 백업 상태.
-- 백업 보존 기간.
-- PITR 사용 여부.
-- PITR 미사용 사유.
-
-## Testing Guardrails
-
-현재 테스트는 다음 회귀를 확인한다.
-
-- 반복 규칙과 occurrence 계산.
-- 일정 수정 정책.
-- 일정 DB row와 RPC mapping.
-- 홈 occurrence action flow.
-- 로컬 알림 예약과 lifecycle.
-- 알림 tap routing.
-- 제거한 원격 푸시 코드 경로의 과거 식별자 재도입.
-- 제거한 content key 복구 정적 key의 과거 식별자 재도입.
-- 복구 감사 이벤트의 민감 정보 저장.
-- 표시 언어 초기화 실패가 blank screen으로 고정되지 않음.
-- resource key completeness처럼 구조 자체가 요구사항인 경우에만 소스 문자열 기반 테스트를 사용한다.
-- 테마 적용처럼 사용자-facing 동작은 구현 문자열 대신 provider로 실제 컴포넌트를 렌더링해 검증한다.
+민감 Edge Function은 인증된 `POST`만 처리하고 `Cache-Control: no-store`를 사용한다.
+native 앱 전용인 현재 범위에서는 공개 health endpoint와 CORS `OPTIONS`를 제공하지 않는다.
+웹 호출이 필요해질 때 origin 정책과 CORS를 함께 설계한다.
+복구와 계정 삭제 rate limit은 instance 메모리 기준의 best-effort 보호다.
+분산 제한이 필요해지면 외부 저장소 기반으로 별도 설계한다.

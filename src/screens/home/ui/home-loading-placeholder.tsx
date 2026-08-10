@@ -4,8 +4,9 @@ import { StyleSheet, View } from "react-native";
 import { useThemeColors } from "~/theme/provider";
 import { borderRadius, spacing } from "~/ui/tokens";
 
-const HOME_LOADING_PLACEHOLDER_ROW_COUNT = 3;
+const ROW_COUNT = 3;
 
+/** 세션과 첫 홈 조회를 기다리는 동안 고정 높이 placeholder를 표시한다. */
 export function HomeLoadingPlaceholder(): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useThemeColors();
@@ -22,38 +23,36 @@ export function HomeLoadingPlaceholder(): React.JSX.Element {
           { backgroundColor: themeColors.surface },
         ]}
       />
-      {Array.from({ length: HOME_LOADING_PLACEHOLDER_ROW_COUNT }).map(
-        (_, index) => (
+      {Array.from({ length: ROW_COUNT }).map((_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.placeholderRow,
+            { borderBottomColor: themeColors.divider },
+          ]}
+        >
           <View
-            key={index}
             style={[
-              styles.placeholderRow,
-              { borderBottomColor: themeColors.divider },
+              styles.placeholderIcon,
+              { backgroundColor: themeColors.surface },
             ]}
-          >
+          />
+          <View style={styles.placeholderCopy}>
             <View
               style={[
-                styles.placeholderIcon,
+                styles.placeholderTitle,
                 { backgroundColor: themeColors.surface },
               ]}
             />
-            <View style={styles.placeholderCopy}>
-              <View
-                style={[
-                  styles.placeholderTitle,
-                  { backgroundColor: themeColors.surface },
-                ]}
-              />
-              <View
-                style={[
-                  styles.placeholderBody,
-                  { backgroundColor: themeColors.surface },
-                ]}
-              />
-            </View>
+            <View
+              style={[
+                styles.placeholderBody,
+                { backgroundColor: themeColors.surface },
+              ]}
+            />
           </View>
-        )
-      )}
+        </View>
+      ))}
     </View>
   );
 }

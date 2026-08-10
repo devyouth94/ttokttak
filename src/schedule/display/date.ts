@@ -19,6 +19,10 @@ const localFormats = {
     input: "yyyy-MM-dd",
     output: { en: "MMM d, yyyy", ko: "yyyy년 M월 d일" },
   },
+  day: {
+    input: "yyyy-MM-dd",
+    output: { en: "d", ko: "d" },
+  },
   month: {
     input: "yyyy-MM",
     output: { en: "MMMM yyyy", ko: "yyyy년 M월" },

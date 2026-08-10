@@ -6,18 +6,14 @@ import {
   decryptContent,
   encryptContent,
 } from "~/schedule/content/cipher";
-import { type ColorKey, defaultColorKey } from "~/schedule/display/color";
-import { type EditScheduleInput, resolveEdit } from "~/schedule/rules/edit";
+import type { ColorKey } from "~/schedule/display/color";
 import type {
   AnchorType,
   RecurrenceType,
   RuleVersion,
 } from "~/schedule/rules/recurrence";
-import { assertInput } from "~/schedule/rules/validate";
 import type { CreateScheduleInput, Schedule } from "~/schedule/schedule";
 import { supabase } from "~/supabase";
-
-import { listItemLogs } from "./logs";
 
 type ItemRow = Database["public"]["Tables"]["recurring_items"]["Row"];
 type VersionRow =
@@ -27,16 +23,17 @@ type ItemWithVersionsRow = ItemRow & {
   recurring_item_schedule_versions?: VersionRow[] | null;
 };
 
-export type CreateItemInput = Omit<CreateScheduleInput, "colorKey"> & {
-  colorKey?: ColorKey;
+type CreateItemInput = CreateScheduleInput & {
   timezone: string;
   userId: string;
 };
 
-export type UpdateItemInput = {
+type UpdateItemInput = {
+  edit: {
+    item: Pick<CreateScheduleInput, "colorKey" | "description" | "title">;
+    version: RuleVersion | null;
+  };
   id: string;
-  patch: EditScheduleInput;
-  timezone: string;
   userId: string;
 };
 
@@ -165,16 +162,6 @@ export async function createItem(
   input: CreateItemInput,
   client: Client = supabase
 ): Promise<Schedule> {
-  const colorKey = input.colorKey ?? defaultColorKey;
-  const scheduleInput: CreateScheduleInput = {
-    ...input,
-    colorKey,
-    endDateLocal:
-      input.recurrenceType === "once" ? null : (input.endDateLocal ?? null),
-  };
-
-  assertInput(scheduleInput);
-
   const content = await encryptContent({
     description: input.description ?? null,
     title: input.title,
@@ -184,7 +171,7 @@ export async function createItem(
     "create_recurring_item_with_initial_version",
     {
       p_anchor_type: input.anchorType,
-      p_color_key: colorKey,
+      p_color_key: input.colorKey,
       p_content_encryption_metadata: content.metadata,
       p_content_key_version: content.keyVersion,
       p_description_ciphertext: content.descriptionCiphertext,
@@ -192,17 +179,17 @@ export async function createItem(
         `${input.startDateLocal}T00:00:00.000`,
         input.timezone
       ).toISOString(),
-      p_end_date_local: scheduleInput.endDateLocal,
-      p_interval_value: scheduleInput.intervalValue,
+      p_end_date_local: input.endDateLocal,
+      p_interval_value: input.intervalValue,
       p_is_archived: false,
-      p_notifications_enabled: scheduleInput.notificationsEnabled,
-      p_recurrence_type: scheduleInput.recurrenceType,
-      p_reminder_time_local: scheduleInput.reminderTimeLocal,
+      p_notifications_enabled: input.notificationsEnabled,
+      p_recurrence_type: input.recurrenceType,
+      p_reminder_time_local: input.reminderTimeLocal,
       p_seed_start_date_local: input.startDateLocal,
-      p_start_date_local: scheduleInput.startDateLocal,
+      p_start_date_local: input.startDateLocal,
       p_title_ciphertext: content.titleCiphertext,
       p_user_id: input.userId,
-      p_weekday_mask: scheduleInput.weekdayMask,
+      p_weekday_mask: input.weekdayMask,
     }
   );
 
@@ -218,60 +205,35 @@ export async function updateItem(
   input: UpdateItemInput,
   client: Client = supabase
 ): Promise<Schedule> {
-  const existing = await getItem(
-    { id: input.id, userId: input.userId },
-    client
-  );
-
-  if (existing.contentStatus === "unrecoverable") {
-    throw new Error("내용을 복구할 수 없는 일정은 수정할 수 없습니다.");
-  }
-
-  const edit = resolveEdit({
-    completionLogs: await listItemLogs(
-      { itemId: input.id, userId: input.userId },
-      client
-    ),
-    input: input.patch,
-    item: existing,
-    now: new Date(),
-    timezone: input.timezone,
+  const { item, version } = input.edit;
+  const content = await encryptContent({
+    description: item.description ?? null,
+    title: item.title,
+    userId: input.userId,
+  });
+  const { error } = await client.rpc("update_recurring_item_with_edit_policy", {
+    p_anchor_type: version?.anchorType ?? null,
+    p_color_key: item.colorKey,
+    p_content_encryption_metadata: content.metadata,
+    p_content_key_version: content.keyVersion,
+    p_description_ciphertext: content.descriptionCiphertext,
+    p_effective_from_utc: version?.effectiveFromUtc ?? null,
+    p_end_date_local: version?.endDateLocal ?? null,
+    p_has_rule_changes: version !== null,
+    p_interval_value: version?.intervalValue ?? null,
+    p_is_archived: false,
+    p_item_id: input.id,
+    p_notifications_enabled: version?.notificationsEnabled ?? null,
+    p_recurrence_type: version?.recurrenceType ?? null,
+    p_reminder_time_local: version?.reminderTimeLocal ?? null,
+    p_seed_start_date_local: version?.seedStartDateLocal ?? null,
+    p_title_ciphertext: content.titleCiphertext,
+    p_user_id: input.userId,
+    p_weekday_mask: version?.weekdayMask ?? null,
   });
 
-  if (edit) {
-    const { item, version } = edit;
-    const content = await encryptContent({
-      description: item.description ?? null,
-      title: item.title,
-      userId: input.userId,
-    });
-    const { error } = await client.rpc(
-      "update_recurring_item_with_edit_policy",
-      {
-        p_anchor_type: version?.anchorType ?? null,
-        p_color_key: item.colorKey,
-        p_content_encryption_metadata: content.metadata,
-        p_content_key_version: content.keyVersion,
-        p_description_ciphertext: content.descriptionCiphertext,
-        p_effective_from_utc: version?.effectiveFromUtc ?? null,
-        p_end_date_local: version?.endDateLocal ?? null,
-        p_has_rule_changes: version !== null,
-        p_interval_value: version?.intervalValue ?? null,
-        p_is_archived: existing.isArchived,
-        p_item_id: input.id,
-        p_notifications_enabled: version?.notificationsEnabled ?? null,
-        p_recurrence_type: version?.recurrenceType ?? null,
-        p_reminder_time_local: version?.reminderTimeLocal ?? null,
-        p_seed_start_date_local: version?.seedStartDateLocal ?? null,
-        p_title_ciphertext: content.titleCiphertext,
-        p_user_id: input.userId,
-        p_weekday_mask: version?.weekdayMask ?? null,
-      }
-    );
-
-    if (error) {
-      throw error;
-    }
+  if (error) {
+    throw error;
   }
 
   return getItem({ id: input.id, userId: input.userId }, client);

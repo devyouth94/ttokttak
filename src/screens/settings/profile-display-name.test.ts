@@ -6,21 +6,14 @@ import {
 describe("settings profile display name", () => {
   it("공백만 있는 이름은 저장하지 않는다", () => {
     expect(validateProfileDisplayName("   ")).toEqual({
-      errorMessage: "이름을 입력해 주세요.",
+      errorMessage: "empty",
       value: null,
     });
   });
 
   it("30자를 넘는 이름은 저장하지 않는다", () => {
     expect(validateProfileDisplayName("가".repeat(31))).toEqual({
-      errorMessage: "이름은 30자 이하로 입력해 주세요.",
-      value: null,
-    });
-  });
-
-  it("English 표시 언어에서는 English 검증 문구를 반환한다", () => {
-    expect(validateProfileDisplayName("   ", "en")).toEqual({
-      errorMessage: "Enter a name.",
+      errorMessage: "tooLong",
       value: null,
     });
   });
