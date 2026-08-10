@@ -12,9 +12,9 @@
 
 - Expo production project에 로그인한다.
 - iOS는 올바른 Apple Developer와 App Store Connect 앱을 사용한다.
-- Android는 `devyouth94@gmail.com`의 Play Console과 Google Cloud `ttokttak` 프로젝트만 사용한다.
-- Today Square 계정에는 Ttokttak 앱이나 권한을 만들지 않는다.
-- Android 제출 서비스 계정은 `ttokttak-play-submit@ttokttak.iam.gserviceaccount.com`이다.
+- Android는 똑딱 전용 Play Console과 Google Cloud project만 사용한다.
+- 다른 제품 계정이나 project와 권한을 공유하지 않는다.
+- Android 제출은 똑딱 전용 service account를 사용한다.
 - App Store Connect API key와 Google service account JSON은 EAS credential로 관리한다.
 - private key와 credential 파일 내용이나 로컬 경로는 git, 문서, 이슈와 로그에 남기지 않는다.
 - iOS production EAS 환경에는 `GOOGLE_AUTH_IOS_URL_SCHEME`을 설정한다.

@@ -13,9 +13,12 @@ type AppleTokenResponse = {
   id_token?: string;
   refresh_token?: string;
 };
-type AppleTokenRevokeResult = {
+type AppleTokenExchangeResult = {
   appleSubject: string | null;
-  ok: boolean;
+  clientId: string;
+  clientSecret: string;
+  token: string;
+  tokenTypeHint: "access_token" | "refresh_token";
 };
 
 const deleteAccountRequestBuckets = new Map<
@@ -285,16 +288,16 @@ async function createAppleClientSecret({
   return `${signingInput}.${base64UrlEncode(signature)}`;
 }
 
-async function revokeAppleAuthorizationCode(
+async function exchangeAppleAuthorizationCode(
   authorizationCode: string
-): Promise<AppleTokenRevokeResult> {
+): Promise<AppleTokenExchangeResult | null> {
   const teamId = Deno.env.get("APPLE_TEAM_ID");
   const keyId = Deno.env.get("APPLE_KEY_ID");
   const clientId = Deno.env.get("APPLE_CLIENT_ID");
   const privateKey = Deno.env.get("APPLE_PRIVATE_KEY");
 
   if (!teamId || !keyId || !clientId || !privateKey) {
-    return { appleSubject: null, ok: false };
+    return null;
   }
 
   const clientSecret = await createAppleClientSecret({
@@ -317,7 +320,7 @@ async function revokeAppleAuthorizationCode(
   });
 
   if (!tokenResponse.ok) {
-    return { appleSubject: null, ok: false };
+    return null;
   }
 
   const tokenBody = (await tokenResponse
@@ -330,15 +333,27 @@ async function revokeAppleAuthorizationCode(
     : "access_token";
 
   if (!token) {
-    return { appleSubject, ok: false };
+    return null;
   }
 
+  return {
+    appleSubject,
+    clientId,
+    clientSecret,
+    token,
+    tokenTypeHint,
+  };
+}
+
+async function revokeAppleToken(
+  exchangeResult: AppleTokenExchangeResult
+): Promise<boolean> {
   const revokeResponse = await fetch("https://appleid.apple.com/auth/revoke", {
     body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      token,
-      token_type_hint: tokenTypeHint,
+      client_id: exchangeResult.clientId,
+      client_secret: exchangeResult.clientSecret,
+      token: exchangeResult.token,
+      token_type_hint: exchangeResult.tokenTypeHint,
     }),
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -346,7 +361,7 @@ async function revokeAppleAuthorizationCode(
     method: "POST",
   });
 
-  return { appleSubject, ok: revokeResponse.ok };
+  return revokeResponse.ok;
 }
 
 export async function handleDeleteAccountRequest(
@@ -404,21 +419,25 @@ export async function handleDeleteAccountRequest(
   }
 
   if (shouldRevokeAppleToken && body.appleAuthorizationCode) {
-    const revokeResult = await revokeAppleAuthorizationCode(
+    const exchangeResult = await exchangeAppleAuthorizationCode(
       body.appleAuthorizationCode
     );
 
-    if (!revokeResult.ok) {
+    if (!exchangeResult) {
       return jsonResponse({ error: "apple_revoke_failed" }, 502);
     }
 
     if (
       !isMatchingAppleSubject({
-        appleSubject: revokeResult.appleSubject,
+        appleSubject: exchangeResult.appleSubject,
         user,
       })
     ) {
       return jsonResponse({ error: "apple_identity_mismatch" }, 403);
+    }
+
+    if (!(await revokeAppleToken(exchangeResult))) {
+      return jsonResponse({ error: "apple_revoke_failed" }, 502);
     }
   }
 

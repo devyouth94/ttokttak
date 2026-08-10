@@ -119,4 +119,22 @@ describe("content key DB", () => {
       /grant\s+(select|insert|update|delete|all)[^;]+content_key_recovery_audit_events[^;]+to\s+authenticated/i
     );
   });
+
+  it("wrapped key는 사용자와 version에 결합하고 클라이언트 변경을 막는다", () => {
+    const schema = readFileSync(
+      `${process.cwd()}/docs/database/DATABASE.sql`,
+      "utf8"
+    );
+
+    expect(schema).toContain("wrap_metadata->>'keySource' = 'edge-secret-v2'");
+    expect(schema).toContain(
+      "wrap_metadata->>'binding' = 'user-key-version-v1'"
+    );
+    expect(schema).toContain(
+      "create or replace function public.guard_user_content_encryption_key_write()"
+    );
+    expect(schema).toContain(
+      "before insert or update on public.user_content_encryption_keys"
+    );
+  });
 });

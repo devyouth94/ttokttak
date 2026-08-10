@@ -9,11 +9,15 @@
 
 사용자별 content key를 인증된 Supabase Edge Function과 Edge secret으로 wrap하고 복구한다.
 앱 정적 wrapping key는 사용하지 않는다.
+새 wrapped key는 사용자 ID와 key version을 AES-GCM additional data로 결합한다.
 
 ## 결과
 
 - 앱은 AES-GCM content key를 SecureStore에 보관한다.
 - 서버 DB에는 wrapped key만 저장한다.
+- Edge Function만 wrapped key를 만들거나 변경한다.
+- 구버전 앱의 동일한 wrapped key upsert는 호환을 위해 허용한다.
+- 기존 형식은 변경할 수 없게 보호하고 정상 복구 시 사용자 결합 형식으로 다시 wrap한다.
 - Edge Function은 content key만 다루고 일정 암호문은 복호화하지 않는다.
 - 복구 결과는 key와 평문 없이 낮은 해상도 감사 이벤트로 남긴다.
 - 감사 이벤트는 별도 TTL 없이 유지하고 사용자가 계정을 삭제하면 wrapped key와 함께 삭제한다.

@@ -22,7 +22,13 @@ type Database = {
         Update: never;
       };
       user_content_encryption_keys: {
-        Insert: never;
+        Insert: {
+          key_version: number;
+          user_id: string;
+          wrap_algorithm: string;
+          wrap_metadata: JsonRecord;
+          wrapped_key: string;
+        };
         Relationships: [];
         Row: UserContentEncryptionKeyRow & {
           key_version: number;
@@ -62,6 +68,11 @@ type TtokttakSupabaseClient = SupabaseClient<Database>;
 
 const wrapAlgorithm = "AES-GCM";
 const wrapMetadata = {
+  binding: "user-key-version-v1",
+  encoding: "combined-base64",
+  keySource: "edge-secret-v2",
+};
+const legacyWrapMetadata = {
   encoding: "combined-base64",
   keySource: "edge-secret-v1",
 };
@@ -116,16 +127,35 @@ function getWrappingKey(): Promise<CryptoKey> {
   );
 }
 
-async function encryptContentKey(encodedKey: string): Promise<string> {
+function getAdditionalData(
+  userId: string,
+  keyVersion: number
+): Uint8Array<ArrayBuffer> {
+  const encoded = new TextEncoder().encode(
+    JSON.stringify(["ttokttak-content-key", userId, keyVersion])
+  );
+  const bytes = new Uint8Array(new ArrayBuffer(encoded.length));
+
+  bytes.set(encoded);
+
+  return bytes;
+}
+
+async function encryptContentKey(input: {
+  encodedKey: string;
+  keyVersion: number;
+  userId: string;
+}): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = new Uint8Array(
     await crypto.subtle.encrypt(
       {
+        additionalData: getAdditionalData(input.userId, input.keyVersion),
         iv,
         name: "AES-GCM",
       },
       await getWrappingKey(),
-      new TextEncoder().encode(encodedKey)
+      new TextEncoder().encode(input.encodedKey)
     )
   );
   const combined = new Uint8Array(
@@ -138,15 +168,21 @@ async function encryptContentKey(encodedKey: string): Promise<string> {
   return encodeBase64(combined);
 }
 
-async function decryptContentKey(wrappedKey: string): Promise<string> {
-  const combined = decodeBase64(wrappedKey);
+async function decryptContentKey(input: {
+  additionalData?: Uint8Array<ArrayBuffer>;
+  wrappedKey: string;
+}): Promise<string> {
+  const combined = decodeBase64(input.wrappedKey);
   const iv = combined.slice(0, 12);
   const encrypted = combined.slice(12);
+  const algorithm: AesGcmParams = { iv, name: "AES-GCM" };
+
+  if (input.additionalData) {
+    algorithm.additionalData = input.additionalData;
+  }
+
   const decrypted = await crypto.subtle.decrypt(
-    {
-      iv,
-      name: "AES-GCM",
-    },
+    algorithm,
     await getWrappingKey(),
     encrypted
   );
@@ -234,6 +270,31 @@ async function recordRecoveryAuditEvent(params: {
   }
 }
 
+async function saveWrappedContentKey(params: {
+  adminClient: TtokttakSupabaseClient;
+  keyVersion: number;
+  userId: string;
+  wrappedKey: string;
+}): Promise<void> {
+  const { adminClient, keyVersion, userId, wrappedKey } = params;
+  const { error } = await adminClient
+    .from("user_content_encryption_keys")
+    .upsert(
+      {
+        key_version: keyVersion,
+        user_id: userId,
+        wrap_algorithm: wrapAlgorithm,
+        wrap_metadata: wrapMetadata,
+        wrapped_key: wrappedKey,
+      },
+      { onConflict: "user_id,key_version" }
+    );
+
+  if (error) {
+    throw error;
+  }
+}
+
 function checkRateLimit(userId: string): boolean {
   const now = Date.now();
   const bucket = requestBuckets.get(userId);
@@ -292,7 +353,7 @@ export async function handleRecoverContentKeyRequest(
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 
-  const auditClient = createClient<Database>(
+  const adminClient = createClient<Database>(
     supabaseUrl,
     supabaseServiceRoleKey
   );
@@ -310,7 +371,7 @@ export async function handleRecoverContentKeyRequest(
     try {
       await recordRecoveryAuditEvent({
         action: auditAction,
-        auditClient,
+        auditClient: adminClient,
         keyVersion: auditKeyVersion,
         result,
         userId,
@@ -323,7 +384,7 @@ export async function handleRecoverContentKeyRequest(
   }
 
   if (!checkRateLimit(userId)) {
-    return recordAndRespond("rate_limited", { error: "rate_limited" }, 429);
+    return jsonResponse({ error: "rate_limited" }, 429);
   }
 
   if (!isRequestBody(body)) {
@@ -342,10 +403,23 @@ export async function handleRecoverContentKeyRequest(
 
   try {
     if (body.action === "wrap") {
+      const wrappedKey = await encryptContentKey({
+        encodedKey: body.encodedKey,
+        keyVersion: body.keyVersion,
+        userId,
+      });
+
+      await saveWrappedContentKey({
+        adminClient,
+        keyVersion: body.keyVersion,
+        userId,
+        wrappedKey,
+      });
+
       return recordAndRespond("success", {
         wrapAlgorithm,
         wrapMetadata,
-        wrappedKey: await encryptContentKey(body.encodedKey),
+        wrappedKey,
       });
     }
 
@@ -364,9 +438,37 @@ export async function handleRecoverContentKeyRequest(
       return recordAndRespond("success", { encodedKey: null });
     }
 
+    if (data.wrap_algorithm !== wrapAlgorithm) {
+      return recordAndRespond(
+        "denied",
+        { error: "unsupported_wrapped_key" },
+        422
+      );
+    }
+
+    if (data.wrap_metadata?.keySource === legacyWrapMetadata.keySource) {
+      const encodedKey = await decryptContentKey({
+        wrappedKey: data.wrapped_key,
+      });
+      const wrappedKey = await encryptContentKey({
+        encodedKey,
+        keyVersion: body.keyVersion,
+        userId,
+      });
+
+      await saveWrappedContentKey({
+        adminClient,
+        keyVersion: body.keyVersion,
+        userId,
+        wrappedKey,
+      });
+
+      return recordAndRespond("success", { encodedKey });
+    }
+
     if (
-      data.wrap_algorithm !== wrapAlgorithm ||
-      data.wrap_metadata?.keySource !== wrapMetadata.keySource
+      data.wrap_metadata?.keySource !== wrapMetadata.keySource ||
+      data.wrap_metadata?.binding !== wrapMetadata.binding
     ) {
       return recordAndRespond(
         "denied",
@@ -376,7 +478,10 @@ export async function handleRecoverContentKeyRequest(
     }
 
     return recordAndRespond("success", {
-      encodedKey: await decryptContentKey(data.wrapped_key),
+      encodedKey: await decryptContentKey({
+        additionalData: getAdditionalData(userId, body.keyVersion),
+        wrappedKey: data.wrapped_key,
+      }),
     });
   } catch {
     return recordAndRespond("server_error", { error: "server_error" }, 500);

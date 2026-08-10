@@ -64,3 +64,10 @@ Apple 계정 삭제에는 다음 secret도 필요합니다.
 - [의존성 보안 점검](docs/security/DEPENDENCY_AUDIT.md)
 
 에이전트 작업 규칙은 [AGENTS.md](AGENTS.md)를 따릅니다.
+
+## 공개 범위
+
+이 저장소는 소스 열람 목적으로 공개합니다.
+별도 라이선스를 부여하지 않으며 외부 Issue와 PR을 받지 않습니다.
+
+번들된 Pretendard는 [SIL Open Font License 1.1](assets/fonts/pretendard/LICENSE)을 따릅니다.

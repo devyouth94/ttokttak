@@ -105,18 +105,22 @@ content key 흐름은 다음과 같다.
 
 1. 앱은 SecureStore에서 content key를 읽거나 새로 만든다.
 2. Edge Function은 서버 secret으로 content key를 wrap한다.
-3. wrapped key는 사용자 소유 row로 저장한다.
-4. 새 기기에서 SecureStore key가 없으면 인증된 Edge Function 호출로 복구한다.
-5. 복구한 key는 현재 기기 SecureStore에 저장한다.
+3. 사용자 ID와 key version은 AES-GCM additional data로 결합한다.
+4. Edge Function이 wrapped key를 사용자 소유 row로 저장한다.
+5. 새 기기에서 SecureStore key가 없으면 인증된 Edge Function 호출로 복구한다.
+6. 복구한 key는 현재 기기 SecureStore에 저장한다.
 
 기존 SecureStore key에 대응하는 wrapped key가 서버에 없으면 현재 key를 wrap해 서버 row를 보충한다.
 기기 key로 복호화하지 못하면 서버 key를 복구해 한 번 다시 시도한다.
+기존 사용자 결합 전 wrapped key는 클라이언트가 변경하지 못하게 보호한다.
+정상 복구하면 사용자 결합 형식으로 다시 wrap해 같은 row에 저장한다.
 
 서버 DB table만으로 content key와 제목·설명 평문을 복구할 수 없어야 한다.
 Edge Function은 content key만 wrap하거나 recover하며 일정 암호문을 복호화하지 않는다.
 이 구조는 서버 실행 경계를 신뢰하므로 strict E2EE가 아니다.
 
 복구 호출은 사용자, 동작, key version과 낮은 해상도 결과만 감사 이벤트로 남긴다.
+요청 한도를 넘긴 호출은 DB 감사 이벤트를 추가하지 않는다.
 평문, content key, wrapped key, 암호문과 내부 예외 메시지는 기록하지 않는다.
 감사 이벤트는 authenticated 사용자가 직접 조회할 수 없다.
 
