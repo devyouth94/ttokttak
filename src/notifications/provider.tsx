@@ -1,7 +1,17 @@
 import type { PropsWithChildren } from "react";
-import { createContext, use, useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { AppState, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { z } from "zod";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { captureException } from "~/sentry";
@@ -14,8 +24,35 @@ import {
 import { NotificationResponse } from "./response";
 import {
   cancelNotifications,
+  NotificationSyncError,
+  notificationSyncStages,
   syncNotifications as syncDeviceNotifications,
 } from "./sync";
+
+const DIAGNOSTICS_STORAGE_KEY = "ttokttak:notification-diagnostics";
+
+const diagnosticsSchema = z.object({
+  failure: z
+    .object({
+      at: z.iso.datetime(),
+      stage: z.enum([...notificationSyncStages, "unknown"]),
+    })
+    .nullable(),
+  success: z
+    .object({
+      at: z.iso.datetime(),
+      candidateCount: z.number().int().nonnegative(),
+      pendingCount: z.number().int().nonnegative(),
+    })
+    .nullable(),
+});
+
+export type NotificationDiagnostics = z.infer<typeof diagnosticsSchema>;
+
+const initialDiagnostics: NotificationDiagnostics = {
+  failure: null,
+  success: null,
+};
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -27,6 +64,7 @@ Notifications.setNotificationHandler({
 });
 
 type NotificationValue = {
+  diagnostics: NotificationDiagnostics;
   isPermissionLoading: boolean;
   isRequestingPermission: boolean;
   openSettings: () => Promise<void>;
@@ -58,8 +96,78 @@ export function NotificationProvider({
   const { language } = useAppLanguage();
 
   const [permission, setPermission] = useState(initialPermission);
+  const [diagnostics, setDiagnostics] = useState(initialDiagnostics);
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const diagnosticsRef = useRef(initialDiagnostics);
+  const diagnosticsOwnerRevisionRef = useRef(0);
+  const diagnosticsRevisionRef = useRef(0);
+  const diagnosticsStorageRef = useRef(Promise.resolve());
+  const previousUserIdRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    diagnosticsOwnerRevisionRef.current += 1;
+  }, [userId]);
+
+  const reportStorageError = useCallback((error: unknown): void => {
+    captureException(error, {
+      tags: { feature: "notification-diagnostics-storage" },
+    });
+  }, []);
+
+  const queueDiagnosticsStorage = useCallback(
+    (operation: () => Promise<void>): void => {
+      diagnosticsStorageRef.current = diagnosticsStorageRef.current
+        .then(operation)
+        .catch(reportStorageError);
+    },
+    [reportStorageError]
+  );
+
+  const saveDiagnostics = useCallback(
+    (next: NotificationDiagnostics): void => {
+      diagnosticsRevisionRef.current += 1;
+      diagnosticsRef.current = next;
+      setDiagnostics(next);
+      queueDiagnosticsStorage(() =>
+        AsyncStorage.setItem(DIAGNOSTICS_STORAGE_KEY, JSON.stringify(next))
+      );
+    },
+    [queueDiagnosticsStorage]
+  );
+
+  const clearDiagnostics = useCallback((): void => {
+    diagnosticsRevisionRef.current += 1;
+    diagnosticsRef.current = initialDiagnostics;
+    setDiagnostics(initialDiagnostics);
+    queueDiagnosticsStorage(() =>
+      AsyncStorage.removeItem(DIAGNOSTICS_STORAGE_KEY)
+    );
+  }, [queueDiagnosticsStorage]);
+
+  // 원문 오류나 사용자·일정 식별자를 포함하지 않은 최근 결과만 복원한다.
+  useEffect(() => {
+    let isMounted = true;
+
+    void AsyncStorage.getItem(DIAGNOSTICS_STORAGE_KEY)
+      .then((stored) => {
+        if (!isMounted || !stored) {
+          return;
+        }
+
+        const parsed = diagnosticsSchema.safeParse(JSON.parse(stored));
+
+        if (parsed.success && diagnosticsRevisionRef.current === 0) {
+          diagnosticsRef.current = parsed.data;
+          setDiagnostics(parsed.data);
+        }
+      })
+      .catch(reportStorageError);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reportStorageError]);
 
   /** 앱 시작과 foreground 복귀 때 권한 상태를 다시 읽는다. */
   const refreshPermission = useCallback(async (): Promise<Permission> => {
@@ -93,8 +201,37 @@ export function NotificationProvider({
       return;
     }
 
-    await syncDeviceNotifications({ language, timezone, userId });
-  }, [language, timezone, userId]);
+    const ownerRevision = diagnosticsOwnerRevisionRef.current;
+
+    try {
+      const result = await syncDeviceNotifications({
+        language,
+        timezone,
+        userId,
+      });
+
+      if (result && ownerRevision === diagnosticsOwnerRevisionRef.current) {
+        saveDiagnostics({
+          ...diagnosticsRef.current,
+          success: { ...result, at: new Date().toISOString() },
+        });
+      }
+    } catch (error) {
+      if (ownerRevision !== diagnosticsOwnerRevisionRef.current) {
+        return;
+      }
+
+      saveDiagnostics({
+        ...diagnosticsRef.current,
+        failure: {
+          at: new Date().toISOString(),
+          stage:
+            error instanceof NotificationSyncError ? error.stage : "unknown",
+        },
+      });
+      throw error;
+    }
+  }, [language, saveDiagnostics, timezone, userId]);
 
   /** lifecycle 동기화 실패를 기록하고 사용자 흐름은 계속 진행한다. */
   const syncSafely = useCallback(
@@ -154,15 +291,24 @@ export function NotificationProvider({
 
   // 로그인 상태에서는 전체 동기화하고, 로그아웃 상태에서는 앱 알림을 지운다.
   useEffect(() => {
+    const previousUserId = previousUserIdRef.current;
+
+    if (previousUserId && previousUserId !== userId) {
+      clearDiagnostics();
+    }
+
+    previousUserIdRef.current = userId ?? null;
+
     if (userId) {
       void syncSafely("local-notification-context-sync");
       return;
     }
 
     void cancelSafely();
-  }, [cancelSafely, syncSafely, userId]);
+  }, [cancelSafely, clearDiagnostics, syncSafely, userId]);
 
   const value: NotificationValue = {
+    diagnostics,
     isPermissionLoading,
     isRequestingPermission,
     openSettings: Linking.openSettings,
