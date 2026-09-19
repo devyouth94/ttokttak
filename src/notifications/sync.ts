@@ -3,9 +3,10 @@ import * as Notifications from "expo-notifications";
 import type { AppLanguage } from "~/i18n/language";
 import { listItems } from "~/schedule/db/items";
 import { listLogs } from "~/schedule/db/logs";
+import { captureException } from "~/sentry";
 import { supabase } from "~/supabase";
 
-import { type Candidate, getCandidates } from "./candidates";
+import { type Candidate, getBadgeCounts, getCandidates } from "./candidates";
 import { getPermission } from "./permission";
 
 const PREFIX = "ttokttak:reminder:";
@@ -46,6 +47,7 @@ export class NotificationSyncError extends Error {
 }
 
 type Reminder = Candidate & {
+  badgeCount: number;
   identifier: string;
 };
 
@@ -75,6 +77,9 @@ async function loadNotificationData(userId: string) {
  */
 async function applyCandidates(
   candidates: Candidate[],
+  data: Awaited<ReturnType<typeof loadNotificationData>>,
+  now: Date,
+  timezone: string,
   userId: string
 ): Promise<number> {
   const requests = await runStage("list-scheduled", () =>
@@ -87,7 +92,7 @@ async function applyCandidates(
     0,
     MAX_NOTIFICATIONS - (requests.length - existing.length)
   );
-  const wanted: Reminder[] = candidates
+  const wantedCandidates = candidates
     .map((candidate) => ({
       ...candidate,
       identifier: `${PREFIX}${userId}:${candidate.itemId}:${candidate.scheduledAtUtc}`,
@@ -96,6 +101,26 @@ async function applyCandidates(
       left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
     )
     .slice(0, available);
+  const badgeCounts = getBadgeCounts({
+    completionLogs: data.completionLogs,
+    items: data.items,
+    times: [
+      now,
+      ...wantedCandidates.map(({ scheduledAtUtc }) => new Date(scheduledAtUtc)),
+    ],
+    timezone,
+  });
+  reportFailures(
+    await Promise.allSettled([
+      Notifications.setBadgeCountAsync(badgeCounts.get(now.toISOString()) ?? 0),
+      dismissStaleNotifications(data, userId),
+    ]),
+    "app-icon-badge-sync"
+  );
+  const wanted: Reminder[] = wantedCandidates.map((reminder) => ({
+    ...reminder,
+    badgeCount: badgeCounts.get(reminder.scheduledAtUtc) ?? 0,
+  }));
   const wantedById = new Map(
     wanted.map((reminder) => [reminder.identifier, reminder])
   );
@@ -106,6 +131,7 @@ async function applyCandidates(
 
         return (
           reminder !== undefined &&
+          request.content.badge === reminder.badgeCount &&
           request.content.body === reminder.body &&
           request.content.title === reminder.title
         );
@@ -131,6 +157,7 @@ async function applyCandidates(
     await runStage("schedule", () =>
       Notifications.scheduleNotificationAsync({
         content: {
+          badge: reminder.badgeCount,
           body: reminder.body,
           data: {
             notificationKind: "reminder",
@@ -170,6 +197,47 @@ async function applyCandidates(
   }
 
   return wanted.length;
+}
+
+/** 처리됐거나 현재 사용자에게 속하지 않는 표시 알림을 제거한다. */
+async function dismissStaleNotifications(
+  data: Awaited<ReturnType<typeof loadNotificationData>>,
+  userId: string
+): Promise<void> {
+  const ownerPrefix = `${PREFIX}${userId}:`;
+  const activeItemPrefixes = data.items.map(
+    (item) => `${ownerPrefix}${item.id}:`
+  );
+  const handledIds = new Set(
+    data.completionLogs.map(
+      (log) => `${ownerPrefix}${log.itemId}:${log.scheduledAtUtc}`
+    )
+  );
+  const notifications = await Notifications.getPresentedNotificationsAsync();
+
+  await Promise.all(
+    notifications
+      .map(({ request }) => request.identifier)
+      .filter(
+        (identifier) =>
+          identifier.startsWith(PREFIX) &&
+          (!identifier.startsWith(ownerPrefix) ||
+            handledIds.has(identifier) ||
+            !activeItemPrefixes.some((prefix) => identifier.startsWith(prefix)))
+      )
+      .map((identifier) => Notifications.dismissNotificationAsync(identifier))
+  );
+}
+
+function reportFailures(
+  results: PromiseSettledResult<unknown>[],
+  feature: string
+): void {
+  for (const result of results) {
+    if (result.status === "rejected") {
+      captureException(result.reason, { tags: { feature } });
+    }
+  }
 }
 
 /** Provider가 세션·언어·timezone 변화와 mutation 뒤 호출하는 전체 동기화 진입점이다. */
@@ -214,16 +282,23 @@ export async function syncNotifications(params: {
   }
 
   const { completionLogs, items } = data;
+  const now = new Date();
   const candidates = await runStage("candidates", () =>
     getCandidates({
       completionLogs,
       items,
       language: params.language,
-      now: new Date(),
+      now,
       timezone: params.timezone,
     })
   );
-  const pendingCount = await applyCandidates(candidates, params.userId);
+  const pendingCount = await applyCandidates(
+    candidates,
+    data,
+    now,
+    params.timezone,
+    params.userId
+  );
 
   return {
     candidateCount: candidates.length,
@@ -246,13 +321,30 @@ async function runStage<T>(
   }
 }
 
-/** 로그아웃과 계정 삭제 뒤 현재 기기의 모든 똑딱 알림을 취소한다. */
+/** 로그아웃과 계정 삭제 뒤 현재 기기의 모든 똑딱 알림과 뱃지를 정리한다. */
 export async function cancelNotifications(): Promise<void> {
-  const requests = await Notifications.getAllScheduledNotificationsAsync();
-
-  for (const request of requests) {
-    if (request.identifier.startsWith(PREFIX)) {
-      await Notifications.cancelScheduledNotificationAsync(request.identifier);
-    }
-  }
+  reportFailures(
+    await Promise.allSettled([
+      Notifications.getAllScheduledNotificationsAsync().then((requests) =>
+        Promise.all(
+          requests
+            .filter((request) => request.identifier.startsWith(PREFIX))
+            .map((request) =>
+              Notifications.cancelScheduledNotificationAsync(request.identifier)
+            )
+        )
+      ),
+      Notifications.getPresentedNotificationsAsync().then((notifications) =>
+        Promise.all(
+          notifications
+            .filter(({ request }) => request.identifier.startsWith(PREFIX))
+            .map(({ request }) =>
+              Notifications.dismissNotificationAsync(request.identifier)
+            )
+        )
+      ),
+      Notifications.setBadgeCountAsync(0),
+    ]),
+    "local-notification-cleanup"
+  );
 }

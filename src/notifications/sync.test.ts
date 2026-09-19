@@ -2,10 +2,12 @@ import * as Notifications from "expo-notifications";
 
 import { listItems } from "~/schedule/db/items";
 import { listLogs } from "~/schedule/db/logs";
+import { logFixture, scheduleFixture } from "~/schedule/fixtures";
+import { captureException } from "~/sentry";
 import { supabase } from "~/supabase";
 
 import type { Candidate } from "./candidates";
-import { getCandidates } from "./candidates";
+import { getBadgeCounts, getCandidates } from "./candidates";
 import { getPermission } from "./permission";
 import {
   cancelNotifications,
@@ -17,15 +19,22 @@ jest.mock("expo-notifications", () => ({
   AndroidNotificationPriority: { HIGH: "high" },
   SchedulableTriggerInputTypes: { DATE: "date" },
   cancelScheduledNotificationAsync: jest.fn(),
+  dismissNotificationAsync: jest.fn(),
   getAllScheduledNotificationsAsync: jest.fn(),
+  getPresentedNotificationsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
+  setBadgeCountAsync: jest.fn(),
 }));
 jest.mock("~/schedule/db/items", () => ({ listItems: jest.fn() }));
 jest.mock("~/schedule/db/logs", () => ({ listLogs: jest.fn() }));
+jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("~/supabase", () => ({
   supabase: { auth: { getSession: jest.fn() } },
 }));
-jest.mock("./candidates", () => ({ getCandidates: jest.fn() }));
+jest.mock("./candidates", () => ({
+  getBadgeCounts: jest.fn(),
+  getCandidates: jest.fn(),
+}));
 jest.mock("./permission", () => ({ getPermission: jest.fn() }));
 
 describe("알림 동기화", () => {
@@ -43,11 +52,20 @@ describe("알림 동기화", () => {
       .mockResolvedValue(sessionResult("access-token"));
     jest.mocked(getCandidates).mockReturnValue([]);
     jest
+      .mocked(getBadgeCounts)
+      .mockImplementation(
+        ({ times }) => new Map(times.map((time) => [time.toISOString(), 3]))
+      );
+    jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([]);
+    jest
+      .mocked(Notifications.getPresentedNotificationsAsync)
       .mockResolvedValue([]);
     jest
       .mocked(Notifications.scheduleNotificationAsync)
       .mockResolvedValue("notification-id");
+    jest.mocked(Notifications.setBadgeCountAsync).mockResolvedValue(true);
   });
 
   it("권한이 없으면 일정과 예약 알림을 읽지 않는다", async () => {
@@ -117,8 +135,13 @@ describe("알림 동기화", () => {
     });
 
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(60);
+    expect(getBadgeCounts).toHaveBeenCalledTimes(1);
+    expect(jest.mocked(getBadgeCounts).mock.calls[0]?.[0].times).toHaveLength(
+      61
+    );
     expect(Notifications.scheduleNotificationAsync).toHaveBeenNthCalledWith(1, {
       content: {
+        badge: 3,
         body: "오후 9:00",
         data: {
           notificationKind: "reminder",
@@ -134,6 +157,48 @@ describe("알림 동기화", () => {
         date: new Date("2026-04-21T12:00:00.000Z"),
         type: "date",
       },
+    });
+  });
+
+  it("현재 뱃지를 맞추고 처리됐거나 비활성인 표시 알림을 제거한다", async () => {
+    const item = scheduleFixture({ id: "item-1" });
+    const handled = logFixture({
+      itemId: item.id,
+      scheduledAtUtc: "2026-04-21T00:00:00.000Z",
+    });
+
+    jest.mocked(listItems).mockResolvedValue([item]);
+    jest.mocked(listLogs).mockResolvedValue([handled]);
+    jest
+      .mocked(Notifications.getPresentedNotificationsAsync)
+      .mockResolvedValue([
+        presented("other"),
+        presented("ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z"),
+        presented("ttokttak:reminder:user-1:item-1:2026-04-22T00:00:00.000Z"),
+        presented("ttokttak:reminder:user-1:archived:2026-04-21T00:00:00.000Z"),
+        presented("ttokttak:reminder:user-2:item-2:2026-04-21T00:00:00.000Z"),
+      ]);
+
+    await syncNotifications(params);
+
+    expect(Notifications.setBadgeCountAsync).toHaveBeenCalledWith(3);
+    expect(Notifications.dismissNotificationAsync).toHaveBeenCalledTimes(3);
+    expect(Notifications.dismissNotificationAsync).not.toHaveBeenCalledWith(
+      "ttokttak:reminder:user-1:item-1:2026-04-22T00:00:00.000Z"
+    );
+  });
+
+  it("뱃지 갱신 실패가 알림 동기화를 막지 않는다", async () => {
+    const error = new Error("뱃지 실패");
+
+    jest.mocked(Notifications.setBadgeCountAsync).mockRejectedValue(error);
+
+    await expect(syncNotifications(params)).resolves.toEqual({
+      candidateCount: 0,
+      pendingCount: 0,
+    });
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { feature: "app-icon-badge-sync" },
     });
   });
 
@@ -173,7 +238,7 @@ describe("알림 동기화", () => {
 });
 
 describe("알림 정리", () => {
-  it("모든 사용자의 똑딱 알림만 취소한다", async () => {
+  it("모든 사용자의 똑딱 알림과 뱃지만 정리한다", async () => {
     jest.clearAllMocks();
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
@@ -182,12 +247,20 @@ describe("알림 정리", () => {
         request("ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z"),
         request("ttokttak:reminder:user-2:item-2:2026-04-22T00:00:00.000Z"),
       ]);
+    jest
+      .mocked(Notifications.getPresentedNotificationsAsync)
+      .mockResolvedValue([
+        presented("other"),
+        presented("ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z"),
+      ]);
 
     await cancelNotifications();
 
     expect(
       Notifications.cancelScheduledNotificationAsync
     ).toHaveBeenCalledTimes(2);
+    expect(Notifications.dismissNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(Notifications.setBadgeCountAsync).toHaveBeenCalledWith(0);
   });
 });
 
@@ -229,6 +302,13 @@ function candidateRequest(value: Candidate): Notifications.NotificationRequest {
     `ttokttak:reminder:user-1:${value.itemId}:${value.scheduledAtUtc}`,
     value
   );
+}
+
+function presented(identifier: string): Notifications.Notification {
+  return {
+    date: 0,
+    request: request(identifier),
+  };
 }
 
 function sessionResult(accessToken: string) {

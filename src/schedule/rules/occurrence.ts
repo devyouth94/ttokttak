@@ -1,3 +1,4 @@
+import { addDays, format, parse } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import {
@@ -50,6 +51,16 @@ type VersionRule = RecurrenceRule & {
   effectiveFromUtc: string;
   reminderTimeLocal: string;
 };
+
+export const OCCURRENCE_LOOKBACK_DAYS = 730;
+
+/** yyyy-MM-dd local date에 날짜 수를 더한다. */
+export function addLocalDays(localDate: string, amount: number): string {
+  return format(
+    addDays(parse(localDate, "yyyy-MM-dd", new Date()), amount),
+    "yyyy-MM-dd"
+  );
+}
 
 /** local date 하루를 timezone 기준 UTC 범위로 바꾼다. */
 export function toUtcRange(localDate: string, timezone: string): UtcRange {

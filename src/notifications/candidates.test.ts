@@ -1,13 +1,65 @@
 import {
+  logFixture,
   scheduleFixture as createItem,
   testTimezone as timezone,
 } from "~/schedule/fixtures";
 
-import { getCandidates } from "./candidates";
+import { getBadgeCounts, getCandidates } from "./candidates";
 
 const now = new Date("2026-04-21T00:00:00.000Z");
 
 describe("알림 후보", () => {
+  it("지난 일정은 일정별 하나로 접고 알림 시각이 지난 오늘 occurrence를 센다", () => {
+    const times = [
+      new Date("2026-04-20T23:00:00.000Z"),
+      new Date("2026-04-21T03:00:00.000Z"),
+      new Date("2026-04-22T03:00:00.000Z"),
+    ];
+    const badgeCounts = getBadgeCounts({
+      completionLogs: [
+        logFixture({
+          action: "skipped",
+          itemId: "skipped",
+          scheduledAtUtc: "2026-04-20T00:00:00.000Z",
+        }),
+      ],
+      items: [
+        createItem({
+          id: "daily",
+          startDateLocal: "2026-04-19",
+        }),
+        createItem({
+          id: "disabled",
+          notificationsEnabled: false,
+          recurrenceType: "once",
+          reminderTimeLocal: "10:00",
+          startDateLocal: "2026-04-21",
+        }),
+        createItem({
+          id: "future",
+          recurrenceType: "once",
+          reminderTimeLocal: "18:00",
+          startDateLocal: "2026-04-21",
+        }),
+        createItem({
+          id: "skipped",
+          recurrenceType: "once",
+          startDateLocal: "2026-04-20",
+        }),
+      ],
+      times,
+      timezone,
+    });
+
+    expect(badgeCounts).toEqual(
+      new Map([
+        [times[0]!.toISOString(), 1],
+        [times[1]!.toISOString(), 3],
+        [times[2]!.toISOString(), 4],
+      ])
+    );
+  });
+
   it("30일 범위와 그 이후 첫 알림의 표시 내용을 만든다", () => {
     const candidates = getCandidates({
       completionLogs: [],

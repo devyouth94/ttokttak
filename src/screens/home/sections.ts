@@ -1,4 +1,4 @@
-import { addDays, differenceInCalendarDays, format, parse } from "date-fns";
+import { differenceInCalendarDays, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 
@@ -6,8 +6,10 @@ import type { AppLanguage } from "~/i18n/language";
 import { formatLocal } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
 import {
+  addLocalDays,
   createOccurrences,
   type Occurrence,
+  OCCURRENCE_LOOKBACK_DAYS,
   type OccurrenceEntry,
   type OccurrenceLog,
   toUtcRange,
@@ -15,7 +17,6 @@ import {
 import type { Schedule } from "~/schedule/schedule";
 import { currentRule } from "~/schedule/schedule";
 
-const OVERDUE_LOOKBACK_DAYS = 730;
 const UPCOMING_DAYS = 14;
 
 export type HomeFeedCard = {
@@ -99,18 +100,11 @@ function getHomeDates(now: Date, selectedDateId: string, timezone: string) {
 
   return {
     isToday: selectedDateId === today,
-    overdueStart: addLocalDays(today, -OVERDUE_LOOKBACK_DAYS),
+    overdueStart: addLocalDays(today, -OCCURRENCE_LOOKBACK_DAYS),
     today,
     upcomingEnd: addLocalDays(today, UPCOMING_DAYS),
     upcomingStart: addLocalDays(today, 1),
   };
-}
-
-function addLocalDays(localDate: string, amount: number): string {
-  return format(
-    addDays(parse(localDate, "yyyy-MM-dd", new Date()), amount),
-    "yyyy-MM-dd"
-  );
 }
 
 function createOverdueSection(

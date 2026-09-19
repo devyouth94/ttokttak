@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { addDays, format, parse } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { type AppLanguage, normalizeAppLanguage } from "~/i18n/language";
@@ -10,7 +9,11 @@ import { getRecurrenceLabel } from "~/schedule/display/label";
 import { useNow } from "~/schedule/now";
 import { useScheduleRange } from "~/schedule/query";
 import type { Occurrence } from "~/schedule/rules/occurrence";
-import { createOccurrences } from "~/schedule/rules/occurrence";
+import {
+  addLocalDays,
+  createOccurrences,
+  OCCURRENCE_LOOKBACK_DAYS,
+} from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
 import { useSession } from "~/session/provider";
 
@@ -30,8 +33,6 @@ const noNextOccurrenceLabelByLanguage = {
   ko: "예정 없음",
 } as const satisfies Record<AppLanguage, string>;
 
-const lookbackDays = 730;
-
 export function useItems(sort: Sort) {
   const { i18n } = useTranslation();
   const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
@@ -45,10 +46,7 @@ export function useItems(sort: Sort) {
 
   const query = useScheduleRange({
     endLocalDate: today,
-    startLocalDate: format(
-      addDays(parse(today, "yyyy-MM-dd", new Date()), -lookbackDays),
-      "yyyy-MM-dd"
-    ),
+    startLocalDate: addLocalDays(today, -OCCURRENCE_LOOKBACK_DAYS),
   });
   const { items, logs, timezone: queryTimezone } = query;
 
