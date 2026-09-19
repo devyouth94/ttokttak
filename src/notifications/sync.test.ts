@@ -94,10 +94,7 @@ describe("알림 동기화", () => {
       .mockRejectedValueOnce(new Error("401"))
       .mockResolvedValueOnce([]);
 
-    await expect(syncNotifications(params)).resolves.toEqual({
-      candidateCount: 0,
-      pendingCount: 0,
-    });
+    await expect(syncNotifications(params)).resolves.toBeUndefined();
 
     expect(listItems).toHaveBeenCalledTimes(2);
   });
@@ -129,10 +126,7 @@ describe("알림 동기화", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce(wanted.map(candidateRequest));
 
-    await expect(syncNotifications(params)).resolves.toEqual({
-      candidateCount: 61,
-      pendingCount: 60,
-    });
+    await expect(syncNotifications(params)).resolves.toBeUndefined();
 
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(60);
     expect(getBadgeCounts).toHaveBeenCalledTimes(1);
@@ -193,10 +187,7 @@ describe("알림 동기화", () => {
 
     jest.mocked(Notifications.setBadgeCountAsync).mockRejectedValue(error);
 
-    await expect(syncNotifications(params)).resolves.toEqual({
-      candidateCount: 0,
-      pendingCount: 0,
-    });
+    await expect(syncNotifications(params)).resolves.toBeUndefined();
     expect(captureException).toHaveBeenCalledWith(error, {
       tags: { feature: "app-icon-badge-sync" },
     });

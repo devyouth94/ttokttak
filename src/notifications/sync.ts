@@ -29,11 +29,6 @@ export type NotificationSyncErrorCode =
   | "operation-failed"
   | "verification-mismatch";
 
-export type NotificationSyncResult = {
-  candidateCount: number;
-  pendingCount: number;
-};
-
 /** 원본 오류 내용을 노출하지 않고 실패 단계와 내부 코드만 전달한다. */
 export class NotificationSyncError extends Error {
   constructor(
@@ -81,7 +76,7 @@ async function applyCandidates(
   now: Date,
   timezone: string,
   userId: string
-): Promise<number> {
+): Promise<void> {
   const requests = await runStage("list-scheduled", () =>
     Notifications.getAllScheduledNotificationsAsync()
   );
@@ -195,8 +190,6 @@ async function applyCandidates(
       throw new NotificationSyncError("verify", "verification-mismatch");
     }
   }
-
-  return wanted.length;
 }
 
 /** 처리됐거나 현재 사용자에게 속하지 않는 표시 알림을 제거한다. */
@@ -245,11 +238,11 @@ export async function syncNotifications(params: {
   language: AppLanguage;
   timezone: string;
   userId: string;
-}): Promise<NotificationSyncResult | null> {
+}): Promise<void> {
   const permission = await runStage("permission", getPermission);
 
   if (permission.status !== "granted") {
-    return null;
+    return;
   }
 
   const accessToken = await runStage("items", () =>
@@ -257,7 +250,7 @@ export async function syncNotifications(params: {
   );
 
   if (!accessToken) {
-    return null;
+    return;
   }
 
   let data;
@@ -270,7 +263,7 @@ export async function syncNotifications(params: {
     );
 
     if (!refreshedAccessToken) {
-      return null;
+      return;
     }
 
     if (refreshedAccessToken === accessToken) {
@@ -292,18 +285,7 @@ export async function syncNotifications(params: {
       timezone: params.timezone,
     })
   );
-  const pendingCount = await applyCandidates(
-    candidates,
-    data,
-    now,
-    params.timezone,
-    params.userId
-  );
-
-  return {
-    candidateCount: candidates.length,
-    pendingCount,
-  };
+  await applyCandidates(candidates, data, now, params.timezone, params.userId);
 }
 
 async function runStage<T>(
