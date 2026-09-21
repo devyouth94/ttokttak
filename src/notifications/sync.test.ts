@@ -212,6 +212,38 @@ describe("알림 동기화", () => {
     ).toHaveBeenCalledTimes(1);
   });
 
+  it("동시에 요청해도 앞선 동기화가 끝난 뒤 다음 동기화를 시작한다", async () => {
+    let markFirstStarted!: () => void;
+    let releaseFirst!: (items: Awaited<ReturnType<typeof listItems>>) => void;
+    const firstStarted = new Promise<void>((resolve) => {
+      markFirstStarted = resolve;
+    });
+    const firstItems = new Promise<Awaited<ReturnType<typeof listItems>>>(
+      (resolve) => {
+        releaseFirst = resolve;
+      }
+    );
+
+    jest
+      .mocked(listItems)
+      .mockImplementationOnce(() => {
+        markFirstStarted();
+        return firstItems;
+      })
+      .mockResolvedValueOnce([]);
+
+    const firstSync = syncNotifications(params);
+    await firstStarted;
+    const secondSync = syncNotifications(params);
+
+    expect(getPermission).toHaveBeenCalledTimes(1);
+
+    releaseFirst([]);
+    await Promise.all([firstSync, secondSync]);
+
+    expect(getPermission).toHaveBeenCalledTimes(2);
+  });
+
   it("변경 뒤 실제 예약이 다르면 검증 단계 실패로 남긴다", async () => {
     jest
       .mocked(getCandidates)

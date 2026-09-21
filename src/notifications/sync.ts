@@ -13,6 +13,15 @@ const PREFIX = "ttokttak:reminder:";
 const CHANNEL_ID = "reminders";
 const MAX_NOTIFICATIONS = 60;
 
+type NotificationSyncParams = {
+  language: AppLanguage;
+  timezone: string;
+  userId: string;
+};
+
+// ponytail: 호출량이 적어 전역 큐로 충분하다. 병목이 측정되면 최신 요청 병합으로 바꾼다.
+let notificationSyncTail = Promise.resolve();
+
 export const notificationSyncStages = [
   "permission",
   "items",
@@ -234,11 +243,17 @@ function reportFailures(
 }
 
 /** Provider가 세션·언어·timezone 변화와 mutation 뒤 호출하는 전체 동기화 진입점이다. */
-export async function syncNotifications(params: {
-  language: AppLanguage;
-  timezone: string;
-  userId: string;
-}): Promise<void> {
+export function syncNotifications(
+  params: NotificationSyncParams
+): Promise<void> {
+  const sync = notificationSyncTail.then(() => syncNotificationsNow(params));
+  notificationSyncTail = sync.catch(() => undefined);
+  return sync;
+}
+
+async function syncNotificationsNow(
+  params: NotificationSyncParams
+): Promise<void> {
   const permission = await runStage("permission", getPermission);
 
   if (permission.status !== "granted") {
