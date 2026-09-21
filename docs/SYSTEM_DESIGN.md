@@ -225,6 +225,10 @@ App Group `UserDefaults`에는 최대 6개의 일정 색상, 제목, 알림 시�
 테마 초기화에 실패하면 시스템 설정을 사용한다.
 화면은 정적 색상 대신 semantic theme token을 읽는다.
 일정 색상은 theme token과 분리해 모든 테마에서 같은 identity를 유지한다.
+`recurring_items.color_hex`는 새 앱이 표시하는 불투명 RGB 색상이다.
+`color_key`는 구버전 앱이 표시할 가장 가까운 프리셋을 함께 저장한다.
+구버전이 같은 `color_key`로 다른 값을 수정하면 기존 `color_hex`를 보존한다.
+구버전이 다른 프리셋을 고르면 해당 프리셋 색상으로 `color_hex`를 바꾼다.
 
 ## 보안과 오류 수집
 
