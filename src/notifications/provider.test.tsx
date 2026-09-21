@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 
 import { useAppLanguage } from "~/i18n/provider";
+import { syncHomeWidget } from "~/widgets/home";
 
 import { NotificationProvider } from "./provider";
 import { cancelNotifications, syncNotifications } from "./sync";
@@ -36,6 +37,7 @@ jest.mock("expo-notifications", () => ({
 }));
 jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
+jest.mock("~/widgets/home", () => ({ syncHomeWidget: jest.fn() }));
 jest.mock("./sync", () => ({
   cancelNotifications: jest.fn(),
   syncNotifications: jest.fn(),
@@ -66,6 +68,7 @@ describe("NotificationProvider", () => {
       .mockResolvedValue(null);
     jest.mocked(syncNotifications).mockResolvedValue();
     jest.mocked(cancelNotifications).mockResolvedValue();
+    jest.mocked(syncHomeWidget).mockResolvedValue();
   });
 
   it("세션, 언어, foreground와 알림 tap에서 현재 알림을 다시 맞춘다", async () => {
@@ -78,6 +81,11 @@ describe("NotificationProvider", () => {
     });
 
     expect(syncNotifications).toHaveBeenCalledWith({
+      language: "ko",
+      timezone: "Asia/Seoul",
+      userId: "user-1",
+    });
+    expect(syncHomeWidget).toHaveBeenCalledWith({
       language: "ko",
       timezone: "Asia/Seoul",
       userId: "user-1",
@@ -123,6 +131,11 @@ describe("NotificationProvider", () => {
 
     expect(cancelNotifications).toHaveBeenCalledTimes(1);
     expect(syncNotifications).toHaveBeenCalledTimes(4);
+    expect(syncHomeWidget).toHaveBeenLastCalledWith({
+      language: "en",
+      timezone: "Asia/Seoul",
+      userId: undefined,
+    });
   });
 });
 

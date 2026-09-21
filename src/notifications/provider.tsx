@@ -5,6 +5,7 @@ import * as Notifications from "expo-notifications";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { captureException } from "~/sentry";
+import { syncHomeWidget } from "~/widgets/home";
 
 import {
   getPermission,
@@ -87,14 +88,31 @@ export function NotificationProvider({
     }
   }, []);
 
-  /** 현재 사용자 일정과 기기에 예약된 알림을 전체 비교해 다시 맞춘다. */
+  /** 위젯 갱신 실패가 알림 동기화와 사용자 동작을 막지 않게 한다. */
+  const syncWidgetSafely = useCallback(
+    async (nextUserId?: string): Promise<void> => {
+      try {
+        await syncHomeWidget({ language, timezone, userId: nextUserId });
+      } catch (error) {
+        captureException(error, {
+          tags: { feature: "ios-home-widget-sync" },
+        });
+      }
+    },
+    [language, timezone]
+  );
+
+  /** 현재 사용자 일정으로 기기 알림과 iOS 위젯을 다시 맞춘다. */
   const syncNotifications = useCallback(async (): Promise<void> => {
     if (!userId) {
       return;
     }
 
-    await syncDeviceNotifications({ language, timezone, userId });
-  }, [language, timezone, userId]);
+    await Promise.all([
+      syncDeviceNotifications({ language, timezone, userId }),
+      syncWidgetSafely(userId),
+    ]);
+  }, [language, syncWidgetSafely, timezone, userId]);
 
   /** lifecycle 동기화 실패를 기록하고 사용자 흐름은 계속 진행한다. */
   const syncSafely = useCallback(
@@ -160,7 +178,8 @@ export function NotificationProvider({
     }
 
     void cancelSafely();
-  }, [cancelSafely, syncSafely, userId]);
+    void syncWidgetSafely();
+  }, [cancelSafely, syncSafely, syncWidgetSafely, userId]);
 
   const value: NotificationValue = {
     isPermissionLoading,

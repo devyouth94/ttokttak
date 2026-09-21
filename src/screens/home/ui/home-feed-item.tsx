@@ -3,12 +3,12 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
+import type { HomeFeedCard } from "~/schedule/home-feed";
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { homeFeedCardPalette } from "./home-feed-card-palette";
-import type { HomeFeedCard } from "../sections";
 
 const ACTION_BORDER_WIDTH = 1;
 const ACTION_STROKE_WIDTH = 2;

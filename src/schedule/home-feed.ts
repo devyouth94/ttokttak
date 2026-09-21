@@ -20,6 +20,7 @@ import { currentRule } from "~/schedule/schedule";
 const UPCOMING_DAYS = 14;
 
 export type HomeFeedCard = {
+  compactMetaLine: string;
   dateSeparatorLabel: string | null;
   id: string;
   item: Schedule;
@@ -233,16 +234,16 @@ function createCard(
     language
   );
   const recurrenceLabel = getRecurrenceLabel(item, language);
-  const metaLine =
-    sectionId === "overdue"
-      ? [
-          getOverdueLabel(occurrence, today, t),
-          timeLabel,
-          recurrenceLabel,
-        ].join(" · ")
-      : [timeLabel, recurrenceLabel].join(" · ");
+  const overdueLabel =
+    sectionId === "overdue" ? getOverdueLabel(occurrence, today, t) : null;
+  const metaLine = overdueLabel
+    ? [overdueLabel, timeLabel, recurrenceLabel].join(" · ")
+    : [timeLabel, recurrenceLabel].join(" · ");
 
   return {
+    compactMetaLine: overdueLabel
+      ? [overdueLabel, timeLabel].join(" · ")
+      : timeLabel,
     dateSeparatorLabel:
       sectionId === "upcoming"
         ? getUpcomingDateLabel(occurrence, today, language, t)

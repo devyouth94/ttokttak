@@ -80,6 +80,11 @@ export const appI18nResources = {
           request: "Allow",
           title: "Turn on notifications?",
         },
+        widget: {
+          empty: "No remaining items",
+          login: "Sign in in the app",
+          more: "+{{count}} more",
+        },
       },
       login: {
         appleButton: "Continue with Apple",
@@ -495,6 +500,11 @@ export const appI18nResources = {
           message: "정해둔 시간에 알려드리려면 알림 권한이 필요해요.",
           request: "허용하기",
           title: "알림을 켤까요?",
+        },
+        widget: {
+          empty: "남은 일정이 없어요",
+          login: "앱에서 로그인해 주세요",
+          more: "+{{count}}개",
         },
       },
       login: {

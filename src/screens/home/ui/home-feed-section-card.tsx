@@ -2,13 +2,13 @@ import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
+import type { HomeFeedCard, HomeFeedSection } from "~/schedule/home-feed";
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { homeFeedCardPalette } from "./home-feed-card-palette";
 import { HomeFeedItem } from "./home-feed-item";
-import type { HomeFeedCard, HomeFeedSection } from "../sections";
 
 type HomeFeedSectionCardProps = {
   bottomOverlap: number;

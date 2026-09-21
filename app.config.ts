@@ -1,6 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
 const iconBackgroundColor = "#FFFFFF";
+const iosBundleIdentifier = "com.youngzin.ttokttak";
 const missingGoogleIosUrlScheme =
   "com.googleusercontent.apps.missing-google-ios-url-scheme";
 
@@ -36,7 +37,7 @@ export default function getAppConfig(): ExpoConfig {
     scheme: "ttokttak",
     userInterfaceStyle: "automatic",
     ios: {
-      bundleIdentifier: "com.youngzin.ttokttak",
+      bundleIdentifier: iosBundleIdentifier,
       usesAppleSignIn: true,
       infoPlist: {
         CFBundleDevelopmentRegion: "ko",
@@ -63,6 +64,22 @@ export default function getAppConfig(): ExpoConfig {
     plugins: [
       "expo-router",
       "expo-localization",
+      [
+        "expo-widgets",
+        {
+          bundleIdentifier: `${iosBundleIdentifier}.widgets`,
+          groupIdentifier: `group.${iosBundleIdentifier}`,
+          widgets: [
+            {
+              contentMarginsDisabled: false,
+              description: "오늘까지 남은 일정을 보여줘요.",
+              displayName: "똑딱",
+              name: "HomeWidget",
+              supportedFamilies: ["systemSmall", "systemMedium"],
+            },
+          ],
+        },
+      ],
       [
         "expo-build-properties",
         {
