@@ -13,6 +13,7 @@
 - `src/session/`: 세션 상태와 Apple·Google 인증.
 - `src/account/`: profile과 계정 삭제.
 - `src/notifications/`: 권한, 후보 계산, 예약 동기화와 tap 처리.
+- `src/widgets/`: iOS 홈 화면 위젯 projection과 snapshot 동기화.
 - `src/i18n/`, `src/theme/`, `src/sentry/`: 앱 전역 provider와 정책.
 - `src/ui/`: 일정 지식이 없는 공용 UI.
 
@@ -52,6 +53,7 @@ Supabase Postgres가 계정, profile, 일정과 occurrence 처리 기록의 최�
 - occurrence.
 - 홈 섹션과 캘린더 marker.
 - 기기 로컬 알림 예약 상태.
+- iOS 홈 화면 위젯 snapshot.
 
 [`database/DATABASE.sql`](database/DATABASE.sql)은 현재 운영 스키마를 읽기 위한 snapshot이다.
 배포 변경 이력은 `supabase/migrations/`에 두고, 스키마 변경 전에는 운영 DB와 snapshot을 함께 확인한다.
@@ -192,6 +194,23 @@ Android의 숫자 표시 여부는 기기 런처에 따라 다르다.
 자동 재시도나 별도 사용자 알림은 추가하지 않는다.
 설정 화면은 현재 알림 권한과 가능한 조치만 보여준다.
 OS가 실제로 알림을 표시했는지는 확인하거나 보장하지 않는다.
+
+## iOS 홈 화면 위젯
+
+`expo-widgets` config plugin이 작은 크기와 중간 크기의 WidgetKit 확장과 App Group을 생성한다.
+생성된 `ios/` 코드는 직접 수정하지 않는다.
+
+메인 앱이 서버 데이터를 조회하고 복호화한 뒤 기존 홈 projection에서 지난 일정과 오늘 occurrence를 고른다.
+위젯 확장은 Supabase, 세션과 content key에 접근하지 않는다.
+
+App Group `UserDefaults`에는 최대 6개의 일정 색상, 제목, 알림 시각과 지난 날짜 수를 snapshot으로 저장한다.
+일정 설명과 전체 `Schedule` 객체는 저장하지 않는다.
+복호화된 제목이 로컬 공유 저장소에 남는 경계는 [`ADR 0006`](adr/0006-expo-ios-home-widget.md)을 따른다.
+
+알림 provider의 기존 lifecycle에서 위젯을 함께 갱신한다.
+앱 시작, foreground 복귀, 세션·표시 언어·timezone 변경과 일정 mutation이 같은 경로를 사용한다.
+세션이 없으면 로그인 안내 snapshot으로 기존 제목을 덮어쓴다.
+위젯 갱신 실패는 Sentry에 기록하고 알림 동기화와 사용자 동작은 계속한다.
 
 ## 표시 언어와 테마
 
