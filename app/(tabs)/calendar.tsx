@@ -13,7 +13,7 @@ import { CalendarMonthSection } from "~/screens/calendar/ui/calendar-month-secti
 import { SelectedDateSection } from "~/screens/calendar/ui/selected-date-section";
 import { useSession } from "~/session/provider";
 import { AppScreen } from "~/ui/app-screen";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { getMainTabContentBottomInset } from "~/ui/main-bottom-nav";
 import { ScreenHeader } from "~/ui/screen-header";
 import { spacing } from "~/ui/tokens";
 
@@ -68,7 +68,7 @@ export default function CalendarTabPage(): React.JSX.Element {
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+            paddingBottom: getMainTabContentBottomInset(insets.bottom),
           },
         ]}
         showsVerticalScrollIndicator={false}

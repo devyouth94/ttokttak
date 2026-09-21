@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { LayoutChangeEvent } from "react-native";
 
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { getMainTabContentBottomInset } from "~/ui/main-bottom-nav";
 
 type HomeFeedLayout = {
   bottomInset: number;
@@ -17,7 +17,7 @@ type HomeFeedLayout = {
 export function useHomeFeedLayout(safeAreaBottom: number): HomeFeedLayout {
   const [screenHeight, setScreenHeight] = useState(0);
   const [topHeight, setTopHeight] = useState(0);
-  const bottomInset = MAIN_BOTTOM_NAV_RESERVED_HEIGHT + safeAreaBottom;
+  const bottomInset = getMainTabContentBottomInset(safeAreaBottom);
   const feedHeight = Math.floor(
     Math.max(screenHeight - topHeight - bottomInset, 0)
   );

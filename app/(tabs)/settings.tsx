@@ -8,7 +8,7 @@ import { AppInfoSection } from "~/screens/settings/ui/app-info-section";
 import { EnvironmentSection } from "~/screens/settings/ui/environment-section";
 import { NotificationsSection } from "~/screens/settings/ui/notifications-section";
 import { AppScreen } from "~/ui/app-screen";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { getMainTabContentBottomInset } from "~/ui/main-bottom-nav";
 import { ScreenHeader } from "~/ui/screen-header";
 import { spacing } from "~/ui/tokens";
 
@@ -25,7 +25,7 @@ export default function SettingsTabPage(): React.JSX.Element {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom,
+            paddingBottom: getMainTabContentBottomInset(insets.bottom),
           },
         ]}
         showsVerticalScrollIndicator={false}

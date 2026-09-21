@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { router, usePathname } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { CommonActions } from "@react-navigation/native";
@@ -17,6 +17,12 @@ import { AppText } from "~/ui/app-text";
 import { spacing } from "~/ui/tokens";
 
 export const MAIN_BOTTOM_NAV_RESERVED_HEIGHT = 92;
+
+export function getMainTabContentBottomInset(safeAreaBottom: number): number {
+  return Platform.OS === "ios"
+    ? 72
+    : MAIN_BOTTOM_NAV_RESERVED_HEIGHT + safeAreaBottom;
+}
 
 const TAB_ICONS = {
   calendar: CalendarDays,

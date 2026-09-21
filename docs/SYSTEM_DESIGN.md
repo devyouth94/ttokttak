@@ -37,8 +37,11 @@ JSX에서는 중첩 삼항보다 상태별 `&&` 블록을 사용한다.
 ## 앱 경계
 
 하단 탭은 홈, 목록, 캘린더와 설정을 연결한다.
+iOS는 Expo Router Native Tabs와 SF Symbols를 사용하며 iOS 26의 시스템 Liquid Glass를 따른다.
+Android는 React Navigation 기반 커스텀 탭을 유지한다.
 일정 상세, 생성과 수정은 탭 밖의 집중 화면이다.
-가운데 `+`는 탭이 아니라 일정 생성 동작이다.
+일정 추가 버튼은 탭이 아닌 전역 일정 생성 동작이다.
+iOS는 Expo UI의 SwiftUI 버튼을 탭 위 우하단에 표시하고 Android는 기존 탭 위 가운데에 표시한다.
 
 앱 루트는 테마, 표시 언어, query, 세션과 알림 provider를 조립한다.
 세션과 profile이 준비되기 전에는 인증된 화면을 열지 않는다.

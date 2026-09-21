@@ -11,7 +11,7 @@ import { ListLoading } from "~/screens/schedule-list/ui/loading";
 import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
 import { useThemeColors } from "~/theme/provider";
 import { AppScreen } from "~/ui/app-screen";
-import { MAIN_BOTTOM_NAV_RESERVED_HEIGHT } from "~/ui/main-bottom-nav";
+import { getMainTabContentBottomInset } from "~/ui/main-bottom-nav";
 import { ScreenHeader } from "~/ui/screen-header";
 import { StateMessage } from "~/ui/state-message";
 import { spacing } from "~/ui/tokens";
@@ -65,7 +65,7 @@ export default function ScheduleTabPage(): React.JSX.Element {
           contentContainerStyle={[
             styles.listContent,
             rows.length === 0 && styles.emptyListContent,
-            { paddingBottom: MAIN_BOTTOM_NAV_RESERVED_HEIGHT + insets.bottom },
+            { paddingBottom: getMainTabContentBottomInset(insets.bottom) },
           ]}
           data={rows}
           keyExtractor={(row) => row.id}
