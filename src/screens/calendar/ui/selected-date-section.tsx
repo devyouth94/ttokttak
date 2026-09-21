@@ -104,7 +104,7 @@ export function SelectedDateSection({
               accessibilityLabel={t("calendar.row.detailLabel", {
                 title: entry.title,
               })}
-              colorKey={entry.colorKey}
+              colorHex={entry.colorHex}
               isLast={index === entries.length - 1}
               key={`${entry.itemId}:${entry.scheduledAtUtc}`}
               metaLine={[

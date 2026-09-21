@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowRight } from "lucide-react-native";
 
-import { colorByKey, type ColorKey } from "~/schedule/display/color";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
@@ -9,7 +8,7 @@ import { borderRadius, spacing } from "~/ui/tokens";
 type Props = {
   accessibilityHint: string;
   accessibilityLabel: string;
-  colorKey: ColorKey;
+  colorHex: string;
   isLast: boolean;
   metaLine: string;
   onPress: () => void;
@@ -19,14 +18,13 @@ type Props = {
 export function ItemRow({
   accessibilityHint,
   accessibilityLabel,
-  colorKey,
+  colorHex,
   isLast,
   metaLine,
   onPress,
   title,
 }: Props): React.JSX.Element {
   const themeColors = useThemeColors();
-  const markerColor = colorByKey[colorKey].swatchColor;
 
   return (
     <Pressable
@@ -48,7 +46,7 @@ export function ItemRow({
           <View
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
-            style={[styles.colorMarker, { backgroundColor: markerColor }]}
+            style={[styles.colorMarker, { backgroundColor: colorHex }]}
           />
           <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.title}>
             {title}

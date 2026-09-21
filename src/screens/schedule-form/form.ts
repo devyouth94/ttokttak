@@ -9,7 +9,7 @@ import { format, parse } from "date-fns";
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
 import { getScheduleReturnPath } from "~/route-param";
-import type { ColorKey } from "~/schedule/display/color";
+import { normalizeColorHex } from "~/schedule/display/color";
 import { useScheduleById } from "~/schedule/query";
 import {
   type AnchorType,
@@ -253,7 +253,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
           itemId,
           patch: {
             anchorType: input.anchorType,
-            colorKey: input.colorKey,
+            colorHex: input.colorHex,
             description: input.description,
             endDateLocal: input.endDateLocal,
             intervalValue: input.intervalValue,
@@ -347,7 +347,8 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
       field: {
         onChangeDescription: (value: string) => setField("description", value),
         onChangeTitle: (value: string) => setField("title", value),
-        onSelectColorKey: (value: ColorKey) => setField("colorKey", value),
+        onSelectColor: (colorHex: string) =>
+          setField("colorHex", normalizeColorHex(colorHex)),
         onToggleNotifications: (value: boolean) =>
           setField("notificationsEnabled", value),
       },

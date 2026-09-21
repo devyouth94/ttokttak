@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { type AppLanguage, normalizeAppLanguage } from "~/i18n/language";
-import type { ColorKey } from "~/schedule/display/color";
 import { formatTimestamp } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
 import { useNow } from "~/schedule/now";
@@ -18,7 +17,7 @@ import type { Schedule } from "~/schedule/schedule";
 import { useSession } from "~/session/provider";
 
 type Row = {
-  colorKey: ColorKey;
+  colorHex: string;
   id: string;
   nextOccurrenceTimeLabel: string;
   nextScheduledAtUtc: string | null;
@@ -107,7 +106,7 @@ function toRows({
         : byTitle || byCreatedAt;
     })
     .map(({ schedule, occurrence }) => ({
-      colorKey: schedule.colorKey,
+      colorHex: schedule.colorHex,
       id: schedule.id,
       nextOccurrenceTimeLabel: occurrence
         ? formatTimestamp(occurrence.scheduledAtUtc, timezone, "time", language)

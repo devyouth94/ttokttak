@@ -15,8 +15,9 @@ import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { FocusScreenHeader } from "~/ui/focus-screen-header";
 
+import { ColorField } from "./color-field";
 import { FormActions } from "./form-actions";
-import { ColorField, ScheduleOptions } from "./options";
+import { ScheduleOptions } from "./options";
 import { RecurrenceSection } from "./recurrence";
 import { ScheduleFields } from "./schedule-fields";
 import {
@@ -191,12 +192,6 @@ export function ScheduleFormScreenContent({
               />
             </View>
 
-            <ColorField
-              selected={values.colorKey}
-              styles={styles}
-              onSelect={actions.field.onSelectColorKey}
-            />
-
             <View onLayout={(event) => saveSectionOffset("recurrence", event)}>
               <RecurrenceSection
                 intervalError={errors.interval}
@@ -222,6 +217,12 @@ export function ScheduleFormScreenContent({
               themeColors={themeColors}
               values={values}
               onLayout={(event) => saveSectionOffset("schedule", event)}
+            />
+
+            <ColorField
+              selected={values.colorHex}
+              styles={styles}
+              onSelect={actions.field.onSelectColor}
             />
 
             <ScheduleOptions

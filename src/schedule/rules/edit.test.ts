@@ -43,7 +43,7 @@ describe("resolveEdit", () => {
       })
     ).toEqual({
       item: {
-        colorKey: "blue",
+        colorHex: "#9DB7F5",
         description: null,
         title: "종료된 물 마시기",
       },

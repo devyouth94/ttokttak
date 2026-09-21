@@ -69,7 +69,7 @@ describe("일정 목록", () => {
     const result = useList({
       items: [
         item({
-          colorKey: "purple",
+          colorHex: "#D4A8EA",
           id: "vitamin",
           recurrenceType: "once",
           startDateLocal: "2026-04-19",
@@ -79,7 +79,7 @@ describe("일정 목록", () => {
     });
 
     expect(result.rows[0]).toMatchObject({
-      colorKey: "purple",
+      colorHex: "#D4A8EA",
       nextOccurrenceTimeLabel: "예정 없음",
       nextScheduledAtUtc: null,
       title: "영양제",

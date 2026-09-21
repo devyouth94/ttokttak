@@ -18,7 +18,7 @@ export type EditScheduleInput = Partial<
 >;
 
 type EditResult = {
-  item: Pick<CreateScheduleInput, "colorKey" | "description" | "title">;
+  item: Pick<CreateScheduleInput, "colorHex" | "description" | "title">;
   version: RuleVersion | null;
 };
 
@@ -27,7 +27,7 @@ function toInput(item: Schedule): CreateScheduleInput {
 
   return {
     anchorType: rule.anchorType,
-    colorKey: item.colorKey,
+    colorHex: item.colorHex,
     description: item.description,
     endDateLocal: rule.endDateLocal,
     intervalValue: rule.intervalValue,
@@ -58,7 +58,7 @@ function itemChanged(item: Schedule, input: CreateScheduleInput): boolean {
   return (
     item.title !== input.title ||
     item.description !== input.description ||
-    item.colorKey !== input.colorKey
+    item.colorHex !== input.colorHex
   );
 }
 
@@ -144,7 +144,7 @@ export function resolveEdit({
 
   const result: EditResult = {
     item: {
-      colorKey: input.colorKey,
+      colorHex: input.colorHex,
       description: input.description,
       title: input.title,
     },

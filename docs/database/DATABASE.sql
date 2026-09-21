@@ -107,6 +107,7 @@ create table if not exists public.recurring_items (
   content_key_version integer not null default 1,
   content_encryption_metadata jsonb not null default '{}'::jsonb,
   color_key text not null default 'red',
+  color_hex text not null default '#F5A3A3',
 
   start_date_local date not null,
 
@@ -118,6 +119,9 @@ create table if not exists public.recurring_items (
   constraint recurring_items_color_key_check check (
     color_key in ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple')
   ),
+  constraint recurring_items_color_hex_check check (
+    color_hex ~ '^#[0-9A-F]{6}$'
+  ),
   constraint recurring_items_title_ciphertext_not_blank_check check (
     length(trim(title_ciphertext)) > 0
   ),
@@ -125,6 +129,12 @@ create table if not exists public.recurring_items (
     content_key_version >= 1
   )
 );
+
+comment on column public.recurring_items.color_hex is
+  '새 앱이 표시하는 불투명 RGB 일정 색상.';
+
+comment on column public.recurring_items.color_key is
+  '구버전 앱 표시를 위한 가장 가까운 프리셋 색상 키.';
 
 create index if not exists idx_recurring_items_user_id
   on public.recurring_items(user_id);
@@ -321,7 +331,8 @@ create or replace function public.create_recurring_item_with_initial_version(
   p_seed_start_date_local date,
   p_notifications_enabled boolean,
   p_color_key text default 'red',
-  p_end_date_local date default null
+  p_end_date_local date default null,
+  p_color_hex text default null
 )
 returns uuid
 language plpgsql
@@ -338,6 +349,7 @@ begin
     content_key_version,
     content_encryption_metadata,
     color_key,
+    color_hex,
     start_date_local,
     is_archived
   )
@@ -348,6 +360,18 @@ begin
     p_content_key_version,
     coalesce(p_content_encryption_metadata, '{}'::jsonb),
     coalesce(p_color_key, 'red'),
+    coalesce(
+      upper(p_color_hex),
+      case coalesce(p_color_key, 'red')
+        when 'orange' then '#F4BE8A'
+        when 'yellow' then '#E8D86A'
+        when 'green' then '#9FD4A5'
+        when 'blue' then '#9DB7F5'
+        when 'indigo' then '#9EA5E8'
+        when 'purple' then '#D4A8EA'
+        else '#F5A3A3'
+      end
+    ),
     p_start_date_local,
     p_is_archived
   )
@@ -402,7 +426,8 @@ create or replace function public.update_recurring_item_with_edit_policy(
   p_seed_start_date_local date default null,
   p_notifications_enabled boolean default null,
   p_color_key text default 'red',
-  p_end_date_local date default null
+  p_end_date_local date default null,
+  p_color_hex text default null
 )
 returns uuid
 language plpgsql
@@ -421,6 +446,19 @@ begin
       p_content_encryption_metadata,
       '{}'::jsonb
     ),
+    color_hex = case
+      when p_color_hex is not null then upper(p_color_hex)
+      when coalesce(p_color_key, 'red') = color_key then color_hex
+      else case coalesce(p_color_key, 'red')
+        when 'orange' then '#F4BE8A'
+        when 'yellow' then '#E8D86A'
+        when 'green' then '#9FD4A5'
+        when 'blue' then '#9DB7F5'
+        when 'indigo' then '#9EA5E8'
+        when 'purple' then '#D4A8EA'
+        else '#F5A3A3'
+      end
+    end,
     color_key = coalesce(p_color_key, 'red')
   where id = p_item_id
     and user_id = p_user_id
@@ -490,7 +528,8 @@ revoke all on function public.create_recurring_item_with_initial_version(
   date,
   boolean,
   text,
-  date
+  date,
+  text
 ) from public, anon;
 
 revoke all on function public.update_recurring_item_with_edit_policy(
@@ -511,7 +550,8 @@ revoke all on function public.update_recurring_item_with_edit_policy(
   date,
   boolean,
   text,
-  date
+  date,
+  text
 ) from public, anon;
 
 grant execute on function public.create_recurring_item_with_initial_version(
@@ -531,7 +571,8 @@ grant execute on function public.create_recurring_item_with_initial_version(
   date,
   boolean,
   text,
-  date
+  date,
+  text
 ) to authenticated;
 
 grant execute on function public.update_recurring_item_with_edit_policy(
@@ -552,7 +593,8 @@ grant execute on function public.update_recurring_item_with_edit_policy(
   date,
   boolean,
   text,
-  date
+  date,
+  text
 ) to authenticated;
 
 create or replace function public.archive_recurring_item(p_item_id uuid)

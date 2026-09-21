@@ -66,9 +66,7 @@ export function CalendarMonthSection({
             isSelected={date.dateString === selectedDate}
             isToday={date.dateString === today}
             overflowCount={daySummaries[date.dateString]?.overflowCount ?? 0}
-            markerColorKeys={
-              daySummaries[date.dateString]?.markerColorKeys ?? []
-            }
+            markerColors={daySummaries[date.dateString]?.markerColors ?? []}
             onPress={(pressedDate) => {
               onSelectDate(pressedDate.dateString);
             }}

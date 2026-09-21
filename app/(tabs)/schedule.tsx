@@ -90,7 +90,7 @@ export default function ScheduleTabPage(): React.JSX.Element {
               accessibilityLabel={t("scheduleList.row.detailLabel", {
                 title: item.title,
               })}
-              colorKey={item.colorKey}
+              colorHex={item.colorHex}
               isLast={index === rows.length - 1}
               metaLine={[
                 item.nextOccurrenceTimeLabel,

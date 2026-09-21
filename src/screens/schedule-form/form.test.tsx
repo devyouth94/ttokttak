@@ -159,12 +159,13 @@ describe("일정 폼", () => {
 
     await TestRenderer.act(async () => {
       form.current.actions.field.onChangeTitle("아침 영양제");
+      form.current.actions.field.onSelectColor("#F0B080");
       form.current.actions.screen.onSubmit();
     });
 
     expect(createSchedule).toHaveBeenCalledWith({
       input: expect.objectContaining({
-        colorKey: "red",
+        colorHex: "#F0B080",
         recurrenceType: "daily",
         startDateLocal: "2026-08-04",
         title: "아침 영양제",

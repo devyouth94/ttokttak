@@ -41,4 +41,10 @@ describe("반복 일정 스키마 정책 정합성", () => {
     expect(updateFunction).toContain("and not is_archived");
     expect(updateFunction).not.toContain("is_archived = p_is_archived");
   });
+
+  it("새 색상 값을 저장한다", () => {
+    const databaseSchema = readDoc("docs/database/DATABASE.sql");
+
+    expect(databaseSchema).toContain("color_hex text not null");
+  });
 });

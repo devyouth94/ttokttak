@@ -1,5 +1,5 @@
 import { validateInput, type ValidationIssueCode } from "./validate";
-import { defaultColorKey } from "../display/color";
+import { defaultColorHex } from "../display/color";
 import type { CreateScheduleInput } from "../schedule";
 
 function createInput(
@@ -7,7 +7,7 @@ function createInput(
 ): CreateScheduleInput {
   return {
     anchorType: "fixed",
-    colorKey: defaultColorKey,
+    colorHex: defaultColorHex,
     description: null,
     endDateLocal: null,
     intervalValue: null,

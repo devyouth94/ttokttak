@@ -1,4 +1,3 @@
-import type { ColorKey } from "./display/color";
 import type {
   AnchorType,
   RecurrenceType,
@@ -10,7 +9,7 @@ export type Schedule = {
   title: string;
   description: string | null;
   contentStatus?: "unrecoverable";
-  colorKey: ColorKey;
+  colorHex: string;
   startDateLocal: string;
   isArchived: boolean;
   createdAt: string;
@@ -25,7 +24,7 @@ export function currentRule(schedule: Schedule): RuleVersion {
 /** 일정 생성과 수정에서 입력받는 정규화된 값. */
 export type CreateScheduleInput = {
   anchorType: AnchorType;
-  colorKey: ColorKey;
+  colorHex: string;
   description: string | null;
   endDateLocal: string | null;
   intervalValue: number | null;

@@ -3,11 +3,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { DateData } from "react-native-calendars";
 
 import { useAppLanguage } from "~/i18n/provider";
-import {
-  colorByKey,
-  type ColorKey,
-  getColorLabel,
-} from "~/schedule/display/color";
+import { getColorHexLabel } from "~/schedule/display/color";
 import { formatLocal } from "~/schedule/display/date";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
@@ -17,7 +13,7 @@ type CalendarDayCellProps = {
   date: DateData;
   isSelected: boolean;
   isToday: boolean;
-  markerColorKeys: ColorKey[];
+  markerColors: string[];
   overflowCount: number;
   onPress: (date: DateData) => void;
 };
@@ -28,7 +24,7 @@ export function CalendarDayCell({
   date,
   isSelected,
   isToday,
-  markerColorKeys,
+  markerColors,
   overflowCount,
   onPress,
 }: CalendarDayCellProps): React.JSX.Element {
@@ -37,8 +33,8 @@ export function CalendarDayCell({
   const themeColors = useThemeColors();
 
   const dayOfWeek = new Date(date.year, date.month - 1, date.day).getDay();
-  const colorLabel = markerColorKeys
-    .map((colorKey) => getColorLabel(colorKey, language))
+  const colorLabel = markerColors
+    .map((colorHex) => getColorHexLabel(colorHex, language))
     .join(", ");
   const accessibilityLabel = [
     formatLocal(date.dateString, "weekdayDate", language),
@@ -95,12 +91,12 @@ export function CalendarDayCell({
       </View>
 
       <View style={styles.markerStack}>
-        {markerColorKeys.map((colorKey, index) => (
+        {markerColors.map((colorHex, index) => (
           <View
-            key={`${colorKey}-${index}`}
+            key={`${colorHex}-${index}`}
             style={[
               styles.markerLine,
-              { backgroundColor: colorByKey[colorKey].swatchColor },
+              { backgroundColor: colorHex },
               isSelected && styles.selectedMarker,
             ]}
           />

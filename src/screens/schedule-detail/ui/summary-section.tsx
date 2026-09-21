@@ -4,7 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { Bell, BellOff } from "lucide-react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
-import { colorByKey, getColorLabel } from "~/schedule/display/color";
+import { getColorHexLabel } from "~/schedule/display/color";
 import { formatLocal } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
 import { currentRule, type Schedule } from "~/schedule/schedule";
@@ -33,7 +33,7 @@ export function DetailSummarySection({
   const notificationStatusLabel = rule.notificationsEnabled
     ? t("scheduleDetail.summary.notificationEnabled")
     : t("scheduleDetail.summary.notificationDisabled");
-  const colorLabel = getColorLabel(item.colorKey, language);
+  const colorLabel = getColorHexLabel(item.colorHex, language);
 
   return (
     <>
@@ -103,7 +103,7 @@ export function DetailSummarySection({
                   style={[
                     styles.colorMarker,
                     {
-                      backgroundColor: colorByKey[item.colorKey].swatchColor,
+                      backgroundColor: item.colorHex,
                     },
                   ]}
                 />

@@ -82,7 +82,7 @@ async function renderCell(language: AppLanguage) {
           },
           isSelected: true,
           isToday: true,
-          markerColorKeys: ["red", "blue"],
+          markerColors: ["#F5A3A3", "#9DB7F5"],
           onPress: jest.fn(),
           overflowCount: 2,
         })

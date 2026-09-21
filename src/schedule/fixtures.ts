@@ -19,6 +19,7 @@ export type ScheduleOverrides = Partial<Omit<Schedule, "versions">> &
 export function scheduleFixture(overrides: ScheduleOverrides = {}): Schedule {
   const {
     anchorType = "fixed",
+    colorHex = "#9DB7F5",
     endDateLocal = null,
     intervalValue = null,
     notificationsEnabled = true,
@@ -52,7 +53,7 @@ export function scheduleFixture(overrides: ScheduleOverrides = {}): Schedule {
   }
 
   return {
-    colorKey: "blue",
+    colorHex,
     createdAt: "2026-04-01T00:00:00.000Z",
     description: null,
     id: "item-1",

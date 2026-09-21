@@ -20,6 +20,7 @@ jest.mock("~/schedule/content/cipher", () => ({
 }));
 
 const row = {
+  color_hex: "#9DB7F5",
   color_key: "blue",
   content_encryption_metadata: { algorithm: "test" },
   content_key_version: 1,
@@ -75,7 +76,7 @@ function createClient(query = createQuery(), rpc = jest.fn()) {
 
 const input = {
   anchorType: "fixed" as const,
-  colorKey: "red" as const,
+  colorHex: "#F5A3A3",
   description: "하루 8잔",
   endDateLocal: null,
   intervalValue: null,
@@ -116,7 +117,7 @@ describe("schedule items DB", () => {
       ascending: false,
     });
     expect(items[0]).toMatchObject({
-      colorKey: "blue",
+      colorHex: "#9DB7F5",
       description: "하루 8잔",
       title: "물 마시기",
       versions: [
@@ -150,6 +151,7 @@ describe("schedule items DB", () => {
     expect(rpc).toHaveBeenCalledWith(
       "create_recurring_item_with_initial_version",
       expect.objectContaining({
+        p_color_hex: "#F5A3A3",
         p_color_key: "red",
         p_description_ciphertext: "encrypted-description",
         p_end_date_local: null,
@@ -168,7 +170,7 @@ describe("schedule items DB", () => {
       {
         edit: {
           item: {
-            colorKey: "purple",
+            colorHex: "#D4A8EA",
             description: "하루 8잔",
             title: "영양제",
           },
@@ -188,6 +190,7 @@ describe("schedule items DB", () => {
     expect(rpc).toHaveBeenCalledWith(
       "update_recurring_item_with_edit_policy",
       expect.objectContaining({
+        p_color_hex: "#D4A8EA",
         p_color_key: "purple",
         p_description_ciphertext: "encrypted-description",
         p_title_ciphertext: "encrypted-title",

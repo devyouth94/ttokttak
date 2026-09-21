@@ -67,11 +67,6 @@ function createScheduleFormScreenStyles(themeColors: ThemeColors) {
     compactInput: {
       minHeight: 48,
     },
-    colorSwatch: {
-      borderRadius: borderRadius.pill,
-      height: 12,
-      width: 12,
-    },
     createSaveButton: {
       width: "100%",
     },

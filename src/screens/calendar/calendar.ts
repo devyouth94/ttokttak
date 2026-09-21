@@ -1,7 +1,6 @@
 import { formatInTimeZone } from "date-fns-tz";
 
 import type { AppLanguage } from "~/i18n/language";
-import type { ColorKey } from "~/schedule/display/color";
 import { formatTimestamp } from "~/schedule/display/date";
 import type {
   OccurrenceEntry,
@@ -11,12 +10,12 @@ import type {
 export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
 export type CalendarDaySummary = {
-  markerColorKeys: ColorKey[];
+  markerColors: string[];
   overflowCount: number;
 };
 
 export type CalendarDayEntry = {
-  colorKey: ColorKey;
+  colorHex: string;
   itemId: string;
   scheduledAtUtc: string;
   status: OccurrenceStatus;
@@ -58,7 +57,7 @@ export function buildCalendarDaySummaries(
 
   return Object.fromEntries(
     Array.from(entriesByDate.entries()).map(([localDate, dayEntries]) => {
-      const markerColorKeys = dayEntries
+      const markerColors = dayEntries
         .slice()
         .sort((left, right) =>
           left.occurrence.scheduledAtUtc.localeCompare(
@@ -66,12 +65,12 @@ export function buildCalendarDaySummaries(
           )
         )
         .slice(0, CALENDAR_MAX_VISIBLE_MARKERS)
-        .map(({ schedule }) => schedule.colorKey);
+        .map(({ schedule }) => schedule.colorHex);
 
       return [
         localDate,
         {
-          markerColorKeys,
+          markerColors,
           overflowCount: Math.max(
             0,
             dayEntries.length - CALENDAR_MAX_VISIBLE_MARKERS
@@ -96,7 +95,7 @@ export function buildCalendarDayEntries({
   return entries
     .filter((entry) => entry.occurrence.localDate === selectedDate)
     .map(({ schedule, occurrence }) => ({
-      colorKey: schedule.colorKey,
+      colorHex: schedule.colorHex,
       itemId: schedule.id,
       scheduledAtUtc: occurrence.scheduledAtUtc,
       status: occurrence.status,

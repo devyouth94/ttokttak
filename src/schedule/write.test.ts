@@ -20,7 +20,7 @@ const userId = "user-1";
 const timezone = "Asia/Seoul";
 const input = {
   anchorType: "fixed" as const,
-  colorKey: "green" as const,
+  colorHex: "#9FD4A5",
   description: null,
   endDateLocal: null,
   intervalValue: null,
@@ -65,7 +65,7 @@ describe("일정 저장", () => {
     expect(db.updateItem).toHaveBeenCalledWith({
       edit: {
         item: {
-          colorKey: "blue",
+          colorHex: "#9DB7F5",
           description: null,
           title: "수정한 일정",
         },

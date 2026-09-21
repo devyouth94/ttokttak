@@ -218,13 +218,21 @@ export const appI18nResources = {
         actions: {
           cancel: "Cancel",
           confirm: "Confirm",
+          done: "Done",
           save: "Save",
           update: "Update",
         },
         color: {
-          menuHint: "Open item color options.",
-          menuLabel: "Item color: {{color}}",
+          customOption: "Custom color",
+          customOptionHint: "Open the custom color palette.",
+          customTitle: "Custom color",
+          decreaseSaturation: "Decrease saturation",
+          hueLabel: "Hue",
+          increaseSaturation: "Increase saturation",
           optionHint: "Set item color to {{color}}.",
+          planeLabel: "Saturation and brightness",
+          planeValue:
+            "Saturation {{saturation}} percent, brightness {{brightness}} percent",
         },
         completionBased: {
           description:
@@ -639,13 +647,20 @@ export const appI18nResources = {
         actions: {
           cancel: "취소",
           confirm: "확인",
+          done: "완료",
           save: "저장",
           update: "수정",
         },
         color: {
-          menuHint: "일정 색상 선택 메뉴를 열어요.",
-          menuLabel: "일정 색상: {{color}}",
+          customOption: "직접 선택",
+          customOptionHint: "사용자 지정 색상 팔레트를 열어요.",
+          customTitle: "색상 직접 선택",
+          decreaseSaturation: "채도 낮추기",
+          hueLabel: "색상 스펙트럼",
+          increaseSaturation: "채도 높이기",
           optionHint: "{{color}} 일정 색상으로 설정해요.",
+          planeLabel: "채도와 밝기",
+          planeValue: "채도 {{saturation}}퍼센트, 밝기 {{brightness}}퍼센트",
         },
         completionBased: {
           description:

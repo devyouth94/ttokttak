@@ -1,4 +1,4 @@
-import type { ColorKey } from "~/schedule/display/color";
+import { colorByKey, type ColorKey } from "~/schedule/display/color";
 import { scheduleFixture } from "~/schedule/fixtures";
 import type {
   OccurrenceEntry,
@@ -28,7 +28,11 @@ function createEntry({
 }): OccurrenceEntry {
   return {
     occurrence: { localDate, scheduledAtUtc, status },
-    schedule: scheduleFixture({ colorKey, id, title }),
+    schedule: scheduleFixture({
+      colorHex: colorByKey[colorKey].swatchColor,
+      id,
+      title,
+    }),
   };
 }
 
@@ -88,7 +92,7 @@ it("날짜 marker는 시간순으로 5개까지 표시하고 초과 개수를 �
   ]);
 
   expect(summaries["2026-04-12"]).toEqual({
-    markerColorKeys: ["blue", "orange", "yellow", "green", "purple"],
+    markerColors: ["#9DB7F5", "#F4BE8A", "#E8D86A", "#9FD4A5", "#D4A8EA"],
     overflowCount: 1,
   });
 });
@@ -133,7 +137,7 @@ it("선택 날짜 일정은 시간과 제목 순으로 정렬하고 표시 값�
   ]);
   expect(entries[1]).toEqual(
     expect.objectContaining({
-      colorKey: "purple",
+      colorHex: "#D4A8EA",
       status: "completed",
       timeLabel: "오전 9:00",
       title: "나 일정",

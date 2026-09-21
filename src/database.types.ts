@@ -145,6 +145,7 @@ export type Database = {
       };
       recurring_items: {
         Row: {
+          color_hex: string;
           color_key: string;
           content_encryption_metadata: Record<string, unknown>;
           content_key_version: number;
@@ -158,6 +159,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          color_hex?: string;
           color_key?: string;
           content_encryption_metadata?: Record<string, unknown>;
           content_key_version?: number;
@@ -171,6 +173,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          color_hex?: string;
           color_key?: string;
           content_encryption_metadata?: Record<string, unknown>;
           content_key_version?: number;
@@ -268,6 +271,7 @@ export type Database = {
       create_recurring_item_with_initial_version: {
         Args: {
           p_anchor_type: string;
+          p_color_hex?: string | null;
           p_color_key?: string | null;
           p_content_encryption_metadata: Record<string, unknown>;
           p_content_key_version: number;
@@ -290,6 +294,7 @@ export type Database = {
       update_recurring_item_with_edit_policy: {
         Args: {
           p_anchor_type?: string | null;
+          p_color_hex?: string | null;
           p_color_key?: string | null;
           p_content_encryption_metadata: Record<string, unknown>;
           p_content_key_version: number;

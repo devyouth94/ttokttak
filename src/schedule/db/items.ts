@@ -6,7 +6,7 @@ import {
   decryptContent,
   encryptContent,
 } from "~/schedule/content/cipher";
-import type { ColorKey } from "~/schedule/display/color";
+import { nearestColorKey } from "~/schedule/display/color";
 import type {
   AnchorType,
   RecurrenceType,
@@ -30,7 +30,7 @@ type CreateItemInput = CreateScheduleInput & {
 
 type UpdateItemInput = {
   edit: {
-    item: Pick<CreateScheduleInput, "colorKey" | "description" | "title">;
+    item: Pick<CreateScheduleInput, "colorHex" | "description" | "title">;
     version: RuleVersion | null;
   };
   id: string;
@@ -72,7 +72,7 @@ async function toSchedule(
   decrypt: typeof decryptContent
 ): Promise<Schedule> {
   const item = {
-    colorKey: row.color_key as ColorKey,
+    colorHex: row.color_hex,
     createdAt: row.created_at,
     id: row.id,
     isArchived: row.is_archived,
@@ -171,7 +171,8 @@ export async function createItem(
     "create_recurring_item_with_initial_version",
     {
       p_anchor_type: input.anchorType,
-      p_color_key: input.colorKey,
+      p_color_hex: input.colorHex,
+      p_color_key: nearestColorKey(input.colorHex),
       p_content_encryption_metadata: content.metadata,
       p_content_key_version: content.keyVersion,
       p_description_ciphertext: content.descriptionCiphertext,
@@ -213,7 +214,8 @@ export async function updateItem(
   });
   const { error } = await client.rpc("update_recurring_item_with_edit_policy", {
     p_anchor_type: version?.anchorType ?? null,
-    p_color_key: item.colorKey,
+    p_color_hex: item.colorHex,
+    p_color_key: nearestColorKey(item.colorHex),
     p_content_encryption_metadata: content.metadata,
     p_content_key_version: content.keyVersion,
     p_description_ciphertext: content.descriptionCiphertext,

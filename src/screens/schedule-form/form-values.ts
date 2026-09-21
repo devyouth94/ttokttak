@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { z } from "zod/v4";
 
 import type { AppLanguage } from "~/i18n/language";
-import { colorKeys, defaultColorKey } from "~/schedule/display/color";
+import { colorHexPattern, defaultColorHex } from "~/schedule/display/color";
 import {
   anchorTypes,
   recurrenceTypes,
@@ -22,7 +22,7 @@ import {
 
 const formShape = z.object({
   anchorType: z.enum(anchorTypes),
-  colorKey: z.enum(colorKeys),
+  colorHex: z.string().regex(colorHexPattern),
   description: z.string(),
   endDateLocal: z.string().nullable(),
   intervalValue: z.string(),
@@ -102,7 +102,7 @@ export function createFormSchema({
 export function createFormValues(openedAt = new Date()): ScheduleFormValues {
   return {
     anchorType: "fixed",
-    colorKey: defaultColorKey,
+    colorHex: defaultColorHex,
     description: "",
     endDateLocal: null,
     intervalValue: "",
@@ -122,7 +122,7 @@ export function toFormValues(item: Schedule): ScheduleFormValues {
     anchorType: supportsCompletion(rule.recurrenceType)
       ? rule.anchorType
       : "fixed",
-    colorKey: item.colorKey,
+    colorHex: item.colorHex,
     description: item.description ?? "",
     endDateLocal: rule.endDateLocal ?? null,
     intervalValue: rule.intervalValue ? String(rule.intervalValue) : "",
@@ -143,7 +143,7 @@ export function toScheduleInput(
 
   return {
     anchorType: values.anchorType,
-    colorKey: values.colorKey,
+    colorHex: values.colorHex,
     description: description ? description : null,
     endDateLocal: values.endDateLocal,
     intervalValue: requiresInterval(values.recurrenceType)

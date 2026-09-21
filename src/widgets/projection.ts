@@ -2,7 +2,6 @@ import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 
 import type { AppLanguage } from "~/i18n/language";
-import { colorByKey } from "~/schedule/display/color";
 import { createHomeSections } from "~/schedule/home-feed";
 import type { OccurrenceLog } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
@@ -47,7 +46,7 @@ export function createHomeWidgetProps({
   return {
     emptyMessage: t("home.widget.empty"),
     items: cards.slice(0, 6).map((card) => ({
-      color: colorByKey[card.item.colorKey].swatchColor,
+      color: card.item.colorHex,
       detail: card.compactMetaLine,
       title: card.item.title,
     })),
