@@ -16,6 +16,8 @@ import { listLogs } from "~/schedule/db/logs";
 
 import { createHomeWidgetProps, type HomeWidgetProps } from "./projection";
 
+let syncGeneration = 0;
+
 function HomeWidget(
   props: HomeWidgetProps,
   environment: WidgetEnvironment
@@ -135,6 +137,7 @@ export async function syncHomeWidget({
   userId?: string;
 }): Promise<void> {
   const t = appI18n.t;
+  const generation = ++syncGeneration;
 
   if (!userId) {
     homeWidget.updateSnapshot({
@@ -149,6 +152,10 @@ export async function syncHomeWidget({
   const schedules = await listItems({ userId });
   const itemIds = schedules.map((schedule) => schedule.id);
   const logs = itemIds.length ? await listLogs({ itemIds, userId }) : [];
+
+  if (generation !== syncGeneration) {
+    return;
+  }
 
   homeWidget.updateSnapshot(
     createHomeWidgetProps({
