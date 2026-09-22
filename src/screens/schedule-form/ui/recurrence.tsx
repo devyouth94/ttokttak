@@ -1,99 +1,102 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useController, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import {
   type RecurrenceType,
   requiresInterval,
   requiresWeekdays,
+  supportsCompletion,
 } from "~/schedule/rules/recurrence";
-import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
+import { borderRadius, spacing, typography } from "~/ui/tokens";
 
-import type { ScheduleFormScreenStyles } from "./styles";
+import { defaultWeekdayMask, type ScheduleFormValues } from "../form-values";
+import { useScheduleFormSetters } from "../use-form-setters";
 
-type Props = {
-  intervalError?: string;
-  intervalValue: string;
-  recurrenceType: RecurrenceType;
-  selectedWeekdays: number[];
-  styles: ScheduleFormScreenStyles;
-  themeColors: ThemeColors;
-  weekdayError?: string;
-  onChangeIntervalValue: (value: string) => void;
-  onSelectRecurrence: (recurrenceType: RecurrenceType) => void;
-  onToggleWeekday: (weekdayValue: number) => void;
-};
-
-export function RecurrenceSection({
-  intervalError,
-  intervalValue,
-  recurrenceType,
-  selectedWeekdays,
-  styles,
-  themeColors,
-  weekdayError,
-  onChangeIntervalValue,
-  onSelectRecurrence,
-  onToggleWeekday,
-}: Props): React.JSX.Element {
+export function RecurrenceSection(): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useThemeColors();
+
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
+
+  const {
+    clearErrors,
+    control,
+    formState: { errors },
+    getValues,
+  } = useFormContext<ScheduleFormValues>();
+  const { setField, setFields } = useScheduleFormSetters();
+
+  const {
+    field: intervalField,
+    fieldState: { error: intervalError },
+  } = useController({ control, name: "intervalValue" });
+
+  const [recurrenceType, weekdayMask] = useWatch({
+    control,
+    name: ["recurrenceType", "weekdayMask"],
+  });
+
   const [isIntervalFocused, setIsIntervalFocused] = useState(false);
 
-  const isCustom = requiresInterval(recurrenceType);
-  const weekdaysInsideCustom = recurrenceType === "interval_weeks";
+  const usesCustomInterval = requiresInterval(recurrenceType);
+  const weekdayError = errors.weekdayMask?.message;
 
-  const quickOptions = (
-    [
-      { label: t("scheduleForm.recurrence.daily"), value: "daily" },
-      { label: t("scheduleForm.recurrence.weekly"), value: "weekly" },
-      { label: t("scheduleForm.recurrence.monthly"), value: "monthly" },
-    ] as const
-  ).map((option) => (
-    <OptionButton
-      key={option.value}
-      label={option.label}
-      onPress={() => onSelectRecurrence(option.value)}
-      selected={recurrenceType === option.value}
-      styles={styles}
-      variant="primary"
-    />
-  ));
+  const basicRecurrenceOptions = [
+    { label: t("scheduleForm.recurrence.daily"), value: "daily" },
+    { label: t("scheduleForm.recurrence.weekly"), value: "weekly" },
+    { label: t("scheduleForm.recurrence.monthly"), value: "monthly" },
+  ] as const;
 
-  const customUnits = (
-    [
-      {
-        label: t("scheduleForm.recurrence.unitDays"),
-        value: "interval_days",
-      },
-      {
-        label: t("scheduleForm.recurrence.unitWeeks"),
-        value: "interval_weeks",
-      },
-      {
-        label: t("scheduleForm.recurrence.unitMonths"),
-        value: "interval_months",
-      },
-    ] as const
-  ).map((option) => (
-    <OptionButton
-      key={option.value}
-      label={option.label}
-      onPress={() => onSelectRecurrence(option.value)}
-      selected={recurrenceType === option.value}
-      styles={styles}
-      variant="unit"
-    />
-  ));
+  const intervalUnitOptions = [
+    {
+      label: t("scheduleForm.recurrence.unitDays"),
+      value: "interval_days",
+    },
+    {
+      label: t("scheduleForm.recurrence.unitWeeks"),
+      value: "interval_weeks",
+    },
+    {
+      label: t("scheduleForm.recurrence.unitMonths"),
+      value: "interval_months",
+    },
+  ] as const;
 
-  const weekdays = requiresWeekdays(recurrenceType) && (
-    <WeekdaySelector
-      error={weekdayError}
-      selected={selectedWeekdays}
-      styles={styles}
-      onToggle={onToggleWeekday}
-    />
-  );
+  // 반복 유형을 바꿀 때 더 이상 유효하지 않은 부가 옵션도 함께 정리한다.
+  function selectRecurrence(nextType: RecurrenceType): void {
+    const current = getValues();
+    const needsWeekdays = requiresWeekdays(nextType);
+
+    setFields({
+      anchorType: supportsCompletion(nextType) ? current.anchorType : "fixed",
+      endDateLocal:
+        nextType === "once" || current.recurrenceType === "once"
+          ? null
+          : current.endDateLocal,
+      intervalValue: requiresInterval(nextType)
+        ? current.intervalValue || "1"
+        : "",
+      recurrenceType: nextType,
+      weekdayMask: needsWeekdays
+        ? current.weekdayMask.length > 0
+          ? current.weekdayMask
+          : defaultWeekdayMask(current.startDateLocal)
+        : [],
+    });
+  }
+
+  function toggleWeekday(weekday: number): void {
+    setField(
+      "weekdayMask",
+      weekdayMask.includes(weekday)
+        ? weekdayMask.filter((value) => value !== weekday)
+        : [...weekdayMask, weekday]
+    );
+  }
 
   return (
     <View style={styles.field}>
@@ -105,19 +108,19 @@ export function RecurrenceSection({
         <View style={styles.recurrenceModeTabs}>
           <ModeTab
             label={t("scheduleForm.recurrence.basicTab")}
-            onPress={() => onSelectRecurrence("daily")}
-            selected={!isCustom}
+            onPress={() => selectRecurrence("daily")}
+            selected={!usesCustomInterval}
             styles={styles}
           />
           <ModeTab
             label={t("scheduleForm.recurrence.customTab")}
-            onPress={() => onSelectRecurrence("interval_days")}
-            selected={isCustom}
+            onPress={() => selectRecurrence("interval_days")}
+            selected={usesCustomInterval}
             styles={styles}
           />
         </View>
 
-        {isCustom ? (
+        {usesCustomInterval ? (
           <View style={styles.quickRecurrenceContent}>
             <View style={styles.customRecurrenceControlGroup}>
               <AppText style={styles.subFieldLabel} variant="body2">
@@ -127,8 +130,14 @@ export function RecurrenceSection({
                 <TextInput
                   accessibilityLabel={t("scheduleForm.recurrence.intervalA11y")}
                   keyboardType="number-pad"
-                  onBlur={() => setIsIntervalFocused(false)}
-                  onChangeText={onChangeIntervalValue}
+                  onBlur={() => {
+                    intervalField.onBlur();
+                    setIsIntervalFocused(false);
+                  }}
+                  onChangeText={(value) => {
+                    clearErrors("root");
+                    intervalField.onChange(value.replace(/[^0-9]/g, ""));
+                  }}
                   onFocus={() => setIsIntervalFocused(true)}
                   placeholder="1"
                   placeholderTextColor={themeColors.textMuted}
@@ -138,35 +147,67 @@ export function RecurrenceSection({
                     isIntervalFocused ? styles.inputFocused : undefined,
                     intervalError ? styles.inputError : undefined,
                   ]}
-                  value={intervalValue}
+                  value={intervalField.value}
                 />
 
-                {customUnits}
+                {intervalUnitOptions.map((option) => (
+                  <OptionButton
+                    key={option.value}
+                    label={option.label}
+                    onPress={() => selectRecurrence(option.value)}
+                    selected={recurrenceType === option.value}
+                    styles={styles}
+                    variant="unit"
+                  />
+                ))}
               </View>
 
-              {intervalError && (
+              {intervalError?.message && (
                 <AppText style={styles.fieldError} variant="caption">
-                  {intervalError}
+                  {intervalError.message}
                 </AppText>
               )}
             </View>
 
-            {weekdaysInsideCustom && weekdays}
+            {recurrenceType === "interval_weeks" && (
+              <WeekdaySelector
+                error={weekdayError}
+                selected={weekdayMask}
+                styles={styles}
+                onToggle={toggleWeekday}
+              />
+            )}
           </View>
         ) : (
           <View style={styles.quickRecurrenceContent}>
             <View style={styles.quickRecurrenceGrid}>
-              {quickOptions}
+              {basicRecurrenceOptions.map((option) => (
+                <OptionButton
+                  key={option.value}
+                  label={option.label}
+                  onPress={() => selectRecurrence(option.value)}
+                  selected={recurrenceType === option.value}
+                  styles={styles}
+                  variant="primary"
+                />
+              ))}
               <OptionButton
                 label={t("scheduleForm.recurrence.once")}
-                onPress={() => onSelectRecurrence("once")}
+                onPress={() => selectRecurrence("once")}
                 selected={recurrenceType === "once"}
                 styles={styles}
                 variant="primary"
               />
             </View>
 
-            {recurrenceType === "weekly" && weekdays}
+            {recurrenceType === "weekly" && (
+              <WeekdaySelector
+                error={weekdayError}
+                selected={weekdayMask}
+                styles={styles}
+                onToggle={toggleWeekday}
+              />
+            )}
           </View>
         )}
       </View>
@@ -184,11 +225,12 @@ function OptionButton({
   label: string;
   onPress: () => void;
   selected: boolean;
-  styles: ScheduleFormScreenStyles;
+  styles: ReturnType<typeof createStyles>;
   variant: "primary" | "unit";
 }): React.JSX.Element {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
@@ -220,10 +262,11 @@ function ModeTab({
   label: string;
   onPress: () => void;
   selected: boolean;
-  styles: ScheduleFormScreenStyles;
+  styles: ReturnType<typeof createStyles>;
 }): React.JSX.Element {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="tab"
       accessibilityState={{ selected }}
       onPress={() => !selected && onPress()}
@@ -255,7 +298,7 @@ function WeekdaySelector({
 }: {
   error?: string;
   selected: number[];
-  styles: ScheduleFormScreenStyles;
+  styles: ReturnType<typeof createStyles>;
   onToggle: (weekday: number) => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
@@ -281,6 +324,7 @@ function WeekdaySelector({
 
           return (
             <Pressable
+              accessibilityLabel={weekday.label}
               accessibilityRole="button"
               key={weekday.value}
               onPress={() => onToggle(weekday.value)}
@@ -311,4 +355,147 @@ function WeekdaySelector({
       )}
     </View>
   );
+}
+
+function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
+  return StyleSheet.create({
+    customRecurrenceControlGroup: {
+      gap: spacing.xs,
+    },
+    customRecurrenceControls: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 4,
+    },
+    customRecurrenceInput: {
+      flex: 1,
+      height: 36,
+      minHeight: 36,
+      minWidth: 0,
+      paddingVertical: spacing.xxs,
+      textAlign: "center",
+    },
+    field: {
+      gap: spacing.xs,
+    },
+    fieldError: {
+      color: themeColors.error,
+    },
+    fieldLabel: {
+      color: themeColors.text,
+    },
+    inputError: {
+      borderColor: themeColors.error,
+    },
+    inputFocused: {
+      borderColor: themeColors.primary,
+    },
+    quickRecurrenceContent: {
+      gap: spacing.xs,
+    },
+    quickRecurrenceGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 4,
+    },
+    recurrenceModeTab: {
+      alignItems: "center",
+      borderRadius: borderRadius.pill,
+      flex: 1,
+      height: "100%",
+      justifyContent: "center",
+    },
+    recurrenceModeTabPressed: {
+      opacity: 0.88,
+    },
+    recurrenceModeTabs: {
+      backgroundColor: themeColors.surface,
+      borderRadius: borderRadius.pill,
+      flexDirection: "row",
+      height: 36,
+      overflow: "hidden",
+    },
+    recurrenceModeTabSelected: {
+      backgroundColor: themeColors.primary,
+    },
+    recurrenceModeTabText: {
+      color: themeColors.textSoft,
+    },
+    recurrenceModeTabTextSelected: {
+      color: themeColors.primaryForeground,
+    },
+    recurrenceOption: {
+      alignItems: "center",
+      backgroundColor: "transparent",
+      borderColor: themeColors.primary,
+      borderRadius: borderRadius.pill,
+      borderWidth: 1,
+      flex: 1,
+      height: 36,
+      justifyContent: "center",
+      minHeight: 36,
+      minWidth: 52,
+      paddingHorizontal: spacing.sm,
+    },
+    recurrenceOptionPressed: {
+      opacity: 0.88,
+    },
+    recurrenceOptionSelected: {
+      backgroundColor: themeColors.primary,
+    },
+    recurrenceOptionText: {
+      color: themeColors.text,
+    },
+    recurrenceOptionTextSelected: {
+      color: themeColors.primaryForeground,
+    },
+    recurrenceSettingsStack: {
+      gap: spacing.xs,
+    },
+    recurrenceUnitOption: {
+      minWidth: 0,
+    },
+    subFieldLabel: {
+      color: themeColors.text,
+    },
+    textInput: {
+      backgroundColor: "transparent",
+      borderColor: themeColors.border,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      color: themeColors.text,
+      fontFamily: typography.fontFamily.body,
+      fontSize: typography.size.body3,
+      lineHeight: typography.lineHeight.body3,
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    weekdayChip: {
+      alignItems: "center",
+      aspectRatio: 1,
+      backgroundColor: "transparent",
+      borderColor: themeColors.primary,
+      borderRadius: borderRadius.pill,
+      borderWidth: 1,
+      flex: 1,
+      justifyContent: "center",
+    },
+    weekdayChipPressed: {
+      opacity: 0.88,
+    },
+    weekdayChipSelected: {
+      backgroundColor: themeColors.primary,
+    },
+    weekdayChipText: {
+      color: themeColors.text,
+    },
+    weekdayChipTextSelected: {
+      color: themeColors.primaryForeground,
+    },
+    weekdayGroup: {
+      flexDirection: "row",
+      gap: 4,
+    },
+  });
 }

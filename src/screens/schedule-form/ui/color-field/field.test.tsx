@@ -1,14 +1,19 @@
 import { createElement, type ReactElement } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Modal } from "react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
 
-import { ColorField } from "./color-field";
+import { ColorField } from "./field";
 
 declare const require: (moduleName: string) => unknown;
 
 jest.mock("react-i18next", () => ({ useTranslation: jest.fn() }));
+jest.mock("react-hook-form", () => ({
+  useFormContext: jest.fn(),
+  useWatch: jest.fn(),
+}));
 jest.mock("lucide-react-native", () => ({ Check: "Check" }));
 jest.mock("react-native-svg", () => ({
   __esModule: true,
@@ -50,24 +55,16 @@ const TestRenderer = require("react-test-renderer") as {
   };
 };
 
-const screenStyles = {
-  field: {},
-  fieldLabel: {},
-  inlineActionPressed: {},
-  pickerModalBackdrop: {},
-  pickerModalCard: {},
-  pickerModalConfirmText: {},
-  pickerModalHeader: {},
-  pickerModalTextButton: {},
-  pickerModalTitle: {},
-} as never;
-
 function colorField(selected: string, onSelect: (colorHex: string) => void) {
-  return createElement(ColorField, {
-    selected,
-    styles: screenStyles,
-    onSelect,
-  });
+  jest.mocked(useFormContext).mockReturnValue({
+    clearErrors: jest.fn(),
+    control: {},
+    formState: { isSubmitted: false },
+    setValue: (_name: string, value: string) => onSelect(value),
+  } as never);
+  jest.mocked(useWatch).mockReturnValue(selected as never);
+
+  return createElement(ColorField);
 }
 
 beforeEach(() => {

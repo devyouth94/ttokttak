@@ -1,56 +1,55 @@
+import { useMemo } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
-  type LayoutChangeEvent,
+  Platform,
   Pressable,
+  StyleSheet,
   Switch,
   View,
 } from "react-native";
 import { Info } from "lucide-react-native";
 
-import {
-  type AnchorType,
-  type RecurrenceType,
-  supportsCompletion,
-} from "~/schedule/rules/recurrence";
-import type { ThemeColors } from "~/theme/colors";
+import { supportsCompletion } from "~/schedule/rules/recurrence";
+import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
+import { spacing } from "~/ui/tokens";
 
-import type { ScheduleFormScreenStyles } from "./styles";
+import type { ScheduleFormValues } from "../form-values";
+import { useScheduleFormSetters } from "../use-form-setters";
 
-export function ScheduleOptions({
-  anchorError,
-  anchorType,
-  notificationsEnabled,
-  recurrenceType,
-  styles,
-  themeColors,
-  onSelectAnchorType,
-  onLayout,
-  onToggleNotifications,
-}: {
-  anchorError?: string;
-  anchorType: AnchorType;
-  notificationsEnabled: boolean;
-  recurrenceType: RecurrenceType;
-  styles: ScheduleFormScreenStyles;
-  themeColors: ThemeColors;
-  onSelectAnchorType: (anchorType: AnchorType) => void;
-  onLayout: (event: LayoutChangeEvent) => void;
-  onToggleNotifications: (value: boolean) => void;
-}): React.JSX.Element {
+export function ScheduleOptions(): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useThemeColors();
+
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
+
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<ScheduleFormValues>();
+
+  const { setField } = useScheduleFormSetters();
+
+  const [anchorType, notificationsEnabled, recurrenceType] = useWatch({
+    control,
+    name: ["anchorType", "notificationsEnabled", "recurrenceType"],
+  });
+
   const canUseCompletion = supportsCompletion(recurrenceType);
   const usesCompletion = canUseCompletion && anchorType === "completion_based";
 
   function toggleCompletion(value: boolean): void {
-    if (canUseCompletion) {
-      onSelectAnchorType(value ? "completion_based" : "fixed");
+    if (!canUseCompletion) {
+      return;
     }
+
+    setField("anchorType", value ? "completion_based" : "fixed");
   }
 
   return (
-    <View onLayout={onLayout} style={styles.field}>
+    <View style={styles.field}>
       <AppText style={styles.fieldLabel} variant="body2">
         {t("scheduleForm.sections.options")}
       </AppText>
@@ -60,7 +59,9 @@ export function ScheduleOptions({
             {t("scheduleForm.fields.notificationsEnabled")}
           </AppText>
           <Switch
-            onValueChange={onToggleNotifications}
+            onValueChange={(value) => {
+              setField("notificationsEnabled", value);
+            }}
             style={styles.optionToggleSwitch}
             thumbColor={themeColors.primaryForeground}
             trackColor={{
@@ -114,13 +115,62 @@ export function ScheduleOptions({
             />
           </View>
 
-          {anchorError && (
+          {errors.anchorType?.message && (
             <AppText style={styles.fieldError} variant="caption">
-              {anchorError}
+              {errors.anchorType.message}
             </AppText>
           )}
         </View>
       </View>
     </View>
   );
+}
+
+function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
+  return StyleSheet.create({
+    field: {
+      gap: spacing.xs,
+    },
+    fieldError: {
+      color: themeColors.error,
+    },
+    fieldLabel: {
+      color: themeColors.text,
+    },
+    inlineActionPressed: {
+      opacity: 0.72,
+    },
+    optionInfoButton: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    optionRows: {
+      gap: spacing.none,
+    },
+    optionToggleGroup: {
+      gap: spacing.xs,
+    },
+    optionToggleLabel: {
+      color: themeColors.textSoft,
+      includeFontPadding: false,
+      textAlignVertical: "center",
+    },
+    optionToggleLabelGroup: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: spacing.xxs,
+    },
+    optionToggleRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      height: 40,
+      justifyContent: "space-between",
+    },
+    optionToggleSwitch: {
+      transform: Platform.select({
+        ios: [{ translateY: 8 }],
+        default: undefined,
+      }),
+    },
+  });
 }

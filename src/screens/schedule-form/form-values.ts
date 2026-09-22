@@ -1,4 +1,5 @@
 import { format } from "date-fns/format";
+import { parse } from "date-fns/parse";
 import { z } from "zod/v4";
 
 import type { AppLanguage } from "~/i18n/language";
@@ -113,6 +114,10 @@ export function createFormValues(openedAt = new Date()): ScheduleFormValues {
     title: "",
     weekdayMask: [],
   };
+}
+
+export function defaultWeekdayMask(startDateLocal: string): number[] {
+  return [parse(startDateLocal, "yyyy-MM-dd", new Date()).getDay()];
 }
 
 export function toFormValues(item: Schedule): ScheduleFormValues {

@@ -1,12 +1,8 @@
-import { useTranslation } from "react-i18next";
-import { ActivityIndicator, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { FormProvider } from "react-hook-form";
+import { router } from "expo-router";
 
-import { useThemeColors } from "~/theme/provider";
-import { AppText } from "~/ui/app-text";
-
-import { ScheduleFormScreenContent } from "./content";
-import { useScheduleFormScreenStyles } from "./styles";
+import { ScheduleFormBody } from "./screen-body";
+import { ScheduleFormLoading } from "./screen-loading";
 import { useScheduleForm } from "../form";
 
 type ScheduleFormScreenProps = {
@@ -18,34 +14,32 @@ export function ScheduleFormScreen({
   itemId,
   returnTo,
 }: ScheduleFormScreenProps): React.JSX.Element {
-  const form = useScheduleForm({
-    itemId,
-    returnTo,
-  });
+  const scheduleForm = useScheduleForm({ itemId, returnTo });
 
-  if (form.state.isLoading) {
-    return <ScheduleFormScreenLoading />;
+  if (scheduleForm.isLoading) {
+    return <ScheduleFormLoading />;
   }
 
-  return <ScheduleFormScreenContent {...form} />;
+  return (
+    <FormProvider {...scheduleForm.form}>
+      <ScheduleFormBody
+        onBack={goBackOrHome}
+        isDeleting={scheduleForm.isDeleting}
+        isEdit={scheduleForm.isEdit}
+        loadError={scheduleForm.loadError}
+        remove={scheduleForm.remove}
+        submit={scheduleForm.submit}
+        today={scheduleForm.today}
+      />
+    </FormProvider>
+  );
 }
 
-function ScheduleFormScreenLoading(): React.JSX.Element {
-  const { t } = useTranslation();
-  const themeColors = useThemeColors();
-  const styles = useScheduleFormScreenStyles();
+function goBackOrHome(): void {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
 
-  return (
-    <SafeAreaView
-      edges={["top", "left", "right", "bottom"]}
-      style={styles.safeArea}
-    >
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={themeColors.primary} size="large" />
-        <AppText style={styles.loadingText}>
-          {t("scheduleForm.loading")}
-        </AppText>
-      </View>
-    </SafeAreaView>
-  );
+  router.replace("/");
 }
