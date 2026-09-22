@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { Platform, StyleSheet } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, usePathname } from "expo-router";
 import { Button, Host } from "@expo/ui/swift-ui";
 import {
@@ -23,7 +22,6 @@ const isLiquidGlassAvailable =
 
 export function FloatingCreateButton(): React.JSX.Element {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const themeColors = useThemeColors();
 
@@ -33,7 +31,6 @@ export function FloatingCreateButton(): React.JSX.Element {
       style={[
         styles.host,
         {
-          bottom: insets.bottom + 96,
           right: spacing.md + spacing.xxs,
         },
       ]}
@@ -74,6 +71,7 @@ export function FloatingCreateButton(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   host: {
+    bottom: 96,
     position: "absolute",
     zIndex: 1,
   },

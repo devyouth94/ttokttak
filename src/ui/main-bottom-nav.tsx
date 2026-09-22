@@ -17,10 +17,11 @@ import { AppText } from "~/ui/app-text";
 import { spacing } from "~/ui/tokens";
 
 export const MAIN_BOTTOM_NAV_RESERVED_HEIGHT = 92;
+const IOS_MAIN_TAB_CONTENT_BOTTOM_INSET = 160;
 
 export function getMainTabContentBottomInset(safeAreaBottom: number): number {
   return Platform.OS === "ios"
-    ? 72
+    ? IOS_MAIN_TAB_CONTENT_BOTTOM_INSET
     : MAIN_BOTTOM_NAV_RESERVED_HEIGHT + safeAreaBottom;
 }
 
