@@ -27,6 +27,7 @@ export function ListSortMenu({
       value: "createdDesc",
     },
   ];
+
   const selected = options.find((option) => option.value === value)!;
 
   return (
@@ -36,10 +37,8 @@ export function ListSortMenu({
         accessibilityLabel={t("scheduleList.sort.menuLabel", {
           label: selected.label,
         })}
-        align="end"
         options={options}
         value={selected.value}
-        variant="compact"
         onChange={onChange}
       />
     </View>

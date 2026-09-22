@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, TextInput, View } from "react-native";
 
-import type { RecurrenceType } from "~/schedule/rules/recurrence";
+import {
+  type RecurrenceType,
+  requiresInterval,
+  requiresWeekdays,
+} from "~/schedule/rules/recurrence";
 import type { ThemeColors } from "~/theme/colors";
 import { AppText } from "~/ui/app-text";
 
 import type { ScheduleFormScreenStyles } from "./styles";
-import { getRecurrenceView } from "./view";
 
 type Props = {
   intervalError?: string;
@@ -37,13 +40,8 @@ export function RecurrenceSection({
   const { t } = useTranslation();
   const [isIntervalFocused, setIsIntervalFocused] = useState(false);
 
-  const {
-    isCustom,
-    isOnce,
-    showsStandaloneWeekdays,
-    showsWeekdays,
-    weekdaysInsideCustom,
-  } = getRecurrenceView(recurrenceType);
+  const isCustom = requiresInterval(recurrenceType);
+  const weekdaysInsideCustom = recurrenceType === "interval_weeks";
 
   const quickOptions = (
     [
@@ -88,7 +86,7 @@ export function RecurrenceSection({
     />
   ));
 
-  const weekdays = showsWeekdays && (
+  const weekdays = requiresWeekdays(recurrenceType) && (
     <WeekdaySelector
       error={weekdayError}
       selected={selectedWeekdays}
@@ -162,13 +160,13 @@ export function RecurrenceSection({
               <OptionButton
                 label={t("scheduleForm.recurrence.once")}
                 onPress={() => onSelectRecurrence("once")}
-                selected={isOnce}
+                selected={recurrenceType === "once"}
                 styles={styles}
                 variant="primary"
               />
             </View>
 
-            {showsStandaloneWeekdays && weekdays}
+            {recurrenceType === "weekly" && weekdays}
           </View>
         )}
       </View>
@@ -189,25 +187,21 @@ function OptionButton({
   styles: ScheduleFormScreenStyles;
   variant: "primary" | "unit";
 }): React.JSX.Element {
-  const isPrimary = variant === "primary";
-
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
-        styles.chip,
-        isPrimary ? styles.primaryRecurrenceChip : undefined,
-        styles.quickRecurrenceChip,
-        variant === "unit" ? styles.customRecurrenceUnitOption : undefined,
-        selected ? styles.quickRecurrenceChipSelected : undefined,
-        pressed ? styles.chipPressed : undefined,
+        styles.recurrenceOption,
+        variant === "unit" ? styles.recurrenceUnitOption : undefined,
+        selected ? styles.recurrenceOptionSelected : undefined,
+        pressed ? styles.recurrenceOptionPressed : undefined,
       ]}
     >
       <AppText
         style={[
-          styles.quickRecurrenceChipText,
-          selected ? styles.quickRecurrenceChipTextSelected : undefined,
+          styles.recurrenceOptionText,
+          selected ? styles.recurrenceOptionTextSelected : undefined,
         ]}
         variant="body3"
       >

@@ -9,36 +9,30 @@ import { borderRadius, spacing } from "~/ui/tokens";
 export type SelectOption<Value extends string> = {
   accessibilityHint?: string;
   label: string;
-  leading?: React.ReactNode;
   value: Value;
 };
 
 type SelectMenuProps<Value extends string> = {
   accessibilityHint: string;
   accessibilityLabel: string;
-  align?: Select.ContentProps["align"];
   disabled?: boolean;
   options: SelectOption<Value>[];
   value: Value;
-  variant?: "compact" | "field";
   onChange: (value: Value) => void;
 };
 
 export function SelectMenu<Value extends string>({
   accessibilityHint,
   accessibilityLabel,
-  align = "start",
   disabled = false,
   options,
   value,
-  variant = "field",
   onChange,
 }: SelectMenuProps<Value>): React.JSX.Element {
   const themeColors = useThemeColors();
 
   const selectedOption =
     options.find((option) => option.value === value) ?? options[0]!;
-  const isCompact = variant === "compact";
 
   return (
     <Select.Root
@@ -61,24 +55,17 @@ export function SelectMenu<Value extends string>({
           accessibilityRole="button"
           style={({ pressed }) => [
             styles.trigger,
-            isCompact ? styles.compactTrigger : styles.fieldTrigger,
-            {
-              borderColor: isCompact ? themeColors.primary : themeColors.border,
-            },
+            { borderColor: themeColors.primary },
             disabled ? styles.disabledTrigger : undefined,
             pressed ? styles.pressed : undefined,
           ]}
         >
-          {selectedOption.leading}
-
-          <View
-            style={isCompact ? styles.compactTriggerTextSlot : styles.textSlot}
-          >
+          <View style={styles.triggerTextSlot}>
             <AppText
               ellipsizeMode="tail"
               numberOfLines={1}
               style={{ color: themeColors.text }}
-              variant={isCompact ? "label" : "body3"}
+              variant="label"
             >
               {selectedOption.label}
             </AppText>
@@ -92,7 +79,7 @@ export function SelectMenu<Value extends string>({
         <Select.Overlay style={StyleSheet.absoluteFill} />
 
         <Select.Content
-          align={align}
+          align="end"
           insets={{
             bottom: spacing.lg,
             left: spacing.md,
@@ -101,7 +88,7 @@ export function SelectMenu<Value extends string>({
           }}
           sideOffset={6}
           style={StyleSheet.flatten([
-            isCompact ? styles.compactContent : styles.fieldContent,
+            styles.content,
             { backgroundColor: themeColors.surface },
           ])}
         >
@@ -110,19 +97,15 @@ export function SelectMenu<Value extends string>({
               accessibilityHint={option.accessibilityHint}
               key={option.value}
               label={option.label}
-              style={[
-                styles.item,
-                isCompact ? styles.compactItem : styles.fieldItem,
-              ]}
+              style={styles.item}
               value={option.value}
             >
-              {option.leading}
               <View style={styles.textSlot}>
                 <AppText
                   ellipsizeMode="tail"
                   numberOfLines={1}
                   style={{ color: themeColors.text }}
-                  variant={isCompact ? "label" : "body3"}
+                  variant="label"
                 >
                   {option.label}
                 </AppText>
@@ -140,42 +123,13 @@ export function SelectMenu<Value extends string>({
 }
 
 const styles = StyleSheet.create({
-  compactContent: {
+  content: {
     borderRadius: borderRadius.lg,
     minWidth: 180,
     padding: spacing.xxs,
   },
-  compactItem: {
-    gap: spacing.md,
-    minHeight: 40,
-  },
-  compactTrigger: {
-    alignSelf: "flex-end",
-    borderRadius: borderRadius.pill,
-    maxWidth: 210,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  compactTriggerTextSlot: {
-    flexShrink: 1,
-    minWidth: 0,
-  },
   disabledTrigger: {
     opacity: 0.56,
-  },
-  fieldContent: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.xxs,
-    width: "100%",
-  },
-  fieldItem: {
-    gap: spacing.sm,
-    minHeight: 44,
-  },
-  fieldTrigger: {
-    borderRadius: borderRadius.xl,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
   },
   indicator: {
     alignItems: "center",
@@ -187,7 +141,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: borderRadius.md,
     flexDirection: "row",
+    gap: spacing.md,
     justifyContent: "space-between",
+    minHeight: 40,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -199,9 +155,18 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   trigger: {
+    alignSelf: "flex-end",
     alignItems: "center",
+    borderRadius: borderRadius.pill,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,
+    maxWidth: 210,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  triggerTextSlot: {
+    flexShrink: 1,
+    minWidth: 0,
   },
 });

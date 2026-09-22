@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
@@ -16,6 +15,7 @@ import {
   SettingsSectionCard,
   SettingsValueRow,
 } from "./settings-screen-rows";
+import { usePendingAction } from "../use-pending-action";
 
 type PendingAction = "language" | "theme";
 
@@ -28,9 +28,9 @@ export function EnvironmentSection(): React.JSX.Element {
     setThemePreference,
     themePreference,
   } = useTheme();
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
-    null
-  );
+
+  const { pendingAction, runAction } = usePendingAction<PendingAction>();
+
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -64,23 +64,6 @@ export function EnvironmentSection(): React.JSX.Element {
       value: "dark",
     },
   ] satisfies SelectOption<ThemePreference>[];
-
-  async function runAction(
-    action: PendingAction,
-    task: () => Promise<void>
-  ): Promise<void> {
-    if (pendingAction) {
-      return;
-    }
-
-    setPendingAction(action);
-
-    try {
-      await task();
-    } finally {
-      setPendingAction(null);
-    }
-  }
 
   async function changeLanguage(nextLanguage: AppLanguage): Promise<void> {
     if (nextLanguage === appLanguage) {
@@ -127,14 +110,12 @@ export function EnvironmentSection(): React.JSX.Element {
             <SelectMenu
               accessibilityHint={t("settings.environment.appLanguageHint")}
               accessibilityLabel={t("settings.environment.appLanguage")}
-              align="end"
               disabled={pendingAction !== null}
               onChange={(nextLanguage) => {
                 void changeLanguage(nextLanguage);
               }}
               options={languageOptions}
               value={appLanguage}
-              variant="compact"
             />
           </View>
         }
@@ -151,14 +132,12 @@ export function EnvironmentSection(): React.JSX.Element {
             <SelectMenu
               accessibilityHint={t("settings.environment.themeHint")}
               accessibilityLabel={t("settings.environment.theme")}
-              align="end"
               disabled={pendingAction !== null}
               onChange={(nextPreference) => {
                 void changeTheme(nextPreference);
               }}
               options={themeOptions}
               value={themePreference}
-              variant="compact"
             />
           </View>
         }

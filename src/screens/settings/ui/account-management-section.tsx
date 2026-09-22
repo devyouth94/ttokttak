@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert } from "react-native";
 
@@ -7,6 +6,7 @@ import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
 
 import { SettingsRow, SettingsSectionCard } from "./settings-screen-rows";
+import { usePendingAction } from "../use-pending-action";
 
 type PendingAction = "delete" | "signOut";
 
@@ -15,26 +15,7 @@ export function AccountManagementSection(): React.JSX.Element {
   const themeColors = useThemeColors();
   const { deleteAccount, signOut } = useSession();
 
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
-    null
-  );
-
-  async function runAction(
-    action: PendingAction,
-    task: () => Promise<void>
-  ): Promise<void> {
-    if (pendingAction) {
-      return;
-    }
-
-    setPendingAction(action);
-
-    try {
-      await task();
-    } finally {
-      setPendingAction(null);
-    }
-  }
+  const { pendingAction, runAction } = usePendingAction<PendingAction>();
 
   async function signOutCurrentSession(): Promise<void> {
     await runAction("signOut", async () => {

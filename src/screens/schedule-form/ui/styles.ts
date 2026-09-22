@@ -52,16 +52,20 @@ function createScheduleFormScreenStyles(themeColors: ThemeColors) {
         default: undefined,
       }),
     },
-    chip: {
+    recurrenceOption: {
       alignItems: "center",
       borderRadius: borderRadius.pill,
-      backgroundColor: themeColors.surface,
+      backgroundColor: "transparent",
+      borderColor: themeColors.primary,
+      borderWidth: 1,
+      flex: 1,
+      height: 36,
       justifyContent: "center",
-      minHeight: 42,
-      minWidth: 72,
-      paddingHorizontal: spacing.md,
+      minHeight: 36,
+      minWidth: 52,
+      paddingHorizontal: spacing.sm,
     },
-    chipPressed: {
+    recurrenceOptionPressed: {
       opacity: 0.88,
     },
     compactInput: {
@@ -86,10 +90,8 @@ function createScheduleFormScreenStyles(themeColors: ThemeColors) {
       paddingVertical: spacing.xxs,
       textAlign: "center",
     },
-    customRecurrenceUnitOption: {
-      flex: 1,
+    recurrenceUnitOption: {
       minWidth: 0,
-      paddingHorizontal: spacing.sm,
     },
     dateField: {
       flex: 1.1,
@@ -229,32 +231,19 @@ function createScheduleFormScreenStyles(themeColors: ThemeColors) {
     pickerModalTitle: {
       color: themeColors.text,
     },
-    primaryRecurrenceChip: {
-      flex: 1,
-    },
     primaryTextInput: {
       minHeight: 48,
     },
     pickerFieldPressed: {
       opacity: 0.8,
     },
-    quickRecurrenceChip: {
-      backgroundColor: "transparent",
-      borderColor: themeColors.primary,
-      borderRadius: borderRadius.pill,
-      borderWidth: 1,
-      height: 36,
-      minHeight: 36,
-      minWidth: 52,
-      paddingHorizontal: spacing.sm,
-    },
-    quickRecurrenceChipSelected: {
+    recurrenceOptionSelected: {
       backgroundColor: themeColors.primary,
     },
-    quickRecurrenceChipText: {
+    recurrenceOptionText: {
       color: themeColors.text,
     },
-    quickRecurrenceChipTextSelected: {
+    recurrenceOptionTextSelected: {
       color: themeColors.primaryForeground,
     },
     quickRecurrenceContent: {

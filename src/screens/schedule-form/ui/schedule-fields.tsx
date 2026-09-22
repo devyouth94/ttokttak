@@ -18,7 +18,7 @@ import type { ResolvedTheme } from "~/theme/preference";
 import { AppText } from "~/ui/app-text";
 
 import type { ScheduleFormScreenStyles } from "./styles";
-import { getDisplayValues, getEndDateControl } from "./view";
+import { getDisplayValues } from "./view";
 import type { useScheduleForm } from "../form";
 
 type Form = ReturnType<typeof useScheduleForm>;
@@ -54,7 +54,8 @@ export function ScheduleFields({
     reminderTime: reminderTimeDisplay,
     startDate: startDateDisplay,
   } = getDisplayValues(values, language);
-  const endDate = getEndDateControl(values);
+  const showsEndDate = values.recurrenceType !== "once";
+  const hasEndDate = showsEndDate && values.endDateLocal !== null;
   const pickerTitle =
     picker.iosMode === "time"
       ? t("scheduleForm.picker.reminderTimeTitle")
@@ -114,11 +115,11 @@ export function ScheduleFields({
         />
       </View>
 
-      {endDate.isVisible && (
+      {showsEndDate && (
         <EndDateControl
           displayValue={endDateDisplay}
           error={errors.endDate}
-          isEnabled={endDate.isEnabled}
+          isEnabled={hasEndDate}
           onDisable={actions.recurrence.onDisableEndDate}
           onEnable={actions.recurrence.onEnableEndDate}
           onOpenPicker={actions.picker.onOpenEndDatePicker}
@@ -146,7 +147,7 @@ export function ScheduleFields({
         />
       )}
 
-      {endDate.isEnabled && picker.isEndDateVisible && (
+      {hasEndDate && picker.isEndDateVisible && (
         <DateTimePicker
           accentColor={themeColors.primary}
           initialInputMode="default"

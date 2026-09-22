@@ -3,7 +3,6 @@ import { formatLocal } from "~/schedule/display/date";
 import {
   firstDate,
   type RecurrenceType,
-  requiresInterval,
   requiresWeekdays,
 } from "~/schedule/rules/recurrence";
 
@@ -39,18 +38,6 @@ export function getDisplayValues(
   };
 }
 
-export function getEndDateControl(values: {
-  endDateLocal: string | null;
-  recurrenceType: RecurrenceType;
-}) {
-  const isVisible = values.recurrenceType !== "once";
-
-  return {
-    isEnabled: isVisible && values.endDateLocal != null,
-    isVisible,
-  };
-}
-
 export function getFirstErrorTarget(errors: FormErrors): ErrorTarget | null {
   if (errors.title) {
     return "title";
@@ -65,20 +52,6 @@ export function getFirstErrorTarget(errors: FormErrors): ErrorTarget | null {
   }
 
   return errors.anchor ? "options" : null;
-}
-
-export function getRecurrenceView(recurrenceType: RecurrenceType) {
-  const isCustom = requiresInterval(recurrenceType);
-  const weekdaysInsideCustom = recurrenceType === "interval_weeks";
-  const showsWeekdays = recurrenceType === "weekly" || weekdaysInsideCustom;
-
-  return {
-    isCustom,
-    isOnce: recurrenceType === "once",
-    showsStandaloneWeekdays: showsWeekdays && !weekdaysInsideCustom,
-    showsWeekdays,
-    weekdaysInsideCustom,
-  };
 }
 
 function firstReminderText(
