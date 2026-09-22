@@ -1,5 +1,8 @@
 import { useMemo } from "react";
-import { endOfMonth, format, parse, startOfMonth } from "date-fns";
+import { endOfMonth } from "date-fns/endOfMonth";
+import { format } from "date-fns/format";
+import { parse } from "date-fns/parse";
+import { startOfMonth } from "date-fns/startOfMonth";
 
 import { useScheduleRange } from "~/schedule/query";
 import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";

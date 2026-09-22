@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 export const spacing = {
   none: 0,
   xxs: 4,
@@ -21,7 +23,7 @@ export const borderRadius = {
 
 export const typography = {
   fontFamily: {
-    body: "Pretendard",
+    body: Platform.OS === "ios" ? "Pretendard Variable" : "Pretendard",
   },
   fontWeight: {
     regular: "400",

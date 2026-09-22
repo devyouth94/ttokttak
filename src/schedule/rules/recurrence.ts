@@ -1,4 +1,5 @@
-import { addDays, differenceInCalendarDays } from "date-fns";
+import { addDays } from "date-fns/addDays";
+import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
 import { formatInTimeZone } from "date-fns-tz";
 
 export const recurrenceTypes = [

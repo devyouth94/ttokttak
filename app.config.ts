@@ -124,13 +124,7 @@ export default function getAppConfig(): ExpoConfig {
             ],
           },
           ios: {
-            fonts: [
-              "./assets/fonts/pretendard/Pretendard-Regular.otf",
-              "./assets/fonts/pretendard/Pretendard-Medium.otf",
-              "./assets/fonts/pretendard/Pretendard-SemiBold.otf",
-              "./assets/fonts/pretendard/Pretendard-Bold.otf",
-              "./assets/fonts/pretendard/Pretendard-Black.otf",
-            ],
+            fonts: ["./assets/fonts/pretendard/PretendardVariable.woff2"],
           },
         },
       ],

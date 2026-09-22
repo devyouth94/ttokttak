@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Platform } from "react-native";
 import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { format, parse } from "date-fns";
+import { format } from "date-fns/format";
+import { parse } from "date-fns/parse";
 
 type ActivePicker =
   | { mode: "date"; target: "endDate" | "startDate" }

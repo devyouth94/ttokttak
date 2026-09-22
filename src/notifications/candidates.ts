@@ -1,4 +1,4 @@
-import { addDays } from "date-fns";
+import { addDays } from "date-fns/addDays";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import type { AppLanguage } from "~/i18n/language";

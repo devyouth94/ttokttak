@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { addDays, format, startOfDay } from "date-fns";
+import { addDays } from "date-fns/addDays";
+import { format } from "date-fns/format";
+import { startOfDay } from "date-fns/startOfDay";
 import { Undo2 } from "lucide-react-native";
 
 import type { AppLanguage } from "~/i18n/language";

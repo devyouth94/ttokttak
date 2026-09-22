@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
-import { differenceInCalendarDays, parseISO } from "date-fns";
+import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
+import { parseISO } from "date-fns/parseISO";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { useAppLanguage } from "~/i18n/provider";

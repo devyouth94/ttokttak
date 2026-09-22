@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { format, parse } from "date-fns";
+import { format } from "date-fns/format";
+import { parse } from "date-fns/parse";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";

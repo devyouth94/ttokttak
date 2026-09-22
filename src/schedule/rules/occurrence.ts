@@ -1,4 +1,6 @@
-import { addDays, format, parse } from "date-fns";
+import { addDays } from "date-fns/addDays";
+import { format } from "date-fns/format";
+import { parse } from "date-fns/parse";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import {

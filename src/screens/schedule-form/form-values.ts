@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format } from "date-fns/format";
 import { z } from "zod/v4";
 
 import type { AppLanguage } from "~/i18n/language";

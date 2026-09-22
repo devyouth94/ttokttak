@@ -1,4 +1,5 @@
-import { differenceInCalendarDays, parse } from "date-fns";
+import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
+import { parse } from "date-fns/parse";
 import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 

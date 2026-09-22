@@ -1,6 +1,8 @@
 import type { Locale } from "date-fns";
-import { format, parse } from "date-fns";
-import { enUS, ko } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { enUS } from "date-fns/locale/en-US";
+import { ko } from "date-fns/locale/ko";
+import { parse } from "date-fns/parse";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type { AppLanguage } from "~/i18n/language";
