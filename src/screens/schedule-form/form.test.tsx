@@ -72,9 +72,30 @@ describe("일정 폼", () => {
     jest.useRealTimers();
   });
 
+  it.each([
+    ["loading", true, null],
+    ["ready", true, null],
+    ["error", false, "scheduleForm.error.editLoadFailed"],
+    ["signedOut", false, "scheduleForm.error.editLoadFailed"],
+  ] as const)(
+    "일정 조회 대기 중 세션 %s의 수정 로딩과 오류를 판정한다",
+    async (status, isLoading, loadError) => {
+      jest.mocked(useSession).mockReturnValue({
+        profile: null,
+        status,
+        user: status === "signedOut" ? null : { id: "user-1" },
+      } as never);
+      const result = await renderForm({ itemId: "item-1" });
+      expect(result.current.isLoading).toBe(isLoading);
+      expect(result.current.loadError).toBe(loadError);
+    }
+  );
+
   it("생성 초기값과 입력 오류를 React Hook Form 계약으로 제공한다", async () => {
     const result = await renderForm();
 
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.loadError).toBeNull();
     expect(result.current.form.getValues()).toMatchObject({
       endDateLocal: null,
       recurrenceType: "daily",
@@ -225,6 +246,23 @@ describe("일정 폼", () => {
     expect(result.current.form.getValues("title")).toBe("서버 변경");
   });
 
+  it.each([new Error("저장 실패"), { message: "저장 실패" }, "저장 실패"])(
+    "저장 오류의 메시지를 표시하고 입력을 보존한다: %p",
+    async (error) => {
+      jest.mocked(createSchedule).mockRejectedValue(error);
+      const result = await renderForm();
+      await TestRenderer.act(async () => {
+        result.current.form.setValue("title", "작성 중", { shouldDirty: true });
+        result.current.submit();
+      });
+      expect(result.current.form.formState.errors.root?.message).toBe(
+        "저장 실패"
+      );
+      expect(result.current.form.getValues("title")).toBe("작성 중");
+      expect(router.replace).not.toHaveBeenCalled();
+    }
+  );
+
   it("다른 일정으로 이동하면 기존 dirty draft를 교체한다", async () => {
     mockSchedule(scheduleFixture({ id: "item-1", title: "첫 일정" }));
     const result = await renderForm({ itemId: "item-1" });
@@ -242,13 +280,10 @@ describe("일정 폼", () => {
 
 function mockSchedule(item: ReturnType<typeof scheduleFixture> | null): void {
   jest.mocked(useScheduleById).mockReturnValue({
+    data: item ?? undefined,
     error: null,
-    isLoading: false,
-    isReady: true,
-    item,
+    isPending: !item,
     refetch: jest.fn(),
-    timezone: "Asia/Seoul",
-    userId: "user-1",
   } as never);
 }
 

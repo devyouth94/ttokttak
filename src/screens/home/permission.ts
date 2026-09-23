@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
+import { getErrorMessage } from "~/errors";
 import { useNotifications } from "~/notifications/provider";
 import { useSession } from "~/session/provider";
 
@@ -45,7 +46,7 @@ export function useHomeNotificationPrompt(): void {
             void requestPermission().catch((error) => {
               Alert.alert(
                 t("home.notificationPermission.errorTitle"),
-                error instanceof Error ? error.message : String(error)
+                getErrorMessage(error)
               );
             });
           },

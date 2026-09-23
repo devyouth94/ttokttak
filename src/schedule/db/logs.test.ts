@@ -5,7 +5,6 @@ import type { Database } from "~/database.types";
 import {
   createLogs,
   getAnchor,
-  listHistory,
   listItemLogs,
   listLogs,
   listLogsInRange,
@@ -102,24 +101,6 @@ describe("schedule logs DB", () => {
     ).resolves.toHaveLength(1001);
     expect(first.range).toHaveBeenCalledWith(0, 999);
     expect(second.range).toHaveBeenCalledWith(1000, 1999);
-  });
-
-  it("최근 처리 기록은 실제 처리 시각 최신순으로 5건만 조회한다", async () => {
-    const query = createQuery({ data: [row], error: null }, [
-      "eq",
-      "limit",
-      "order",
-    ]);
-
-    await listHistory(
-      { itemId: "item-1", userId: "user-1" },
-      createClient(query)
-    );
-
-    expect(query.order).toHaveBeenCalledWith("acted_at_utc", {
-      ascending: false,
-    });
-    expect(query.limit).toHaveBeenCalledWith(5);
   });
 
   it("범위 이전의 최신 완료 기록을 anchor로 조회한다", async () => {

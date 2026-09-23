@@ -106,22 +106,18 @@ async function toSchedule(
   }
 }
 
-/** 사용자의 일정을 조회한다. */
+/** 사용자의 활성 일정을 조회한다. */
 export async function listItems(
-  input: { includeArchived?: boolean; userId: string },
+  input: { userId: string },
   client: Client = supabase
 ): Promise<Schedule[]> {
-  let query = client
+  const { data, error } = await client
     .from("recurring_items")
     .select(itemSelect)
     .eq("user_id", input.userId)
-    .order("created_at", { ascending: false });
-
-  if (!input.includeArchived) {
-    query = query.eq("is_archived", false);
-  }
-
-  const { data, error } = await query.limit(listLimit);
+    .order("created_at", { ascending: false })
+    .eq("is_archived", false)
+    .limit(listLimit);
 
   if (error) {
     throw error;

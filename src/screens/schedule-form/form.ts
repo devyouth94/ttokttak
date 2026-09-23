@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { format } from "date-fns/format";
 
+import { getErrorMessage } from "~/errors";
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
 import { getScheduleReturnPath } from "~/route-param";
@@ -35,11 +36,18 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const { syncNotifications } = useNotifications();
-  const { profile, user } = useSession();
+  const { profile, status: sessionStatus, user } = useSession();
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const isEdit = Boolean(itemId);
   const schedule = useScheduleById(isEdit ? (itemId ?? null) : null);
-  const hydratedItemIdRef = useRef(schedule.item?.id ?? null);
+  const item = schedule.data;
+  const isLoading =
+    isEdit &&
+    (sessionStatus === "loading" ||
+      (sessionStatus === "ready" && Boolean(user) && schedule.isPending));
+  const hydratedItemIdRef = useRef(item?.id ?? null);
 
   const [openedAt] = useState(() => new Date());
   const [isDeleting, setIsDeleting] = useState(false);
@@ -52,9 +60,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   );
 
   const form = useForm<ScheduleFormValues>({
-    defaultValues: schedule.item
-      ? toFormValues(schedule.item)
-      : createFormValues(openedAt),
+    defaultValues: item ? toFormValues(item) : createFormValues(openedAt),
     mode: "onSubmit",
     reValidateMode: "onChange",
     resolver: standardSchemaResolver(schema),
@@ -92,21 +98,21 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
             weekdayMask: input.weekdayMask,
           },
           syncNotifications,
-          timezone: schedule.timezone,
+          timezone,
           userId: user.id,
         });
       } else {
         await createSchedule({
           input,
           syncNotifications,
-          timezone: schedule.timezone,
+          timezone,
           userId: user.id,
         });
       }
 
       router.replace(getScheduleReturnPath(returnTo));
     } catch (saveError) {
-      form.setError("root", { message: errorMessage(saveError) });
+      form.setError("root", { message: getErrorMessage(saveError) });
     }
   }
 
@@ -156,7 +162,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
 
       router.replace("/");
     } catch (removeError) {
-      form.setError("root", { message: errorMessage(removeError) });
+      form.setError("root", { message: getErrorMessage(removeError) });
     } finally {
       setIsDeleting(false);
     }
@@ -164,25 +170,25 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
 
   // 최초 조회와 다른 일정으로의 이동은 반영하되 같은 일정의 dirty draft는 보존한다.
   useEffect(() => {
-    if (!isEdit || !schedule.item) {
+    if (!isEdit || !item) {
       return;
     }
 
-    const isDifferentItem = hydratedItemIdRef.current !== schedule.item.id;
+    const isDifferentItem = hydratedItemIdRef.current !== item.id;
 
     if (!isDifferentItem && isDirty) {
       return;
     }
 
-    reset(toFormValues(schedule.item));
-    hydratedItemIdRef.current = schedule.item.id;
-  }, [isDirty, isEdit, reset, schedule.item]);
+    reset(toFormValues(item));
+    hydratedItemIdRef.current = item.id;
+  }, [isDirty, isEdit, reset, item]);
 
   const loadError =
-    isEdit && !schedule.isLoading
+    isEdit && !isLoading
       ? schedule.error
-        ? errorMessage(schedule.error)
-        : !schedule.isReady
+        ? getErrorMessage(schedule.error)
+        : sessionStatus !== "ready"
           ? t("scheduleForm.error.editLoadFailed")
           : null
       : null;
@@ -191,14 +197,10 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     form,
     isDeleting,
     isEdit,
-    isLoading: isEdit && schedule.isLoading,
+    isLoading,
     loadError,
     remove,
     submit,
     today,
   } as const;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

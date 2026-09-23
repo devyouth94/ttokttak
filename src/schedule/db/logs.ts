@@ -94,26 +94,6 @@ export async function listItemLogs(
   }
 }
 
-/** 상세 화면에 표시할 최근 occurrence 처리 기록 5개를 실제 처리 시각순으로 조회한다. */
-export async function listHistory(
-  input: { itemId: string; userId: string },
-  client: Client = supabase
-): Promise<OccurrenceLog[]> {
-  const { data, error } = await client
-    .from("completion_logs")
-    .select("*")
-    .eq("item_id", input.itemId)
-    .eq("user_id", input.userId)
-    .order("acted_at_utc", { ascending: false })
-    .limit(5);
-
-  if (error) {
-    throw error;
-  }
-
-  return data.map(toLog);
-}
-
 /** completion-based 계산에서 범위 이전의 최신 완료 기록을 조회한다. */
 export async function getAnchor(
   input: { itemId: string; rangeStartUtc: string; userId: string },
