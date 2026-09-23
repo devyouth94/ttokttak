@@ -45,13 +45,13 @@ describe("홈 occurrence 처리", () => {
 
   it("완료 기록을 만든 뒤 알림과 화면 데이터를 새로 맞춘다", async () => {
     const item = scheduleFixture({ id: "item-1", recurrenceType: "once" });
-    const syncNotifications = jest.fn(async () => undefined);
+    const syncDeviceOutputs = jest.fn(async () => undefined);
 
     await processHomeOccurrence({
       action: "completed",
       logs: [],
       now,
-      syncNotifications,
+      syncDeviceOutputs,
       target: { item, occurrence: occurrence(item) },
       timezone,
       userId: "user-1",
@@ -65,7 +65,7 @@ describe("홈 occurrence 처리", () => {
         userId: "user-1",
       },
     ]);
-    expect(syncNotifications).toHaveBeenCalledTimes(1);
+    expect(syncDeviceOutputs).toHaveBeenCalledTimes(1);
     expect(refreshSchedules).toHaveBeenCalledTimes(1);
   });
 
@@ -100,7 +100,7 @@ describe("홈 occurrence 처리", () => {
         }),
       ],
       now,
-      syncNotifications: jest.fn(async () => undefined),
+      syncDeviceOutputs: jest.fn(async () => undefined),
       target: { item, occurrence: overdue },
       timezone,
       userId: "user-1",
@@ -124,7 +124,7 @@ describe("홈 occurrence 처리", () => {
       action: "completed",
       logs: [],
       now,
-      syncNotifications: async () => {
+      syncDeviceOutputs: async () => {
         throw error;
       },
       target: { item, occurrence: occurrence(item) },
@@ -183,7 +183,7 @@ function HomeActionsProbe({
   onChange(
     useHomeActions({
       completionLogs: [],
-      syncNotifications: jest.fn(async () => undefined),
+      syncDeviceOutputs: jest.fn(async () => undefined),
       timezone,
       userId: "user-1",
     })

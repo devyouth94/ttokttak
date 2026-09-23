@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import { getPermission, requestPermission } from "./permission";
 
 jest.mock("react-native", () => ({ Platform: { OS: "ios" } }));
+jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("expo-notifications", () => ({
   PermissionStatus: { DENIED: "denied" },
   getPermissionsAsync: jest.fn(),

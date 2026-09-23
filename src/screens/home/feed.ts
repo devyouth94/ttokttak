@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import { formatInTimeZone } from "date-fns-tz";
 
+import { useDeviceSync } from "~/device-sync";
 import { useAppLanguage } from "~/i18n/provider";
-import { useNotifications } from "~/notifications/provider";
 import { createHomeSections } from "~/schedule/home-feed";
 import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
@@ -22,7 +22,7 @@ export function useHomeFeed() {
   const { language } = useAppLanguage();
 
   const { profile } = useSession();
-  const { syncNotifications } = useNotifications();
+  const { syncDeviceOutputs } = useDeviceSync();
 
   const isFocused = useIsFocused();
   const hasFocusedOnceRef = useRef(false);
@@ -41,7 +41,7 @@ export function useHomeFeed() {
 
   const actions = useHomeActions({
     completionLogs: query.logs,
-    syncNotifications,
+    syncDeviceOutputs,
     timezone: query.timezone,
     userId: query.userId,
   });

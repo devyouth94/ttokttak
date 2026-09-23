@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert } from "react-native";
 import { ExternalLink } from "lucide-react-native";
 
+import { useDeviceSync } from "~/device-sync";
 import type { Permission } from "~/notifications/permission";
-import { useNotifications } from "~/notifications/provider";
 import { useThemeColors } from "~/theme/provider";
 
 import {
@@ -21,7 +21,7 @@ export function NotificationsSection(): React.JSX.Element {
     openSettings,
     permission,
     requestPermission,
-  } = useNotifications();
+  } = useDeviceSync();
   const permissionStatus = isPermissionLoading
     ? t("settings.notifications.statusChecking")
     : getPermissionStatusText(permission.status, t);

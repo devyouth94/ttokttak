@@ -6,14 +6,15 @@ import { logFixture, scheduleFixture } from "~/schedule/fixtures";
 import { captureException } from "~/sentry";
 import { supabase } from "~/supabase";
 
-import type { Candidate } from "./candidates";
-import { getBadgeCounts, getCandidates } from "./candidates";
 import { getPermission } from "./permission";
-import {
-  cancelNotifications,
-  NotificationSyncError,
-  syncNotifications,
-} from "./sync";
+import type { planNotifications } from "./plan";
+import { cancelNotifications, startNotificationSession } from "./session";
+import { NotificationSyncError } from "./sync";
+
+type Candidate = Pick<
+  ReturnType<typeof planNotifications>["wanted"][number],
+  "body" | "itemId" | "scheduledAtUtc" | "title"
+>;
 
 jest.mock("expo-notifications", () => ({
   AndroidNotificationPriority: { HIGH: "high" },
@@ -31,31 +32,27 @@ jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("~/supabase", () => ({
   supabase: { auth: { getSession: jest.fn() } },
 }));
-jest.mock("./candidates", () => ({
-  getBadgeCounts: jest.fn(),
-  getCandidates: jest.fn(),
-}));
 jest.mock("./permission", () => ({ getPermission: jest.fn() }));
 
+let session: ReturnType<typeof startNotificationSession>;
 describe("알림 동기화", () => {
+  afterEach(async () => {
+    await cancelNotifications();
+    jest.useRealTimers();
+  });
   beforeEach(() => {
     jest.resetAllMocks();
+    jest.useFakeTimers().setSystemTime(new Date("2026-04-21T00:00:00.000Z"));
     jest.mocked(getPermission).mockResolvedValue({
       canOpenSettings: false,
       canRequest: false,
       status: "granted",
     });
     jest.mocked(listLogs).mockResolvedValue([]);
-    jest.mocked(listItems).mockResolvedValue([]);
+    jest.mocked(listItems).mockResolvedValue(baselineItems);
     jest
       .mocked(supabase.auth.getSession)
       .mockResolvedValue(sessionResult("access-token"));
-    jest.mocked(getCandidates).mockReturnValue([]);
-    jest
-      .mocked(getBadgeCounts)
-      .mockImplementation(
-        ({ times }) => new Map(times.map((time) => [time.toISOString(), 3]))
-      );
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
       .mockResolvedValue([]);
@@ -66,6 +63,7 @@ describe("알림 동기화", () => {
       .mocked(Notifications.scheduleNotificationAsync)
       .mockResolvedValue("notification-id");
     jest.mocked(Notifications.setBadgeCountAsync).mockResolvedValue(true);
+    session = startNotificationSession(params.userId);
   });
 
   it("권한이 없으면 일정과 예약 알림을 읽지 않는다", async () => {
@@ -75,7 +73,7 @@ describe("알림 동기화", () => {
       status: "denied",
     });
 
-    await syncNotifications(params);
+    await session.refresh(params);
 
     expect(listItems).not.toHaveBeenCalled();
     expect(supabase.auth.getSession).not.toHaveBeenCalled();
@@ -94,7 +92,7 @@ describe("알림 동기화", () => {
       .mockRejectedValueOnce(new Error("401"))
       .mockResolvedValueOnce([]);
 
-    await expect(syncNotifications(params)).resolves.toBeUndefined();
+    await expect(session.refresh(params)).resolves.toBeUndefined();
 
     expect(listItems).toHaveBeenCalledTimes(2);
   });
@@ -102,7 +100,7 @@ describe("알림 동기화", () => {
   it("세션이 그대로면 데이터 조회 오류를 재시도하지 않는다", async () => {
     jest.mocked(listItems).mockRejectedValue(new Error("401"));
 
-    await expect(syncNotifications(params)).rejects.toMatchObject({
+    await expect(session.refresh(params)).rejects.toMatchObject({
       errorCode: "operation-failed",
       stage: "items",
     } satisfies Partial<NotificationSyncError>);
@@ -120,22 +118,19 @@ describe("알림 동기화", () => {
       )
       .slice(0, 60);
 
-    jest.mocked(getCandidates).mockReturnValue(candidates);
+    useCandidates(candidates);
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce(wanted.map(candidateRequest));
 
-    await expect(syncNotifications(params)).resolves.toBeUndefined();
+    await expect(session.refresh(params)).resolves.toBeUndefined();
 
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(60);
-    expect(getBadgeCounts).toHaveBeenCalledTimes(1);
-    expect(jest.mocked(getBadgeCounts).mock.calls[0]?.[0].times).toHaveLength(
-      61
-    );
+
     expect(Notifications.scheduleNotificationAsync).toHaveBeenNthCalledWith(1, {
       content: {
-        badge: 3,
+        badge: 4,
         body: "오후 9:00",
         data: {
           notificationKind: "reminder",
@@ -155,7 +150,7 @@ describe("알림 동기화", () => {
   });
 
   it("현재 뱃지를 맞추고 처리됐거나 비활성인 표시 알림을 제거한다", async () => {
-    const item = scheduleFixture({ id: "item-1" });
+    const item = scheduleFixture({ id: "item-1", notificationsEnabled: false });
     const handled = logFixture({
       itemId: item.id,
       scheduledAtUtc: "2026-04-21T00:00:00.000Z",
@@ -173,9 +168,9 @@ describe("알림 동기화", () => {
         presented("ttokttak:reminder:user-2:item-2:2026-04-21T00:00:00.000Z"),
       ]);
 
-    await syncNotifications(params);
+    await session.refresh(params);
 
-    expect(Notifications.setBadgeCountAsync).toHaveBeenCalledWith(3);
+    expect(Notifications.setBadgeCountAsync).toHaveBeenCalledWith(1);
     expect(Notifications.dismissNotificationAsync).toHaveBeenCalledTimes(3);
     expect(Notifications.dismissNotificationAsync).not.toHaveBeenCalledWith(
       "ttokttak:reminder:user-1:item-1:2026-04-22T00:00:00.000Z"
@@ -187,7 +182,7 @@ describe("알림 동기화", () => {
 
     jest.mocked(Notifications.setBadgeCountAsync).mockRejectedValue(error);
 
-    await expect(syncNotifications(params)).resolves.toBeUndefined();
+    await expect(session.refresh(params)).resolves.toBeUndefined();
     expect(captureException).toHaveBeenCalledWith(error, {
       tags: { feature: "app-icon-badge-sync" },
     });
@@ -202,7 +197,7 @@ describe("알림 동기화", () => {
       ])
       .mockResolvedValueOnce([request("other")]);
 
-    await syncNotifications(params);
+    await session.refresh(params);
 
     expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
       "ttokttak:reminder:user-2:item-1:2026-04-21T00:00:00.000Z"
@@ -232,9 +227,9 @@ describe("알림 동기화", () => {
       })
       .mockResolvedValueOnce([]);
 
-    const firstSync = syncNotifications(params);
+    const firstSync = session.refresh(params);
     await firstStarted;
-    const secondSync = syncNotifications(params);
+    const secondSync = session.refresh(params);
 
     expect(getPermission).toHaveBeenCalledTimes(1);
 
@@ -245,15 +240,13 @@ describe("알림 동기화", () => {
   });
 
   it("변경 뒤 실제 예약이 다르면 검증 단계 실패로 남긴다", async () => {
-    jest
-      .mocked(getCandidates)
-      .mockReturnValue([candidate(1, new Date("2026-04-21T12:00:00.000Z"))]);
+    useCandidates([candidate(1, new Date("2026-04-21T12:00:00.000Z"))]);
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
 
-    await expect(syncNotifications(params)).rejects.toMatchObject({
+    await expect(session.refresh(params)).rejects.toMatchObject({
       errorCode: "verification-mismatch",
       stage: "verify",
     } satisfies Partial<NotificationSyncError>);
@@ -274,10 +267,10 @@ describe("알림 동기화", () => {
         secondStarted.resolve();
         return secondItems.promise;
       });
-    const first = syncNotifications(params);
+    const first = session.refresh(params);
     await firstStarted.promise;
-    const second = syncNotifications(params);
-    const latest = syncNotifications({
+    const second = session.refresh(params);
+    const latest = session.refresh({
       ...params,
       language: "en",
       timezone: "UTC",
@@ -291,13 +284,34 @@ describe("알림 동기화", () => {
     await first;
     await secondStarted.promise;
     expect(finished).toBe(false);
-    secondItems.resolve([]);
+    const identifier =
+      "ttokttak:reminder:user-1:item-1:2026-04-22T21:00:00.000Z";
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([request(identifier)]);
+    secondItems.resolve([
+      scheduleFixture({
+        id: "item-1",
+        title: "저녁 일정",
+        recurrenceType: "once",
+        startDateLocal: "2026-04-22",
+        reminderTimeLocal: "21:00",
+      }),
+    ]);
     await Promise.all([second, latest]);
     expect(listItems).toHaveBeenCalledTimes(2);
-    expect(getCandidates).toHaveBeenLastCalledWith(
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        language: "en",
-        timezone: "UTC",
+        identifier,
+        content: expect.objectContaining({
+          title: "저녁 일정",
+          body: "9:00 PM",
+        }),
+        trigger: expect.objectContaining({
+          date: new Date("2026-04-22T21:00:00.000Z"),
+        }),
       })
     );
     expect(finished).toBe(true);
@@ -305,15 +319,15 @@ describe("알림 동기화", () => {
 
   it("병합된 실행 실패는 모든 대기 호출에 전달하고 다음 실행은 허용한다", async () => {
     jest.mocked(listItems).mockRejectedValueOnce(new Error("조회 실패"));
-    const first = syncNotifications(params);
-    const second = syncNotifications(params);
+    const first = session.refresh(params);
+    const second = session.refresh(params);
     const results = await Promise.allSettled([first, second]);
     expect(results).toEqual([
       expect.objectContaining({ status: "rejected" }),
       expect.objectContaining({ status: "rejected" }),
     ]);
     expect(listItems).toHaveBeenCalledTimes(1);
-    await expect(syncNotifications(params)).resolves.toBeUndefined();
+    await expect(session.refresh(params)).resolves.toBeUndefined();
   });
 
   it("같은 세션의 새 요청은 진행 중인 예약 적용을 중단하지 않는다", async () => {
@@ -323,7 +337,7 @@ describe("알림 동기화", () => {
       candidate(1, new Date("2026-04-21T12:00:00.000Z")),
       candidate(2, new Date("2026-04-22T12:00:00.000Z")),
     ];
-    jest.mocked(getCandidates).mockReturnValue(candidates);
+    useCandidates(candidates);
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
       .mockResolvedValueOnce([])
@@ -334,9 +348,9 @@ describe("알림 동기화", () => {
         started.resolve();
         return scheduled.promise;
       });
-    const first = syncNotifications(params);
+    const first = session.refresh(params);
     await started.promise;
-    const second = syncNotifications(params);
+    const second = session.refresh(params);
     scheduled.resolve("first");
     await first;
     expect(
@@ -356,7 +370,7 @@ describe("알림 동기화", () => {
       started.resolve();
       return items.promise;
     });
-    const sync = syncNotifications(params);
+    const sync = session.refresh(params);
     await started.promise;
     await cancelNotifications();
     jest.mocked(Notifications.setBadgeCountAsync).mockClear();
@@ -374,7 +388,7 @@ describe("알림 동기화", () => {
       const first = candidate(1, new Date("2026-04-21T12:00:00.000Z"));
       const second = candidate(2, new Date("2026-04-22T12:00:00.000Z"));
       const requests = [request("other")];
-      jest.mocked(getCandidates).mockReturnValue([first, second]);
+      useCandidates([first, second]);
       jest
         .mocked(Notifications.getAllScheduledNotificationsAsync)
         .mockImplementation(async () => [...requests]);
@@ -394,14 +408,14 @@ describe("알림 동기화", () => {
           const index = requests.findIndex((entry) => entry.identifier === id);
           if (index >= 0) requests.splice(index, 1);
         });
-      const sync = syncNotifications(params);
+      const sync = session.refresh(params);
       await started.promise;
       const cleanup = cancelNotifications();
       jest
         .mocked(supabase.auth.getSession)
         .mockResolvedValue(sessionResult("B-token", "user-2"));
       const nextSync = switchUser
-        ? syncNotifications({ ...params, userId: "user-2" })
+        ? startNotificationSession("user-2").refresh(params)
         : Promise.resolve();
       scheduled.resolve("first");
       await Promise.all([sync, cleanup, nextSync]);
@@ -425,25 +439,29 @@ describe("알림 동기화", () => {
     }
   );
 
-  it("A 조회가 지연돼도 B는 동기화하고 A의 늦은 응답은 무시한다", async () => {
+  it("B 시작은 A를 종료하고 A의 늦은 응답·갱신·재종료는 B를 변경하지 않는다", async () => {
     const started = deferred<void>();
     const items = deferred<Awaited<ReturnType<typeof listItems>>>();
     jest.mocked(listItems).mockImplementationOnce(() => {
       started.resolve();
       return items.promise;
     });
-    const oldSync = syncNotifications(params);
+    const oldSync = session.refresh(params);
     await started.promise;
-    await cancelNotifications();
     jest
       .mocked(supabase.auth.getSession)
       .mockResolvedValue(sessionResult("B-token", "user-2"));
-    await syncNotifications({ ...params, userId: "user-2" });
+    await startNotificationSession("user-2").refresh(params);
+    expect(session.active).toBe(false);
     const writes = jest.mocked(Notifications.setBadgeCountAsync).mock.calls
       .length;
+    const reads = jest.mocked(listItems).mock.calls.length;
+    await session.close();
+    await session.refresh(params);
     items.resolve([]);
     await oldSync;
     expect(Notifications.setBadgeCountAsync).toHaveBeenCalledTimes(writes);
+    expect(listItems).toHaveBeenCalledTimes(reads);
     expect(listItems).toHaveBeenLastCalledWith({ userId: "user-2" });
   });
 
@@ -451,10 +469,44 @@ describe("알림 동기화", () => {
     jest
       .mocked(Notifications.getAllScheduledNotificationsAsync)
       .mockRejectedValueOnce(new Error("OS 조회 실패"));
-    await expect(syncNotifications(params)).rejects.toMatchObject({
+    await expect(session.refresh(params)).rejects.toMatchObject({
       stage: "list-scheduled",
     });
-    await expect(syncNotifications(params)).resolves.toBeUndefined();
+    await expect(session.refresh(params)).resolves.toBeUndefined();
+  });
+
+  it("정리 일부가 실패해도 남은 취소가 끝나기 전에 B의 알림을 적용하지 않는다", async () => {
+    const started = deferred<void>();
+    const pending = deferred<void>();
+    const error = new Error("취소 실패");
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValueOnce([
+        request("ttokttak:reminder:user-1:failed"),
+        request("ttokttak:reminder:user-1:slow"),
+      ])
+      .mockResolvedValue([]);
+    jest
+      .mocked(Notifications.cancelScheduledNotificationAsync)
+      .mockRejectedValueOnce(error)
+      .mockImplementationOnce(() => {
+        started.resolve();
+        return pending.promise;
+      });
+    const cleanup = session.close();
+    await started.promise;
+    jest
+      .mocked(supabase.auth.getSession)
+      .mockResolvedValue(sessionResult("B-token", "user-2"));
+    const next = startNotificationSession("user-2").refresh(params);
+    await jest.advanceTimersByTimeAsync(0);
+    expect(Notifications.setBadgeCountAsync).not.toHaveBeenCalledWith(3);
+    pending.resolve();
+    await Promise.all([cleanup, next]);
+    expect(Notifications.setBadgeCountAsync).toHaveBeenLastCalledWith(3);
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { feature: "local-notification-cleanup" },
+    });
   });
 
   it.each(["badge", "presented"])(
@@ -495,7 +547,7 @@ describe("알림 동기화", () => {
           );
           if (index >= 0) visible.splice(index, 1);
         });
-      const sync = syncNotifications(params);
+      const sync = session.refresh(params);
       await started.promise;
       const cleanup = cancelNotifications();
       pending.resolve();
@@ -600,4 +652,28 @@ function deferred<T>() {
     resolve = fulfill;
   });
   return { promise, resolve };
+}
+
+const baselineItems = [0, 1, 2].map((id) =>
+  scheduleFixture({
+    id: `past-${id}`,
+    recurrenceType: "once",
+    notificationsEnabled: false,
+    startDateLocal: "2026-04-20",
+  })
+);
+
+function useCandidates(candidates: Candidate[]) {
+  jest.mocked(listItems).mockResolvedValue([
+    ...baselineItems,
+    ...candidates.map((entry) =>
+      scheduleFixture({
+        id: entry.itemId,
+        title: entry.title,
+        recurrenceType: "once",
+        startDateLocal: entry.scheduledAtUtc.slice(0, 10),
+        reminderTimeLocal: "21:00",
+      })
+    ),
+  ]);
 }

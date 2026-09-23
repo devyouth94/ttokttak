@@ -44,22 +44,22 @@ describe("일정 저장", () => {
   });
 
   it("생성, 수정과 보관 뒤 알림과 화면 데이터를 새로 맞춘다", async () => {
-    const syncNotifications = jest.fn(async () => undefined);
+    const syncDeviceOutputs = jest.fn(async () => undefined);
 
     await createSchedule({
       input,
-      syncNotifications,
+      syncDeviceOutputs,
       timezone,
       userId,
     });
     await updateSchedule({
       itemId: "item-1",
       patch: { title: "수정한 일정" },
-      syncNotifications,
+      syncDeviceOutputs,
       timezone,
       userId,
     });
-    await archiveSchedule({ itemId: "item-1", syncNotifications });
+    await archiveSchedule({ itemId: "item-1", syncDeviceOutputs });
 
     expect(db.createItem).toHaveBeenCalledWith({ ...input, timezone, userId });
     expect(db.updateItem).toHaveBeenCalledWith({
@@ -75,7 +75,7 @@ describe("일정 저장", () => {
       userId,
     });
     expect(db.archiveItem).toHaveBeenCalledWith("item-1");
-    expect(syncNotifications).toHaveBeenCalledTimes(3);
+    expect(syncDeviceOutputs).toHaveBeenCalledTimes(3);
     expect(refreshSchedules).toHaveBeenCalledTimes(3);
   });
 
@@ -84,7 +84,7 @@ describe("일정 저장", () => {
 
     await archiveSchedule({
       itemId: "item-1",
-      syncNotifications: async () => {
+      syncDeviceOutputs: async () => {
         throw error;
       },
     });
@@ -104,7 +104,7 @@ describe("일정 저장", () => {
       updateSchedule({
         itemId: "item-1",
         patch: { title: "수정한 일정" },
-        syncNotifications: jest.fn(),
+        syncDeviceOutputs: jest.fn(),
         timezone,
         userId,
       })

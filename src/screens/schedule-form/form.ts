@@ -6,9 +6,9 @@ import { router } from "expo-router";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { format } from "date-fns/format";
 
+import { useDeviceSync } from "~/device-sync";
 import { getErrorMessage } from "~/errors";
 import { useAppLanguage } from "~/i18n/provider";
-import { useNotifications } from "~/notifications/provider";
 import { getScheduleReturnPath } from "~/route-param";
 import { useScheduleById } from "~/schedule/query";
 import {
@@ -35,7 +35,7 @@ type Params = {
 export function useScheduleForm({ itemId, returnTo }: Params) {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const { syncNotifications } = useNotifications();
+  const { syncDeviceOutputs } = useDeviceSync();
   const { profile, status: sessionStatus, user } = useSession();
   const timezone =
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -97,14 +97,14 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
             title: input.title,
             weekdayMask: input.weekdayMask,
           },
-          syncNotifications,
+          syncDeviceOutputs,
           timezone,
           userId: user.id,
         });
       } else {
         await createSchedule({
           input,
-          syncNotifications,
+          syncDeviceOutputs,
           timezone,
           userId: user.id,
         });
@@ -157,7 +157,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     try {
       await archiveSchedule({
         itemId: currentItemId,
-        syncNotifications,
+        syncDeviceOutputs,
       });
 
       router.replace("/");

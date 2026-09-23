@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
+import { useDeviceSync } from "~/device-sync";
 import { getErrorMessage } from "~/errors";
-import { useNotifications } from "~/notifications/provider";
 import { useSession } from "~/session/provider";
 
 let hasShownPrompt = false;
@@ -17,7 +17,7 @@ export function useHomeNotificationPrompt(): void {
   const { t } = useTranslation();
   const isFocused = useIsFocused();
   const { status: sessionStatus, user } = useSession();
-  const { permission, requestPermission } = useNotifications();
+  const { permission, requestPermission } = useDeviceSync();
 
   useEffect(() => {
     if (

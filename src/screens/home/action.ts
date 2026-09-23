@@ -22,7 +22,7 @@ type HomeActionTarget = HomeOccurrenceTarget & { id: string };
 
 type UseHomeActionsOptions = {
   completionLogs: OccurrenceLog[];
-  syncNotifications: () => Promise<void>;
+  syncDeviceOutputs: () => Promise<void>;
   timezone: string;
   userId: string | null;
 };
@@ -30,7 +30,7 @@ type UseHomeActionsOptions = {
 /** 홈 occurrence 처리의 진행 상태와 오류를 관리한다. */
 export function useHomeActions({
   completionLogs,
-  syncNotifications,
+  syncDeviceOutputs,
   timezone,
   userId,
 }: UseHomeActionsOptions) {
@@ -56,7 +56,7 @@ export function useHomeActions({
         action,
         logs: completionLogs,
         now: new Date(),
-        syncNotifications,
+        syncDeviceOutputs,
         target,
         timezone,
         userId,
@@ -87,7 +87,7 @@ export async function processHomeOccurrence({
   action,
   logs,
   now,
-  syncNotifications,
+  syncDeviceOutputs,
   target,
   timezone,
   userId,
@@ -95,7 +95,7 @@ export async function processHomeOccurrence({
   action: OccurrenceAction;
   logs: OccurrenceLog[];
   now: Date;
-  syncNotifications: () => Promise<void>;
+  syncDeviceOutputs: () => Promise<void>;
   target: HomeOccurrenceTarget;
   timezone: string;
   userId: string;
@@ -115,7 +115,7 @@ export async function processHomeOccurrence({
 
   // 알림 동기화 실패가 이미 저장된 처리 기록의 피드 반영을 막지 않게 한다.
   try {
-    await syncNotifications();
+    await syncDeviceOutputs();
   } catch (error) {
     captureException(error, {
       tags: {

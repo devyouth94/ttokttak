@@ -2,8 +2,8 @@ import { createElement, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 
+import { useDeviceSync } from "~/device-sync";
 import { useAppLanguage } from "~/i18n/provider";
-import { useNotifications } from "~/notifications/provider";
 import { logFixture, scheduleFixture } from "~/schedule/fixtures";
 import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
@@ -18,8 +18,8 @@ declare const require: (moduleName: string) => unknown;
 jest.mock("react-i18next", () => ({ useTranslation: jest.fn() }));
 jest.mock("@react-navigation/native", () => ({ useIsFocused: jest.fn() }));
 jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
-jest.mock("~/notifications/provider", () => ({
-  useNotifications: jest.fn(),
+jest.mock("~/device-sync", () => ({
+  useDeviceSync: jest.fn(),
 }));
 jest.mock("~/schedule/now", () => ({ useNow: jest.fn() }));
 jest.mock("~/schedule/query", () => ({ useSchedules: jest.fn() }));
@@ -52,8 +52,8 @@ describe("홈 피드 lifecycle", () => {
       t: (key: string) => key,
     } as never);
     jest.mocked(useAppLanguage).mockReturnValue({ language: "ko" } as never);
-    jest.mocked(useNotifications).mockReturnValue({
-      syncNotifications: jest.fn(),
+    jest.mocked(useDeviceSync).mockReturnValue({
+      syncDeviceOutputs: jest.fn(),
     } as never);
     jest.mocked(useIsFocused).mockImplementation(() => focused);
     jest.mocked(useNow).mockReturnValue(now);

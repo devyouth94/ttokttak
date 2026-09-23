@@ -5,8 +5,8 @@ import { SplashScreen, Stack } from "expo-router";
 import { PortalHost } from "@rn-primitives/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
 
+import { DeviceSyncProvider } from "~/device-sync";
 import { AppI18nProvider } from "~/i18n/provider";
-import { NotificationProvider } from "~/notifications/provider";
 import { queryClient } from "~/query-client";
 import { wrap } from "~/sentry";
 import { SessionProvider, useSession } from "~/session/provider";
@@ -47,7 +47,7 @@ function RootStack(): React.JSX.Element {
   }, [status]);
 
   return (
-    <NotificationProvider timezone={timezone} userId={user?.id}>
+    <DeviceSyncProvider timezone={timezone} userId={user?.id}>
       <ThemeStatusBar />
 
       {status === "error" && (
@@ -77,7 +77,7 @@ function RootStack(): React.JSX.Element {
       )}
 
       <PortalHost />
-    </NotificationProvider>
+    </DeviceSyncProvider>
   );
 }
 

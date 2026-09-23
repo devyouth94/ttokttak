@@ -1,6 +1,6 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 
-import { cancelNotifications } from "~/notifications/sync";
+import { cancelNotifications } from "~/notifications/session";
 import { signOutGoogle } from "~/session/google";
 import { supabase } from "~/supabase";
 
@@ -13,7 +13,7 @@ import {
 jest.mock("expo-apple-authentication", () => ({
   signInAsync: jest.fn(),
 }));
-jest.mock("~/notifications/sync", () => ({
+jest.mock("~/notifications/session", () => ({
   cancelNotifications: jest.fn(),
 }));
 jest.mock("~/session/google", () => ({

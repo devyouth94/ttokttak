@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 
+import { useDeviceSync } from "~/device-sync";
 import { useAppLanguage } from "~/i18n/provider";
-import { useNotifications } from "~/notifications/provider";
 import { scheduleFixture } from "~/schedule/fixtures";
 import { useScheduleById } from "~/schedule/query";
 import {
@@ -25,8 +25,8 @@ jest.mock("expo-router", () => ({
   },
 }));
 jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
-jest.mock("~/notifications/provider", () => ({
-  useNotifications: jest.fn(),
+jest.mock("~/device-sync", () => ({
+  useDeviceSync: jest.fn(),
 }));
 jest.mock("~/schedule/query", () => ({ useScheduleById: jest.fn() }));
 jest.mock("~/schedule/write", () => ({
@@ -44,7 +44,7 @@ const TestRenderer = require("react-test-renderer") as {
 };
 
 const t = (key: string): string => key;
-const syncNotifications = jest.fn(async () => undefined);
+const syncDeviceOutputs = jest.fn(async () => undefined);
 
 describe("일정 폼", () => {
   beforeEach(() => {
@@ -54,9 +54,7 @@ describe("일정 폼", () => {
 
     jest.mocked(useTranslation).mockReturnValue({ t } as never);
     jest.mocked(useAppLanguage).mockReturnValue({ language: "ko" } as never);
-    jest
-      .mocked(useNotifications)
-      .mockReturnValue({ syncNotifications } as never);
+    jest.mocked(useDeviceSync).mockReturnValue({ syncDeviceOutputs } as never);
     jest.mocked(useSession).mockReturnValue({
       profile: { timezone: "Asia/Seoul" },
       status: "ready",
@@ -129,7 +127,7 @@ describe("일정 폼", () => {
         startDateLocal: "2026-08-04",
         title: "아침 영양제",
       }),
-      syncNotifications,
+      syncDeviceOutputs,
       timezone: "Asia/Seoul",
       userId: "user-1",
     });
@@ -174,7 +172,7 @@ describe("일정 폼", () => {
 
     expect(archiveSchedule).toHaveBeenCalledWith({
       itemId: "item-1",
-      syncNotifications,
+      syncDeviceOutputs,
     });
   });
 

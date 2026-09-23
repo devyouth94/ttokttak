@@ -5,8 +5,8 @@ import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { EllipsisVertical } from "lucide-react-native";
 
+import { useDeviceSync } from "~/device-sync";
 import { getErrorMessage } from "~/errors";
-import { useNotifications } from "~/notifications/provider";
 import { getScheduleReturnPath } from "~/route-param";
 import type { Schedule } from "~/schedule/schedule";
 import { archiveSchedule } from "~/schedule/write";
@@ -22,7 +22,7 @@ export function DetailManagementMenu({
   returnTo?: string;
 }): React.JSX.Element {
   const { t } = useTranslation();
-  const { syncNotifications } = useNotifications();
+  const { syncDeviceOutputs } = useDeviceSync();
   const themeColors = useThemeColors();
 
   const [isArchiving, setIsArchiving] = useState(false);
@@ -49,7 +49,7 @@ export function DetailManagementMenu({
     setIsArchiving(true);
 
     try {
-      await archiveSchedule({ itemId: item.id, syncNotifications });
+      await archiveSchedule({ itemId: item.id, syncDeviceOutputs });
       router.replace(getScheduleReturnPath(returnTo));
     } catch (error) {
       Alert.alert(t("scheduleDetail.inlineErrorTitle"), getErrorMessage(error));

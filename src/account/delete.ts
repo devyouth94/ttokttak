@@ -1,7 +1,7 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import type { User } from "@supabase/supabase-js";
 
-import { cancelNotifications } from "~/notifications/sync";
+import { cancelNotifications } from "~/notifications/session";
 import { signOutGoogle } from "~/session/google";
 import { supabase } from "~/supabase";
 

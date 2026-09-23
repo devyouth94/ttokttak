@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 
-import { useNotifications } from "~/notifications/provider";
+import { useDeviceSync } from "~/device-sync";
 import { scheduleFixture } from "~/schedule/fixtures";
 import { archiveSchedule } from "~/schedule/write";
 
@@ -26,8 +26,8 @@ jest.mock("@rn-primitives/dropdown-menu", () => ({
   Root: "DropdownMenuRoot",
   Trigger: "DropdownMenuTrigger",
 }));
-jest.mock("~/notifications/provider", () => ({
-  useNotifications: jest.fn(),
+jest.mock("~/device-sync", () => ({
+  useDeviceSync: jest.fn(),
 }));
 jest.mock("~/schedule/write", () => ({ archiveSchedule: jest.fn() }));
 jest.mock("~/theme/provider", () => ({
@@ -51,7 +51,7 @@ const TestRenderer = require("react-test-renderer") as {
 };
 
 const alert = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
-const syncNotifications = jest.fn(async () => undefined);
+const syncDeviceOutputs = jest.fn(async () => undefined);
 
 describe("일정 상세 관리 메뉴", () => {
   beforeEach(() => {
@@ -59,9 +59,7 @@ describe("일정 상세 관리 메뉴", () => {
     jest
       .mocked(useTranslation)
       .mockReturnValue({ t: (key: string) => key } as never);
-    jest
-      .mocked(useNotifications)
-      .mockReturnValue({ syncNotifications } as never);
+    jest.mocked(useDeviceSync).mockReturnValue({ syncDeviceOutputs } as never);
     jest.mocked(archiveSchedule).mockResolvedValue(undefined);
   });
 
@@ -94,7 +92,7 @@ describe("일정 상세 관리 메뉴", () => {
 
     expect(archiveSchedule).toHaveBeenCalledWith({
       itemId: item.id,
-      syncNotifications,
+      syncDeviceOutputs,
     });
     expect(router.replace).toHaveBeenCalledWith("/schedule");
   });

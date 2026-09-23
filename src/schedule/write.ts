@@ -8,25 +8,13 @@ import { assertInput } from "./rules/validate";
 import type { CreateScheduleInput, Schedule } from "./schedule";
 
 type CommonOptions = {
-  syncNotifications: () => Promise<void>;
+  syncDeviceOutputs: () => Promise<void>;
   userId: string;
 };
 
-async function finish(syncNotifications: () => Promise<void>): Promise<void> {
-  try {
-    await syncNotifications();
-  } catch (error) {
-    captureException(error, {
-      tags: { feature: "schedule-mutation-notification-sync" },
-    });
-  }
-
-  await refreshSchedules();
-}
-
 export async function createSchedule({
   input,
-  syncNotifications,
+  syncDeviceOutputs,
   timezone,
   userId,
 }: CommonOptions & {
@@ -41,14 +29,14 @@ export async function createSchedule({
     userId,
   });
 
-  await finish(syncNotifications);
+  await finish(syncDeviceOutputs);
   return schedule;
 }
 
 export async function updateSchedule({
   itemId,
   patch,
-  syncNotifications,
+  syncDeviceOutputs,
   timezone,
   userId,
 }: CommonOptions & {
@@ -77,17 +65,29 @@ export async function updateSchedule({
       })
     : item;
 
-  await finish(syncNotifications);
+  await finish(syncDeviceOutputs);
   return schedule;
 }
 
 export async function archiveSchedule({
   itemId,
-  syncNotifications,
+  syncDeviceOutputs,
 }: {
   itemId: string;
-  syncNotifications: () => Promise<void>;
+  syncDeviceOutputs: () => Promise<void>;
 }): Promise<void> {
   await db.archiveItem(itemId);
-  await finish(syncNotifications);
+  await finish(syncDeviceOutputs);
+}
+
+async function finish(syncDeviceOutputs: () => Promise<void>): Promise<void> {
+  try {
+    await syncDeviceOutputs();
+  } catch (error) {
+    captureException(error, {
+      tags: { feature: "schedule-mutation-notification-sync" },
+    });
+  }
+
+  await refreshSchedules();
 }
