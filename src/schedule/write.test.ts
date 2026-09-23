@@ -36,9 +36,9 @@ describe("일정 저장", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(db.archiveItem).mockResolvedValue(undefined);
-    jest.mocked(db.createItem).mockResolvedValue(scheduleFixture());
+    jest.mocked(db.createItem).mockResolvedValue(undefined);
     jest.mocked(db.getItem).mockResolvedValue(scheduleFixture());
-    jest.mocked(db.updateItem).mockResolvedValue(scheduleFixture());
+    jest.mocked(db.updateItem).mockResolvedValue(undefined);
     jest.mocked(listItemLogs).mockResolvedValue([]);
     jest.mocked(refreshSchedules).mockResolvedValue(undefined);
   });

@@ -7,9 +7,9 @@ import type {
   OccurrenceStatus,
 } from "~/schedule/rules/occurrence";
 
-export const CALENDAR_MAX_VISIBLE_MARKERS = 5;
+const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
-export type CalendarDaySummary = {
+type CalendarDaySummary = {
   markerColors: string[];
   overflowCount: number;
 };

@@ -18,7 +18,7 @@ type CalendarDayCellProps = {
   onPress: (date: DateData) => void;
 };
 
-export const CALENDAR_DAY_CELL_HEIGHT = 63;
+const CALENDAR_DAY_CELL_HEIGHT = 63;
 
 export function CalendarDayCell({
   date,

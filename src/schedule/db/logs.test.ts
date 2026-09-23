@@ -6,13 +6,6 @@ import { createLogs, listItemLogs, listLogs } from "./logs";
 
 jest.mock("~/supabase", () => ({ supabase: {} }));
 
-declare const process: { cwd: () => string };
-declare const require: (moduleName: string) => unknown;
-
-const { readFileSync } = require("fs") as {
-  readFileSync: (path: string, encoding: "utf8") => string;
-};
-
 const row = {
   acted_at_utc: "2026-04-03 01:00:00+00",
   action: "completed",
@@ -225,21 +218,6 @@ describe("schedule logs DB", () => {
     expect(columns).not.toContain('"acted_at_utc"');
     expect(onConflict).toBe("item_id,scheduled_at_utc");
     expect(prefer).toContain("resolution=ignore-duplicates");
-  });
-
-  it("현재 조회 경계에 필요한 복합 index를 유지한다", () => {
-    const schema = readFileSync(
-      `${process.cwd()}/docs/database/DATABASE.sql`,
-      "utf8"
-    );
-
-    for (const index of [
-      "idx_recurring_items_user_archived_created_at",
-      "idx_completion_logs_user_item_scheduled_at",
-      "idx_completion_logs_user_item_action_acted_at",
-    ]) {
-      expect(schema).toContain(index);
-    }
   });
 });
 

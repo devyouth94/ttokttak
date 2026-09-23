@@ -5,7 +5,7 @@ import { listItemLogs } from "./db/logs";
 import { refreshSchedules } from "./query";
 import { type EditScheduleInput, resolveEdit } from "./rules/edit";
 import { assertInput } from "./rules/validate";
-import type { CreateScheduleInput, Schedule } from "./schedule";
+import type { CreateScheduleInput } from "./schedule";
 
 type CommonOptions = {
   syncDeviceOutputs: () => Promise<void>;
@@ -20,17 +20,16 @@ export async function createSchedule({
 }: CommonOptions & {
   input: CreateScheduleInput;
   timezone: string;
-}): Promise<Schedule> {
+}): Promise<void> {
   assertInput(input);
 
-  const schedule = await db.createItem({
+  await db.createItem({
     ...input,
     timezone,
     userId,
   });
 
   await finishScheduleWrite(syncDeviceOutputs);
-  return schedule;
 }
 
 export async function updateSchedule({
@@ -43,7 +42,7 @@ export async function updateSchedule({
   itemId: string;
   patch: EditScheduleInput;
   timezone: string;
-}): Promise<Schedule> {
+}): Promise<void> {
   const item = await db.getItem({ id: itemId, userId });
 
   if (item.contentStatus === "unrecoverable") {
@@ -57,16 +56,15 @@ export async function updateSchedule({
     now: new Date(),
     timezone,
   });
-  const schedule = edit
-    ? await db.updateItem({
-        edit,
-        id: itemId,
-        userId,
-      })
-    : item;
+  if (edit) {
+    await db.updateItem({
+      edit,
+      id: itemId,
+      userId,
+    });
+  }
 
   await finishScheduleWrite(syncDeviceOutputs);
-  return schedule;
 }
 
 export async function archiveSchedule({

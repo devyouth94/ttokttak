@@ -64,11 +64,14 @@ function createQuery(data: unknown = row) {
 }
 
 function createClient(query = createQuery(), rpc = jest.fn()) {
+  const from = jest.fn(() => ({ select: jest.fn(() => query) }));
+
   return {
     client: {
-      from: jest.fn(() => ({ select: jest.fn(() => query) })),
+      from,
       rpc,
     } as never,
+    from,
     query,
     rpc,
   };
@@ -144,7 +147,7 @@ describe("schedule items DB", () => {
 
   it("새 일정을 암호화하고 초기 규칙 버전을 RPC로 저장한다", async () => {
     const rpc = jest.fn().mockResolvedValue({ data: "item-1", error: null });
-    const { client } = createClient(createQuery(), rpc);
+    const { client, from } = createClient(createQuery(), rpc);
 
     await createItem(input, client);
 
@@ -160,11 +163,12 @@ describe("schedule items DB", () => {
     );
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_title");
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_description");
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("일정 수정 결과와 암호문을 RPC로 저장한다", async () => {
     const rpc = jest.fn().mockResolvedValue({ data: null, error: null });
-    const { client } = createClient(createQuery(), rpc);
+    const { client, from } = createClient(createQuery(), rpc);
 
     await updateItem(
       {
@@ -196,6 +200,7 @@ describe("schedule items DB", () => {
         p_title_ciphertext: "encrypted-title",
       })
     );
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("일정을 RPC로 보관 처리한다", async () => {

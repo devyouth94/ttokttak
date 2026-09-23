@@ -61,8 +61,8 @@ describe("일정 폼", () => {
       user: { id: "user-1" },
     } as never);
     mockSchedule(null);
-    jest.mocked(createSchedule).mockResolvedValue(scheduleFixture());
-    jest.mocked(updateSchedule).mockResolvedValue(scheduleFixture());
+    jest.mocked(createSchedule).mockResolvedValue(undefined);
+    jest.mocked(updateSchedule).mockResolvedValue(undefined);
     jest.mocked(archiveSchedule).mockResolvedValue(undefined);
   });
 
@@ -178,8 +178,8 @@ describe("일정 폼", () => {
 
   it("저장과 삭제가 진행 중일 때 서로와 중복 실행을 막는다", async () => {
     mockSchedule(scheduleFixture({ id: "item-1", title: "기존 일정" }));
-    const updatePending = deferred<ReturnType<typeof scheduleFixture>>();
-    const archivePending = deferred<void>();
+    const updatePending = deferred();
+    const archivePending = deferred();
     const alert = jest.spyOn(Alert, "alert");
 
     jest.mocked(updateSchedule).mockReturnValue(updatePending.promise);
@@ -202,7 +202,7 @@ describe("일정 폼", () => {
     expect(alert).not.toHaveBeenCalled();
 
     await TestRenderer.act(async () => {
-      updatePending.resolve(scheduleFixture());
+      updatePending.resolve();
     });
 
     jest.mocked(updateSchedule).mockClear();
@@ -221,7 +221,7 @@ describe("일정 폼", () => {
     expect(updateSchedule).not.toHaveBeenCalled();
 
     await TestRenderer.act(async () => {
-      archivePending.resolve(undefined);
+      archivePending.resolve();
     });
   });
 
@@ -285,12 +285,12 @@ function mockSchedule(item: ReturnType<typeof scheduleFixture> | null): void {
   } as never);
 }
 
-function deferred<Value>(): {
-  promise: Promise<Value>;
-  resolve: (value: Value) => void;
+function deferred(): {
+  promise: Promise<void>;
+  resolve: () => void;
 } {
-  let resolve!: (value: Value) => void;
-  const promise = new Promise<Value>((fulfill) => {
+  let resolve!: () => void;
+  const promise = new Promise<void>((fulfill) => {
     resolve = fulfill;
   });
 

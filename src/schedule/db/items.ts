@@ -157,13 +157,13 @@ export async function getItem(
 export async function createItem(
   input: CreateItemInput,
   client: Client = supabase
-): Promise<Schedule> {
+): Promise<void> {
   const content = await encryptContent({
     description: input.description ?? null,
     title: input.title,
     userId: input.userId,
   });
-  const { data: id, error } = await client.rpc(
+  const { error } = await client.rpc(
     "create_recurring_item_with_initial_version",
     {
       p_anchor_type: input.anchorType,
@@ -193,15 +193,13 @@ export async function createItem(
   if (error) {
     throw error;
   }
-
-  return getItem({ id, userId: input.userId }, client);
 }
 
 /** 일정 메타와 필요한 경우 새 규칙 버전을 저장한다. */
 export async function updateItem(
   input: UpdateItemInput,
   client: Client = supabase
-): Promise<Schedule> {
+): Promise<void> {
   const { item, version } = input.edit;
   const content = await encryptContent({
     description: item.description ?? null,
@@ -233,8 +231,6 @@ export async function updateItem(
   if (error) {
     throw error;
   }
-
-  return getItem({ id: input.id, userId: input.userId }, client);
 }
 
 /** 일정을 보관 처리한다. */
