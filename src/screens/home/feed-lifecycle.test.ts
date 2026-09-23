@@ -4,12 +4,14 @@ import { useIsFocused } from "@react-navigation/native";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
+import { logFixture, scheduleFixture } from "~/schedule/fixtures";
 import { useNow } from "~/schedule/now";
 import { useScheduleRange } from "~/schedule/query";
 import { useSession } from "~/session/provider";
 
 import { useHomeActions } from "./action";
 import { useHomeFeed } from "./feed";
+import { createHomeDateOptions } from "./ui/home-date-carousel";
 
 declare const require: (moduleName: string) => unknown;
 
@@ -109,6 +111,48 @@ describe("홈 피드 lifecycle", () => {
     await feed.update();
 
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("조회한 일정과 처리 기록을 선택 날짜의 카드로 연결한다", async () => {
+    query = {
+      ...query,
+      items: [scheduleFixture({ timezone: "UTC", recurrenceType: "daily" })],
+    };
+    const feed = await renderFeed();
+
+    expect(useScheduleRange).toHaveBeenLastCalledWith({
+      startLocalDate: "2024-04-10",
+      endLocalDate: "2026-04-24",
+    });
+    expect(feed.current.sections[1]?.items[0]?.id).toBe(
+      "item-1:2026-04-10T09:00:00.000Z"
+    );
+
+    await TestRenderer.act(() => feed.current.selectDate("2026-04-12"));
+    expect(useScheduleRange).toHaveBeenLastCalledWith({
+      startLocalDate: "2026-04-12",
+      endLocalDate: "2026-04-12",
+    });
+    expect(feed.current.sections[0]?.items).toHaveLength(1);
+
+    query = {
+      ...query,
+      logs: [logFixture({ scheduledAtUtc: "2026-04-12T09:00:00.000Z" })],
+    };
+    await feed.update();
+    expect(feed.current.sections[0]?.items).toEqual([]);
+  });
+  it("날짜 캐러셀은 오늘부터 15일을 표시 언어에 맞게 만든다", () => {
+    const options = createHomeDateOptions(new Date(2026, 3, 10), "en", "Today");
+
+    expect(options).toHaveLength(15);
+    expect(options[0]).toMatchObject({
+      dayLabel: "Fri",
+      id: "2026-04-10",
+      title: "Today",
+      value: "10",
+    });
+    expect(options[14]?.id).toBe("2026-04-24");
   });
 });
 
