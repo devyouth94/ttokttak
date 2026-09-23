@@ -1,20 +1,14 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { formatInTimeZone } from "date-fns-tz";
 
 import { type AppLanguage, normalizeAppLanguage } from "~/i18n/language";
 import { formatTimestamp } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
 import { useNow } from "~/schedule/now";
-import { useScheduleRange } from "~/schedule/query";
+import { useSchedules } from "~/schedule/query";
 import type { Occurrence } from "~/schedule/rules/occurrence";
-import {
-  addLocalDays,
-  createOccurrences,
-  OCCURRENCE_LOOKBACK_DAYS,
-} from "~/schedule/rules/occurrence";
+import { createOccurrences } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
-import { useSession } from "~/session/provider";
 
 type Row = {
   colorHex: string;
@@ -36,17 +30,8 @@ export function useItems(sort: Sort) {
   const { i18n } = useTranslation();
   const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
 
-  const { profile } = useSession();
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-
   const now = useNow();
-  const today = formatInTimeZone(now, timezone, "yyyy-MM-dd");
-
-  const query = useScheduleRange({
-    endLocalDate: today,
-    startLocalDate: addLocalDays(today, -OCCURRENCE_LOOKBACK_DAYS),
-  });
+  const query = useSchedules();
   const { items, logs, timezone: queryTimezone } = query;
 
   const rows = useMemo(() => {

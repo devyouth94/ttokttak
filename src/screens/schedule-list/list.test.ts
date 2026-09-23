@@ -2,9 +2,8 @@ import { useTranslation } from "react-i18next";
 
 import { scheduleFixture, type ScheduleOverrides } from "~/schedule/fixtures";
 import { useNow } from "~/schedule/now";
-import { useScheduleRange } from "~/schedule/query";
+import { useSchedules } from "~/schedule/query";
 import type { Schedule } from "~/schedule/schedule";
-import { useSession } from "~/session/provider";
 
 import { type Sort, useItems } from "./list";
 
@@ -16,8 +15,7 @@ jest.mock("react-i18next", () => ({
   useTranslation: jest.fn(),
 }));
 jest.mock("~/schedule/now", () => ({ useNow: jest.fn() }));
-jest.mock("~/schedule/query", () => ({ useScheduleRange: jest.fn() }));
-jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
+jest.mock("~/schedule/query", () => ({ useSchedules: jest.fn() }));
 
 const now = new Date("2026-04-20T03:00:00.000Z");
 const timezone = "Asia/Seoul";
@@ -58,10 +56,6 @@ describe("일정 목록", () => {
     expect(result).toMatchObject({
       refetch,
       status: "ready",
-    });
-    expect(useScheduleRange).toHaveBeenCalledWith({
-      endLocalDate: "2026-04-20",
-      startLocalDate: "2024-04-20",
     });
   });
 
@@ -137,11 +131,8 @@ function useList({
   jest.mocked(useTranslation).mockReturnValue({
     i18n: { language, resolvedLanguage: language },
   } as never);
-  jest.mocked(useSession).mockReturnValue({
-    profile: { timezone },
-  } as never);
   jest.mocked(useNow).mockReturnValue(now);
-  jest.mocked(useScheduleRange).mockReturnValue({
+  jest.mocked(useSchedules).mockReturnValue({
     error,
     isLoading,
     items,

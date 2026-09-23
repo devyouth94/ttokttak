@@ -36,113 +36,56 @@ function toInsert(input: CreateLogInput): LogInsert {
   };
 }
 
-function filterItems<
-  Query extends { in(column: string, values: string[]): Query },
->(query: Query, itemIds?: string[]): Query {
-  return itemIds?.length ? query.in("item_id", itemIds) : query;
-}
-
-/** 사용자의 occurrence 처리 기록을 조회한다. */
+/**
+ * 처리 기록 전체를 조회한다. itemIds 생략은 사용자 전체, 빈 배열은 조회 없음이다.
+ * 페이지별 전체 건수를 확인하되 여러 요청이 하나의 DB snapshot을 보장하지는 않는다.
+ */
 export async function listLogs(
   input: { itemIds?: string[]; userId: string },
   client: Client = supabase
 ): Promise<OccurrenceLog[]> {
-  const query = filterItems(
-    client
-      .from("completion_logs")
-      .select("*")
-      .eq("user_id", input.userId)
-      .order("scheduled_at_utc", { ascending: true }),
-    input.itemIds
-  );
-  const { data, error } = await query;
-
-  if (error) {
-    throw error;
+  if (input.itemIds?.length === 0) {
+    return [];
   }
 
-  return data.map(toLog);
-}
-
-/** 한 일정의 occurrence 처리 기록 전체를 pagination해서 조회한다. */
-export async function listItemLogs(
-  input: { itemId: string; userId: string },
-  client: Client = supabase
-): Promise<OccurrenceLog[]> {
-  const rows: LogRow[] = [];
-  let from = 0;
+  const logs: OccurrenceLog[] = [];
+  const pageSize = 1000;
 
   while (true) {
-    const { data, error } = await client
+    let query = client
       .from("completion_logs")
-      .select("*")
-      .eq("item_id", input.itemId)
+      .select("*", { count: "exact" })
       .eq("user_id", input.userId)
       .order("scheduled_at_utc", { ascending: true })
-      .range(from, from + 999);
+      .order("id", { ascending: true });
+    if (input.itemIds) {
+      query = query.in("item_id", input.itemIds);
+    }
 
+    const { data, error, count } = await query.range(
+      logs.length,
+      logs.length + pageSize - 1
+    );
     if (error) {
       throw error;
     }
+    if (count === null || (data.length === 0 && logs.length < count)) {
+      throw new Error("처리 기록 전체를 확인하지 못했습니다.");
+    }
 
-    rows.push(...data);
-    from += data.length;
-
-    if (data.length < 1000) {
-      return rows.map(toLog);
+    logs.push(...data.map(toLog));
+    if (logs.length >= count) {
+      return logs;
     }
   }
 }
 
-/** completion-based 계산에서 범위 이전의 최신 완료 기록을 조회한다. */
-export async function getAnchor(
-  input: { itemId: string; rangeStartUtc: string; userId: string },
-  client: Client = supabase
-): Promise<OccurrenceLog | null> {
-  const { data, error } = await client
-    .from("completion_logs")
-    .select("*")
-    .eq("user_id", input.userId)
-    .eq("item_id", input.itemId)
-    .eq("action", "completed")
-    .lt("acted_at_utc", input.rangeStartUtc)
-    .order("acted_at_utc", { ascending: false })
-    .limit(1);
-
-  if (error) {
-    throw error;
-  }
-
-  return data[0] ? toLog(data[0]) : null;
-}
-
-/** 지정한 UTC 범위의 occurrence 처리 기록을 조회한다. */
-export async function listLogsInRange(
-  input: {
-    itemIds?: string[];
-    rangeEndUtc: string;
-    rangeStartUtc: string;
-    userId: string;
-  },
+/** 한 일정의 occurrence 처리 기록 전체를 조회한다. */
+export function listItemLogs(
+  input: { itemId: string; userId: string },
   client: Client = supabase
 ): Promise<OccurrenceLog[]> {
-  const query = filterItems(
-    client
-      .from("completion_logs")
-      .select("*")
-      .eq("user_id", input.userId)
-      .gte("scheduled_at_utc", input.rangeStartUtc)
-      .lte("scheduled_at_utc", input.rangeEndUtc)
-      .order("scheduled_at_utc", { ascending: true }),
-    input.itemIds
-  );
-  const { data, error } = await query;
-
-  if (error) {
-    throw error;
-  }
-
-  return data.map(toLog);
+  return listLogs({ itemIds: [input.itemId], userId: input.userId }, client);
 }
 
 /** occurrence 처리 기록을 한 요청으로 생성한다. */

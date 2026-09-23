@@ -4,7 +4,7 @@ import { format } from "date-fns/format";
 import { parse } from "date-fns/parse";
 import { startOfMonth } from "date-fns/startOfMonth";
 
-import { useScheduleRange } from "~/schedule/query";
+import { useSchedules } from "~/schedule/query";
 import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
 
 /** 선택 날짜가 속한 월의 occurrence를 조회한다. */
@@ -19,10 +19,10 @@ export function useCalendarQuery({
   const startLocalDate = format(startOfMonth(month), "yyyy-MM-dd");
   const endLocalDate = format(endOfMonth(month), "yyyy-MM-dd");
 
-  const query = useScheduleRange({ endLocalDate, startLocalDate });
+  const query = useSchedules();
 
   const occurrenceEntries = useMemo(() => {
-    if (query.isLoading) {
+    if (query.isLoading || query.error) {
       return [];
     }
 
@@ -41,6 +41,7 @@ export function useCalendarQuery({
     endLocalDate,
     now,
     query.items,
+    query.error,
     query.isLoading,
     query.logs,
     query.timezone,

@@ -2,8 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useSession } from "~/session/provider";
 
-import { scheduleFixture, testTimezone } from "./fixtures";
-import { useScheduleById, useScheduleRange } from "./query";
+import { listLogs } from "./db/logs";
+import {
+  logFixture,
+  ruleFixture,
+  scheduleFixture,
+  testTimezone,
+} from "./fixtures";
+import { useScheduleById, useSchedules } from "./query";
+import { createOccurrences } from "./rules/occurrence";
 
 const refetch = jest.fn(async () => undefined);
 const queryResult = {
@@ -23,6 +30,9 @@ jest.mock("./db/items", () => ({
   getItem: jest.fn(),
   listItems: jest.fn(),
 }));
+jest.mock("./db/logs", () => ({
+  listLogs: jest.fn(),
+}));
 jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
 jest.mock("~/query-client", () => ({
   queryClient: { invalidateQueries: jest.fn() },
@@ -37,7 +47,7 @@ beforeEach(() => {
   } as never);
 });
 
-it("조회 범위와 완료일 기준 일정의 anchor 대상을 query key에 반영한다", () => {
+it("활성 일정의 전체 기록을 날짜와 무관한 사용자별 key로 공유한다", () => {
   const items = [
     scheduleFixture({ id: "fixed" }),
     scheduleFixture({
@@ -50,19 +60,13 @@ it("조회 범위와 완료일 기준 일정의 anchor 대상을 query key에 �
     .mocked(useQuery)
     .mockReturnValueOnce({ ...queryResult, data: items } as never)
     .mockReturnValueOnce(queryResult as never);
-  useScheduleRange({
-    endLocalDate: "2026-04-12",
-    startLocalDate: "2026-04-10",
-  });
+  useSchedules();
 
   expect(jest.mocked(useQuery).mock.calls[1]?.[0].queryKey).toEqual([
     "schedule",
     "user-1",
     "logs",
     ["completion-based", "fixed"],
-    ["completion-based"],
-    "2026-04-09T15:00:00.000Z",
-    "2026-04-12T14:59:59.999Z",
   ]);
 });
 
@@ -112,10 +116,75 @@ it("세션 오류를 일정 로딩으로 취급하지 않는다", () => {
     .mocked(useQuery)
     .mockReturnValue({ ...queryResult, isPending: true } as never);
 
-  const result = useScheduleRange({
-    endLocalDate: "2026-04-10",
-    startLocalDate: "2026-04-10",
-  });
+  const result = useSchedules();
 
   expect(result.isLoading).toBe(false);
 });
+
+it.each([false, true])(
+  "연속 완료와 건너뛰기 이력을 공급해 과거 월을 정확하게 계산한다: 이후 고정형=%s",
+  async (hasNewVersion) => {
+    const item = scheduleFixture({
+      timezone: "UTC",
+      startDateLocal: "2026-03-24",
+      anchorType: "completion_based",
+      recurrenceType: "interval_days",
+      intervalValue: 3,
+    });
+    if (hasNewVersion) {
+      item.versions.push(
+        ruleFixture({
+          effectiveFromUtc: "2026-05-01T00:00:00.000Z",
+          seedStartDateLocal: "2026-05-01",
+        })
+      );
+    }
+    const logs = [
+      logFixture({
+        id: "first",
+        scheduledAtUtc: "2026-03-24T09:00:00.000Z",
+        actedAtUtc: "2026-03-25T10:00:00.000Z",
+      }),
+      logFixture({
+        id: "second",
+        scheduledAtUtc: "2026-03-28T09:00:00.000Z",
+        actedAtUtc: "2026-03-29T10:00:00.000Z",
+      }),
+      logFixture({
+        id: "skip",
+        action: "skipped",
+        scheduledAtUtc: "2026-04-01T09:00:00.000Z",
+        actedAtUtc: "2026-04-02T10:00:00.000Z",
+      }),
+    ];
+    jest.mocked(listLogs).mockResolvedValue(logs);
+    jest
+      .mocked(useQuery)
+      .mockReturnValueOnce({ ...queryResult, data: [item] } as never)
+      .mockReturnValueOnce(queryResult as never);
+    useSchedules();
+    const queryFn = jest.mocked(useQuery).mock.calls[1]![0]
+      .queryFn as () => Promise<typeof logs>;
+    const suppliedLogs = await queryFn();
+    const input = {
+      now: new Date("2026-04-10T12:00:00.000Z"),
+      schedules: [item],
+      timezone: "UTC",
+    };
+    const range = {
+      startUtc: "2026-04-01T00:00:00.000Z",
+      endUtc: "2026-04-07T23:59:59.999Z",
+    };
+    const actual = createOccurrences({ ...input, logs: suppliedLogs }).range(
+      range
+    );
+    expect(actual).toEqual(createOccurrences({ ...input, logs }).range(range));
+    expect(
+      actual.map(({ occurrence }) => [occurrence.localDate, occurrence.status])
+    ).toEqual([
+      ["2026-04-01", "skipped"],
+      ["2026-04-04", "overdue"],
+      ["2026-04-07", "overdue"],
+    ]);
+  }
+);

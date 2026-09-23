@@ -47,23 +47,6 @@ type HomeSectionsInput = {
   timezone: string;
 };
 
-/** 선택 날짜에 필요한 occurrence 조회 범위를 계산한다. */
-export function getHomeQueryRange({
-  now,
-  selectedDateId,
-  timezone,
-}: Pick<HomeSectionsInput, "now" | "selectedDateId" | "timezone">): {
-  endLocalDate: string;
-  startLocalDate: string;
-} {
-  const dates = getHomeDates(now, selectedDateId, timezone);
-
-  return {
-    endLocalDate: dates.isToday ? dates.upcomingEnd : selectedDateId,
-    startLocalDate: dates.isToday ? dates.overdueStart : selectedDateId,
-  };
-}
-
 /** 선택 날짜를 기준으로 홈에 표시할 섹션과 카드를 만든다. */
 export function createHomeSections({
   language,

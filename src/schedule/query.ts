@@ -5,14 +5,9 @@ import { queryClient } from "~/query-client";
 import { useSession } from "~/session/provider";
 
 import { getItem, listItems } from "./db/items";
-import { getAnchor, listLogsInRange } from "./db/logs";
-import {
-  type OccurrenceLog,
-  toUtcRange,
-  type UtcRange,
-} from "./rules/occurrence";
-import { supportsCompletion } from "./rules/recurrence";
-import { currentRule, type Schedule } from "./schedule";
+import { listLogs } from "./db/logs";
+import type { OccurrenceLog } from "./rules/occurrence";
+import type { Schedule } from "./schedule";
 
 const emptyItems: Schedule[] = [];
 const emptyLogs: OccurrenceLog[] = [];
@@ -22,27 +17,8 @@ function userKey(userId: string): readonly string[] {
   return [...rootKey, userId];
 }
 
-function getAnchorItemIds(items: Schedule[]): string[] {
-  return items
-    .filter((item) => {
-      const rule = currentRule(item);
-
-      return (
-        rule.anchorType === "completion_based" &&
-        supportsCompletion(rule.recurrenceType)
-      );
-    })
-    .map((item) => item.id);
-}
-
-/** 일정 전체와 지정한 local date 범위의 처리 기록을 조회한다. */
-export function useScheduleRange({
-  endLocalDate,
-  startLocalDate,
-}: {
-  endLocalDate: string;
-  startLocalDate: string;
-}) {
+/** 활성 일정과 전체 처리 기록을 화면 사이에서 공유한다. */
+export function useSchedules() {
   const { profile, status: sessionStatus, user } = useSession();
 
   const isReady = sessionStatus === "ready";
@@ -50,14 +26,6 @@ export function useScheduleRange({
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const userId = user?.id ?? null;
   const enabled = isReady && Boolean(userId);
-
-  const range = useMemo(
-    () => ({
-      endUtc: toUtcRange(endLocalDate, timezone).endUtc,
-      startUtc: toUtcRange(startLocalDate, timezone).startUtc,
-    }),
-    [endLocalDate, startLocalDate, timezone]
-  );
 
   const {
     data: items = emptyItems,
@@ -67,14 +35,13 @@ export function useScheduleRange({
   } = useItemsQuery({ enabled, userId });
 
   const itemIds = useMemo(() => items.map((item) => item.id), [items]);
-  const anchorItemIds = useMemo(() => getAnchorItemIds(items), [items]);
 
   const {
     data: logs = emptyLogs,
     error: logsError,
     isPending: isLogsPending,
     refetch: refetchLogs,
-  } = useRangeLogsQuery({ enabled, itemIds, anchorItemIds, range, userId });
+  } = useLogsQuery({ enabled, itemIds, userId });
 
   const refetch = useCallback(async (): Promise<void> => {
     await refetchItems();
@@ -87,12 +54,13 @@ export function useScheduleRange({
   const isLoading =
     sessionStatus === "loading" ||
     (enabled && (isItemsPending || (itemIds.length > 0 && isLogsPending)));
+  const error = itemsError ?? logsError;
 
   return {
-    error: itemsError ?? logsError,
+    error,
     isLoading,
     isReady,
-    items,
+    items: isLoading || error ? emptyItems : items,
     logs,
     refetch,
     timezone,
@@ -131,50 +99,18 @@ function useItemsQuery({
   });
 }
 
-function useRangeLogsQuery({
+function useLogsQuery({
   enabled,
   itemIds,
-  anchorItemIds,
-  range,
   userId,
 }: {
   enabled: boolean;
   itemIds: string[];
-  anchorItemIds: string[];
-  range: UtcRange;
   userId: string | null;
 }) {
   return useQuery({
     enabled: enabled && itemIds.length > 0,
-    queryFn: async () => {
-      const logs = await listLogsInRange({
-        itemIds,
-        rangeEndUtc: range.endUtc,
-        rangeStartUtc: range.startUtc,
-        userId: userId!,
-      });
-      const anchors = await Promise.all(
-        anchorItemIds.map((itemId) =>
-          getAnchor({
-            itemId,
-            rangeStartUtc: range.startUtc,
-            userId: userId!,
-          })
-        )
-      );
-
-      return [
-        ...logs,
-        ...anchors.filter((log): log is OccurrenceLog => log !== null),
-      ];
-    },
-    queryKey: [
-      ...userKey(userId ?? "signed-out"),
-      "logs",
-      [...itemIds].sort(),
-      [...anchorItemIds].sort(),
-      range.startUtc,
-      range.endUtc,
-    ],
+    queryFn: () => listLogs({ itemIds, userId: userId! }),
+    queryKey: [...userKey(userId ?? "signed-out"), "logs", [...itemIds].sort()],
   });
 }

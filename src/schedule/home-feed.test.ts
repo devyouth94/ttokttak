@@ -6,7 +6,7 @@ import {
   type ScheduleOverrides,
   testTimezone as timezone,
 } from "./fixtures";
-import { createHomeSections, getHomeQueryRange } from "./home-feed";
+import { createHomeSections } from "./home-feed";
 
 const defaults = {
   language: "ko" as const,
@@ -18,6 +18,16 @@ const defaults = {
 };
 
 describe("홈 피드 계산", () => {
+  it("전체 이력을 받아도 730일 이전 occurrence는 지난 일정에서 제외한다", () => {
+    const sections = createHomeSections({
+      ...defaults,
+      schedules: [
+        item({ id: "outside", startDateLocal: "2024-04-09" }),
+        item({ id: "boundary", startDateLocal: "2024-04-10" }),
+      ],
+    });
+    expect(sections[0]?.items.map(({ item }) => item.id)).toEqual(["boundary"]);
+  });
   it("오늘은 지난 730일부터 다가오는 14일까지 세 섹션을 만든다", () => {
     const sections = createHomeSections({
       ...defaults,
@@ -40,10 +50,6 @@ describe("홈 피드 계산", () => {
       ],
     });
 
-    expect(getHomeQueryRange(defaults)).toEqual({
-      endLocalDate: "2026-04-24",
-      startLocalDate: "2024-04-10",
-    });
     expect(sections.map((section) => section.title)).toEqual([
       "home.feed.sectionOverdue",
       "home.feed.sectionToday",
@@ -80,12 +86,6 @@ describe("홈 피드 계산", () => {
       selectedDateId: "2026-04-13",
     });
 
-    expect(
-      getHomeQueryRange({ ...defaults, selectedDateId: "2026-04-13" })
-    ).toEqual({
-      endLocalDate: "2026-04-13",
-      startLocalDate: "2026-04-13",
-    });
     expect(sections).toHaveLength(1);
     expect(sections[0]).toMatchObject({
       title: "4월 13일",
@@ -172,12 +172,8 @@ describe("홈 피드 계산", () => {
     expect(upcoming?.items[13]?.dateSeparatorLabel).toBe("4월 24일");
   });
 
-  it("profile 시간대의 오늘 경계로 조회 범위와 오늘 카드를 만든다", () => {
+  it("profile 시간대의 오늘 경계로 오늘 카드를 만든다", () => {
     const input = { ...defaults, now: new Date("2026-04-09T15:00:00.000Z") };
-    expect(getHomeQueryRange(input)).toEqual({
-      startLocalDate: "2024-04-10",
-      endLocalDate: "2026-04-24",
-    });
     const sections = createHomeSections({
       ...input,
       schedules: [item({ reminderTimeLocal: "00:00" })],

@@ -5,9 +5,9 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
-import { createHomeSections, getHomeQueryRange } from "~/schedule/home-feed";
+import { createHomeSections } from "~/schedule/home-feed";
 import { useNow } from "~/schedule/now";
-import { useScheduleRange } from "~/schedule/query";
+import { useSchedules } from "~/schedule/query";
 import { useSession } from "~/session/provider";
 
 import { useHomeActions } from "./action";
@@ -35,9 +35,7 @@ export function useHomeFeed() {
   );
   const previousTimezoneRef = useRef(initialTimezone);
 
-  const query = useScheduleRange(
-    getHomeQueryRange({ now, selectedDateId, timezone: initialTimezone })
-  );
+  const query = useSchedules();
   const refetch = query.refetch;
   const status = getStatus(query);
 

@@ -6,7 +6,7 @@ import { useAppLanguage } from "~/i18n/provider";
 import { useNotifications } from "~/notifications/provider";
 import { logFixture, scheduleFixture } from "~/schedule/fixtures";
 import { useNow } from "~/schedule/now";
-import { useScheduleRange } from "~/schedule/query";
+import { useSchedules } from "~/schedule/query";
 import { useSession } from "~/session/provider";
 
 import { useHomeActions } from "./action";
@@ -22,7 +22,7 @@ jest.mock("~/notifications/provider", () => ({
   useNotifications: jest.fn(),
 }));
 jest.mock("~/schedule/now", () => ({ useNow: jest.fn() }));
-jest.mock("~/schedule/query", () => ({ useScheduleRange: jest.fn() }));
+jest.mock("~/schedule/query", () => ({ useSchedules: jest.fn() }));
 jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
 jest.mock("./action", () => ({ useHomeActions: jest.fn() }));
 
@@ -37,7 +37,7 @@ const TestRenderer = require("react-test-renderer") as {
 
 let focused = true;
 let timezone = "UTC";
-let query: ReturnType<typeof useScheduleRange> = createQuery();
+let query: ReturnType<typeof useSchedules> = createQuery();
 
 describe("홈 피드 lifecycle", () => {
   beforeEach(() => {
@@ -60,7 +60,7 @@ describe("홈 피드 lifecycle", () => {
     jest
       .mocked(useSession)
       .mockImplementation(() => ({ profile: { timezone } }) as never);
-    jest.mocked(useScheduleRange).mockImplementation(() => query as never);
+    jest.mocked(useSchedules).mockImplementation(() => query as never);
     jest.mocked(useHomeActions).mockReturnValue({
       clearError: jest.fn(),
       errorMessage: null,
@@ -120,19 +120,11 @@ describe("홈 피드 lifecycle", () => {
     };
     const feed = await renderFeed();
 
-    expect(useScheduleRange).toHaveBeenLastCalledWith({
-      startLocalDate: "2024-04-10",
-      endLocalDate: "2026-04-24",
-    });
     expect(feed.current.sections[1]?.items[0]?.id).toBe(
       "item-1:2026-04-10T09:00:00.000Z"
     );
 
     await TestRenderer.act(() => feed.current.selectDate("2026-04-12"));
-    expect(useScheduleRange).toHaveBeenLastCalledWith({
-      startLocalDate: "2026-04-12",
-      endLocalDate: "2026-04-12",
-    });
     expect(feed.current.sections[0]?.items).toHaveLength(1);
 
     query = {
@@ -156,7 +148,7 @@ describe("홈 피드 lifecycle", () => {
   });
 });
 
-function createQuery(): ReturnType<typeof useScheduleRange> {
+function createQuery(): ReturnType<typeof useSchedules> {
   return {
     error: null,
     isLoading: false,
