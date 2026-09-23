@@ -3,15 +3,14 @@ import { createContext, use, useCallback, useEffect, useState } from "react";
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
+import {
+  clearDeviceOutputs,
+  startDeviceSyncSession,
+} from "~/device-sync-session";
 import { useAppLanguage } from "~/i18n/provider";
 import { useNotificationPermission } from "~/notifications/permission";
-import {
-  cancelNotifications,
-  startNotificationSession,
-} from "~/notifications/session";
 import { useReminderResponse } from "~/notifications/use-reminder-response";
 import { captureException } from "~/sentry";
-import { syncHomeWidget } from "~/widgets/home";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -45,7 +44,7 @@ export function DeviceSyncProvider({
 }>): React.JSX.Element {
   const { language } = useAppLanguage();
   const [session, setSession] = useState<ReturnType<
-    typeof startNotificationSession
+    typeof startDeviceSyncSession
   > | null>(null);
 
   const {
@@ -54,16 +53,13 @@ export function DeviceSyncProvider({
     ...permissionState
   } = useNotificationPermission();
 
-  /** 알림과 위젯은 병렬 갱신하되 위젯 실패는 별도로 기록한다. */
+  /** 세션 안에서 데이터를 한 번 준비하고 두 출력을 갱신한다. */
   const syncDeviceOutputs = useCallback(async (): Promise<void> => {
     if (!session?.active || session.userId !== userId) {
       return;
     }
 
-    await Promise.all([
-      session.refresh({ language, timezone }),
-      syncWidget({ language, timezone, userId }),
-    ]);
+    await session.refresh({ language, timezone });
   }, [language, session, timezone, userId]);
 
   /** lifecycle 동기화 실패를 기록하고 사용자 흐름은 계속 진행한다. */
@@ -89,7 +85,7 @@ export function DeviceSyncProvider({
 
   /** 로그아웃 알림 정리 실패를 기록하고 세션 종료는 계속 진행한다. */
   const cancelSafely = useCallback(
-    async (close = cancelNotifications): Promise<void> => {
+    async (close = clearDeviceOutputs): Promise<void> => {
       try {
         await close();
       } catch (error) {
@@ -101,14 +97,14 @@ export function DeviceSyncProvider({
     []
   );
 
-  // Provider는 세션 수명만 전달하고 병합·무효화·OS 쓰기 순서는 알림 모듈이 소유한다.
+  // Provider는 세션 수명만 전달하고 병합·무효화·쓰기 순서는 기기 세션이 소유한다.
   useEffect(() => {
     if (!userId) {
       setSession(null);
       void cancelSafely();
       return;
     }
-    const next = startNotificationSession(userId);
+    const next = startDeviceSyncSession(userId);
     setSession(next);
     return () => {
       void cancelSafely(next.close);
@@ -146,15 +142,10 @@ export function DeviceSyncProvider({
     return () => subscription.remove();
   }, [refreshPermission, syncSafely]);
 
-  // 로그인 상태에서는 두 출력을 갱신하고, 로그아웃 상태에서는 위젯도 비운다.
+  // 로그인 상태에서는 두 출력을 갱신한다. 종료 시 정리는 세션이 소유한다.
   useEffect(() => {
-    if (userId) {
-      void syncSafely("local-notification-context-sync");
-      return;
-    }
-
-    void syncWidget({ language, timezone });
-  }, [language, syncSafely, timezone, userId]);
+    if (userId) void syncSafely("local-notification-context-sync");
+  }, [syncSafely, userId]);
 
   /** 알림 tap 뒤 홈으로 이동한 시점의 예약 알림을 다시 맞춘다. */
   const handleTap = useCallback((): void => {
@@ -183,15 +174,4 @@ export function useDeviceSync(): DeviceSyncValue {
   }
 
   return context;
-}
-
-/** 위젯 오류는 알림 결과나 이미 저장한 일정에 영향을 주지 않는다. */
-async function syncWidget(
-  params: Parameters<typeof syncHomeWidget>[0]
-): Promise<void> {
-  try {
-    await syncHomeWidget(params);
-  } catch (error) {
-    captureException(error, { tags: { feature: "ios-home-widget-sync" } });
-  }
 }

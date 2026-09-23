@@ -113,4 +113,30 @@ describe("일정 저장", () => {
     expect(listItemLogs).not.toHaveBeenCalled();
     expect(db.updateItem).not.toHaveBeenCalled();
   });
+
+  it.each(["create", "update", "archive"])(
+    "DB %s 실패 뒤에는 기기 갱신과 query 갱신을 하지 않는다",
+    async (operation) => {
+      const error = new Error("저장 실패");
+      const syncDeviceOutputs = jest.fn();
+      jest.mocked(db.createItem).mockRejectedValue(error);
+      jest.mocked(db.updateItem).mockRejectedValue(error);
+      jest.mocked(db.archiveItem).mockRejectedValue(error);
+      const write =
+        operation === "create"
+          ? createSchedule({ input, syncDeviceOutputs, timezone, userId })
+          : operation === "update"
+            ? updateSchedule({
+                itemId: "item-1",
+                patch: { title: "변경" },
+                syncDeviceOutputs,
+                timezone,
+                userId,
+              })
+            : archiveSchedule({ itemId: "item-1", syncDeviceOutputs });
+      await expect(write).rejects.toBe(error);
+      expect(syncDeviceOutputs).not.toHaveBeenCalled();
+      expect(refreshSchedules).not.toHaveBeenCalled();
+    }
+  );
 });

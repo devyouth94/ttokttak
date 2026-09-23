@@ -29,7 +29,7 @@ export async function createSchedule({
     userId,
   });
 
-  await finish(syncDeviceOutputs);
+  await finishScheduleWrite(syncDeviceOutputs);
   return schedule;
 }
 
@@ -65,7 +65,7 @@ export async function updateSchedule({
       })
     : item;
 
-  await finish(syncDeviceOutputs);
+  await finishScheduleWrite(syncDeviceOutputs);
   return schedule;
 }
 
@@ -77,15 +77,20 @@ export async function archiveSchedule({
   syncDeviceOutputs: () => Promise<void>;
 }): Promise<void> {
   await db.archiveItem(itemId);
-  await finish(syncDeviceOutputs);
+  await finishScheduleWrite(syncDeviceOutputs);
 }
 
-async function finish(syncDeviceOutputs: () => Promise<void>): Promise<void> {
+export async function finishScheduleWrite(
+  syncDeviceOutputs: () => Promise<void>,
+  tags: { feature: string; reason?: string } = {
+    feature: "schedule-mutation-notification-sync",
+  }
+): Promise<void> {
   try {
     await syncDeviceOutputs();
   } catch (error) {
     captureException(error, {
-      tags: { feature: "schedule-mutation-notification-sync" },
+      tags,
     });
   }
 

@@ -116,30 +116,36 @@ describe("홈 occurrence 처리", () => {
     ]);
   });
 
-  it("알림 동기화 실패를 기록해도 화면 데이터는 새로 맞춘다", async () => {
-    const error = new Error("알림 동기화 실패");
-    const item = scheduleFixture({ recurrenceType: "once" });
+  it.each(["completed", "skipped"] as const)(
+    "기기 갱신 실패 뒤에도 화면을 갱신하고 %s 진단을 유지한다",
+    async (action) => {
+      const error = new Error("알림 동기화 실패");
+      const item = scheduleFixture({ recurrenceType: "once" });
 
-    await processHomeOccurrence({
-      action: "completed",
-      logs: [],
-      now,
-      syncDeviceOutputs: async () => {
-        throw error;
-      },
-      target: { item, occurrence: occurrence(item) },
-      timezone,
-      userId: "user-1",
-    });
+      await processHomeOccurrence({
+        action,
+        logs: [],
+        now,
+        syncDeviceOutputs: async () => {
+          throw error;
+        },
+        target: { item, occurrence: occurrence(item) },
+        timezone,
+        userId: "user-1",
+      });
 
-    expect(captureException).toHaveBeenCalledWith(error, {
-      tags: {
-        feature: "home-feed-occurrence-notification-sync",
-        reason: "occurrence-completed",
-      },
-    });
-    expect(refreshSchedules).toHaveBeenCalledTimes(1);
-  });
+      expect(captureException).toHaveBeenCalledWith(error, {
+        tags: {
+          feature: "home-feed-occurrence-notification-sync",
+          reason:
+            action === "completed"
+              ? "occurrence-completed"
+              : "occurrence-skipped",
+        },
+      });
+      expect(refreshSchedules).toHaveBeenCalledTimes(1);
+    }
+  );
 
   it("처리 실패 메시지를 남기고 처리 상태를 해제한다", async () => {
     const error = new Error("처리 실패");
@@ -172,6 +178,7 @@ describe("홈 occurrence 처리", () => {
     expect(captureException).toHaveBeenCalledWith(error);
     expect(actions.errorMessage).toBe("home.feed.actionErrorDescription");
     expect(actions.processingIds).toEqual([]);
+    expect(refreshSchedules).not.toHaveBeenCalled();
   });
 });
 

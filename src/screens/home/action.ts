@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { createLogs } from "~/schedule/db/logs";
-import { refreshSchedules } from "~/schedule/query";
 import {
   createOccurrences,
   type Occurrence,
@@ -11,6 +10,7 @@ import {
   toUtcRange,
 } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
+import { finishScheduleWrite } from "~/schedule/write";
 import { captureException } from "~/sentry";
 
 type HomeOccurrenceTarget = {
@@ -113,22 +113,11 @@ export async function processHomeOccurrence({
     );
   }
 
-  // 알림 동기화 실패가 이미 저장된 처리 기록의 피드 반영을 막지 않게 한다.
-  try {
-    await syncDeviceOutputs();
-  } catch (error) {
-    captureException(error, {
-      tags: {
-        feature: "home-feed-occurrence-notification-sync",
-        reason:
-          action === "completed"
-            ? "occurrence-completed"
-            : "occurrence-skipped",
-      },
-    });
-  }
-
-  await refreshSchedules();
+  await finishScheduleWrite(syncDeviceOutputs, {
+    feature: "home-feed-occurrence-notification-sync",
+    reason:
+      action === "completed" ? "occurrence-completed" : "occurrence-skipped",
+  });
 }
 
 /** 이미 처리된 기록을 제외하고 이번 입력으로 처리할 occurrence를 반환한다. */

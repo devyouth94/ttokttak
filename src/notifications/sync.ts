@@ -1,21 +1,11 @@
 import * as Notifications from "expo-notifications";
 
-import type { AppLanguage } from "~/i18n/language";
-import { listItems } from "~/schedule/db/items";
-import { listLogs } from "~/schedule/db/logs";
+import type { DeviceSyncInput } from "~/device-sync-session";
 import { captureException } from "~/sentry";
-import { supabase } from "~/supabase";
 
-import { getPermission } from "./permission";
 import { planNotifications, REMINDER_PREFIX as PREFIX } from "./plan";
 
 const CHANNEL_ID = "reminders";
-
-export type NotificationSyncParams = {
-  language: AppLanguage;
-  timezone: string;
-  userId: string;
-};
 
 export type NotificationStep = <T>(
   stage: NotificationSyncStage,
@@ -50,88 +40,25 @@ export class NotificationSyncError extends Error {
   }
 }
 
-/** 한 번의 동기화. 세션은 단계 실행과 OS 쓰기 순서만 제어한다. */
-export async function syncNotificationsNow(
-  params: NotificationSyncParams,
-  step: NotificationStep,
-  write: (operation: () => Promise<void>) => Promise<void>
-): Promise<void> {
-  const permission = await step("permission", getPermission);
-
-  if (permission.status !== "granted") {
-    return;
-  }
-
-  const accessToken = await step("items", () => getAccessToken(params.userId));
-
-  if (!accessToken) {
-    return;
-  }
-
-  let data;
-
-  try {
-    data = await loadNotificationData(params.userId, step);
-  } catch (error) {
-    const refreshedAccessToken = await step("items", () =>
-      getAccessToken(params.userId)
-    );
-
-    if (!refreshedAccessToken) {
-      return;
-    }
-
-    if (refreshedAccessToken === accessToken) {
-      throw error;
-    }
-
-    // ponytail: 연속 세션 갱신은 다음 lifecycle 동기화에 맡기고 한 번만 재조회한다.
-    data = await loadNotificationData(params.userId, step);
-  }
-
-  await write(() => applyNotifications(data, params, step));
-}
-
-async function loadNotificationData(userId: string, step: NotificationStep) {
-  const items = await step("items", () => listItems({ userId }));
-  const itemIds = items.map((item) => item.id);
-  const completionLogs = itemIds.length
-    ? await step("logs", () => listLogs({ itemIds, userId }))
-    : [];
-
-  return { completionLogs, items };
-}
-
-async function getAccessToken(userId: string): Promise<string | null> {
-  const { data, error } = await supabase.auth.getSession();
-
-  if (error) {
-    throw error;
-  }
-
-  return data.session?.user.id === userId ? data.session.access_token : null;
-}
-
 /**
  * 원하는 알림 후보와 Expo 예약 목록을 비교한다.
  * 기존 내용은 유지하고, 달라진 알림만 취소하거나 새로 예약한다.
  */
-async function applyNotifications(
-  data: Awaited<ReturnType<typeof loadNotificationData>>,
-  params: NotificationSyncParams,
+export async function applyNotifications(
+  input: DeviceSyncInput,
   step: NotificationStep
 ): Promise<void> {
   const requests = await step("list-scheduled", () =>
     Notifications.getAllScheduledNotificationsAsync()
   );
   const plan = await step("candidates", () =>
-    planNotifications({ ...data, ...params, now: new Date(), requests })
+    planNotifications({ ...input, requests })
   );
   await step("cancel", () =>
     settleWrites(
       [
         Notifications.setBadgeCountAsync(plan.badgeCount),
-        dismissStaleNotifications(data, params.userId),
+        dismissStaleNotifications(input),
       ],
       "app-icon-badge-sync"
     )
@@ -187,16 +114,15 @@ async function applyNotifications(
 }
 
 /** 처리됐거나 현재 사용자에게 속하지 않는 표시 알림을 제거한다. */
-async function dismissStaleNotifications(
-  data: Awaited<ReturnType<typeof loadNotificationData>>,
-  userId: string
-): Promise<void> {
+async function dismissStaleNotifications({
+  items,
+  completionLogs,
+  userId,
+}: DeviceSyncInput): Promise<void> {
   const ownerPrefix = `${PREFIX}${userId}:`;
-  const activeItemPrefixes = data.items.map(
-    (item) => `${ownerPrefix}${item.id}:`
-  );
+  const activeItemPrefixes = items.map((item) => `${ownerPrefix}${item.id}:`);
   const handledIds = new Set(
-    data.completionLogs.map(
+    completionLogs.map(
       (log) => `${ownerPrefix}${log.itemId}:${log.scheduledAtUtc}`
     )
   );

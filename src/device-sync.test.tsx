@@ -3,13 +3,12 @@ import { AppState } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 
-import { useAppLanguage } from "~/i18n/provider";
 import {
-  cancelNotifications,
-  startNotificationSession,
-} from "~/notifications/session";
+  clearDeviceOutputs,
+  startDeviceSyncSession,
+} from "~/device-sync-session";
+import { useAppLanguage } from "~/i18n/provider";
 import { captureException } from "~/sentry";
-import { syncHomeWidget } from "~/widgets/home";
 
 import { DeviceSyncProvider, useDeviceSync } from "./device-sync";
 
@@ -41,10 +40,9 @@ jest.mock("expo-notifications", () => ({
 }));
 jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
-jest.mock("~/widgets/home", () => ({ syncHomeWidget: jest.fn() }));
-jest.mock("~/notifications/session", () => ({
-  cancelNotifications: jest.fn(),
-  startNotificationSession: jest.fn(),
+jest.mock("~/device-sync-session", () => ({
+  clearDeviceOutputs: jest.fn(),
+  startDeviceSyncSession: jest.fn(),
 }));
 
 const syncDeviceOutputs = jest.fn<
@@ -80,9 +78,8 @@ describe("DeviceSyncProvider", () => {
       .mocked(Notifications.clearLastNotificationResponseAsync)
       .mockResolvedValue();
     jest.mocked(syncDeviceOutputs).mockResolvedValue();
-    jest.mocked(cancelNotifications).mockResolvedValue();
-    jest.mocked(syncHomeWidget).mockResolvedValue();
-    jest.mocked(startNotificationSession).mockImplementation((userId) => {
+    jest.mocked(clearDeviceOutputs).mockResolvedValue();
+    jest.mocked(startDeviceSyncSession).mockImplementation((userId) => {
       let active = true;
       return {
         userId,
@@ -92,7 +89,7 @@ describe("DeviceSyncProvider", () => {
         refresh: (params) => syncDeviceOutputs({ ...params, userId }),
         close: async () => {
           active = false;
-          await cancelNotifications();
+          await clearDeviceOutputs();
         },
       };
     });
@@ -108,11 +105,6 @@ describe("DeviceSyncProvider", () => {
     });
 
     expect(syncDeviceOutputs).toHaveBeenCalledWith({
-      language: "ko",
-      timezone: "Asia/Seoul",
-      userId: "user-1",
-    });
-    expect(syncHomeWidget).toHaveBeenCalledWith({
       language: "ko",
       timezone: "Asia/Seoul",
       userId: "user-1",
@@ -156,13 +148,8 @@ describe("DeviceSyncProvider", () => {
       await Promise.resolve();
     });
 
-    expect(cancelNotifications).toHaveBeenCalled();
+    expect(clearDeviceOutputs).toHaveBeenCalled();
     expect(syncDeviceOutputs).toHaveBeenCalledTimes(4);
-    expect(syncHomeWidget).toHaveBeenLastCalledWith({
-      language: "en",
-      timezone: "Asia/Seoul",
-      userId: undefined,
-    });
     expect(
       Notifications.addNotificationResponseReceivedListener
     ).toHaveBeenCalledTimes(1);
@@ -214,31 +201,6 @@ describe("DeviceSyncProvider", () => {
     });
     expect(value.permission.status).toBe("granted");
     expect(value.isRequestingPermission).toBe(false);
-    await TestRenderer.act(() => renderer.unmount());
-  });
-
-  it("위젯 실패는 기록하되 기기 갱신 호출을 실패시키지 않는다", async () => {
-    let value!: ReturnType<typeof useDeviceSync>;
-    function Probe() {
-      value = useDeviceSync();
-      return null;
-    }
-    let renderer!: ReturnType<typeof TestRenderer.create>;
-    await TestRenderer.act(async () => {
-      renderer = TestRenderer.create(
-        <DeviceSyncProvider timezone="Asia/Seoul" userId="user-1">
-          <Probe />
-        </DeviceSyncProvider>
-      );
-    });
-    const error = new Error("위젯 실패");
-    jest.mocked(syncHomeWidget).mockRejectedValueOnce(error);
-    await TestRenderer.act(async () => {
-      await expect(value.syncDeviceOutputs()).resolves.toBeUndefined();
-    });
-    expect(captureException).toHaveBeenCalledWith(error, {
-      tags: { feature: "ios-home-widget-sync" },
-    });
     await TestRenderer.act(() => renderer.unmount());
   });
 
@@ -372,13 +334,12 @@ describe("DeviceSyncProvider", () => {
     });
     const oldSync = value.syncDeviceOutputs;
     jest.mocked(syncDeviceOutputs).mockClear();
-    jest.mocked(syncHomeWidget).mockClear();
     await TestRenderer.act(async () => {
       renderer.update(element("user-2"));
     });
-    expect(cancelNotifications).toHaveBeenCalledTimes(1);
+    expect(clearDeviceOutputs).toHaveBeenCalledTimes(1);
     expect(
-      jest.mocked(cancelNotifications).mock.invocationCallOrder[0]
+      jest.mocked(clearDeviceOutputs).mock.invocationCallOrder[0]
     ).toBeLessThan(jest.mocked(syncDeviceOutputs).mock.invocationCallOrder[0]!);
     await TestRenderer.act(async () => {
       await oldSync();
@@ -387,7 +348,6 @@ describe("DeviceSyncProvider", () => {
     expect(syncDeviceOutputs).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "user-2" })
     );
-    expect(syncHomeWidget).toHaveBeenCalledTimes(1);
     await TestRenderer.act(() => renderer.unmount());
   });
 });

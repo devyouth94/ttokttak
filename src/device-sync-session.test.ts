@@ -1,15 +1,21 @@
+import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
+import { getPermission } from "~/notifications/permission";
+import type { planNotifications } from "~/notifications/plan";
+import * as notificationPlan from "~/notifications/plan";
+import { NotificationSyncError } from "~/notifications/sync";
 import { listItems } from "~/schedule/db/items";
 import { listLogs } from "~/schedule/db/logs";
 import { logFixture, scheduleFixture } from "~/schedule/fixtures";
 import { captureException } from "~/sentry";
 import { supabase } from "~/supabase";
+import { applyHomeWidget } from "~/widgets/home";
 
-import { getPermission } from "./permission";
-import type { planNotifications } from "./plan";
-import { cancelNotifications, startNotificationSession } from "./session";
-import { NotificationSyncError } from "./sync";
+import {
+  clearDeviceOutputs,
+  startDeviceSyncSession,
+} from "./device-sync-session";
 
 type Candidate = Pick<
   ReturnType<typeof planNotifications>["wanted"][number],
@@ -32,16 +38,21 @@ jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("~/supabase", () => ({
   supabase: { auth: { getSession: jest.fn() } },
 }));
-jest.mock("./permission", () => ({ getPermission: jest.fn() }));
+jest.mock("~/notifications/permission", () => ({ getPermission: jest.fn() }));
 
-let session: ReturnType<typeof startNotificationSession>;
+jest.mock("react-native", () => ({ Platform: { OS: "android" } }));
+jest.mock("~/widgets/home", () => ({ applyHomeWidget: jest.fn() }));
+
+let session: ReturnType<typeof startDeviceSyncSession>;
 describe("알림 동기화", () => {
   afterEach(async () => {
-    await cancelNotifications();
+    await clearDeviceOutputs();
     jest.useRealTimers();
   });
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.resetAllMocks();
+    Platform.OS = "android";
     jest.useFakeTimers().setSystemTime(new Date("2026-04-21T00:00:00.000Z"));
     jest.mocked(getPermission).mockResolvedValue({
       canOpenSettings: false,
@@ -63,7 +74,7 @@ describe("알림 동기화", () => {
       .mocked(Notifications.scheduleNotificationAsync)
       .mockResolvedValue("notification-id");
     jest.mocked(Notifications.setBadgeCountAsync).mockResolvedValue(true);
-    session = startNotificationSession(params.userId);
+    session = startDeviceSyncSession(params.userId);
   });
 
   it("권한이 없으면 일정과 예약 알림을 읽지 않는다", async () => {
@@ -364,6 +375,7 @@ describe("알림 동기화", () => {
   });
 
   it("조회 중 로그아웃 정리가 완료되면 늦은 조회로 이전 출력을 다시 쓰지 않는다", async () => {
+    Platform.OS = "ios";
     const started = deferred<void>();
     const items = deferred<Awaited<ReturnType<typeof listItems>>>();
     jest.mocked(listItems).mockImplementationOnce(() => {
@@ -372,11 +384,13 @@ describe("알림 동기화", () => {
     });
     const sync = session.refresh(params);
     await started.promise;
-    await cancelNotifications();
+    await clearDeviceOutputs();
     jest.mocked(Notifications.setBadgeCountAsync).mockClear();
+    jest.mocked(applyHomeWidget).mockClear();
     items.resolve([]);
     await sync;
     expect(Notifications.setBadgeCountAsync).not.toHaveBeenCalled();
+    expect(applyHomeWidget).not.toHaveBeenCalled();
     expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
@@ -410,12 +424,12 @@ describe("알림 동기화", () => {
         });
       const sync = session.refresh(params);
       await started.promise;
-      const cleanup = cancelNotifications();
+      const cleanup = clearDeviceOutputs();
       jest
         .mocked(supabase.auth.getSession)
         .mockResolvedValue(sessionResult("B-token", "user-2"));
       const nextSync = switchUser
-        ? startNotificationSession("user-2").refresh(params)
+        ? startDeviceSyncSession("user-2").refresh(params)
         : Promise.resolve();
       scheduled.resolve("first");
       await Promise.all([sync, cleanup, nextSync]);
@@ -440,6 +454,7 @@ describe("알림 동기화", () => {
   );
 
   it("B 시작은 A를 종료하고 A의 늦은 응답·갱신·재종료는 B를 변경하지 않는다", async () => {
+    Platform.OS = "ios";
     const started = deferred<void>();
     const items = deferred<Awaited<ReturnType<typeof listItems>>>();
     jest.mocked(listItems).mockImplementationOnce(() => {
@@ -451,17 +466,22 @@ describe("알림 동기화", () => {
     jest
       .mocked(supabase.auth.getSession)
       .mockResolvedValue(sessionResult("B-token", "user-2"));
-    await startNotificationSession("user-2").refresh(params);
+    await startDeviceSyncSession("user-2").refresh(params);
     expect(session.active).toBe(false);
     const writes = jest.mocked(Notifications.setBadgeCountAsync).mock.calls
       .length;
     const reads = jest.mocked(listItems).mock.calls.length;
+    const widgetWrites = jest.mocked(applyHomeWidget).mock.calls.length;
     await session.close();
     await session.refresh(params);
     items.resolve([]);
     await oldSync;
     expect(Notifications.setBadgeCountAsync).toHaveBeenCalledTimes(writes);
     expect(listItems).toHaveBeenCalledTimes(reads);
+    expect(applyHomeWidget).toHaveBeenCalledTimes(widgetWrites);
+    expect(applyHomeWidget).toHaveBeenLastCalledWith(
+      expect.objectContaining({ userId: "user-2" })
+    );
     expect(listItems).toHaveBeenLastCalledWith({ userId: "user-2" });
   });
 
@@ -498,7 +518,7 @@ describe("알림 동기화", () => {
     jest
       .mocked(supabase.auth.getSession)
       .mockResolvedValue(sessionResult("B-token", "user-2"));
-    const next = startNotificationSession("user-2").refresh(params);
+    const next = startDeviceSyncSession("user-2").refresh(params);
     await jest.advanceTimersByTimeAsync(0);
     expect(Notifications.setBadgeCountAsync).not.toHaveBeenCalledWith(3);
     pending.resolve();
@@ -549,7 +569,7 @@ describe("알림 동기화", () => {
         });
       const sync = session.refresh(params);
       await started.promise;
-      const cleanup = cancelNotifications();
+      const cleanup = clearDeviceOutputs();
       pending.resolve();
       await Promise.all([sync, cleanup]);
       expect(badge).toBe(0);
@@ -558,6 +578,79 @@ describe("알림 동기화", () => {
       ]);
     }
   );
+  it("iOS의 두 출력은 같은 일정·기록·기준시각을 한 번 준비해 공유한다", async () => {
+    Platform.OS = "ios";
+    const logs = [logFixture()];
+    jest.mocked(listLogs).mockResolvedValue(logs);
+    const plan = jest.spyOn(notificationPlan, "planNotifications");
+    await session.refresh(params);
+    expect(listItems).toHaveBeenCalledTimes(1);
+    expect(listLogs).toHaveBeenCalledTimes(1);
+    const notificationInput = plan.mock.calls[0]![0];
+    const widgetInput = jest.mocked(applyHomeWidget).mock.calls[0]![0]!;
+    expect(widgetInput.items).toBe(notificationInput.items);
+    expect(widgetInput.completionLogs).toBe(notificationInput.completionLogs);
+    expect(widgetInput.now).toBe(notificationInput.now);
+    expect(widgetInput.userId).toBe("user-1");
+  });
+
+  it.each(["denied", "error"])(
+    "알림 권한 %s여도 iOS 위젯은 갱신한다",
+    async (status) => {
+      Platform.OS = "ios";
+      if (status === "error")
+        jest
+          .mocked(getPermission)
+          .mockRejectedValueOnce(new Error("권한 조회 실패"));
+      else
+        jest.mocked(getPermission).mockResolvedValue({
+          canOpenSettings: true,
+          canRequest: false,
+          status: "denied",
+        });
+      const result = session.refresh(params);
+      if (status === "error")
+        await expect(result).rejects.toMatchObject({ stage: "permission" });
+      else await result;
+      expect(listItems).toHaveBeenCalledTimes(1);
+      expect(applyHomeWidget).toHaveBeenCalledWith(
+        expect.objectContaining({ items: baselineItems })
+      );
+      expect(
+        Notifications.getAllScheduledNotificationsAsync
+      ).not.toHaveBeenCalled();
+    }
+  );
+
+  it("공유 조회 실패는 어떤 출력도 빈 데이터로 덮어쓰지 않는다", async () => {
+    Platform.OS = "ios";
+    jest.mocked(listLogs).mockRejectedValueOnce(new Error("후속 페이지 실패"));
+    await expect(session.refresh(params)).rejects.toMatchObject({
+      stage: "logs",
+    });
+    expect(applyHomeWidget).not.toHaveBeenCalled();
+    expect(Notifications.setBadgeCountAsync).not.toHaveBeenCalled();
+  });
+
+  it("알림 적용 실패와 위젯 실패를 서로 격리한다", async () => {
+    Platform.OS = "ios";
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockRejectedValueOnce(new Error("OS 실패"));
+    await expect(session.refresh(params)).rejects.toMatchObject({
+      stage: "list-scheduled",
+    });
+    expect(applyHomeWidget).toHaveBeenCalledTimes(1);
+    const error = new Error("위젯 실패");
+    jest.mocked(applyHomeWidget).mockImplementationOnce(() => {
+      throw error;
+    });
+    await expect(session.refresh(params)).resolves.toBeUndefined();
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { feature: "ios-home-widget-sync" },
+    });
+    expect(Notifications.setBadgeCountAsync).toHaveBeenCalledWith(3);
+  });
 });
 
 describe("알림 정리", () => {
@@ -577,7 +670,7 @@ describe("알림 정리", () => {
         presented("ttokttak:reminder:user-1:item-1:2026-04-21T00:00:00.000Z"),
       ]);
 
-    await cancelNotifications();
+    await clearDeviceOutputs();
 
     expect(
       Notifications.cancelScheduledNotificationAsync

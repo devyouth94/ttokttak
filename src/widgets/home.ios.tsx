@@ -9,14 +9,10 @@ import {
   widgetURL,
 } from "@expo/ui/swift-ui/modifiers";
 
+import type { DeviceSyncInput } from "~/device-sync-session";
 import { appI18n } from "~/i18n/i18n";
-import type { AppLanguage } from "~/i18n/language";
-import { listItems } from "~/schedule/db/items";
-import { listLogs } from "~/schedule/db/logs";
 
 import { createHomeWidgetProps, type HomeWidgetProps } from "./projection";
-
-let syncGeneration = 0;
 
 function HomeWidget(
   props: HomeWidgetProps,
@@ -126,45 +122,24 @@ function HomeWidget(
 
 const homeWidget = createWidget<HomeWidgetProps>("HomeWidget", HomeWidget);
 
-/** 현재 계정의 지난 일정과 오늘 occurrence를 iOS 위젯 snapshot으로 저장한다. */
-export async function syncHomeWidget({
-  language,
-  timezone,
-  userId,
-}: {
-  language: AppLanguage;
-  timezone: string;
-  userId?: string;
-}): Promise<void> {
+/** 준비된 입력을 저장한다. 세션 종료·쓰기 순서는 기기 동기화 세션이 보호한다. */
+export function applyHomeWidget(input: DeviceSyncInput | null): void {
   const t = appI18n.t;
-  const generation = ++syncGeneration;
-
-  if (!userId) {
-    homeWidget.updateSnapshot({
-      emptyMessage: t("home.widget.login"),
-      items: [],
-      moreMedium: "",
-      moreSmall: "",
-    });
-    return;
-  }
-
-  const schedules = await listItems({ userId });
-  const itemIds = schedules.map((schedule) => schedule.id);
-  const logs = itemIds.length ? await listLogs({ itemIds, userId }) : [];
-
-  if (generation !== syncGeneration) {
-    return;
-  }
-
   homeWidget.updateSnapshot(
-    createHomeWidgetProps({
-      language,
-      logs,
-      now: new Date(),
-      schedules,
-      t,
-      timezone,
-    })
+    input
+      ? createHomeWidgetProps({
+          language: input.language,
+          logs: input.completionLogs,
+          now: input.now,
+          schedules: input.items,
+          t,
+          timezone: input.timezone,
+        })
+      : {
+          emptyMessage: t("home.widget.login"),
+          items: [],
+          moreMedium: "",
+          moreSmall: "",
+        }
   );
 }

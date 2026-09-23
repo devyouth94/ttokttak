@@ -1,7 +1,7 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import type { User } from "@supabase/supabase-js";
 
-import { cancelNotifications } from "~/notifications/session";
+import { clearDeviceOutputs } from "~/device-sync-session";
 import { signOutGoogle } from "~/session/google";
 import { supabase } from "~/supabase";
 
@@ -64,5 +64,5 @@ export async function deleteAccount(user: User | null): Promise<void> {
   }
 
   await signOutGoogle();
-  await cancelNotifications();
+  await clearDeviceOutputs();
 }
