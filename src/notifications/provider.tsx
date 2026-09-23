@@ -1,5 +1,12 @@
 import type { PropsWithChildren } from "react";
-import { createContext, use, useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { AppState, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
@@ -57,19 +64,23 @@ export function NotificationProvider({
   userId: string | null | undefined;
 }>): React.JSX.Element {
   const { language } = useAppLanguage();
+  const session = useMemo(() => ({ active: true, userId }), [userId]);
 
   const [permission, setPermission] = useState(initialPermission);
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
   /** 앱 시작과 foreground 복귀 때 권한 상태를 다시 읽는다. */
-  const refreshPermission = useCallback(async (): Promise<Permission> => {
+  const refreshPermission = useCallback(async (): Promise<void> => {
     setIsPermissionLoading(true);
 
     try {
       const nextPermission = await getPermission();
       setPermission(nextPermission);
-      return nextPermission;
+    } catch (error) {
+      captureException(error, {
+        tags: { feature: "notification-permission-refresh" },
+      });
     } finally {
       setIsPermissionLoading(false);
     }
@@ -91,6 +102,7 @@ export function NotificationProvider({
   /** 위젯 갱신 실패가 알림 동기화와 사용자 동작을 막지 않게 한다. */
   const syncWidgetSafely = useCallback(
     async (nextUserId?: string): Promise<void> => {
+      if (!session.active) return;
       try {
         await syncHomeWidget({ language, timezone, userId: nextUserId });
       } catch (error) {
@@ -99,12 +111,12 @@ export function NotificationProvider({
         });
       }
     },
-    [language, timezone]
+    [language, session, timezone]
   );
 
   /** 현재 사용자 일정으로 기기 알림과 iOS 위젯을 다시 맞춘다. */
   const syncNotifications = useCallback(async (): Promise<void> => {
-    if (!userId) {
+    if (!session.active || !userId) {
       return;
     }
 
@@ -112,7 +124,7 @@ export function NotificationProvider({
       syncDeviceNotifications({ language, timezone, userId }),
       syncWidgetSafely(userId),
     ]);
-  }, [language, syncWidgetSafely, timezone, userId]);
+  }, [language, session, syncWidgetSafely, timezone, userId]);
 
   /** lifecycle 동기화 실패를 기록하고 사용자 흐름은 계속 진행한다. */
   const syncSafely = useCallback(
@@ -136,6 +148,16 @@ export function NotificationProvider({
       });
     }
   }, []);
+
+  // 이전 세션의 callback과 진행 중인 작업을 다음 세션의 동기화 전에 무효화한다.
+  useEffect(() => {
+    session.active = true;
+    if (!session.userId) void cancelSafely();
+    return () => {
+      session.active = false;
+      if (session.userId) void cancelSafely();
+    };
+  }, [cancelSafely, session]);
 
   // Android에서 알림을 표시할 채널을 앱 시작 시 한 번 준비한다.
   useEffect(() => {
@@ -177,9 +199,8 @@ export function NotificationProvider({
       return;
     }
 
-    void cancelSafely();
     void syncWidgetSafely();
-  }, [cancelSafely, syncSafely, syncWidgetSafely, userId]);
+  }, [syncSafely, syncWidgetSafely, userId]);
 
   const value: NotificationValue = {
     isPermissionLoading,

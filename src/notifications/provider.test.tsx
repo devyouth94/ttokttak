@@ -4,9 +4,10 @@ import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 
 import { useAppLanguage } from "~/i18n/provider";
+import { captureException } from "~/sentry";
 import { syncHomeWidget } from "~/widgets/home";
 
-import { NotificationProvider } from "./provider";
+import { NotificationProvider, useNotifications } from "./provider";
 import { cancelNotifications, syncNotifications } from "./sync";
 
 declare const require: (moduleName: string) => unknown;
@@ -47,6 +48,7 @@ const TestRenderer = require("react-test-renderer") as {
   act: (callback: () => Promise<void> | void) => Promise<void>;
   create: (element: ReactElement) => {
     update: (element: ReactElement) => void;
+    unmount: () => void;
   };
 };
 describe("NotificationProvider", () => {
@@ -129,13 +131,93 @@ describe("NotificationProvider", () => {
       await Promise.resolve();
     });
 
-    expect(cancelNotifications).toHaveBeenCalledTimes(1);
+    expect(cancelNotifications).toHaveBeenCalled();
     expect(syncNotifications).toHaveBeenCalledTimes(4);
     expect(syncHomeWidget).toHaveBeenLastCalledWith({
       language: "en",
       timezone: "Asia/Seoul",
       userId: undefined,
     });
+  });
+
+  it("권한 읽기 실패는 기존 상태를 유지하고 다음 foreground에서 재시도한다", async () => {
+    let value!: ReturnType<typeof useNotifications>;
+    function Probe() {
+      value = useNotifications();
+      return null;
+    }
+    const error = new Error("권한 읽기 실패");
+    jest.mocked(Notifications.getPermissionsAsync).mockRejectedValueOnce(error);
+    let renderer!: ReturnType<typeof TestRenderer.create>;
+    await TestRenderer.act(async () => {
+      renderer = TestRenderer.create(
+        <NotificationProvider timezone="Asia/Seoul" userId="user-1">
+          <Probe />
+        </NotificationProvider>
+      );
+    });
+    expect(value.isPermissionLoading).toBe(false);
+    expect(value.permission.status).toBe("undetermined");
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { feature: "notification-permission-refresh" },
+    });
+    const foreground = jest
+      .mocked(AppState.addEventListener)
+      .mock.calls.at(-1)![1];
+    await TestRenderer.act(async () => {
+      foreground("active");
+    });
+    expect(value.permission.status).toBe("granted");
+    jest.mocked(Notifications.getPermissionsAsync).mockRejectedValueOnce(error);
+    await TestRenderer.act(async () => {
+      foreground("active");
+    });
+    expect(value.permission.status).toBe("granted");
+    expect(value.isPermissionLoading).toBe(false);
+    jest
+      .mocked(Notifications.requestPermissionsAsync)
+      .mockRejectedValueOnce(error);
+    await TestRenderer.act(async () => {
+      await expect(value.requestPermission()).rejects.toBe(error);
+    });
+    expect(value.isRequestingPermission).toBe(false);
+    await TestRenderer.act(() => renderer.unmount());
+  });
+
+  it("A에서 B로 바뀌면 이전 callback을 막고 정리를 요청한 뒤 B를 동기화한다", async () => {
+    let value!: ReturnType<typeof useNotifications>;
+    function Probe() {
+      value = useNotifications();
+      return null;
+    }
+    const element = (userId: string) => (
+      <NotificationProvider timezone="Asia/Seoul" userId={userId}>
+        <Probe />
+      </NotificationProvider>
+    );
+    let renderer!: ReturnType<typeof TestRenderer.create>;
+    await TestRenderer.act(async () => {
+      renderer = TestRenderer.create(element("user-1"));
+    });
+    const oldSync = value.syncNotifications;
+    jest.mocked(syncNotifications).mockClear();
+    jest.mocked(syncHomeWidget).mockClear();
+    await TestRenderer.act(async () => {
+      renderer.update(element("user-2"));
+    });
+    expect(cancelNotifications).toHaveBeenCalledTimes(1);
+    expect(
+      jest.mocked(cancelNotifications).mock.invocationCallOrder[0]
+    ).toBeLessThan(jest.mocked(syncNotifications).mock.invocationCallOrder[0]!);
+    await TestRenderer.act(async () => {
+      await oldSync();
+    });
+    expect(syncNotifications).toHaveBeenCalledTimes(1);
+    expect(syncNotifications).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-2" })
+    );
+    expect(syncHomeWidget).toHaveBeenCalledTimes(1);
+    await TestRenderer.act(() => renderer.unmount());
   });
 });
 

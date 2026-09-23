@@ -19,8 +19,13 @@ type NotificationSyncParams = {
   userId: string;
 };
 
-// ponytail: 호출량이 적어 전역 큐로 충분하다. 병목이 측정되면 최신 요청 병합으로 바꾼다.
 let notificationSyncTail = Promise.resolve();
+let pendingSync: {
+  params: NotificationSyncParams;
+  promise: Promise<void>;
+} | null = null;
+let notificationWriteTail = Promise.resolve();
+let syncGeneration = 0;
 
 export const notificationSyncStages = [
   "permission",
@@ -84,11 +89,95 @@ async function applyCandidates(
   data: Awaited<ReturnType<typeof loadNotificationData>>,
   now: Date,
   timezone: string,
-  userId: string
+  userId: string,
+  generation: number
 ): Promise<void> {
+  if (generation !== syncGeneration) return;
   const requests = await runStage("list-scheduled", () =>
     Notifications.getAllScheduledNotificationsAsync()
   );
+  if (generation !== syncGeneration) return;
+  const plan = planNotifications(
+    candidates,
+    data,
+    now,
+    timezone,
+    userId,
+    requests
+  );
+  reportFailures(
+    await Promise.allSettled([
+      Notifications.setBadgeCountAsync(plan.badgeCount),
+      dismissStaleNotifications(data, userId),
+    ]),
+    "app-icon-badge-sync"
+  );
+
+  for (const request of plan.toCancel) {
+    if (generation !== syncGeneration) return;
+    await runStage("cancel", () =>
+      Notifications.cancelScheduledNotificationAsync(request.identifier)
+    );
+  }
+
+  for (const reminder of plan.toSchedule) {
+    if (generation !== syncGeneration) return;
+
+    await runStage("schedule", () =>
+      Notifications.scheduleNotificationAsync({
+        content: {
+          badge: reminder.badgeCount,
+          body: reminder.body,
+          data: {
+            notificationKind: "reminder",
+            source: "recurring-item",
+          },
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          sound: "default",
+          title: reminder.title,
+        },
+        identifier: reminder.identifier,
+        trigger: {
+          channelId: CHANNEL_ID,
+          date: new Date(reminder.scheduledAtUtc),
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+        },
+      })
+    );
+  }
+
+  if (
+    (plan.toCancel.length || plan.toSchedule.length) &&
+    generation === syncGeneration
+  ) {
+    const verified = await runStage("verify", () =>
+      Notifications.getAllScheduledNotificationsAsync()
+    );
+    if (generation !== syncGeneration) return;
+    const verifiedIds = new Set(
+      verified
+        .filter((request) => request.identifier.startsWith(PREFIX))
+        .map((request) => request.identifier)
+    );
+
+    if (
+      verifiedIds.size !== plan.wanted.length ||
+      plan.wanted.some((reminder) => !verifiedIds.has(reminder.identifier))
+    ) {
+      throw new NotificationSyncError("verify", "verification-mismatch");
+    }
+  }
+}
+
+/** OS를 변경하지 않고 원하는 예약과 변경 대상을 계산한다. */
+function planNotifications(
+  candidates: Candidate[],
+  data: Awaited<ReturnType<typeof loadNotificationData>>,
+  now: Date,
+  timezone: string,
+  userId: string,
+  requests: Notifications.NotificationRequest[]
+) {
   const existing = requests.filter((request) =>
     request.identifier.startsWith(PREFIX)
   );
@@ -114,13 +203,6 @@ async function applyCandidates(
     ],
     timezone,
   });
-  reportFailures(
-    await Promise.allSettled([
-      Notifications.setBadgeCountAsync(badgeCounts.get(now.toISOString()) ?? 0),
-      dismissStaleNotifications(data, userId),
-    ]),
-    "app-icon-badge-sync"
-  );
   const wanted: Reminder[] = wantedCandidates.map((reminder) => ({
     ...reminder,
     badgeCount: badgeCounts.get(reminder.scheduledAtUtc) ?? 0,
@@ -142,63 +224,17 @@ async function applyCandidates(
       })
       .map((request) => request.identifier)
   );
-  let changed = false;
 
-  for (const request of existing) {
-    if (!matchingIds.has(request.identifier)) {
-      await runStage("cancel", () =>
-        Notifications.cancelScheduledNotificationAsync(request.identifier)
-      );
-      changed = true;
-    }
-  }
-
-  for (const reminder of wanted) {
-    if (matchingIds.has(reminder.identifier)) {
-      continue;
-    }
-
-    await runStage("schedule", () =>
-      Notifications.scheduleNotificationAsync({
-        content: {
-          badge: reminder.badgeCount,
-          body: reminder.body,
-          data: {
-            notificationKind: "reminder",
-            source: "recurring-item",
-          },
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          sound: "default",
-          title: reminder.title,
-        },
-        identifier: reminder.identifier,
-        trigger: {
-          channelId: CHANNEL_ID,
-          date: new Date(reminder.scheduledAtUtc),
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-        },
-      })
-    );
-    changed = true;
-  }
-
-  if (changed) {
-    const verified = await runStage("verify", () =>
-      Notifications.getAllScheduledNotificationsAsync()
-    );
-    const verifiedIds = new Set(
-      verified
-        .filter((request) => request.identifier.startsWith(PREFIX))
-        .map((request) => request.identifier)
-    );
-
-    if (
-      verifiedIds.size !== wanted.length ||
-      wanted.some((reminder) => !verifiedIds.has(reminder.identifier))
-    ) {
-      throw new NotificationSyncError("verify", "verification-mismatch");
-    }
-  }
+  return {
+    badgeCount: badgeCounts.get(now.toISOString()) ?? 0,
+    toCancel: existing.filter(
+      (request) => !matchingIds.has(request.identifier)
+    ),
+    toSchedule: wanted.filter(
+      (reminder) => !matchingIds.has(reminder.identifier)
+    ),
+    wanted,
+  };
 }
 
 /** 처리됐거나 현재 사용자에게 속하지 않는 표시 알림을 제거한다. */
@@ -246,17 +282,31 @@ function reportFailures(
 export function syncNotifications(
   params: NotificationSyncParams
 ): Promise<void> {
-  const sync = notificationSyncTail.then(() => syncNotificationsNow(params));
+  if (pendingSync) {
+    pendingSync.params = params;
+    return pendingSync.promise;
+  }
+
+  const generation = syncGeneration;
+  const batch = { params, promise: Promise.resolve() };
+  const sync = notificationSyncTail.then(() => {
+    if (pendingSync === batch) pendingSync = null;
+    return syncNotificationsNow(batch.params, generation);
+  });
+  batch.promise = sync;
+  pendingSync = batch;
   notificationSyncTail = sync.catch(() => undefined);
   return sync;
 }
 
 async function syncNotificationsNow(
-  params: NotificationSyncParams
+  params: NotificationSyncParams,
+  generation: number
 ): Promise<void> {
+  if (generation !== syncGeneration) return;
   const permission = await runStage("permission", getPermission);
 
-  if (permission.status !== "granted") {
+  if (permission.status !== "granted" || generation !== syncGeneration) {
     return;
   }
 
@@ -264,7 +314,7 @@ async function syncNotificationsNow(
     getAccessToken(params.userId)
   );
 
-  if (!accessToken) {
+  if (!accessToken || generation !== syncGeneration) {
     return;
   }
 
@@ -273,11 +323,12 @@ async function syncNotificationsNow(
   try {
     data = await loadNotificationData(params.userId);
   } catch (error) {
+    if (generation !== syncGeneration) return;
     const refreshedAccessToken = await runStage("items", () =>
       getAccessToken(params.userId)
     );
 
-    if (!refreshedAccessToken) {
+    if (!refreshedAccessToken || generation !== syncGeneration) {
       return;
     }
 
@@ -289,6 +340,7 @@ async function syncNotificationsNow(
     data = await loadNotificationData(params.userId);
   }
 
+  if (generation !== syncGeneration) return;
   const { completionLogs, items } = data;
   const now = new Date();
   const candidates = await runStage("candidates", () =>
@@ -300,7 +352,25 @@ async function syncNotificationsNow(
       timezone: params.timezone,
     })
   );
-  await applyCandidates(candidates, data, now, params.timezone, params.userId);
+  await enqueueNotificationWrite(() =>
+    applyCandidates(
+      candidates,
+      data,
+      now,
+      params.timezone,
+      params.userId,
+      generation
+    )
+  );
+}
+
+// 조회가 지연돼도 정리는 진행하고, 진행 중인 OS 쓰기와 정리는 같은 순서로 끝낸다.
+function enqueueNotificationWrite(
+  operation: () => Promise<void>
+): Promise<void> {
+  const write = notificationWriteTail.then(operation);
+  notificationWriteTail = write.catch(() => undefined);
+  return write;
 }
 
 async function runStage<T>(
@@ -319,7 +389,14 @@ async function runStage<T>(
 }
 
 /** 로그아웃과 계정 삭제 뒤 현재 기기의 모든 똑딱 알림과 뱃지를 정리한다. */
-export async function cancelNotifications(): Promise<void> {
+export function cancelNotifications(): Promise<void> {
+  syncGeneration += 1;
+  pendingSync = null;
+  notificationSyncTail = Promise.resolve();
+  return enqueueNotificationWrite(clearNotifications);
+}
+
+async function clearNotifications(): Promise<void> {
   reportFailures(
     await Promise.allSettled([
       Notifications.getAllScheduledNotificationsAsync().then((requests) =>
