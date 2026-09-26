@@ -1,9 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  type FieldErrors,
-  useController,
-  useFormContext,
-} from "react-hook-form";
+import { useEffect, useMemo, useRef } from "react";
+import { type FieldErrors, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -13,18 +9,20 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
+  type TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Trash2 } from "lucide-react-native";
 
-import { useTheme } from "~/theme/provider";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { FocusScreenHeader } from "~/ui/focus-screen-header";
-import { borderRadius, spacing, typography } from "~/ui/tokens";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 import { ColorField } from "./color-field/field";
+import { ContentFields } from "./content-fields";
 import { DateFields } from "./date-fields/field";
 import { ScheduleOptions } from "./options";
 import { RecurrenceSection } from "./recurrence";
@@ -32,6 +30,16 @@ import type { ScheduleFormValues } from "../form-values";
 
 type ErrorSection = "options" | "recurrence" | "schedule" | "title";
 type SectionOffsets = Partial<Record<ErrorSection, number>>;
+
+type ScheduleFormBodyProps = {
+  isDeleting: boolean;
+  isEdit: boolean;
+  loadError: string | null;
+  onBack: () => void;
+  remove: () => void;
+  submit: () => void;
+  today: string;
+};
 
 export function ScheduleFormBody({
   onBack,
@@ -41,35 +49,15 @@ export function ScheduleFormBody({
   remove,
   submit,
   today,
-}: {
-  onBack: () => void;
-  isDeleting: boolean;
-  isEdit: boolean;
-  loadError: string | null;
-  remove: () => void;
-  submit: () => void;
-  today: string;
-}): React.JSX.Element {
+}: ScheduleFormBodyProps): React.JSX.Element {
   const { t } = useTranslation();
-  const { colors: themeColors } = useTheme();
+  const themeColors = useThemeColors();
 
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
 
   const {
-    clearErrors,
-    control,
     formState: { errors, isSubmitting, submitCount },
   } = useFormContext<ScheduleFormValues>();
-
-  const { field: titleField } = useController({ control, name: "title" });
-  const { field: descriptionField } = useController({
-    control,
-    name: "description",
-  });
-
-  const [focusedInput, setFocusedInput] = useState<
-    "description" | "title" | null
-  >(null);
 
   const sectionOffsetsRef = useRef<SectionOffsets>({});
   const lastScrolledSubmitRef = useRef(0);
@@ -79,7 +67,6 @@ export function ScheduleFormBody({
   const screenTitle = isEdit
     ? t("scheduleForm.title.edit")
     : t("scheduleForm.title.create");
-  const titleError = errors.title?.message;
   const screenError = errors.root?.message ?? loadError;
   const disabled = isDeleting || isSubmitting;
 
@@ -147,70 +134,10 @@ export function ScheduleFormBody({
               </View>
             )}
 
-            <View
-              onLayout={(event) => saveSectionOffset("title", event)}
-              style={styles.field}
-            >
-              <AppText style={styles.fieldLabel} variant="body2">
-                {t("scheduleForm.fields.title")}
-              </AppText>
-              <TextInput
-                accessibilityLabel={t("scheduleForm.fields.title")}
-                ref={titleInputRef}
-                onBlur={() => {
-                  titleField.onBlur();
-                  setFocusedInput(null);
-                }}
-                onChangeText={(value) => {
-                  clearErrors("root");
-                  titleField.onChange(value);
-                }}
-                onFocus={() => setFocusedInput("title")}
-                placeholder={t("scheduleForm.placeholders.title")}
-                placeholderTextColor={themeColors.textMuted}
-                style={[
-                  styles.textInput,
-                  focusedInput === "title" ? styles.inputFocused : undefined,
-                  titleError ? styles.inputError : undefined,
-                ]}
-                value={titleField.value}
-              />
-              {titleError && (
-                <AppText style={styles.fieldError} variant="caption">
-                  {titleError}
-                </AppText>
-              )}
-            </View>
-
-            <View style={styles.field}>
-              <AppText style={styles.fieldLabel} variant="body2">
-                {t("scheduleForm.fields.description")}
-              </AppText>
-              <TextInput
-                accessibilityLabel={t("scheduleForm.fields.descriptionA11y")}
-                multiline
-                onBlur={() => {
-                  descriptionField.onBlur();
-                  setFocusedInput(null);
-                }}
-                onChangeText={(value) => {
-                  clearErrors("root");
-                  descriptionField.onChange(value);
-                }}
-                onFocus={() => setFocusedInput("description")}
-                placeholder={t("scheduleForm.placeholders.description")}
-                placeholderTextColor={themeColors.textMuted}
-                style={[
-                  styles.textInput,
-                  styles.multilineInput,
-                  focusedInput === "description"
-                    ? styles.inputFocused
-                    : undefined,
-                ]}
-                textAlignVertical="top"
-                value={descriptionField.value}
-              />
-            </View>
+            <ContentFields
+              onTitleLayout={(event) => saveSectionOffset("title", event)}
+              titleInputRef={titleInputRef}
+            />
 
             <View onLayout={(event) => saveSectionOffset("recurrence", event)}>
               <RecurrenceSection />
@@ -308,7 +235,7 @@ function getFirstErrorSection(
   return errors.anchorType ? "options" : null;
 }
 
-function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     createSaveButton: {
       width: "100%",
@@ -341,15 +268,6 @@ function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {
     errorTitle: {
       color: themeColors.error,
     },
-    field: {
-      gap: spacing.xs,
-    },
-    fieldError: {
-      color: themeColors.error,
-    },
-    fieldLabel: {
-      color: themeColors.text,
-    },
     footer: {
       backgroundColor: themeColors.background,
       minHeight: 60,
@@ -362,18 +280,8 @@ function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row",
       gap: spacing.xs,
     },
-    inputError: {
-      borderColor: themeColors.error,
-    },
-    inputFocused: {
-      borderColor: themeColors.primary,
-    },
     keyboardAvoidingView: {
       flex: 1,
-    },
-    multilineInput: {
-      minHeight: 108,
-      paddingTop: spacing.md,
     },
     safeArea: {
       backgroundColor: themeColors.background,
@@ -406,19 +314,6 @@ function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {
     },
     scrollView: {
       flex: 1,
-    },
-    textInput: {
-      backgroundColor: "transparent",
-      borderColor: themeColors.border,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      color: themeColors.text,
-      fontFamily: typography.fontFamily.body,
-      fontSize: typography.size.body3,
-      lineHeight: typography.lineHeight.body3,
-      minHeight: 48,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
     },
   });
 }

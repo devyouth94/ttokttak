@@ -70,6 +70,16 @@ it("반복 방식 전환 시 연관 필드를 한 번에 정리한다", async ()
 
   await TestRenderer.act(() =>
     view.root
+      .findByProps({
+        accessibilityLabel: "scheduleForm.recurrence.weekdayTue",
+      })
+      .props.onPress()
+  );
+
+  expect(form.getValues("weekdayMask")).toEqual([]);
+
+  await TestRenderer.act(() =>
+    view.root
       .findByProps({ accessibilityLabel: "scheduleForm.recurrence.once" })
       .props.onPress()
   );

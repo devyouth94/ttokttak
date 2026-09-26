@@ -7,10 +7,12 @@ import {
   type RecurrenceType,
   requiresInterval,
 } from "~/schedule/rules/recurrence";
+import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing, typography } from "~/ui/tokens";
 
+import { WeekdaysField } from "./weekdays-field";
 import { getRecurrenceChange, type ScheduleFormValues } from "../form-values";
 import { useScheduleFormSetters } from "../use-form-setters";
 
@@ -20,12 +22,8 @@ export function RecurrenceSection(): React.JSX.Element {
 
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
 
-  const {
-    clearErrors,
-    control,
-    formState: { errors },
-    getValues,
-  } = useFormContext<ScheduleFormValues>();
+  const { clearErrors, control, getValues } =
+    useFormContext<ScheduleFormValues>();
   const { setField } = useScheduleFormSetters();
 
   const {
@@ -33,15 +31,11 @@ export function RecurrenceSection(): React.JSX.Element {
     fieldState: { error: intervalError },
   } = useController({ control, name: "intervalValue" });
 
-  const [recurrenceType, weekdayMask] = useWatch({
-    control,
-    name: ["recurrenceType", "weekdayMask"],
-  });
+  const recurrenceType = useWatch({ control, name: "recurrenceType" });
 
   const [isIntervalFocused, setIsIntervalFocused] = useState(false);
 
   const usesCustomInterval = requiresInterval(recurrenceType);
-  const weekdayError = errors.weekdayMask?.message;
 
   const basicRecurrenceOptions = [
     { label: t("scheduleForm.recurrence.daily"), value: "daily" },
@@ -72,15 +66,6 @@ export function RecurrenceSection(): React.JSX.Element {
     setField("intervalValue", change.intervalValue);
     setField("recurrenceType", change.recurrenceType);
     setField("weekdayMask", change.weekdayMask);
-  }
-
-  function toggleWeekday(weekday: number): void {
-    setField(
-      "weekdayMask",
-      weekdayMask.includes(weekday)
-        ? weekdayMask.filter((value) => value !== weekday)
-        : [...weekdayMask, weekday]
-    );
   }
 
   return (
@@ -154,14 +139,7 @@ export function RecurrenceSection(): React.JSX.Element {
               )}
             </View>
 
-            {recurrenceType === "interval_weeks" && (
-              <WeekdaySelector
-                error={weekdayError}
-                selected={weekdayMask}
-                styles={styles}
-                onToggle={toggleWeekday}
-              />
-            )}
+            {recurrenceType === "interval_weeks" && <WeekdaysField />}
           </View>
         ) : (
           <View style={styles.quickRecurrenceContent}>
@@ -185,14 +163,7 @@ export function RecurrenceSection(): React.JSX.Element {
               />
             </View>
 
-            {recurrenceType === "weekly" && (
-              <WeekdaySelector
-                error={weekdayError}
-                selected={weekdayMask}
-                styles={styles}
-                onToggle={toggleWeekday}
-              />
-            )}
+            {recurrenceType === "weekly" && <WeekdaysField />}
           </View>
         )}
       </View>
@@ -275,74 +246,7 @@ function ModeTab({
   );
 }
 
-function WeekdaySelector({
-  error,
-  selected,
-  styles,
-  onToggle,
-}: {
-  error?: string;
-  selected: number[];
-  styles: ReturnType<typeof createStyles>;
-  onToggle: (weekday: number) => void;
-}): React.JSX.Element {
-  const { t } = useTranslation();
-  const selectedDays = new Set(selected);
-  const options = [
-    { label: t("scheduleForm.recurrence.weekdayMon"), value: 1 },
-    { label: t("scheduleForm.recurrence.weekdayTue"), value: 2 },
-    { label: t("scheduleForm.recurrence.weekdayWed"), value: 3 },
-    { label: t("scheduleForm.recurrence.weekdayThu"), value: 4 },
-    { label: t("scheduleForm.recurrence.weekdayFri"), value: 5 },
-    { label: t("scheduleForm.recurrence.weekdaySat"), value: 6 },
-    { label: t("scheduleForm.recurrence.weekdaySun"), value: 0 },
-  ];
-
-  return (
-    <View style={styles.field}>
-      <AppText style={styles.subFieldLabel} variant="body2">
-        {t("scheduleForm.recurrence.weekdayLabel")}
-      </AppText>
-      <View style={styles.weekdayGroup}>
-        {options.map((weekday) => {
-          const isSelected = selectedDays.has(weekday.value);
-
-          return (
-            <Pressable
-              accessibilityLabel={weekday.label}
-              accessibilityRole="button"
-              key={weekday.value}
-              onPress={() => onToggle(weekday.value)}
-              style={({ pressed }) => [
-                styles.weekdayChip,
-                isSelected ? styles.weekdayChipSelected : undefined,
-                pressed ? styles.weekdayChipPressed : undefined,
-              ]}
-            >
-              <AppText
-                style={
-                  isSelected
-                    ? styles.weekdayChipTextSelected
-                    : styles.weekdayChipText
-                }
-                variant="body3"
-              >
-                {weekday.label}
-              </AppText>
-            </Pressable>
-          );
-        })}
-      </View>
-      {error && (
-        <AppText style={styles.fieldError} variant="caption">
-          {error}
-        </AppText>
-      )}
-    </View>
-  );
-}
-
-function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     customRecurrenceControlGroup: {
       gap: spacing.xs,
@@ -455,32 +359,6 @@ function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
       minHeight: 48,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-    },
-    weekdayChip: {
-      alignItems: "center",
-      aspectRatio: 1,
-      backgroundColor: "transparent",
-      borderColor: themeColors.primary,
-      borderRadius: borderRadius.pill,
-      borderWidth: 1,
-      flex: 1,
-      justifyContent: "center",
-    },
-    weekdayChipPressed: {
-      opacity: 0.88,
-    },
-    weekdayChipSelected: {
-      backgroundColor: themeColors.primary,
-    },
-    weekdayChipText: {
-      color: themeColors.text,
-    },
-    weekdayChipTextSelected: {
-      color: themeColors.primaryForeground,
-    },
-    weekdayGroup: {
-      flexDirection: "row",
-      gap: 4,
     },
   });
 }
