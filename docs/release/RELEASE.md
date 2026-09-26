@@ -19,6 +19,10 @@
 - private key와 credential 파일 내용이나 로컬 경로는 git, 문서, 이슈와 로그에 남기지 않는다.
 - iOS production EAS 환경에는 `GOOGLE_AUTH_IOS_URL_SCHEME`을 설정한다.
 
+production profile은 EAS의 `production` 환경을 명시적으로 선택한다. 운영 명령은 `EXPO_NO_DOTENV=1`로 개발용 `.env.local`을 읽지 않는다. Expo 55의 개발 번들에서도 이 설정을 지키도록 `metro.config.js`가 dotenv 파일을 제외한다.
+
+클라우드 빌드와 OTA는 EAS production 변수를 기준으로 한다. 이 컴퓨터의 `.env.production`은 기존 운영 값의 보관용 사본이며 Git에서 제외한다. 운영 명령은 이 파일을 읽지 않는다. 환경 파일 전체 구분과 개발 실행은 [`../TESTING.md`](../TESTING.md)를 따른다.
+
 Android 서비스 계정에는 Ttokttak 앱의 제출에 필요한 최소 권한만 부여한다.
 첫 제출은 internal track에서 확인한 뒤 production 승격을 별도로 결정한다.
 
@@ -67,7 +71,7 @@ production은 `production`, preview는 `preview` channel에 발행한다.
 web은 운영 OTA 대상이 아니므로 iOS와 Android를 따로 발행한다.
 
 ```sh
-CI=1 pnpm exec eas update \
+CI=1 EXPO_NO_DOTENV=1 pnpm exec eas update \
   --channel <production|preview> \
   --environment <EAS-environment> \
   --platform <ios|android> \
@@ -82,9 +86,8 @@ native 변경이 없고 대상 build의 runtime과 앱 버전이 같은지 확�
 플랫폼별 production build를 만든다.
 
 ```sh
-pnpm exec eas build \
+pnpm build:production \
   --platform <ios|android> \
-  --profile production \
   --wait \
   --non-interactive \
   --message "<출시 변경 요약>"

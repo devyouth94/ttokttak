@@ -16,6 +16,10 @@
       }
     },
     "production": {
+      "environment": "production",
+      "env": {
+        "EXPO_NO_DOTENV": "1"
+      },
       "channel": "production",
       "autoIncrement": true,
       "android": {

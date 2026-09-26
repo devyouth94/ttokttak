@@ -9,6 +9,7 @@
     "ios:latest": "expo run:ios --device \"iPhone 17 Pro\"",
     "ios:compact": "expo run:ios --device \"iPhone SE (2nd generation)\"",
     "web": "expo start --web",
+    "build:production": "EXPO_NO_DOTENV=1 eas build --profile production",
     "lint": "expo lint",
     "test": "jest --runInBand && pnpm supabase:functions:test",
     "supabase:functions:check": "deno lint --config supabase/functions/deno.json supabase/functions && deno check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/recover-content-key/index.ts",
