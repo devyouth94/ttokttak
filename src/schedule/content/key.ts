@@ -6,7 +6,7 @@ import {
   recoverContentKey,
   saveContentKey,
   wrapContentKey,
-} from "../db/content-key";
+} from "./remote-key";
 import { ScheduleContentUnrecoverableError } from "../errors";
 
 export type Key = {

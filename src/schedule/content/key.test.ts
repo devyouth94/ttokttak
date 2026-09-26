@@ -4,7 +4,7 @@ import {
   recoverContentKey,
   saveContentKey,
   wrapContentKey,
-} from "../db/content-key";
+} from "./remote-key";
 import { ScheduleContentUnrecoverableError } from "../errors";
 
 const mockGetItem = jest.fn();
@@ -25,7 +25,7 @@ jest.mock("expo-crypto", () => ({
   },
 }));
 
-jest.mock("../db/content-key", () => ({
+jest.mock("./remote-key", () => ({
   findContentKey: jest.fn(),
   recoverContentKey: jest.fn(),
   saveContentKey: jest.fn(),

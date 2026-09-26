@@ -5,7 +5,7 @@ import {
   recoverContentKey,
   saveContentKey,
   wrapContentKey,
-} from "./content-key";
+} from "./remote-key";
 
 declare const process: {
   cwd: () => string;
