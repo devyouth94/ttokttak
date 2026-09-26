@@ -12,19 +12,21 @@ import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
+type DetailStatusSectionProps = {
+  isEntryOccurrence: boolean;
+  now: Date;
+  occurrence: Occurrence | null;
+  overdueCount: number;
+  timezone: string;
+};
+
 export function DetailStatusSection({
   isEntryOccurrence,
   now,
   occurrence,
   overdueCount,
   timezone,
-}: {
-  isEntryOccurrence: boolean;
-  now: Date;
-  occurrence: Occurrence | null;
-  overdueCount: number;
-  timezone: string;
-}): React.JSX.Element {
+}: DetailStatusSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const themeColors = useThemeColors();

@@ -14,9 +14,27 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { parse } from "date-fns/parse";
 
+import type { ThemeColors } from "~/theme/colors";
 import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
+
+type DateTimePickerFieldProps = {
+  accessibilityHint: string;
+  accessibilityLabel: string;
+  description?: string;
+  disabled?: boolean;
+  displayValue: string;
+  error?: string;
+  icon: React.JSX.Element;
+  label?: string;
+  localValue: string;
+  minimumLocalDate?: string;
+  mode: "date" | "time";
+  onChange: (date: Date) => void;
+  style?: StyleProp<ViewStyle>;
+  title: string;
+};
 
 export function DateTimePickerField({
   accessibilityHint,
@@ -33,22 +51,7 @@ export function DateTimePickerField({
   onChange,
   style,
   title,
-}: {
-  accessibilityHint: string;
-  accessibilityLabel: string;
-  description?: string;
-  disabled?: boolean;
-  displayValue: string;
-  error?: string;
-  icon: React.JSX.Element;
-  label?: string;
-  localValue: string;
-  minimumLocalDate?: string;
-  mode: "date" | "time";
-  onChange: (date: Date) => void;
-  style?: StyleProp<ViewStyle>;
-  title: string;
-}): React.JSX.Element {
+}: DateTimePickerFieldProps): React.JSX.Element {
   const { t } = useTranslation();
   const { colors: themeColors, resolvedTheme } = useTheme();
   const [draft, setDraft] = useState<Date | null>(null);
@@ -203,7 +206,7 @@ function parseLocalValue(value: string, mode: "date" | "time"): Date {
   return parse(value, mode === "date" ? "yyyy-MM-dd" : "HH:mm", new Date());
 }
 
-function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     actionPressed: {
       opacity: 0.72,

@@ -3,7 +3,8 @@ import { StyleSheet, TextInput, type TextInputProps } from "react-native";
 
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
-import { borderRadius, spacing, typography } from "~/ui/tokens";
+
+import { borderRadius, spacing, typography } from "./tokens";
 
 type AppTextInputProps = TextInputProps & {
   error?: boolean;

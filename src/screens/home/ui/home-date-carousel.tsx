@@ -46,10 +46,10 @@ export function HomeDateCarousel({
     });
   }, []);
 
-  const selectToday = (): void => {
+  function selectToday(): void {
     onSelectDate(todayOption.id);
     scrollDateOptionsToStart();
-  };
+  }
 
   useEffect(() => {
     // 조회 범위 밖의 날짜가 남으면 화면과 실제 선택 항목이 어긋난다.

@@ -6,14 +6,22 @@ import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
 import type { OccurrenceEntry } from "~/schedule/rules/occurrence";
 import { ItemRow } from "~/schedule/ui/item-row";
-import {
-  buildCalendarDayEntries,
-  type CalendarDayEntry,
-} from "~/screens/calendar/calendar";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { StateMessage } from "~/ui/state-message";
 import { spacing } from "~/ui/tokens";
+
+import { buildCalendarDayEntries, type CalendarDayEntry } from "../calendar";
+
+type SelectedDateSectionProps = {
+  errorMessage: string | null;
+  isLoading: boolean;
+  onPressEntry: (entry: CalendarDayEntry) => void;
+  onRetry: () => void;
+  occurrenceEntries: OccurrenceEntry[];
+  selectedDate: string;
+  timezone: string;
+};
 
 export function SelectedDateSection({
   errorMessage,
@@ -23,15 +31,7 @@ export function SelectedDateSection({
   occurrenceEntries,
   selectedDate,
   timezone,
-}: {
-  errorMessage: string | null;
-  isLoading: boolean;
-  onPressEntry: (entry: CalendarDayEntry) => void;
-  onRetry: () => void;
-  occurrenceEntries: OccurrenceEntry[];
-  selectedDate: string;
-  timezone: string;
-}): React.JSX.Element {
+}: SelectedDateSectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const themeColors = useThemeColors();

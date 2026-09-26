@@ -1,20 +1,21 @@
 import { fromZonedTime } from "date-fns-tz";
 
 import type { Database } from "~/database.types";
+import { supabase } from "~/supabase";
+
 import {
   createContentDecryptor,
   decryptContent,
   encryptContent,
-} from "~/schedule/content/cipher";
-import { nearestColorKey } from "~/schedule/display/color";
-import { ScheduleNotFoundError } from "~/schedule/errors";
+} from "../content/cipher";
+import { nearestColorKey } from "../display/color";
+import { ScheduleNotFoundError } from "../errors";
 import type {
   AnchorType,
   RecurrenceType,
   RuleVersion,
-} from "~/schedule/rules/recurrence";
-import type { CreateScheduleInput, Schedule } from "~/schedule/schedule";
-import { supabase } from "~/supabase";
+} from "../rules/recurrence";
+import type { CreateScheduleInput, Schedule } from "../schedule";
 
 type ItemRow = Database["public"]["Tables"]["recurring_items"]["Row"];
 type VersionRow =

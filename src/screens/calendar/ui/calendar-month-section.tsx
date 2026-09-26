@@ -7,13 +7,13 @@ import type { AppLanguage } from "~/i18n/language";
 import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
 import type { OccurrenceEntry } from "~/schedule/rules/occurrence";
-import { buildCalendarDaySummaries } from "~/screens/calendar/calendar";
 import type { ThemeColors } from "~/theme/colors";
 import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing, typography } from "~/ui/tokens";
 
 import { CalendarDayCell } from "./calendar-day-cell";
+import { buildCalendarDaySummaries } from "../calendar";
 
 const koDayNamesShort = ["일", "월", "화", "수", "목", "금", "토"];
 const koMonthNames = Array.from({ length: 12 }, (_, index) => `${index + 1}월`);
@@ -26,17 +26,19 @@ LocaleConfig.locales.ko = {
   today: "오늘",
 };
 
+type CalendarMonthSectionProps = {
+  onSelectDate: (date: string) => void;
+  occurrenceEntries: OccurrenceEntry[];
+  selectedDate: string;
+  today: string;
+};
+
 export function CalendarMonthSection({
   onSelectDate,
   occurrenceEntries,
   selectedDate,
   today,
-}: {
-  onSelectDate: (date: string) => void;
-  occurrenceEntries: OccurrenceEntry[];
-  selectedDate: string;
-  today: string;
-}): React.JSX.Element | null {
+}: CalendarMonthSectionProps): React.JSX.Element | null {
   const { language } = useAppLanguage();
   const { colors: themeColors, resolvedTheme } = useTheme();
   const isCalendarLocaleReady = useCalendarLocale(language);

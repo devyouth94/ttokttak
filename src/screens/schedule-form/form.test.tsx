@@ -328,15 +328,13 @@ async function renderForm(
   };
 }
 
-function FormProbe({
-  itemId,
-  onChange,
-  returnTo,
-}: {
+type FormProbeProps = {
   itemId?: string;
   onChange: (form: ReturnType<typeof useScheduleForm>) => void;
   returnTo?: string;
-}): null {
+};
+
+function FormProbe({ itemId, onChange, returnTo }: FormProbeProps): null {
   onChange(useScheduleForm({ itemId, returnTo }));
 
   return null;

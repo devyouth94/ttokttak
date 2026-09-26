@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
+import type { CalendarDayEntry } from "~/screens/calendar/calendar";
 import { useCalendarScreen } from "~/screens/calendar/query";
 import { CalendarMonthSection } from "~/screens/calendar/ui/calendar-month-section";
 import { SelectedDateSection } from "~/screens/calendar/ui/selected-date-section";
@@ -15,6 +16,17 @@ export default function CalendarTabPage(): React.JSX.Element {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const calendar = useCalendarScreen();
+
+  function openEntry(entry: CalendarDayEntry): void {
+    router.push({
+      params: {
+        itemId: entry.itemId,
+        returnTo: "/calendar",
+        scheduledAtUtc: entry.scheduledAtUtc,
+      },
+      pathname: "/items/[itemId]",
+    });
+  }
 
   return (
     <AppScreen>
@@ -39,16 +51,7 @@ export default function CalendarTabPage(): React.JSX.Element {
         <SelectedDateSection
           errorMessage={calendar.errorMessage}
           isLoading={calendar.isLoading}
-          onPressEntry={(entry) => {
-            router.push({
-              params: {
-                itemId: entry.itemId,
-                returnTo: "/calendar",
-                scheduledAtUtc: entry.scheduledAtUtc,
-              },
-              pathname: "/items/[itemId]",
-            });
-          }}
+          onPressEntry={openEntry}
           onRetry={() => {
             void calendar.retry();
           }}

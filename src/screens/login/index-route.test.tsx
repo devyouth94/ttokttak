@@ -1,8 +1,8 @@
 import { createElement, type ReactElement } from "react";
 
-import { LoginScreen } from "~/screens/login/ui/login-screen";
 import { useSession } from "~/session/provider";
 
+import { LoginScreen } from "./ui/login-screen";
 import IndexRoute from "../../../app/index";
 
 jest.mock("expo-router", () => ({ Redirect: "Redirect" }));

@@ -17,13 +17,14 @@ import {
   getColorOptions,
   normalizeColorHex,
 } from "~/schedule/display/color";
-import type { ScheduleFormValues } from "~/screens/schedule-form/form-values";
-import { useScheduleFormSetters } from "~/screens/schedule-form/use-form-setters";
+import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { CustomColorPicker } from "./custom-picker";
+import type { ScheduleFormValues } from "../../form-values";
+import { useScheduleFormSetters } from "../../use-form-setters";
 
 export function ColorField(): React.JSX.Element {
   const { t } = useTranslation();
@@ -51,6 +52,16 @@ export function ColorField(): React.JSX.Element {
 
   function selectColor(nextColor: string): void {
     setField("colorHex", normalizeColorHex(nextColor));
+  }
+
+  function selectPresetColor(nextColor: string): void {
+    setIsCustomSelected(false);
+    selectColor(nextColor);
+  }
+
+  function selectCustomColor(nextColor: string): void {
+    setIsCustomSelected(true);
+    selectColor(nextColor);
   }
 
   useEffect(() => {
@@ -82,10 +93,7 @@ export function ColorField(): React.JSX.Element {
               accessibilityRole="radio"
               accessibilityState={{ checked: isSelected }}
               key={option.value}
-              onPress={() => {
-                setIsCustomSelected(false);
-                selectColor(option.swatchColor);
-              }}
+              onPress={() => selectPresetColor(option.swatchColor)}
               style={({ pressed }) => [
                 styles.presetButton,
                 pressed && styles.pressed,
@@ -195,10 +203,7 @@ export function ColorField(): React.JSX.Element {
 
       <CustomColorPicker
         colorHex={colorHex}
-        onChange={(nextColor) => {
-          setIsCustomSelected(true);
-          selectColor(nextColor);
-        }}
+        onChange={selectCustomColor}
         onClose={() => setIsPickerVisible(false)}
         visible={isPickerVisible}
       />
@@ -206,7 +211,7 @@ export function ColorField(): React.JSX.Element {
   );
 }
 
-function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     customCheck: {
       ...StyleSheet.absoluteFillObject,

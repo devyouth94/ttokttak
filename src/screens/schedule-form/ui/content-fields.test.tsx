@@ -102,15 +102,17 @@ it("제목 ref와 폼 이벤트를 연결하고 multiline 설명 입력을 유�
   expect(onTitleLayout).toHaveBeenCalledWith(layoutEvent);
 });
 
+type ContentFieldsHarnessProps = {
+  onForm: (form: UseFormReturn<ScheduleFormValues>) => void;
+  onTitleLayout: (event: LayoutChangeEvent) => void;
+  titleInputRef: RefObject<TextInput | null>;
+};
+
 function ContentFieldsHarness({
   onForm,
   onTitleLayout,
   titleInputRef,
-}: {
-  onForm: (form: UseFormReturn<ScheduleFormValues>) => void;
-  onTitleLayout: (event: LayoutChangeEvent) => void;
-  titleInputRef: RefObject<TextInput | null>;
-}): React.JSX.Element {
+}: ContentFieldsHarnessProps): React.JSX.Element {
   const form = useForm<ScheduleFormValues>({
     defaultValues: createFormValues(new Date(2026, 7, 4, 9)),
   });

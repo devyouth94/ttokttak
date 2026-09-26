@@ -6,13 +6,15 @@ import { spacing } from "~/ui/tokens";
 
 import type { Sort } from "../list";
 
+type ListSortMenuProps = {
+  onChange: (value: Sort) => void;
+  value: Sort;
+};
+
 export function ListSortMenu({
   onChange,
   value,
-}: {
-  onChange: (value: Sort) => void;
-  value: Sort;
-}): React.JSX.Element {
+}: ListSortMenuProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const options: SelectOption<Sort>[] = [

@@ -13,8 +13,9 @@ import {
 } from "lucide-react-native";
 
 import { useThemeColors } from "~/theme/provider";
-import { AppText } from "~/ui/app-text";
-import { spacing } from "~/ui/tokens";
+
+import { AppText } from "./app-text";
+import { spacing } from "./tokens";
 
 export const MAIN_BOTTOM_NAV_RESERVED_HEIGHT = 92;
 const IOS_MAIN_TAB_CONTENT_BOTTOM_INSET = 160;
@@ -41,6 +42,13 @@ export function MainBottomNav({
   const { t } = useTranslation();
   const themeColors = useThemeColors();
 
+  function openCreateForm(): void {
+    router.push({
+      params: { returnTo: pathname },
+      pathname: "/items/new",
+    });
+  }
+
   return (
     <View
       pointerEvents="box-none"
@@ -61,6 +69,28 @@ export function MainBottomNav({
               ? options.tabBarLabel
               : (options.title ?? route.name);
 
+          function handleLongPress(): void {
+            navigation.emit({
+              target: route.key,
+              type: "tabLongPress",
+            });
+          }
+
+          function handlePress(): void {
+            const event = navigation.emit({
+              canPreventDefault: true,
+              target: route.key,
+              type: "tabPress",
+            });
+
+            if (!isActive && !event.defaultPrevented) {
+              navigation.dispatch({
+                ...CommonActions.navigate(route),
+                target: state.key,
+              });
+            }
+          }
+
           if (!Icon) {
             return null;
           }
@@ -76,26 +106,8 @@ export function MainBottomNav({
                 accessibilityRole="tab"
                 accessibilityState={{ selected: isActive }}
                 hitSlop={8}
-                onLongPress={() => {
-                  navigation.emit({
-                    target: route.key,
-                    type: "tabLongPress",
-                  });
-                }}
-                onPress={() => {
-                  const event = navigation.emit({
-                    canPreventDefault: true,
-                    target: route.key,
-                    type: "tabPress",
-                  });
-
-                  if (!isActive && !event.defaultPrevented) {
-                    navigation.dispatch({
-                      ...CommonActions.navigate(route),
-                      target: state.key,
-                    });
-                  }
-                }}
+                onLongPress={handleLongPress}
+                onPress={handlePress}
                 style={({ pressed }) => [
                   styles.item,
                   pressed && styles.itemPressed,
@@ -135,12 +147,7 @@ export function MainBottomNav({
         accessibilityHint={t("navigation.createItemHint")}
         accessibilityLabel={t("navigation.createItemLabel")}
         accessibilityRole="button"
-        onPress={() => {
-          router.push({
-            params: { returnTo: pathname },
-            pathname: "/items/new",
-          });
-        }}
+        onPress={openCreateForm}
         style={({ pressed }) => [
           styles.createButton,
           { backgroundColor: themeColors.surface },

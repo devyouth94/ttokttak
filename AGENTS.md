@@ -14,6 +14,8 @@
 - 타입은 `z.infer` 등으로 직접 맞춘다.
 - 파일은 imports → 공개 타입·상수 → 핵심 export → private helper·local component → styles 순서로 읽히게 배치한다. 모듈 초기화와 네이티브 등록 순서는 우선한다.
 - 컴포넌트와 hook은 의존성 읽기 → local state·ref → 파생 값 → 사용자 동작 → lifecycle effect → 반환 순서로 배치한다.
+- 같은 역할의 가까운 파일은 상대 경로, 역할 경계를 넘는 파일은 `~/` 경로로 import한다. 색상만 필요하면 `useThemeColors()`, resolved theme이나 설정까지 필요하면 `useTheme()`을 사용한다.
+- 의미 있는 prop이 여러 개면 같은 파일에 이름 붙은 타입을 두고, 분기나 여러 동작이 있는 JSX 이벤트는 이름 붙은 함수로 분리한다.
 
 ## Docs
 

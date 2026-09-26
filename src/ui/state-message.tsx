@@ -3,8 +3,9 @@ import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { useThemeColors } from "~/theme/provider";
-import { AppText } from "~/ui/app-text";
-import { borderRadius, spacing } from "~/ui/tokens";
+
+import { AppText } from "./app-text";
+import { borderRadius, spacing } from "./tokens";
 
 type StateAction = {
   accessibilityHint?: string;

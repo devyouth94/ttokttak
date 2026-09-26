@@ -32,10 +32,7 @@ export function HomeFeedSections({
   const sectionCount = Math.max(sections.length, 1);
   const baseHeight = Math.floor(height / sectionCount);
 
-  const getSectionStyle = (
-    section: HomeFeedSection,
-    index: number
-  ): ViewStyle => {
+  function getSectionStyle(section: HomeFeedSection, index: number): ViewStyle {
     const isStackedSection = index > 0;
     const isLastSection = index === sections.length - 1;
     const fillsSegment = shouldFillSegment(section, loading, isToday);
@@ -52,7 +49,7 @@ export function HomeFeedSections({
       paddingBottom: isLastSection ? bottomInset : undefined,
       zIndex: index + 1,
     };
-  };
+  }
 
   return (
     <View>

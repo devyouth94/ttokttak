@@ -3,8 +3,9 @@ import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
 import { useThemeColors } from "~/theme/provider";
-import { AppText } from "~/ui/app-text";
-import { borderRadius, spacing } from "~/ui/tokens";
+
+import { AppText } from "./app-text";
+import { borderRadius, spacing } from "./tokens";
 
 export type SelectOption<Value extends string> = {
   accessibilityHint?: string;
@@ -34,18 +35,20 @@ export function SelectMenu<Value extends string>({
   const selectedOption =
     options.find((option) => option.value === value) ?? options[0]!;
 
+  function changeValue(nextOption: Select.Option | undefined): void {
+    const nextValue = options.find(
+      (option) => option.value === nextOption?.value
+    )?.value;
+
+    if (nextValue) {
+      onChange(nextValue);
+    }
+  }
+
   return (
     <Select.Root
       disabled={disabled}
-      onValueChange={(nextOption) => {
-        const nextValue = options.find(
-          (option) => option.value === nextOption?.value
-        )?.value;
-
-        if (nextValue) {
-          onChange(nextValue);
-        }
-      }}
+      onValueChange={changeValue}
       value={selectedOption}
     >
       <Select.Trigger asChild>

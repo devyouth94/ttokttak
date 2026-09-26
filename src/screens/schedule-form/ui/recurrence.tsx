@@ -67,6 +67,16 @@ export function RecurrenceSection(): React.JSX.Element {
     setField("weekdayMask", change.weekdayMask);
   }
 
+  function blurInterval(): void {
+    intervalField.onBlur();
+    setIsIntervalFocused(false);
+  }
+
+  function changeInterval(value: string): void {
+    clearErrors("root");
+    intervalField.onChange(value.replace(/[^0-9]/g, ""));
+  }
+
   return (
     <View style={styles.field}>
       <AppText style={styles.fieldLabel} variant="body2">
@@ -101,14 +111,8 @@ export function RecurrenceSection(): React.JSX.Element {
                   error={Boolean(intervalError)}
                   focused={isIntervalFocused}
                   keyboardType="number-pad"
-                  onBlur={() => {
-                    intervalField.onBlur();
-                    setIsIntervalFocused(false);
-                  }}
-                  onChangeText={(value) => {
-                    clearErrors("root");
-                    intervalField.onChange(value.replace(/[^0-9]/g, ""));
-                  }}
+                  onBlur={blurInterval}
+                  onChangeText={changeInterval}
                   onFocus={() => setIsIntervalFocused(true)}
                   placeholder="1"
                   style={styles.customRecurrenceInput}
@@ -166,19 +170,21 @@ export function RecurrenceSection(): React.JSX.Element {
   );
 }
 
+type OptionButtonProps = {
+  label: string;
+  onPress: () => void;
+  selected: boolean;
+  styles: ReturnType<typeof createStyles>;
+  variant: "primary" | "unit";
+};
+
 function OptionButton({
   label,
   onPress,
   selected,
   styles,
   variant,
-}: {
-  label: string;
-  onPress: () => void;
-  selected: boolean;
-  styles: ReturnType<typeof createStyles>;
-  variant: "primary" | "unit";
-}): React.JSX.Element {
+}: OptionButtonProps): React.JSX.Element {
   return (
     <Pressable
       accessibilityLabel={label}
@@ -204,17 +210,19 @@ function OptionButton({
   );
 }
 
+type ModeTabProps = {
+  label: string;
+  onPress: () => void;
+  selected: boolean;
+  styles: ReturnType<typeof createStyles>;
+};
+
 function ModeTab({
   label,
   onPress,
   selected,
   styles,
-}: {
-  label: string;
-  onPress: () => void;
-  selected: boolean;
-  styles: ReturnType<typeof createStyles>;
-}): React.JSX.Element {
+}: ModeTabProps): React.JSX.Element {
   return (
     <Pressable
       accessibilityLabel={label}

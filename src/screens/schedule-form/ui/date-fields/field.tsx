@@ -7,28 +7,31 @@ import { CalendarDays, Clock3 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
-import {
-  getFirstReminderDate,
-  getStartDateChange,
-  type ScheduleFormValues,
-} from "~/screens/schedule-form/form-values";
-import { useScheduleFormSetters } from "~/screens/schedule-form/use-form-setters";
-import { useTheme } from "~/theme/provider";
+import type { ThemeColors } from "~/theme/colors";
+import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { spacing } from "~/ui/tokens";
 
 import { DateTimePickerField } from "./picker";
+import {
+  getFirstReminderDate,
+  getStartDateChange,
+  type ScheduleFormValues,
+} from "../../form-values";
+import { useScheduleFormSetters } from "../../use-form-setters";
+
+type DateFieldsProps = {
+  isEdit: boolean;
+  today: string;
+};
 
 export function DateFields({
   isEdit,
   today,
-}: {
-  isEdit: boolean;
-  today: string;
-}): React.JSX.Element {
+}: DateFieldsProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const { colors: themeColors } = useTheme();
+  const themeColors = useThemeColors();
 
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
 
@@ -221,7 +224,7 @@ export function DateFields({
   );
 }
 
-function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     dateField: {
       flex: 1.1,

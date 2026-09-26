@@ -12,6 +12,7 @@ import {
 import { Info } from "lucide-react-native";
 
 import { supportsCompletion } from "~/schedule/rules/recurrence";
+import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { spacing } from "~/ui/tokens";
@@ -126,7 +127,7 @@ export function ScheduleOptions(): React.JSX.Element {
   );
 }
 
-function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     field: {
       gap: spacing.xs,

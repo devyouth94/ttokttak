@@ -1,8 +1,7 @@
-import { scheduleFixture } from "~/schedule/fixtures";
-
 import { getColorLabel, getColorOptions } from "./color";
 import { formatLocal, formatTimestamp } from "./date";
 import { getActionLabel, getRecurrenceLabel } from "./label";
+import { scheduleFixture } from "../fixtures";
 
 describe("schedule display", () => {
   it("local 날짜와 시간을 언어별 형식으로 만든다", () => {

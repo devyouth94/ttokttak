@@ -37,10 +37,10 @@ export function useHomeActions({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [processingIds, setProcessingIds] = useState<string[]>([]);
 
-  const runAction = async (
+  async function runAction(
     target: HomeActionTarget,
     action: OccurrenceAction
-  ): Promise<void> => {
+  ): Promise<void> {
     if (!userId) {
       return;
     }
@@ -68,7 +68,7 @@ export function useHomeActions({
         current.filter((occurrenceId) => occurrenceId !== target.id)
       );
     }
-  };
+  }
 
   return {
     clearError: () => setErrorMessage(null),

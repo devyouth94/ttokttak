@@ -3,9 +3,9 @@ import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
 import { useThemeColors } from "~/theme/provider";
-import { spacing } from "~/ui/tokens";
 
 import { AppText } from "./app-text";
+import { spacing } from "./tokens";
 
 type ScreenHeaderProps = {
   leftSlot?: ReactNode;

@@ -29,6 +29,11 @@ type DeviceSyncValue = Omit<
   syncDeviceOutputs: () => Promise<void>;
 };
 
+type DeviceSyncProviderProps = PropsWithChildren<{
+  timezone: string;
+  userId: string | null | undefined;
+}>;
+
 const DeviceSyncContext = createContext<DeviceSyncValue | null>(null);
 
 /**
@@ -39,10 +44,7 @@ export function DeviceSyncProvider({
   children,
   timezone,
   userId,
-}: PropsWithChildren<{
-  timezone: string;
-  userId: string | null | undefined;
-}>): React.JSX.Element {
+}: DeviceSyncProviderProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const {

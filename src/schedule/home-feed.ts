@@ -4,8 +4,9 @@ import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 
 import type { AppLanguage } from "~/i18n/language";
-import { formatLocal } from "~/schedule/display/date";
-import { getRecurrenceLabel } from "~/schedule/display/label";
+
+import { formatLocal } from "./display/date";
+import { getRecurrenceLabel } from "./display/label";
 import {
   addLocalDays,
   createOccurrences,
@@ -14,9 +15,8 @@ import {
   type OccurrenceEntry,
   type OccurrenceLog,
   toUtcRange,
-} from "~/schedule/rules/occurrence";
-import type { Schedule } from "~/schedule/schedule";
-import { currentRule } from "~/schedule/schedule";
+} from "./rules/occurrence";
+import { currentRule, type Schedule } from "./schedule";
 
 const UPCOMING_DAYS = 14;
 

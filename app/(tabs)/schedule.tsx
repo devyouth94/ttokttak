@@ -23,6 +23,17 @@ export default function ScheduleTabPage(): React.JSX.Element {
 
   const list = useScheduleList();
 
+  function openItem(itemId: string, scheduledAtUtc: string | null): void {
+    router.push({
+      params: {
+        itemId,
+        returnTo: "/schedule",
+        ...(scheduledAtUtc ? { scheduledAtUtc } : {}),
+      },
+      pathname: "/items/[itemId]",
+    });
+  }
+
   return (
     <AppScreen>
       <ScreenHeader title={t("scheduleList.headerTitle")} />
@@ -83,18 +94,7 @@ export default function ScheduleTabPage(): React.JSX.Element {
                 item.nextOccurrenceTimeLabel,
                 item.recurrenceLabel,
               ].join(" · ")}
-              onPress={() => {
-                router.push({
-                  params: {
-                    itemId: item.id,
-                    returnTo: "/schedule",
-                    ...(item.nextScheduledAtUtc
-                      ? { scheduledAtUtc: item.nextScheduledAtUtc }
-                      : {}),
-                  },
-                  pathname: "/items/[itemId]",
-                });
-              }}
+              onPress={() => openItem(item.id, item.nextScheduledAtUtc)}
               title={item.title}
             />
           )}

@@ -13,20 +13,22 @@ import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
+type DetailManagementMenuProps = {
+  item: Schedule;
+  returnTo?: string;
+};
+
 export function DetailManagementMenu({
   item,
   returnTo,
-}: {
-  item: Schedule;
-  returnTo?: string;
-}): React.JSX.Element {
+}: DetailManagementMenuProps): React.JSX.Element {
   const { t } = useTranslation();
   const { syncDeviceOutputs } = useDeviceSync();
   const themeColors = useThemeColors();
 
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const handleEdit = (): void => {
+  function handleEdit(): void {
     if (isArchiving) {
       return;
     }
@@ -38,9 +40,9 @@ export function DetailManagementMenu({
       },
       pathname: "/items/[itemId]/edit",
     });
-  };
+  }
 
-  const handleDeleteConfirm = async (): Promise<void> => {
+  async function handleDeleteConfirm(): Promise<void> {
     if (isArchiving) {
       return;
     }
@@ -55,9 +57,9 @@ export function DetailManagementMenu({
     } finally {
       setIsArchiving(false);
     }
-  };
+  }
 
-  const handleDelete = (): void => {
+  function handleDelete(): void {
     if (isArchiving) {
       return;
     }
@@ -79,7 +81,7 @@ export function DetailManagementMenu({
         },
       ]
     );
-  };
+  }
 
   return (
     <DropdownMenu.Root>

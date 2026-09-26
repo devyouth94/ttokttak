@@ -133,17 +133,19 @@ export function DetailSummarySection({
   );
 }
 
+type SummaryOutlineRowProps = {
+  accessibilityLabel?: string;
+  label: string;
+  trailingIcon?: ReactNode;
+  value?: string;
+};
+
 function SummaryOutlineRow({
   accessibilityLabel,
   label,
   trailingIcon,
   value,
-}: {
-  accessibilityLabel?: string;
-  label: string;
-  trailingIcon?: ReactNode;
-  value?: string;
-}): React.JSX.Element {
+}: SummaryOutlineRowProps): React.JSX.Element {
   const themeColors = useThemeColors();
 
   return (

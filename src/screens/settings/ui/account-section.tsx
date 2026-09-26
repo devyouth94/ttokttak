@@ -2,15 +2,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "react-native";
 
-import {
-  getEditableProfileDisplayName,
-  type ProfileDisplayNameError,
-  validateProfileDisplayName,
-} from "~/screens/settings/profile-display-name";
 import { useSession } from "~/session/provider";
 
 import { NameEditor } from "./name-editor";
 import { SettingsSectionCard, SettingsValueRow } from "./settings-screen-rows";
+import {
+  getEditableProfileDisplayName,
+  type ProfileDisplayNameError,
+  validateProfileDisplayName,
+} from "../profile-display-name";
 
 export function AccountSection(): React.JSX.Element {
   const { t } = useTranslation();
@@ -62,6 +62,11 @@ export function AccountSection(): React.JSX.Element {
     setNameError(null);
   }
 
+  function changeName(value: string): void {
+    setNameDraft(value);
+    setNameError(null);
+  }
+
   async function saveName(): Promise<void> {
     const result = validateProfileDisplayName(nameDraft);
 
@@ -102,10 +107,7 @@ export function AccountSection(): React.JSX.Element {
       <NameEditor
         errorMessage={errorMessage}
         isSaving={isSaving}
-        onChange={(value) => {
-          setNameDraft(value);
-          setNameError(null);
-        }}
+        onChange={changeName}
         onClose={closeEditor}
         onSave={saveName}
         value={nameDraft}

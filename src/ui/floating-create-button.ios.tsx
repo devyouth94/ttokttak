@@ -15,7 +15,8 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 
 import { useThemeColors } from "~/theme/provider";
-import { spacing } from "~/ui/tokens";
+
+import { spacing } from "./tokens";
 
 const isLiquidGlassAvailable =
   Number.parseInt(String(Platform.Version), 10) >= 26;
@@ -24,6 +25,13 @@ export function FloatingCreateButton(): React.JSX.Element {
   const { t } = useTranslation();
   const pathname = usePathname();
   const themeColors = useThemeColors();
+
+  function openCreateForm(): void {
+    router.push({
+      params: { returnTo: pathname },
+      pathname: "/items/new",
+    });
+  }
 
   return (
     <Host
@@ -57,12 +65,7 @@ export function FloatingCreateButton(): React.JSX.Element {
           labelStyle("iconOnly"),
           accessibilityHint(t("navigation.createItemHint")),
         ]}
-        onPress={() => {
-          router.push({
-            params: { returnTo: pathname },
-            pathname: "/items/new",
-          });
-        }}
+        onPress={openCreateForm}
         systemImage="plus"
       />
     </Host>

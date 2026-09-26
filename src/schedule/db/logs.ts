@@ -1,6 +1,7 @@
 import type { Database } from "~/database.types";
-import type { OccurrenceLog } from "~/schedule/rules/occurrence";
 import { supabase } from "~/supabase";
+
+import type { OccurrenceLog } from "../rules/occurrence";
 
 type LogRow = Database["public"]["Tables"]["completion_logs"]["Row"];
 type LogInsert = Database["public"]["Tables"]["completion_logs"]["Insert"];

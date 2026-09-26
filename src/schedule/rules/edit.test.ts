@@ -1,10 +1,9 @@
+import { resolveEdit } from "./edit";
 import {
   scheduleFixture,
   type ScheduleOverrides,
   testTimezone as timezone,
-} from "~/schedule/fixtures";
-
-import { resolveEdit } from "./edit";
+} from "../fixtures";
 import type { Schedule } from "../schedule";
 
 const now = new Date("2026-05-07T03:00:00.000Z");

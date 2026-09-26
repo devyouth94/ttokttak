@@ -10,13 +10,15 @@ import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
+type DetailHistorySectionProps = {
+  logs: OccurrenceLog[];
+  timezone: string;
+};
+
 export function DetailHistorySection({
   logs,
   timezone,
-}: {
-  logs: OccurrenceLog[];
-  timezone: string;
-}): React.JSX.Element {
+}: DetailHistorySectionProps): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const themeColors = useThemeColors();

@@ -55,6 +55,16 @@ export function ContentFields({
     descriptionField.onChange(value);
   }
 
+  function blurTitle(): void {
+    titleField.onBlur();
+    setFocusedInput(null);
+  }
+
+  function blurDescription(): void {
+    descriptionField.onBlur();
+    setFocusedInput(null);
+  }
+
   return (
     <>
       <View onLayout={onTitleLayout} style={styles.field}>
@@ -65,10 +75,7 @@ export function ContentFields({
           accessibilityLabel={t("scheduleForm.fields.title")}
           error={Boolean(titleError)}
           focused={focusedInput === "title"}
-          onBlur={() => {
-            titleField.onBlur();
-            setFocusedInput(null);
-          }}
+          onBlur={blurTitle}
           onChangeText={changeTitle}
           onFocus={() => setFocusedInput("title")}
           placeholder={t("scheduleForm.placeholders.title")}
@@ -90,10 +97,7 @@ export function ContentFields({
           accessibilityLabel={t("scheduleForm.fields.descriptionA11y")}
           focused={focusedInput === "description"}
           multiline
-          onBlur={() => {
-            descriptionField.onBlur();
-            setFocusedInput(null);
-          }}
+          onBlur={blurDescription}
           onChangeText={changeDescription}
           onFocus={() => setFocusedInput("description")}
           placeholder={t("scheduleForm.placeholders.description")}

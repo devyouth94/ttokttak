@@ -4,13 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Modal, Platform } from "react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
-import {
-  createFormValues,
-  type ScheduleFormValues,
-} from "~/screens/schedule-form/form-values";
-import { useTheme } from "~/theme/provider";
+import { themeColors } from "~/theme/colors";
+import { useTheme, useThemeColors } from "~/theme/provider";
 
 import { DateFields } from "./field";
+import { createFormValues, type ScheduleFormValues } from "../../form-values";
 
 declare const require: (moduleName: string) => unknown;
 
@@ -24,7 +22,10 @@ jest.mock("lucide-react-native", () => ({
   Clock3: "Clock3",
 }));
 jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
-jest.mock("~/theme/provider", () => ({ useTheme: jest.fn() }));
+jest.mock("~/theme/provider", () => ({
+  useTheme: jest.fn(),
+  useThemeColors: jest.fn(),
+}));
 jest.mock("~/ui/app-text", () => ({ AppText: "AppText" }));
 
 type TestInstance = {
@@ -51,19 +52,9 @@ beforeEach(() => {
     .mocked(useTranslation)
     .mockReturnValue({ t: (key: string) => key } as never);
   jest.mocked(useAppLanguage).mockReturnValue({ language: "ko" } as never);
+  jest.mocked(useThemeColors).mockReturnValue(themeColors.light);
   jest.mocked(useTheme).mockReturnValue({
-    colors: {
-      background: "#FFF",
-      border: "#DDD",
-      controlTrack: "#CCC",
-      error: "#F00",
-      primary: "#111",
-      primaryForeground: "#FFF",
-      scrim: "#0008",
-      text: "#111",
-      textMuted: "#777",
-      textSoft: "#555",
-    },
+    colors: themeColors.light,
     resolvedTheme: "light",
   } as never);
 });

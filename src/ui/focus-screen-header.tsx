@@ -4,9 +4,9 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
 import { useThemeColors } from "~/theme/provider";
-import { borderRadius } from "~/ui/tokens";
 
 import { ScreenHeader } from "./screen-header";
+import { borderRadius } from "./tokens";
 
 type FocusScreenHeaderProps = {
   backAccessibilityHint?: string;

@@ -10,21 +10,24 @@ import {
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 import { hexToHsv, hsvToHex } from "~/schedule/display/color";
+import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
+
+type CustomColorPickerProps = {
+  colorHex: string;
+  onChange: (colorHex: string) => void;
+  onClose: () => void;
+  visible: boolean;
+};
 
 export function CustomColorPicker({
   colorHex,
   onChange,
   onClose,
   visible,
-}: {
-  colorHex: string;
-  onChange: (colorHex: string) => void;
-  onClose: () => void;
-  visible: boolean;
-}): React.JSX.Element {
+}: CustomColorPickerProps): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useThemeColors();
   const [hue, setHue] = useState(() => hexToHsv(colorHex).hue);
@@ -270,7 +273,7 @@ function markerPosition(value: number, total: number, radius: number): number {
   return Math.min(total - radius, Math.max(radius, value));
 }
 
-function createStyles(themeColors: ReturnType<typeof useThemeColors>) {
+function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     actionPressed: {
       opacity: 0.72,
