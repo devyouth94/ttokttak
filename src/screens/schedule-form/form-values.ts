@@ -99,7 +99,7 @@ export function createFormValues(openedAt = new Date()): ScheduleFormValues {
   };
 }
 
-export function defaultWeekdayMask(startDateLocal: string): number[] {
+function defaultWeekdayMask(startDateLocal: string): number[] {
   return [parse(startDateLocal, "yyyy-MM-dd", new Date()).getDay()];
 }
 
