@@ -1,13 +1,8 @@
-import {
-  createContentDecryptor,
-  decryptContent,
-  encryptContent,
-} from "./cipher";
-import { getKey, getOrCreateKey, getServerKey, saveWrappedKey } from "./key";
+import { createContentDecryptor, decryptContent } from "./cipher";
+import { getKey, getServerKey, saveWrappedKey } from "./key";
 import { ScheduleContentUnrecoverableError } from "../errors";
 
 const mockDecrypt = jest.fn();
-const mockEncrypt = jest.fn();
 const mockFromCombined = jest.fn();
 
 jest.mock("expo-crypto", () => ({
@@ -15,7 +10,6 @@ jest.mock("expo-crypto", () => ({
     fromCombined: (...args: unknown[]) => mockFromCombined(...args),
   },
   aesDecryptAsync: (...args: unknown[]) => mockDecrypt(...args),
-  aesEncryptAsync: (...args: unknown[]) => mockEncrypt(...args),
 }));
 
 jest.mock("./key", () => ({
@@ -41,12 +35,6 @@ const encrypted = {
 describe("schedule content", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockEncrypt.mockImplementation(async (value: Uint8Array) => ({
-      combined: () =>
-        new TextDecoder().decode(value) === "일정"
-          ? "dGl0bGU="
-          : "ZGVzY3JpcHRpb24=",
-    }));
     mockFromCombined.mockImplementation((value: Uint8Array) => ({
       value: new TextDecoder().decode(value),
     }));
@@ -61,7 +49,6 @@ describe("schedule content", () => {
         );
       }
     );
-    jest.mocked(getOrCreateKey).mockResolvedValue({ id: "good" } as never);
     jest.mocked(getKey).mockResolvedValue({
       encoded: "local-key",
       source: "local",
@@ -71,29 +58,12 @@ describe("schedule content", () => {
     jest.mocked(saveWrappedKey).mockResolvedValue();
   });
 
-  it("제목과 설명을 암복호화하고 지원하지 않는 metadata를 거부한다", async () => {
-    const result = await encryptContent({
-      description: "설명",
-      title: "일정",
-      userId: "user-1",
-    });
-
-    expect(result).toEqual({
-      descriptionCiphertext: "ZGVzY3JpcHRpb24=",
-      keyVersion: 1,
-      metadata: {
-        algorithm: "AES-GCM",
-        encoding: "combined-base64",
-        keyStorage: "server-wrapped",
-      },
-      titleCiphertext: "dGl0bGU=",
-    });
+  it("지원하지 않는 metadata는 키를 조회하기 전에 거부한다", async () => {
     await expect(
-      decryptContent({ ...result, userId: "user-1" })
-    ).resolves.toEqual({ description: "설명", title: "일정" });
-    await expect(
-      decryptContent({ ...encrypted, metadata: {}, userId: "user-1" })
-    ).rejects.toThrow("일정 내용 암호화 메타데이터를 읽을 수 없습니다.");
+      decryptContent({ ...encrypted, metadata: {} })
+    ).rejects.toBeInstanceOf(ScheduleContentUnrecoverableError);
+    expect(getKey).not.toHaveBeenCalled();
+    expect(mockDecrypt).not.toHaveBeenCalled();
   });
 
   it("기기의 content key가 틀리면 서버 key로 다시 복구한다", async () => {
@@ -130,17 +100,29 @@ describe("schedule content", () => {
     await expect(decryptContent(encrypted)).rejects.toBe(error);
   });
 
-  it("서버 key로도 복호화할 수 없으면 복구 불가로 분류한다", async () => {
-    jest.mocked(getKey).mockResolvedValue({
-      encoded: "wrong-key",
-      source: "local",
-      value: { id: "wrong" },
-    } as never);
+  it.each([false, true])(
+    "서버 key가 없거나 틀리면 복구 불가로 분류한다: 존재=%s",
+    async (exists) => {
+      jest.mocked(getKey).mockResolvedValue({
+        encoded: "wrong-key",
+        source: "local",
+        value: { id: "wrong" },
+      } as never);
+      jest.mocked(getServerKey).mockResolvedValue(
+        exists
+          ? ({
+              encoded: "wrong-server-key",
+              source: "server",
+              value: { id: "wrong" },
+            } as never)
+          : null
+      );
 
-    await expect(decryptContent(encrypted)).rejects.toBeInstanceOf(
-      ScheduleContentUnrecoverableError
-    );
-  });
+      await expect(decryptContent(encrypted)).rejects.toBeInstanceOf(
+        ScheduleContentUnrecoverableError
+      );
+    }
+  );
 
   it("기존 SecureStore metadata를 읽으면 서버 wrapped key를 채운다", async () => {
     await decryptContent({
@@ -175,5 +157,27 @@ describe("schedule content", () => {
 
     expect(getKey).toHaveBeenCalledTimes(1);
     expect(getServerKey).toHaveBeenCalledTimes(1);
+  });
+
+  it("복호화 key 캐시는 사용자와 버전이 다른 내용을 섞지 않는다", async () => {
+    jest.mocked(getKey).mockImplementation(
+      async ({ userId, keyVersion }) =>
+        ({
+          source: "local",
+          encoded: null,
+          value: { id: `${userId}:${keyVersion}` },
+        }) as never
+    );
+    mockDecrypt.mockImplementation(async (_sealed, key: { id: string }) =>
+      new TextEncoder().encode(key.id)
+    );
+    const decrypt = createContentDecryptor();
+    const contents = [
+      { ...encrypted, userId: "A", keyVersion: 1 },
+      { ...encrypted, userId: "B", keyVersion: 1 },
+      { ...encrypted, userId: "A", keyVersion: 2 },
+    ];
+    const results = await Promise.all(contents.map(decrypt));
+    expect(results.map(({ title }) => title)).toEqual(["A:1", "B:1", "A:2"]);
   });
 });

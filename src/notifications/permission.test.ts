@@ -29,7 +29,7 @@ describe("알림 권한", () => {
     });
   });
 
-  it("다시 요청할 수 없는 거절 상태에서 설정 이동을 허용한다", async () => {
+  it("거절 후 재요청 가능 여부를 기기 응답대로 제공한다", async () => {
     jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({
       canAskAgain: false,
       granted: false,
@@ -39,6 +39,16 @@ describe("알림 권한", () => {
     await expect(requestPermission()).resolves.toEqual({
       canOpenSettings: true,
       canRequest: false,
+      status: "denied",
+    });
+    jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({
+      canAskAgain: true,
+      granted: false,
+      status: "denied",
+    } as never);
+    await expect(requestPermission()).resolves.toEqual({
+      canOpenSettings: true,
+      canRequest: true,
       status: "denied",
     });
   });

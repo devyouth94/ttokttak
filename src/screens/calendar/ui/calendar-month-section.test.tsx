@@ -28,6 +28,11 @@ const { Calendar, LocaleConfig } = require("react-native-calendars") as {
 
 it("캘린더를 렌더하기 전에 표시 언어 locale을 적용한다", async () => {
   let language: AppLanguage = "ko";
+  const renderedLocales: string[] = [];
+  Calendar.mockImplementation(() => {
+    renderedLocales.push(LocaleConfig.defaultLocale);
+    return null;
+  });
 
   jest
     .mocked(useAppLanguage)
@@ -53,18 +58,18 @@ it("캘린더를 렌더하기 전에 표시 언어 locale을 적용한다", asyn
     section = TestRenderer.create(createSection());
   });
 
-  expect(LocaleConfig.defaultLocale).toBe("ko");
-  expect(Calendar).toHaveBeenCalledTimes(1);
+  expect(renderedLocales.length).toBeGreaterThan(0);
+  expect(renderedLocales.every((locale) => locale === "ko")).toBe(true);
 
   language = "en";
-  Calendar.mockClear();
+  renderedLocales.length = 0;
 
   await TestRenderer.act(() => {
     section.update(createSection());
   });
 
-  expect(LocaleConfig.defaultLocale).toBe("");
-  expect(Calendar).toHaveBeenCalledTimes(1);
+  expect(renderedLocales.length).toBeGreaterThan(0);
+  expect(renderedLocales.every((locale) => locale === "")).toBe(true);
 });
 
 function createSection(): ReactElement {

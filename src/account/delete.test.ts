@@ -33,7 +33,7 @@ function createUser(provider: "apple" | "google") {
     created_at: "2026-07-13T00:00:00.000Z",
     id: "user-1",
     user_metadata: {},
-  } as never;
+  };
 }
 
 function mockClient(invokeError: Error | null = null) {
@@ -84,13 +84,16 @@ describe("deleteAccount", () => {
     expect(supabase.functions.invoke).not.toHaveBeenCalled();
   });
 
-  it("Apple 계정이면 재인증 코드를 삭제 함수에 전달한다", async () => {
+  it("Apple이 연결된 계정도 재인증 코드를 삭제 함수에 전달한다", async () => {
     const { invoke } = mockClient();
     jest
       .mocked(AppleAuthentication.signInAsync)
       .mockResolvedValue({ authorizationCode: "apple-code" } as never);
 
-    await deleteAccount(createUser("apple"));
+    await deleteAccount({
+      ...createUser("google"),
+      app_metadata: { provider: "google", providers: ["google", "apple"] },
+    });
 
     expect(invoke).toHaveBeenCalledWith("delete-account", {
       body: { appleAuthorizationCode: "apple-code", confirm: true },

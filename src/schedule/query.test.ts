@@ -1,164 +1,151 @@
-import { useQuery } from "@tanstack/react-query";
+import { createElement, type ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useSession } from "~/session/provider";
 
+import { getItem } from "./db/items";
 import { listItemLogs } from "./db/logs";
 import { ScheduleNotFoundError } from "./errors";
-import { logFixture, scheduleFixture, testTimezone } from "./fixtures";
-import { useScheduleById, useScheduleDetailData, useSchedules } from "./query";
-import { readActiveScheduleData } from "./read";
+import { logFixture, scheduleFixture } from "./fixtures";
+import { useScheduleById, useScheduleDetailData } from "./query";
 
-const refetch = jest.fn(async () => undefined);
-const queryResult = {
-  data: undefined,
-  error: null,
-  isPending: false,
-  refetch,
-};
-
-jest.mock("react", () => ({
-  ...jest.requireActual("react"),
-  useCallback: <T>(callback: T): T => callback,
-}));
-jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }));
 jest.mock("./db/items", () => ({ getItem: jest.fn() }));
 jest.mock("./db/logs", () => ({ listItemLogs: jest.fn() }));
-jest.mock("./read", () => ({ readActiveScheduleData: jest.fn() }));
-jest.mock("~/query-client", () => ({
-  queryClient: { invalidateQueries: jest.fn() },
-}));
 jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
 
+declare const require: (moduleName: string) => unknown;
+const TestRenderer = require("react-test-renderer") as {
+  act: (callback: () => Promise<void> | void) => Promise<void>;
+  create: (element: ReactElement) => {
+    update: (element: ReactElement) => void;
+    unmount: () => void;
+  };
+};
+const cleanup: (() => Promise<void>)[] = [];
+
 beforeEach(() => {
-  jest.clearAllMocks();
-  jest.mocked(useSession).mockReturnValue({
-    profile: { timezone: testTimezone },
-    status: "ready",
-    user: { id: "user-1" },
-  } as never);
-  jest.mocked(useQuery).mockReturnValue(queryResult as never);
+  jest.resetAllMocks();
+  setSession("ready", "user-a");
 });
 
-it("활성 일정과 전체 기록을 날짜와 무관한 사용자별 query 하나로 공유한다", async () => {
-  const schedules = [scheduleFixture({ id: "fixed" })];
-  const logs = [logFixture({ itemId: "fixed" })];
-  jest.mocked(useQuery).mockReturnValue({
-    ...queryResult,
-    data: { logs, schedules },
-  } as never);
-
-  const result = useSchedules();
-  const options = jest.mocked(useQuery).mock.calls[0]![0];
-
-  expect(options.queryKey).toEqual(["schedule", "user-1", "active-data"]);
-  expect(useQuery).toHaveBeenCalledTimes(1);
-  expect(result.items).toBe(schedules);
-  expect(result.logs).toBe(logs);
-
-  await (options.queryFn as () => Promise<unknown>)();
-  expect(readActiveScheduleData).toHaveBeenCalledWith({ userId: "user-1" });
-});
-
-it("일정 하나만 필요한 화면은 기록 없이 해당 일정만 조회한다", () => {
-  const item = scheduleFixture({ id: "item-1" });
-  const response = { ...queryResult, data: item };
-
-  jest.mocked(useQuery).mockReturnValue(response as never);
-
-  expect(useScheduleById("item-1")).toBe(response);
-  expect(jest.mocked(useQuery).mock.calls[0]![0].queryKey).toEqual([
-    "schedule",
-    "user-1",
-    "item",
-    "item-1",
-  ]);
-  expect(useQuery).toHaveBeenCalledTimes(1);
+afterEach(async () => {
+  for (const close of cleanup.splice(0)) await close();
 });
 
 it.each([
-  ["ready", "user-1", "item-1", true],
-  ["ready", "user-2", "item-1", true],
-  ["loading", "user-1", "item-1", false],
-  ["error", "user-1", "item-1", false],
-  ["signedOut", null, "item-1", false],
-  ["ready", "user-1", null, false],
+  ["loading", "user-a", "item-1"],
+  ["error", "user-a", "item-1"],
+  ["signedOut", null, "item-1"],
+  ["ready", null, "item-1"],
+  ["ready", "user-a", null],
 ] as const)(
-  "세션 %s, 사용자 %s, 일정 %s로 단건 조회 조건과 key를 구성한다",
-  (status, userId, itemId, enabled) => {
-    jest.mocked(useSession).mockReturnValue({
-      status,
-      user: userId ? { id: userId } : null,
-    } as never);
-    useScheduleById(itemId);
-    expect(jest.mocked(useQuery).mock.calls[0]?.[0]).toMatchObject({
-      enabled,
-      queryKey: ["schedule", userId ?? "signed-out", "item", itemId],
-    });
+  "세션 %s에서 조회할 수 없는 일정은 DB에 요청하지 않는다",
+  async (status, userId, itemId) => {
+    setSession(status, userId);
+    await renderQuery(() => useScheduleById(itemId));
+    expect(getItem).not.toHaveBeenCalled();
   }
 );
 
-it("상세 조회가 일정 준비 후 사용자별 전체 기록을 읽는다", async () => {
-  const item = scheduleFixture();
-  const logs = [logFixture()];
+it("같은 일정 ID라도 계정을 바꾸면 이전 계정의 캐시를 노출하지 않는다", async () => {
   jest
-    .mocked(useQuery)
-    .mockReturnValueOnce({ ...queryResult, data: item } as never)
-    .mockReturnValueOnce({ ...queryResult, data: logs } as never);
-  jest.mocked(listItemLogs).mockResolvedValue(logs);
+    .mocked(getItem)
+    .mockImplementation(async ({ userId }) =>
+      scheduleFixture({ id: "same-item", title: userId })
+    );
+  const query = await renderQuery(() => useScheduleById("same-item"));
+  expect(query.current.data?.title).toBe("user-a");
 
-  const result = useScheduleDetailData(item.id);
-  const options = jest.mocked(useQuery).mock.calls[1]![0];
+  let resolve!: (item: Awaited<ReturnType<typeof getItem>>) => void;
+  jest.mocked(getItem).mockReturnValueOnce(
+    new Promise((done) => {
+      resolve = done;
+    })
+  );
+  setSession("ready", "user-b");
+  await query.update();
+  expect(query.current.data).toBeUndefined();
 
-  expect(result).toMatchObject({ item, logs, status: "ready" });
-  expect(options).toMatchObject({
-    enabled: true,
-    queryKey: ["schedule", "user-1", "detail", item.id],
+  await TestRenderer.act(async () => {
+    resolve(scheduleFixture({ id: "same-item", title: "user-b" }));
+    await settle();
   });
-  await (options.queryFn as () => Promise<unknown>)();
-  expect(listItemLogs).toHaveBeenCalledWith({
-    itemId: item.id,
-    userId: "user-1",
-  });
+  expect(query.current.data?.title).toBe("user-b");
+
+  setSession("ready", "user-a");
+  await query.update();
+  expect(query.current.data?.title).toBe("user-a");
 });
 
-it("상세는 일정 없음과 기록 실패를 구분한다", () => {
-  jest
-    .mocked(useQuery)
-    .mockReturnValueOnce({
-      ...queryResult,
-      error: new ScheduleNotFoundError(),
-    } as never)
-    .mockReturnValueOnce(queryResult as never);
-  expect(useScheduleDetailData("missing").status).toBe("notFound");
-
-  jest.clearAllMocks();
-  jest.mocked(useSession).mockReturnValue({
-    profile: { timezone: testTimezone },
-    status: "ready",
-    user: { id: "user-1" },
-  } as never);
-  const item = scheduleFixture();
+it("상세 기록 실패를 빈 성공으로 바꾸지 않고 재조회로 복구한다", async () => {
+  jest.mocked(getItem).mockResolvedValue(scheduleFixture());
   const error = new Error("기록 조회 실패");
-  jest
-    .mocked(useQuery)
-    .mockReturnValueOnce({ ...queryResult, data: item } as never)
-    .mockReturnValueOnce({ ...queryResult, error } as never);
-  expect(useScheduleDetailData(item.id)).toMatchObject({
-    error,
-    status: "error",
+  jest.mocked(listItemLogs).mockRejectedValueOnce(error);
+  const query = await renderQuery(() => useScheduleDetailData("item-1"));
+  expect(query.current).toMatchObject({ status: "error", error });
+  if (query.current.status !== "error")
+    throw new Error("실패 상태가 필요합니다.");
+
+  const logs = [logFixture()];
+  jest.mocked(listItemLogs).mockResolvedValue(logs);
+  const retry = query.current.refetch;
+  await TestRenderer.act(async () => {
+    await retry();
+    await settle();
   });
+  expect(query.current).toMatchObject({ status: "ready", logs });
 });
 
-it("세션 오류를 일정 로딩으로 취급하지 않는다", () => {
+it("일정이 없으면 처리 기록을 요청하지 않고 notFound를 반환한다", async () => {
+  jest.mocked(getItem).mockRejectedValue(new ScheduleNotFoundError());
+  const query = await renderQuery(() => useScheduleDetailData("missing"));
+  expect(query.current.status).toBe("notFound");
+  expect(listItemLogs).not.toHaveBeenCalled();
+});
+
+function setSession(
+  status: "loading" | "ready" | "error" | "signedOut",
+  userId: string | null
+) {
   jest.mocked(useSession).mockReturnValue({
-    profile: null,
-    status: "error",
-    user: { id: "user-1" },
-  } as never);
-  jest.mocked(useQuery).mockReturnValue({
-    ...queryResult,
-    isPending: true,
-  } as never);
+    status,
+    user: userId ? { id: userId } : null,
+    profile: { timezone: "UTC" },
+  } as ReturnType<typeof useSession>);
+}
 
-  expect(useSchedules().isLoading).toBe(false);
-});
+async function renderQuery<T>(useValue: () => T) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  let current!: T;
+  function Probe() {
+    current = useValue();
+    return null;
+  }
+  const element = () =>
+    createElement(QueryClientProvider, { client }, createElement(Probe));
+  let view!: ReturnType<typeof TestRenderer.create>;
+  await TestRenderer.act(async () => {
+    view = TestRenderer.create(element());
+  });
+  cleanup.push(async () => {
+    await TestRenderer.act(() => view.unmount());
+    client.clear();
+  });
+  await TestRenderer.act(settle);
+  return {
+    get current() {
+      return current;
+    },
+    async update() {
+      await TestRenderer.act(() => view.update(element()));
+      await TestRenderer.act(settle);
+    },
+  };
+}
+
+async function settle() {
+  // React Query의 구독 알림과 이어지는 상세 기록 조회를 반영한다.
+  await new Promise((done) => setTimeout(done, 20));
+}

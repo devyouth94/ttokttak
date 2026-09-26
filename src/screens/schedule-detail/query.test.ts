@@ -105,28 +105,6 @@ it("전체 기록을 바꾸지 않고 처리 시각 최신순 5건을 파생한�
   expect(logs).toEqual(originalLogs);
 });
 
-it.each(["loading", "notFound"] as const)(
-  "조회 모듈의 %s 상태를 그대로 전달한다",
-  async (status) => {
-    jest.mocked(useScheduleDetailData).mockReturnValue({ status });
-    expect((await renderDetail()).status).toBe(status);
-  }
-);
-
-it("조회 오류와 재조회 동작을 그대로 전달한다", async () => {
-  const error = new Error("조회 실패");
-  jest.mocked(useScheduleDetailData).mockReturnValue({
-    error,
-    refetch,
-    status: "error",
-  });
-
-  const result = await renderDetail();
-
-  expect(result).toEqual({ error, refetch, status: "error" });
-  expect(useScheduleDetailData).toHaveBeenCalledWith("item-1");
-});
-
 function mockReady(
   item: ReturnType<typeof scheduleFixture>,
   logs: ReturnType<typeof logFixture>[]

@@ -49,7 +49,7 @@ describe("계정 관리 섹션", () => {
     } as never);
   });
 
-  it("확인 뒤 계정을 삭제한다", async () => {
+  it("삭제를 요청하거나 취소한 것만으로는 계정을 삭제하지 않는다", async () => {
     const alert = jest.spyOn(Alert, "alert");
     const section = await renderSection();
     const deleteRow = section.root
@@ -61,6 +61,11 @@ describe("계정 관리 섹션", () => {
     });
 
     const buttons = alert.mock.calls.at(-1)?.[2];
+    expect(deleteAccount).not.toHaveBeenCalled();
+    const cancel = buttons?.find((button) => button.style === "cancel");
+    expect(cancel).toBeDefined();
+    await TestRenderer.act(async () => cancel?.onPress?.());
+    expect(deleteAccount).not.toHaveBeenCalled();
     const confirm = buttons?.find((button) => button.style === "destructive");
 
     await TestRenderer.act(async () => {

@@ -125,5 +125,17 @@ describe("sanitizeEvent", () => {
       timestamp: 1,
       type: undefined,
     });
+    expect(
+      sanitizeEvent(
+        {
+          type: undefined,
+          tags: { stage: "user@example.com", error_code: "secret-value" },
+        },
+        Object.assign(new Error("원본"), {
+          stage: "unrecognized-stage",
+          errorCode: "unrecognized-code",
+        })
+      ).tags
+    ).toEqual({});
   });
 });

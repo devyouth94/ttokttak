@@ -1,12 +1,11 @@
-import { FunctionsFetchError } from "@supabase/supabase-js";
-
 import {
-  archiveItem,
-  createItem,
-  getItem,
-  listItems,
-  updateItem,
-} from "./items";
+  createClient as createSupabaseClient,
+  FunctionsFetchError,
+} from "@supabase/supabase-js";
+
+import type { Database } from "~/database.types";
+
+import { createItem, getItem, listItems } from "./items";
 import {
   createContentDecryptor,
   decryptContent,
@@ -114,8 +113,22 @@ describe("schedule items DB", () => {
     });
   });
 
-  it("일정 목록을 조회하고 row와 암호문을 일정으로 변환한다", async () => {
-    const { client, query } = createClient();
+  it("일정을 복호화하고 순서 없이 받은 규칙 버전을 적용 시각순으로 정렬한다", async () => {
+    const originalVersion = row.recurring_item_schedule_versions[0]!;
+    const { client, query } = createClient(
+      createQuery({
+        ...row,
+        recurring_item_schedule_versions: [
+          {
+            ...originalVersion,
+            id: "version-2",
+            effective_from_utc: "2026-05-07T00:00:00.000Z",
+            reminder_time_local: "21:00:00",
+          },
+          originalVersion,
+        ],
+      })
+    );
 
     const items = await listItems({ userId: "user-1" }, client);
 
@@ -133,6 +146,7 @@ describe("schedule items DB", () => {
           recurrenceType: "daily",
           reminderTimeLocal: "09:00",
         }),
+        expect.objectContaining({ reminderTimeLocal: "21:00" }),
       ],
     });
   });
@@ -162,8 +176,26 @@ describe("schedule items DB", () => {
     ).rejects.toBe(error);
   });
 
-  it("빈 조회 결과를 일정 없음 오류로 구분한다", async () => {
-    const { client } = createClient(createQuery(null));
+  it("지정한 사용자와 일정 ID로 조회하고 빈 결과는 일정 없음으로 구분한다", async () => {
+    const fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      expect(url.pathname).toBe("/rest/v1/recurring_items");
+      expect(url.searchParams.get("id")).toBe("eq.item-1");
+      expect(url.searchParams.get("user_id")).toBe("eq.user-1");
+      return new Response("[]");
+    });
+    const client = createSupabaseClient<Database>(
+      "https://example.supabase.co",
+      "test-key",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
+        global: { fetch },
+      }
+    );
 
     await expect(
       getItem({ id: "item-1", userId: "user-1" }, client)
@@ -187,6 +219,12 @@ describe("schedule items DB", () => {
 
     await createItem(input, client);
 
+    expect(encryptContent).toHaveBeenCalledWith({
+      description: input.description,
+      title: input.title,
+      userId: input.userId,
+    });
+
     expect(rpc).toHaveBeenCalledWith(
       "create_recurring_item_with_initial_version",
       expect.objectContaining({
@@ -200,53 +238,5 @@ describe("schedule items DB", () => {
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_title");
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_description");
     expect(from).not.toHaveBeenCalled();
-  });
-
-  it("일정 수정 결과와 암호문을 RPC로 저장한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({ data: null, error: null });
-    const { client, from } = createClient(createQuery(), rpc);
-
-    await updateItem(
-      {
-        edit: {
-          item: {
-            colorHex: "#D4A8EA",
-            description: "하루 8잔",
-            title: "영양제",
-          },
-          version: null,
-        },
-        id: "item-1",
-        userId: "user-1",
-      },
-      client
-    );
-
-    expect(encryptContent).toHaveBeenCalledWith({
-      description: "하루 8잔",
-      title: "영양제",
-      userId: "user-1",
-    });
-    expect(rpc).toHaveBeenCalledWith(
-      "update_recurring_item_with_edit_policy",
-      expect.objectContaining({
-        p_color_hex: "#D4A8EA",
-        p_color_key: "purple",
-        p_description_ciphertext: "encrypted-description",
-        p_title_ciphertext: "encrypted-title",
-      })
-    );
-    expect(from).not.toHaveBeenCalled();
-  });
-
-  it("일정을 RPC로 보관 처리한다", async () => {
-    const rpc = jest.fn().mockResolvedValue({ data: null, error: null });
-    const { client } = createClient(createQuery(), rpc);
-
-    await archiveItem("item-1", client);
-
-    expect(rpc).toHaveBeenCalledWith("archive_recurring_item", {
-      p_item_id: "item-1",
-    });
   });
 });

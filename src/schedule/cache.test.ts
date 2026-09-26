@@ -7,32 +7,25 @@ import {
   scheduleItemKey,
 } from "./cache";
 
-jest.mock("~/query-client", () => ({
-  queryClient: { invalidateQueries: jest.fn() },
-}));
+afterEach(() => queryClient.clear());
 
-it("일정 key와 무효화 범위를 사용자별로 분리한다", async () => {
-  expect(activeScheduleDataKey("user-1")).toEqual([
-    "schedule",
-    "user-1",
-    "active-data",
-  ]);
-  expect(scheduleItemKey("user-1", "item-1")).toEqual([
-    "schedule",
-    "user-1",
-    "item",
-    "item-1",
-  ]);
-  expect(scheduleDetailKey("user-1", "item-1")).toEqual([
-    "schedule",
-    "user-1",
-    "detail",
-    "item-1",
-  ]);
+it("변경한 사용자의 목록·단건·상세만 무효화하고 다른 사용자의 캐시는 유지한다", async () => {
+  const keys = [
+    activeScheduleDataKey,
+    (userId: string) => scheduleItemKey(userId, "same-item"),
+    (userId: string) => scheduleDetailKey(userId, "same-item"),
+  ];
+  for (const key of keys) {
+    queryClient.setQueryData(key("user-a"), "A의 데이터");
+    queryClient.setQueryData(key("user-b"), "B의 데이터");
+  }
 
-  await invalidateScheduleCache("user-1");
+  await invalidateScheduleCache("user-a");
 
-  expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
-    queryKey: ["schedule", "user-1"],
-  });
+  for (const key of keys) {
+    expect(queryClient.getQueryState(key("user-a"))?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(key("user-b"))?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryData(key("user-a"))).toBe("A의 데이터");
+    expect(queryClient.getQueryData(key("user-b"))).toBe("B의 데이터");
+  }
 });

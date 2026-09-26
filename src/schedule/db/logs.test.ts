@@ -133,48 +133,6 @@ describe("schedule logs DB", () => {
     }
   );
 
-  it("여러 occurrence 처리 기록을 한 요청으로 생성한다", async () => {
-    const upsert = jest.fn().mockResolvedValue({ error: null });
-    const client = { from: jest.fn(() => ({ upsert })) } as never;
-
-    await createLogs(
-      [
-        {
-          action: "completed",
-          itemId: "item-1",
-          scheduledAtUtc: "2026-04-03T00:00:00.000Z",
-          userId: "user-1",
-        },
-        {
-          action: "skipped",
-          itemId: "item-1",
-          scheduledAtUtc: "2026-04-04T00:00:00.000Z",
-          userId: "user-1",
-        },
-      ],
-      client
-    );
-
-    expect(upsert).toHaveBeenCalledWith(
-      [
-        expect.objectContaining({
-          action: "completed",
-          item_id: "item-1",
-          user_id: "user-1",
-        }),
-        expect.objectContaining({
-          action: "skipped",
-          item_id: "item-1",
-          user_id: "user-1",
-        }),
-      ],
-      {
-        ignoreDuplicates: true,
-        onConflict: "item_id,scheduled_at_utc",
-      }
-    );
-  });
-
   it("여러 처리 기록은 중복을 무시하고 DB 처리 시각을 사용한다", async () => {
     let columns: string | null = null;
     let onConflict: string | null = null;

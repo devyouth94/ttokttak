@@ -326,6 +326,50 @@ describe("occurrence 계산", () => {
     );
   });
 
+  it.each([
+    [
+      "2026-03-07",
+      "2026-03-09",
+      [
+        "2026-03-07T17:00:00.000Z",
+        "2026-03-08T16:00:00.000Z",
+        "2026-03-09T16:00:00.000Z",
+      ],
+    ],
+    [
+      "2026-10-31",
+      "2026-11-02",
+      [
+        "2026-10-31T16:00:00.000Z",
+        "2026-11-01T17:00:00.000Z",
+        "2026-11-02T17:00:00.000Z",
+      ],
+    ],
+  ] as const)(
+    "서머타임 전환 %s에도 매일 오전 9시를 유지한다",
+    (start, end, expected) => {
+      const timezone = "America/Los_Angeles";
+      const schedule = createSchedule({
+        startDateLocal: start,
+        reminderTimeLocal: "09:00",
+      });
+      const occurrences = createOccurrences({
+        logs: [],
+        now: new Date(expected[0]),
+        schedules: [schedule],
+        timezone,
+      });
+      expect(
+        occurrences
+          .range({
+            startUtc: toUtcRange(start, timezone).startUtc,
+            endUtc: toUtcRange(end, timezone).endUtc,
+          })
+          .map(({ occurrence }) => occurrence.scheduledAtUtc)
+      ).toEqual(expected);
+    }
+  );
+
   it("range, next, find의 조회 규칙을 유지한다", () => {
     const second = createSchedule({
       id: "second",

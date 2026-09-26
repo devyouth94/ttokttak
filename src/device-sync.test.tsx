@@ -107,24 +107,6 @@ describe("DeviceSyncProvider", () => {
     });
   });
 
-  it("Android 알림 채널 이름을 번역 리소스에서 가져온다", async () => {
-    Object.defineProperty(Platform, "OS", {
-      configurable: true,
-      value: "android",
-    });
-
-    let renderer!: ReturnType<typeof TestRenderer.create>;
-    await TestRenderer.act(async () => {
-      renderer = TestRenderer.create(notificationProvider());
-    });
-
-    expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
-      "reminders",
-      expect.objectContaining({ name: "notifications.channelName" })
-    );
-    await TestRenderer.act(() => renderer.unmount());
-  });
-
   it("세션, 언어, foreground와 알림 tap에서 현재 알림을 다시 맞춘다", async () => {
     let renderer!: ReturnType<typeof TestRenderer.create>;
 

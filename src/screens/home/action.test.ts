@@ -37,74 +37,47 @@ describe("홈 occurrence 처리", () => {
     jest.mocked(processOccurrence).mockResolvedValue(undefined);
   });
 
-  it("화면은 처리 의도와 현재 실행 문맥만 일정 명령에 전달한다", async () => {
-    const item = scheduleFixture({ id: "item-1", recurrenceType: "once" });
-    const syncDeviceOutputs = jest.fn(async () => undefined);
-    let actions!: ReturnType<typeof useHomeActions>;
-    await TestRenderer.act(async () => {
-      TestRenderer.create(
-        createElement(HomeActionsProbe, {
-          onChange: (nextActions) => {
-            actions = nextActions;
-          },
-          syncDeviceOutputs,
-        })
-      );
-    });
-
-    await TestRenderer.act(async () => {
-      await actions.runAction(
-        {
-          id: "item-1:2026-04-10T00:00:00.000Z",
-          item,
-          occurrence: occurrence(item),
-        },
-        "completed"
-      );
-    });
-
-    expect(processOccurrence).toHaveBeenCalledWith({
-      action: "completed",
-      logs: [],
-      now: expect.any(Date),
-      syncDeviceOutputs,
-      target: { occurrence: occurrence(item), schedule: item },
-      timezone,
-      userId: "user-1",
-    });
-  });
-
-  it("처리 실패 메시지를 남기고 처리 상태를 해제한다", async () => {
+  it("동시 처리 중 한 건이 실패해도 다른 건의 진행 상태를 유지한다", async () => {
     const error = new Error("처리 실패");
-    const item = scheduleFixture({ id: "item-1", recurrenceType: "once" });
+    const first = deferred();
+    const second = deferred();
     let actions!: ReturnType<typeof useHomeActions>;
-
-    jest.mocked(processOccurrence).mockRejectedValueOnce(error);
-
+    jest
+      .mocked(processOccurrence)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
     await TestRenderer.act(async () => {
       TestRenderer.create(
         createElement(HomeActionsProbe, {
-          onChange: (nextActions) => {
-            actions = nextActions;
+          onChange: (next) => {
+            actions = next;
           },
           syncDeviceOutputs: jest.fn(async () => undefined),
         })
       );
     });
-
-    await TestRenderer.act(async () => {
-      await actions.runAction(
-        {
-          id: "item-1:2026-04-10T00:00:00.000Z",
-          item,
-          occurrence: occurrence(item),
-        },
-        "completed"
-      );
+    const target = (id: string) => {
+      const item = scheduleFixture({ id, recurrenceType: "once" });
+      return { id, item, occurrence: occurrence(item) };
+    };
+    let firstRun!: Promise<void>;
+    let secondRun!: Promise<void>;
+    await TestRenderer.act(() => {
+      firstRun = actions.runAction(target("first"), "completed");
+      secondRun = actions.runAction(target("second"), "skipped");
     });
-
-    expect(captureException).toHaveBeenCalledWith(error);
+    expect(actions.processingIds).toEqual(["first", "second"]);
+    await TestRenderer.act(async () => {
+      first.reject(error);
+      await firstRun;
+    });
+    expect(actions.processingIds).toEqual(["second"]);
     expect(actions.errorMessage).toBe("home.feed.actionErrorDescription");
+    expect(captureException).toHaveBeenCalledWith(error);
+    await TestRenderer.act(async () => {
+      second.resolve();
+      await secondRun;
+    });
     expect(actions.processingIds).toEqual([]);
   });
 });
@@ -126,4 +99,14 @@ function HomeActionsProbe({
   );
 
   return null;
+}
+
+function deferred() {
+  let resolve!: () => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<void>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
 }

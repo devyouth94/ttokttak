@@ -68,7 +68,22 @@ describe("schedule content key", () => {
     ).not.toContain("generated-key");
   });
 
-  it("서버에서 복구한 key를 기기에 저장한다", async () => {
+  it("서버 복구용 key 저장이 실패하면 기기에 새 key를 남기지 않는다", async () => {
+    const error = new Error("서버 저장 실패");
+    jest.mocked(saveContentKey).mockRejectedValueOnce(error);
+    await expect(getOrCreateKey("user-1")).rejects.toBe(error);
+    expect(mockSetItem).not.toHaveBeenCalled();
+  });
+
+  it("서버에서 복구한 key를 기기에 저장하고 다음 암호화에 재사용한다", async () => {
+    const storage = new Map<string, string>();
+    mockGetItem.mockImplementation(
+      async (id: string) => storage.get(id) ?? null
+    );
+    mockSetItem.mockImplementation(async (id: string, value: string) => {
+      storage.set(id, value);
+    });
+    jest.mocked(findContentKey).mockResolvedValue(true);
     jest.mocked(recoverContentKey).mockResolvedValue("server-key");
 
     const key = await getKey({ keyVersion: 1, userId: "user-1" });
@@ -79,9 +94,20 @@ describe("schedule content key", () => {
       "ttokttak.user-content-key.v1.user-1",
       "server-key"
     );
+    jest.mocked(recoverContentKey).mockClear();
+    await expect(getOrCreateKey("user-1")).resolves.toEqual({
+      value: "server-key",
+    });
+    expect(recoverContentKey).not.toHaveBeenCalled();
+    expect(mockGenerate).not.toHaveBeenCalled();
   });
 
-  it("복호화 key가 없으면 새 key를 만들지 않는다", async () => {
+  it("지원하지 않는 버전은 조회하지 않고 key가 없으면 새로 만들지 않는다", async () => {
+    await expect(
+      getKey({ keyVersion: 2, userId: "user-1" })
+    ).rejects.toBeInstanceOf(ScheduleContentUnrecoverableError);
+    expect(mockGetItem).not.toHaveBeenCalled();
+    expect(recoverContentKey).not.toHaveBeenCalled();
     await expect(
       getKey({ keyVersion: 1, userId: "user-1" })
     ).rejects.toBeInstanceOf(ScheduleContentUnrecoverableError);

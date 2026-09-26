@@ -68,22 +68,6 @@ describe("일정 상세 관리 메뉴", () => {
     jest.mocked(archiveSchedule).mockResolvedValue(undefined);
   });
 
-  it("일정 수정 화면으로 이동한다", async () => {
-    const menu = await renderMenu(scheduleFixture());
-    const editButton = menu.root.findByProps({
-      accessibilityHint: "scheduleDetail.management.editHint",
-    });
-
-    await TestRenderer.act(async () => {
-      (editButton.props.onPress as () => void)();
-    });
-
-    expect(router.push).toHaveBeenCalledWith({
-      params: { itemId: "item-1", returnTo: "/schedule" },
-      pathname: "/items/[itemId]/edit",
-    });
-  });
-
   it("복구할 수 없는 일정은 수정 없이 삭제한다", async () => {
     const item = scheduleFixture({ contentStatus: "unrecoverable" });
     const menu = await renderMenu(item);

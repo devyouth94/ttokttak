@@ -1,19 +1,16 @@
 import { createElement, type ReactElement } from "react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { FormProvider, useForm, type UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Modal } from "react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
 
 import { ColorField } from "./field";
+import { createFormValues, type ScheduleFormValues } from "../../form-values";
 
 declare const require: (moduleName: string) => unknown;
 
 jest.mock("react-i18next", () => ({ useTranslation: jest.fn() }));
-jest.mock("react-hook-form", () => ({
-  useFormContext: jest.fn(),
-  useWatch: jest.fn(),
-}));
 jest.mock("lucide-react-native", () => ({ Check: "Check" }));
 jest.mock("react-native-svg", () => ({
   __esModule: true,
@@ -55,16 +52,20 @@ const TestRenderer = require("react-test-renderer") as {
   };
 };
 
-function colorField(selected: string, onSelect: (colorHex: string) => void) {
-  jest.mocked(useFormContext).mockReturnValue({
-    clearErrors: jest.fn(),
-    control: {},
-    formState: { isSubmitted: false },
-    setValue: (_name: string, value: string) => onSelect(value),
-  } as never);
-  jest.mocked(useWatch).mockReturnValue(selected as never);
+let form: UseFormReturn<ScheduleFormValues>;
 
-  return createElement(ColorField);
+function Harness() {
+  form = useForm<ScheduleFormValues>({
+    defaultValues: {
+      ...createFormValues(new Date(2026, 7, 4)),
+      colorHex: "#F5A3A3",
+    },
+  });
+  return (
+    <FormProvider {...form}>
+      <ColorField />
+    </FormProvider>
+  );
 }
 
 beforeEach(() => {
@@ -75,11 +76,10 @@ beforeEach(() => {
 });
 
 it("팔레트에서 색상을 조작한 뒤 무지개 칩 선택을 유지한다", async () => {
-  const onSelect = jest.fn();
   let field!: ReturnType<typeof TestRenderer.create>;
 
   await TestRenderer.act(() => {
-    field = TestRenderer.create(colorField("#F5A3A3", onSelect));
+    field = TestRenderer.create(createElement(Harness));
   });
 
   const customOption = () =>
@@ -93,7 +93,7 @@ it("팔레트에서 색상을 조작한 뒤 무지개 칩 선택을 유지한다
 
   expect(field.root.findByType(Modal).props.visible).toBe(true);
   expect(customOption().props.accessibilityState).toEqual({ checked: false });
-  expect(onSelect).not.toHaveBeenCalled();
+  expect(form.getValues("colorHex")).toBe("#F5A3A3");
 
   await TestRenderer.act(() =>
     field.root
@@ -108,20 +108,19 @@ it("팔레트에서 색상을 조작한 뒤 무지개 칩 선택을 유지한다
       .props.onPress()
   );
 
-  expect(onSelect).toHaveBeenCalledTimes(1);
+  expect(form.getValues("colorHex")).toBe("#F5B8A3");
   expect(customOption().props.accessibilityState).toEqual({ checked: true });
   expect(field.root.findByType(Modal).props.visible).toBe(false);
 });
 
 it("비동기로 불러온 사용자 지정 색상을 무지개 칩에 표시한다", async () => {
-  const onSelect = jest.fn();
   let field!: ReturnType<typeof TestRenderer.create>;
 
   await TestRenderer.act(() => {
-    field = TestRenderer.create(colorField("#F5A3A3", onSelect));
+    field = TestRenderer.create(createElement(Harness));
   });
   await TestRenderer.act(() => {
-    field.update(colorField("#123456", onSelect));
+    form.reset({ ...form.getValues(), colorHex: "#123456" });
   });
 
   expect(
