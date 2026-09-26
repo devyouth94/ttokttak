@@ -8,7 +8,6 @@ import { format } from "date-fns/format";
 
 import { useDeviceSync } from "~/device-sync";
 import { getErrorMessage } from "~/errors";
-import { useAppLanguage } from "~/i18n/provider";
 import { getScheduleReturnPath } from "~/route-param";
 import { useScheduleById } from "~/schedule/query";
 import {
@@ -34,7 +33,6 @@ type Params = {
 /** 일정 생성·수정 화면의 초기화와 저장·삭제를 관리한다. */
 export function useScheduleForm({ itemId, returnTo }: Params) {
   const { t } = useTranslation();
-  const { language } = useAppLanguage();
   const { syncDeviceOutputs } = useDeviceSync();
   const { profile, status: sessionStatus, user } = useSession();
   const timezone =
@@ -55,8 +53,8 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   const today = format(openedAt, "yyyy-MM-dd");
 
   const schema = useMemo(
-    () => createFormSchema({ isEdit, language, today }),
-    [isEdit, language, today]
+    () => createFormSchema({ isEdit, t, today }),
+    [isEdit, t, today]
   );
 
   const form = useForm<ScheduleFormValues>({

@@ -6,14 +6,12 @@ import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import {
   type RecurrenceType,
   requiresInterval,
-  requiresWeekdays,
-  supportsCompletion,
 } from "~/schedule/rules/recurrence";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing, typography } from "~/ui/tokens";
 
-import { defaultWeekdayMask, type ScheduleFormValues } from "../form-values";
+import { getRecurrenceChange, type ScheduleFormValues } from "../form-values";
 import { useScheduleFormSetters } from "../use-form-setters";
 
 export function RecurrenceSection(): React.JSX.Element {
@@ -28,7 +26,7 @@ export function RecurrenceSection(): React.JSX.Element {
     formState: { errors },
     getValues,
   } = useFormContext<ScheduleFormValues>();
-  const { setField, setFields } = useScheduleFormSetters();
+  const { setField } = useScheduleFormSetters();
 
   const {
     field: intervalField,
@@ -66,27 +64,14 @@ export function RecurrenceSection(): React.JSX.Element {
     },
   ] as const;
 
-  // 반복 유형을 바꿀 때 더 이상 유효하지 않은 부가 옵션도 함께 정리한다.
   function selectRecurrence(nextType: RecurrenceType): void {
-    const current = getValues();
-    const needsWeekdays = requiresWeekdays(nextType);
+    const change = getRecurrenceChange(getValues(), nextType);
 
-    setFields({
-      anchorType: supportsCompletion(nextType) ? current.anchorType : "fixed",
-      endDateLocal:
-        nextType === "once" || current.recurrenceType === "once"
-          ? null
-          : current.endDateLocal,
-      intervalValue: requiresInterval(nextType)
-        ? current.intervalValue || "1"
-        : "",
-      recurrenceType: nextType,
-      weekdayMask: needsWeekdays
-        ? current.weekdayMask.length > 0
-          ? current.weekdayMask
-          : defaultWeekdayMask(current.startDateLocal)
-        : [],
-    });
+    setField("anchorType", change.anchorType);
+    setField("endDateLocal", change.endDateLocal);
+    setField("intervalValue", change.intervalValue);
+    setField("recurrenceType", change.recurrenceType);
+    setField("weekdayMask", change.weekdayMask);
   }
 
   function toggleWeekday(weekday: number): void {

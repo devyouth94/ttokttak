@@ -7,9 +7,9 @@ import { CalendarDays, Clock3 } from "lucide-react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
-import { firstDate, requiresWeekdays } from "~/schedule/rules/recurrence";
 import {
-  defaultWeekdayMask,
+  getFirstReminderDate,
+  getStartDateChange,
   type ScheduleFormValues,
 } from "~/screens/schedule-form/form-values";
 import { useScheduleFormSetters } from "~/screens/schedule-form/use-form-setters";
@@ -18,45 +18,6 @@ import { AppText } from "~/ui/app-text";
 import { spacing } from "~/ui/tokens";
 
 import { DateTimePickerField } from "./picker";
-
-function firstReminderText(
-  values: Pick<
-    ScheduleFormValues,
-    "intervalValue" | "recurrenceType" | "startDateLocal" | "weekdayMask"
-  >,
-  language: "en" | "ko"
-): string | null {
-  if (
-    !requiresWeekdays(values.recurrenceType) ||
-    values.weekdayMask.length === 0
-  ) {
-    return null;
-  }
-
-  const intervalValue = values.intervalValue.trim();
-  const interval =
-    values.recurrenceType !== "interval_weeks"
-      ? 1
-      : /^[1-9]\d*$/.test(intervalValue)
-        ? Number(intervalValue)
-        : null;
-  const firstReminder = firstDate({
-    intervalValue: interval,
-    recurrenceType: values.recurrenceType,
-    startDateLocal: values.startDateLocal,
-    weekdayMask: values.weekdayMask,
-  });
-
-  if (!firstReminder || firstReminder === values.startDateLocal) {
-    return null;
-  }
-
-  const date = formatLocal(firstReminder, "weekdayDate", language);
-
-  return language === "ko"
-    ? `첫 알림일은 ${date}입니다.`
-    : `First reminder is ${date}.`;
-}
 
 export function DateFields({
   isEdit,
@@ -76,7 +37,7 @@ export function DateFields({
     formState: { errors },
     getValues,
   } = useFormContext<ScheduleFormValues>();
-  const { setField, setFields } = useScheduleFormSetters();
+  const { setField } = useScheduleFormSetters();
 
   const [
     endDateLocal,
@@ -105,35 +66,33 @@ export function DateFields({
       ? startDateLocal
       : today
     : startDateLocal;
-  const firstReminder = firstReminderText(
-    { intervalValue, recurrenceType, startDateLocal, weekdayMask },
-    language
-  );
+  const firstReminderDate = getFirstReminderDate({
+    intervalValue,
+    recurrenceType,
+    startDateLocal,
+    weekdayMask,
+  });
+  const firstReminder = firstReminderDate
+    ? t("scheduleForm.firstReminder", {
+        date: formatLocal(firstReminderDate, "weekdayDate", language),
+      })
+    : null;
 
   function changeStartDate(date: Date): void {
     if (isEdit) {
       return;
     }
 
-    const current = getValues();
     const selectedDate = format(date, "yyyy-MM-dd");
-    const nextStartDate =
-      selectedDate < minimumStartDateLocal
-        ? minimumStartDateLocal
-        : selectedDate;
+    const change = getStartDateChange(
+      getValues(),
+      selectedDate,
+      minimumStartDateLocal
+    );
 
-    setFields({
-      endDateLocal:
-        current.endDateLocal != null && current.endDateLocal < nextStartDate
-          ? nextStartDate
-          : current.endDateLocal,
-      startDateLocal: nextStartDate,
-      weekdayMask:
-        requiresWeekdays(current.recurrenceType) &&
-        current.weekdayMask.length === 0
-          ? defaultWeekdayMask(nextStartDate)
-          : current.weekdayMask,
-    });
+    setField("endDateLocal", change.endDateLocal);
+    setField("startDateLocal", change.startDateLocal);
+    setField("weekdayMask", change.weekdayMask);
   }
 
   function changeEndDate(date: Date): void {

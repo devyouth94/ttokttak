@@ -271,6 +271,7 @@ export const appI18nResources = {
           startDateLocked: "Start date cannot be changed after creation.",
           title: "Title",
         },
+        firstReminder: "First reminder is {{date}}.",
         loading: "Loading item information.",
         picker: {
           endDateHint: "Choose the repeat item end date.",
@@ -311,6 +312,25 @@ export const appI18nResources = {
         title: {
           create: "Add item",
           edit: "Edit item",
+        },
+        validation: {
+          anchorTypeNotAllowed:
+            "Completion-based scheduling is not available for this repeat setting.",
+          endDateBeforeMinimumDate: "Choose an end date from today onward.",
+          endDateBeforeStartDate: "Choose an end date after the start date.",
+          endDateInvalid: "Choose the end date again.",
+          endDateNotAllowed: "Once items cannot use an end date.",
+          endDateWithoutOccurrence:
+            "There are no reminder days in the selected period.",
+          intervalValueInvalid: "Repeat interval must be at least 1.",
+          intervalValueMissing: "Enter a repeat interval.",
+          intervalValueNotAllowed: "Choose the repeat setting again.",
+          reminderTimeInvalid: "Choose a reminder time.",
+          startDateInvalid: "Choose the start date again.",
+          titleMissing: "Enter a title.",
+          weekdayMaskInvalid: "Choose repeat weekdays again.",
+          weekdayMaskMissing: "Choose repeat weekdays.",
+          weekdayMaskNotAllowed: "Choose the repeat setting again.",
         },
         saveUnavailable: {
           message: "Check your session information first.",
@@ -699,6 +719,7 @@ export const appI18nResources = {
           startDateLocked: "시작일은 생성 후 변경할 수 없습니다.",
           title: "제목",
         },
+        firstReminder: "첫 알림일은 {{date}}입니다.",
         loading: "항목 정보를 불러오는 중입니다.",
         picker: {
           endDateHint: "반복 일정의 종료일을 선택해요.",
@@ -739,6 +760,24 @@ export const appI18nResources = {
         title: {
           create: "일정 추가",
           edit: "일정 수정",
+        },
+        validation: {
+          anchorTypeNotAllowed:
+            "완료일 기준은 이 반복 설정에서 사용할 수 없어요.",
+          endDateBeforeMinimumDate: "종료일은 오늘 이후로 선택해 주세요.",
+          endDateBeforeStartDate: "종료일은 시작일 이후로 선택해 주세요.",
+          endDateInvalid: "종료일을 다시 선택해 주세요.",
+          endDateNotAllowed: "한 번 일정은 종료일을 사용할 수 없어요.",
+          endDateWithoutOccurrence: "선택한 기간 안에 알림일이 없어요.",
+          intervalValueInvalid: "반복 간격은 1 이상이어야 해요.",
+          intervalValueMissing: "반복 간격을 입력해 주세요.",
+          intervalValueNotAllowed: "반복 설정을 다시 선택해 주세요.",
+          reminderTimeInvalid: "알림 시간을 선택해 주세요.",
+          startDateInvalid: "시작일을 다시 선택해 주세요.",
+          titleMissing: "제목을 입력해 주세요.",
+          weekdayMaskInvalid: "반복할 요일을 다시 선택해 주세요.",
+          weekdayMaskMissing: "반복할 요일을 선택해 주세요.",
+          weekdayMaskNotAllowed: "반복 설정을 다시 선택해 주세요.",
         },
         saveUnavailable: {
           message: "세션 정보를 먼저 확인해주세요.",

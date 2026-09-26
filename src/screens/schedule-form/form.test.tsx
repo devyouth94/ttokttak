@@ -4,7 +4,6 @@ import { Alert } from "react-native";
 import { router } from "expo-router";
 
 import { useDeviceSync } from "~/device-sync";
-import { useAppLanguage } from "~/i18n/provider";
 import { scheduleFixture } from "~/schedule/fixtures";
 import { useScheduleById } from "~/schedule/query";
 import {
@@ -24,7 +23,6 @@ jest.mock("expo-router", () => ({
     replace: jest.fn(),
   },
 }));
-jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
 jest.mock("~/device-sync", () => ({
   useDeviceSync: jest.fn(),
 }));
@@ -53,7 +51,6 @@ describe("일정 폼", () => {
     jest.setSystemTime(new Date("2026-08-04T09:00:00+09:00"));
 
     jest.mocked(useTranslation).mockReturnValue({ t } as never);
-    jest.mocked(useAppLanguage).mockReturnValue({ language: "ko" } as never);
     jest.mocked(useDeviceSync).mockReturnValue({ syncDeviceOutputs } as never);
     jest.mocked(useSession).mockReturnValue({
       profile: { timezone: "Asia/Seoul" },
@@ -104,7 +101,7 @@ describe("일정 폼", () => {
     await TestRenderer.act(async () => result.current.submit());
 
     expect(result.current.form.getFieldState("title").error?.message).toBe(
-      "제목을 입력해 주세요."
+      "scheduleForm.validation.titleMissing"
     );
     expect(result.current.form.formState.errors.root?.message).toBe(
       "scheduleForm.error.checkInput"

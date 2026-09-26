@@ -1,4 +1,8 @@
-import { useFormContext } from "react-hook-form";
+import {
+  type FieldPath,
+  type FieldPathValue,
+  useFormContext,
+} from "react-hook-form";
 
 import type { ScheduleFormValues } from "./form-values";
 
@@ -9,27 +13,17 @@ export function useScheduleFormSetters() {
     setValue,
   } = useFormContext<ScheduleFormValues>();
 
-  function setField<Key extends keyof ScheduleFormValues>(
-    name: Key,
-    value: ScheduleFormValues[Key]
+  function setField<Name extends FieldPath<ScheduleFormValues>>(
+    name: Name,
+    value: FieldPathValue<ScheduleFormValues, Name>
   ): void {
     clearErrors("root");
-    setValue(name, value as never, {
+    setValue(name, value, {
       shouldDirty: true,
       shouldTouch: true,
       shouldValidate: isSubmitted,
     });
   }
 
-  function setFields(patch: Partial<ScheduleFormValues>): void {
-    for (const name of Object.keys(patch) as (keyof ScheduleFormValues)[]) {
-      const value = patch[name];
-
-      if (value !== undefined) {
-        setField(name, value);
-      }
-    }
-  }
-
-  return { setField, setFields };
+  return { setField };
 }

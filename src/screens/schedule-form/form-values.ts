@@ -1,11 +1,13 @@
 import { format } from "date-fns/format";
 import { parse } from "date-fns/parse";
+import type { TFunction } from "i18next";
 import { z } from "zod/v4";
 
-import type { AppLanguage } from "~/i18n/language";
 import { colorHexPattern, defaultColorHex } from "~/schedule/display/color";
 import {
   anchorTypes,
+  firstDate,
+  type RecurrenceType,
   recurrenceTypes,
   requiresInterval,
   requiresWeekdays,
@@ -37,52 +39,33 @@ const formShape = z.object({
 
 export type ScheduleFormValues = z.infer<typeof formShape>;
 
-const errorMessages = {
-  en: {
-    anchor_type_not_allowed:
-      "Completion-based scheduling is not available for this repeat setting.",
-    end_date_before_minimum_date: "Choose an end date from today onward.",
-    end_date_before_start_date: "Choose an end date after the start date.",
-    end_date_invalid: "Choose the end date again.",
-    end_date_not_allowed: "Once items cannot use an end date.",
-    end_date_without_occurrence:
-      "There are no reminder days in the selected period.",
-    interval_value_invalid: "Repeat interval must be at least 1.",
-    interval_value_missing: "Enter a repeat interval.",
-    interval_value_not_allowed: "Choose the repeat setting again.",
-    reminder_time_invalid: "Choose a reminder time.",
-    start_date_invalid: "Choose the start date again.",
-    title_missing: "Enter a title.",
-    weekday_mask_invalid: "Choose repeat weekdays again.",
-    weekday_mask_missing: "Choose repeat weekdays.",
-    weekday_mask_not_allowed: "Choose the repeat setting again.",
-  },
-  ko: {
-    anchor_type_not_allowed: "완료일 기준은 이 반복 설정에서 사용할 수 없어요.",
-    end_date_before_minimum_date: "종료일은 오늘 이후로 선택해 주세요.",
-    end_date_before_start_date: "종료일은 시작일 이후로 선택해 주세요.",
-    end_date_invalid: "종료일을 다시 선택해 주세요.",
-    end_date_not_allowed: "한 번 일정은 종료일을 사용할 수 없어요.",
-    end_date_without_occurrence: "선택한 기간 안에 알림일이 없어요.",
-    interval_value_invalid: "반복 간격은 1 이상이어야 해요.",
-    interval_value_missing: "반복 간격을 입력해 주세요.",
-    interval_value_not_allowed: "반복 설정을 다시 선택해 주세요.",
-    reminder_time_invalid: "알림 시간을 선택해 주세요.",
-    start_date_invalid: "시작일을 다시 선택해 주세요.",
-    title_missing: "제목을 입력해 주세요.",
-    weekday_mask_invalid: "반복할 요일을 다시 선택해 주세요.",
-    weekday_mask_missing: "반복할 요일을 선택해 주세요.",
-    weekday_mask_not_allowed: "반복 설정을 다시 선택해 주세요.",
-  },
-} as const satisfies Record<AppLanguage, Record<ValidationIssueCode, string>>;
+const validationMessageKeys = {
+  anchor_type_not_allowed: "scheduleForm.validation.anchorTypeNotAllowed",
+  end_date_before_minimum_date:
+    "scheduleForm.validation.endDateBeforeMinimumDate",
+  end_date_before_start_date: "scheduleForm.validation.endDateBeforeStartDate",
+  end_date_invalid: "scheduleForm.validation.endDateInvalid",
+  end_date_not_allowed: "scheduleForm.validation.endDateNotAllowed",
+  end_date_without_occurrence:
+    "scheduleForm.validation.endDateWithoutOccurrence",
+  interval_value_invalid: "scheduleForm.validation.intervalValueInvalid",
+  interval_value_missing: "scheduleForm.validation.intervalValueMissing",
+  interval_value_not_allowed: "scheduleForm.validation.intervalValueNotAllowed",
+  reminder_time_invalid: "scheduleForm.validation.reminderTimeInvalid",
+  start_date_invalid: "scheduleForm.validation.startDateInvalid",
+  title_missing: "scheduleForm.validation.titleMissing",
+  weekday_mask_invalid: "scheduleForm.validation.weekdayMaskInvalid",
+  weekday_mask_missing: "scheduleForm.validation.weekdayMaskMissing",
+  weekday_mask_not_allowed: "scheduleForm.validation.weekdayMaskNotAllowed",
+} as const satisfies Record<ValidationIssueCode, string>;
 
 export function createFormSchema({
   isEdit,
-  language,
+  t,
   today,
 }: {
   isEdit: boolean;
-  language: AppLanguage;
+  t: TFunction;
   today: string;
 }) {
   return formShape.superRefine((values, context) => {
@@ -93,7 +76,7 @@ export function createFormSchema({
     for (const issue of issues) {
       context.addIssue({
         code: "custom",
-        message: errorMessages[language][issue.code],
+        message: t(validationMessageKeys[issue.code]),
         path: [issue.field],
       });
     }
@@ -118,6 +101,92 @@ export function createFormValues(openedAt = new Date()): ScheduleFormValues {
 
 export function defaultWeekdayMask(startDateLocal: string): number[] {
   return [parse(startDateLocal, "yyyy-MM-dd", new Date()).getDay()];
+}
+
+export function getRecurrenceChange(
+  values: ScheduleFormValues,
+  recurrenceType: RecurrenceType
+): Pick<
+  ScheduleFormValues,
+  | "anchorType"
+  | "endDateLocal"
+  | "intervalValue"
+  | "recurrenceType"
+  | "weekdayMask"
+> {
+  return {
+    anchorType: supportsCompletion(recurrenceType)
+      ? values.anchorType
+      : "fixed",
+    endDateLocal:
+      recurrenceType === "once" || values.recurrenceType === "once"
+        ? null
+        : values.endDateLocal,
+    intervalValue: requiresInterval(recurrenceType)
+      ? values.intervalValue || "1"
+      : "",
+    recurrenceType,
+    weekdayMask: requiresWeekdays(recurrenceType)
+      ? values.weekdayMask.length > 0
+        ? values.weekdayMask
+        : defaultWeekdayMask(values.startDateLocal)
+      : [],
+  };
+}
+
+export function getStartDateChange(
+  values: Pick<
+    ScheduleFormValues,
+    "endDateLocal" | "recurrenceType" | "weekdayMask"
+  >,
+  selectedDateLocal: string,
+  minimumStartDateLocal: string
+): Pick<ScheduleFormValues, "endDateLocal" | "startDateLocal" | "weekdayMask"> {
+  const startDateLocal =
+    selectedDateLocal < minimumStartDateLocal
+      ? minimumStartDateLocal
+      : selectedDateLocal;
+
+  return {
+    endDateLocal:
+      values.endDateLocal != null && values.endDateLocal < startDateLocal
+        ? startDateLocal
+        : values.endDateLocal,
+    startDateLocal,
+    weekdayMask:
+      requiresWeekdays(values.recurrenceType) && values.weekdayMask.length === 0
+        ? defaultWeekdayMask(startDateLocal)
+        : values.weekdayMask,
+  };
+}
+
+export function getFirstReminderDate(
+  values: Pick<
+    ScheduleFormValues,
+    "intervalValue" | "recurrenceType" | "startDateLocal" | "weekdayMask"
+  >
+): string | null {
+  if (
+    !requiresWeekdays(values.recurrenceType) ||
+    values.weekdayMask.length === 0
+  ) {
+    return null;
+  }
+
+  const intervalValue = values.intervalValue.trim();
+  const firstReminder = firstDate({
+    intervalValue:
+      values.recurrenceType !== "interval_weeks"
+        ? 1
+        : /^[1-9]\d*$/.test(intervalValue)
+          ? Number(intervalValue)
+          : null,
+    recurrenceType: values.recurrenceType,
+    startDateLocal: values.startDateLocal,
+    weekdayMask: values.weekdayMask,
+  });
+
+  return firstReminder === values.startDateLocal ? null : firstReminder;
 }
 
 export function toFormValues(item: Schedule): ScheduleFormValues {
