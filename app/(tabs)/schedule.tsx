@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
 import { ItemRow } from "~/schedule/ui/item-row";
-import { type Sort, useItems } from "~/screens/schedule-list/list";
+import { useScheduleList } from "~/screens/schedule-list/list";
 import { ListEmpty } from "~/screens/schedule-list/ui/empty";
 import { ListLoading } from "~/screens/schedule-list/ui/loading";
 import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
@@ -22,65 +21,53 @@ export default function ScheduleTabPage(): React.JSX.Element {
 
   const themeColors = useThemeColors();
 
-  const [refreshing, setRefreshing] = useState(false);
-  const [sort, setSort] = useState<Sort>("titleAsc");
-  const { refetch, rows, status } = useItems(sort);
-
-  async function refresh(): Promise<void> {
-    setRefreshing(true);
-
-    try {
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
-  }
+  const list = useScheduleList();
 
   return (
     <AppScreen>
       <ScreenHeader title={t("scheduleList.headerTitle")} />
 
-      {status === "loading" && (
+      {list.status === "loading" && (
         <View style={[styles.staticContent, styles.listContent]}>
           <ListLoading />
         </View>
       )}
 
-      {status === "error" && (
+      {list.status === "error" && (
         <View style={styles.staticContent}>
           <StateMessage
             action={{
               accessibilityHint: t("scheduleList.error.retryHint"),
               accessibilityLabel: t("scheduleList.error.retryLabel"),
               label: t("scheduleList.error.retryLabel"),
-              onPress: refetch,
+              onPress: list.retry,
             }}
             title={t("scheduleList.error.title")}
           />
         </View>
       )}
 
-      {status === "ready" && (
+      {list.status === "ready" && (
         <FlatList
           contentContainerStyle={[
             styles.listContent,
-            rows.length === 0 && styles.emptyListContent,
+            list.rows.length === 0 && styles.emptyListContent,
             { paddingBottom: getMainTabContentBottomInset(insets.bottom) },
           ]}
-          data={rows}
+          data={list.rows}
           keyExtractor={(row) => row.id}
           ListHeaderComponent={
             <>
-              {rows.length > 0 && (
-                <ListSortMenu onChange={setSort} value={sort} />
+              {list.rows.length > 0 && (
+                <ListSortMenu onChange={list.setSort} value={list.sort} />
               )}
             </>
           }
           ListEmptyComponent={<ListEmpty />}
           refreshControl={
             <RefreshControl
-              onRefresh={refresh}
-              refreshing={refreshing}
+              onRefresh={list.refresh}
+              refreshing={list.refreshing}
               tintColor={themeColors.primary}
             />
           }
@@ -91,7 +78,7 @@ export default function ScheduleTabPage(): React.JSX.Element {
                 title: item.title,
               })}
               colorHex={item.colorHex}
-              isLast={index === rows.length - 1}
+              isLast={index === list.rows.length - 1}
               metaLine={[
                 item.nextOccurrenceTimeLabel,
                 item.recurrenceLabel,

@@ -1,25 +1,30 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { endOfMonth } from "date-fns/endOfMonth";
 import { format } from "date-fns/format";
 import { parse } from "date-fns/parse";
 import { startOfMonth } from "date-fns/startOfMonth";
+import { formatInTimeZone } from "date-fns-tz";
 
+import { getErrorMessage } from "~/errors";
+import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
 import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
 
-/** 선택 날짜가 속한 월의 occurrence를 조회한다. */
-export function useCalendarQuery({
-  now,
-  selectedDate,
-}: {
-  now: Date;
-  selectedDate: string;
-}) {
+import { syncSelectedDateToTimezone } from "./calendar";
+
+/** 캘린더의 선택 날짜, 시간대 보정과 월별 occurrence를 제공한다. */
+export function useCalendarScreen() {
+  const now = useNow();
+  const query = useSchedules();
+  const [selectedDate, setSelectedDate] = useState(() =>
+    formatInTimeZone(now, query.timezone, "yyyy-MM-dd")
+  );
+  const previousTimezoneRef = useRef(query.timezone);
+
   const month = parse(selectedDate, "yyyy-MM-dd", new Date());
   const startLocalDate = format(startOfMonth(month), "yyyy-MM-dd");
   const endLocalDate = format(endOfMonth(month), "yyyy-MM-dd");
-
-  const query = useSchedules();
+  const today = formatInTimeZone(now, query.timezone, "yyyy-MM-dd");
 
   const occurrenceEntries = useMemo(() => {
     if (query.isLoading || query.error) {
@@ -48,5 +53,32 @@ export function useCalendarQuery({
     startLocalDate,
   ]);
 
-  return { ...query, occurrenceEntries };
+  useEffect(() => {
+    const previousTimezone = previousTimezoneRef.current;
+
+    if (previousTimezone === query.timezone) {
+      return;
+    }
+
+    previousTimezoneRef.current = query.timezone;
+    setSelectedDate((previousDate) =>
+      syncSelectedDateToTimezone({
+        now,
+        previousDate,
+        previousTimezone,
+        timezone: query.timezone,
+      })
+    );
+  }, [now, query.timezone]);
+
+  return {
+    errorMessage: query.error ? getErrorMessage(query.error) : null,
+    isLoading: query.isLoading,
+    occurrenceEntries,
+    retry: query.refetch,
+    selectDate: setSelectedDate,
+    selectedDate,
+    timezone: query.timezone,
+    today,
+  };
 }

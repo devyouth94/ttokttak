@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { type AppLanguage, normalizeAppLanguage } from "~/i18n/language";
@@ -26,9 +26,12 @@ const noNextOccurrenceLabelByLanguage = {
   ko: "예정 없음",
 } as const satisfies Record<AppLanguage, string>;
 
-export function useItems(sort: Sort) {
+export function useScheduleList() {
   const { i18n } = useTranslation();
   const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [sort, setSort] = useState<Sort>("titleAsc");
 
   const now = useNow();
   const query = useSchedules();
@@ -55,9 +58,23 @@ export function useItems(sort: Sort) {
 
   const status = query.isLoading ? "loading" : query.error ? "error" : "ready";
 
+  async function refresh(): Promise<void> {
+    setRefreshing(true);
+
+    try {
+      await query.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return {
-    refetch: query.refetch,
+    refresh,
+    refreshing,
+    retry: query.refetch,
     rows,
+    setSort,
+    sort,
     status,
   };
 }
