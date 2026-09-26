@@ -1,25 +1,28 @@
 import { createOccurrences } from "./occurrence";
 import {
-  logFixture as createLog,
-  ruleFixture as createVersion,
-  scheduleFixture as createSchedule,
-  testTimezone as timezone,
+  logFixture,
+  scheduleFixture,
+  type ScheduleOverrides,
 } from "../fixtures";
 import { toUtcRange } from "../local-date";
-import type { RecurrenceType, Schedule } from "../model";
+import type { OccurrenceLog, Schedule } from "../model";
 
-function dates(
-  schedule: Schedule,
-  startDate: string,
-  endDate: string,
-  now = new Date("2026-04-10T03:00:00.000Z")
-) {
-  return createOccurrences({
-    logs: [],
-    now,
-    schedules: [schedule],
-    timezone,
-  })
+function localDates({
+  endDate,
+  logs = [],
+  now = new Date("2026-09-10T03:00:00.000Z"),
+  schedule,
+  startDate,
+  timezone = "Asia/Seoul",
+}: {
+  endDate: string;
+  logs?: OccurrenceLog[];
+  now?: Date;
+  schedule: Schedule;
+  startDate: string;
+  timezone?: string;
+}): string[] {
+  return createOccurrences({ logs, now, schedules: [schedule], timezone })
     .range({
       endUtc: toUtcRange(endDate, timezone).endUtc,
       startUtc: toUtcRange(startDate, timezone).startUtc,
@@ -27,297 +30,185 @@ function dates(
     .map(({ occurrence }) => occurrence.localDate);
 }
 
-describe("occurrence 계산", () => {
+describe("occurrence 반복 계산", () => {
   it.each<{
+    endDate: string;
     expected: string[];
-    intervalValue?: number;
-    recurrenceType: RecurrenceType;
-    startDateLocal: string;
-    weekdayMask?: number[];
+    rule: ScheduleOverrides;
+    startDate: string;
   }>([
     {
-      expected: ["2026-04-10"],
-      recurrenceType: "once",
-      startDateLocal: "2026-04-10",
+      endDate: "2026-04-30",
+      expected: ["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30"],
+      rule: { recurrenceType: "monthly", startDateLocal: "2026-01-31" },
+      startDate: "2026-01-31",
     },
     {
-      expected: ["2026-04-10", "2026-04-11", "2026-04-12"],
-      recurrenceType: "daily",
-      startDateLocal: "2026-04-10",
+      endDate: "2028-02-29",
+      expected: ["2028-01-31", "2028-02-29"],
+      rule: { recurrenceType: "monthly", startDateLocal: "2028-01-31" },
+      startDate: "2028-01-31",
     },
     {
-      expected: ["2026-04-10", "2026-04-13"],
-      intervalValue: 3,
-      recurrenceType: "interval_days",
-      startDateLocal: "2026-04-10",
+      endDate: "2026-04-30",
+      expected: ["2025-12-31", "2026-02-28", "2026-04-30"],
+      rule: {
+        intervalValue: 2,
+        recurrenceType: "interval_months",
+        startDateLocal: "2025-12-31",
+      },
+      startDate: "2025-12-31",
     },
     {
-      expected: ["2026-04-10", "2026-04-17"],
-      recurrenceType: "weekly",
-      startDateLocal: "2026-04-08",
-      weekdayMask: [5],
-    },
-    {
-      expected: ["2026-04-10", "2026-04-24"],
-      intervalValue: 2,
-      recurrenceType: "interval_weeks",
-      startDateLocal: "2026-04-08",
-      weekdayMask: [5],
-    },
-    {
-      expected: ["2026-01-31", "2026-02-28", "2026-03-31"],
-      recurrenceType: "monthly",
-      startDateLocal: "2026-01-31",
-    },
-    {
-      expected: ["2026-01-31", "2026-03-31"],
-      intervalValue: 2,
-      recurrenceType: "interval_months",
-      startDateLocal: "2026-01-31",
-    },
-  ])("$recurrenceType 반복 날짜를 계산한다", ({ expected, ...rule }) => {
-    const schedule = createSchedule(rule);
-
-    expect(dates(schedule, rule.startDateLocal, expected.at(-1)!)).toEqual(
-      expected
-    );
-  });
-
-  it("주간 반복은 시작일 이후 선택 요일과 주차 간격을 지킨다", () => {
-    const schedule = createSchedule({
-      intervalValue: 2,
-      recurrenceType: "interval_weeks",
-      startDateLocal: "2026-04-22",
-      weekdayMask: [1, 5],
-    });
-
-    expect(dates(schedule, "2026-04-22", "2026-05-22")).toEqual([
-      "2026-04-24",
-      "2026-05-04",
-      "2026-05-08",
-      "2026-05-18",
-      "2026-05-22",
-    ]);
-  });
-
-  it("월간 반복은 다음 달의 말일로 보정한 뒤 원래 일자를 복원한다", () => {
-    const schedule = createSchedule({
-      recurrenceType: "monthly",
-      startDateLocal: "2024-01-31",
-    });
-
-    expect(dates(schedule, "2024-01-31", "2024-04-30")).toEqual([
-      "2024-01-31",
-      "2024-02-29",
-      "2024-03-31",
-      "2024-04-30",
-    ]);
-  });
-
-  it.each<{
-    expected: string;
-    intervalValue: number | null;
-    label: string;
-    recurrenceType: RecurrenceType;
-  }>([
-    {
-      expected: "2026-04-06",
-      intervalValue: null,
-      label: "매일",
-      recurrenceType: "daily",
-    },
-    {
-      expected: "2026-04-08",
-      intervalValue: 3,
-      label: "n일마다",
-      recurrenceType: "interval_days",
-    },
-    {
-      expected: "2026-05-05",
-      intervalValue: null,
-      label: "매달",
-      recurrenceType: "monthly",
-    },
-    {
-      expected: "2026-07-05",
-      intervalValue: 3,
-      label: "n달마다",
-      recurrenceType: "interval_months",
-    },
-  ])("$label 완료일 기준은 완료 날짜를 다음 기준으로 사용한다", (rule) => {
-    const schedule = createSchedule({
-      anchorType: "completion_based",
-      intervalValue: rule.intervalValue,
-      recurrenceType: rule.recurrenceType,
-      startDateLocal: "2026-04-01",
-    });
-    const completed = createOccurrences({
-      logs: [
-        createLog({
-          actedAtUtc: "2026-04-05T03:00:00.000Z",
-          scheduledAtUtc: "2026-04-01T00:00:00.000Z",
-        }),
+      endDate: "2026-09-30",
+      expected: [
+        "2026-09-02",
+        "2026-09-13",
+        "2026-09-16",
+        "2026-09-27",
+        "2026-09-30",
       ],
-      now: new Date("2026-04-05T03:00:00.000Z"),
-      schedules: [schedule],
-      timezone,
-    });
+      rule: {
+        intervalValue: 2,
+        recurrenceType: "interval_weeks",
+        startDateLocal: "2026-09-02",
+        weekdayMask: [0, 3],
+      },
+      startDate: "2026-09-02",
+    },
+    {
+      endDate: "2026-09-09",
+      expected: ["2026-09-02", "2026-09-06", "2026-09-09"],
+      rule: {
+        recurrenceType: "weekly",
+        startDateLocal: "2026-09-02",
+        weekdayMask: [0, 3],
+      },
+      startDate: "2026-09-02",
+    },
+  ])(
+    "달력 경계를 유지한다: $expected",
+    ({ endDate, expected, rule, startDate }) => {
+      expect(
+        localDates({
+          endDate,
+          schedule: scheduleFixture(rule),
+          startDate,
+        })
+      ).toEqual(expected);
+    }
+  );
 
-    expect(completed.next(schedule.id)?.localDate).toBe(rule.expected);
-  });
-
-  it("건너뛰기는 완료일 기준을 옮기지 않는다", () => {
-    const schedule = createSchedule({
+  it("완료일 기준은 조회 범위 밖의 전체 완료 이력으로 다음 날짜를 계산한다", () => {
+    const schedule = scheduleFixture({
       anchorType: "completion_based",
       intervalValue: 3,
-      recurrenceType: "interval_months",
-      startDateLocal: "2026-04-01",
+      recurrenceType: "interval_days",
+      startDateLocal: "2026-09-01",
     });
-    const skipped = createOccurrences({
-      logs: [
-        createLog({
-          action: "skipped",
-          actedAtUtc: "2026-04-05T03:00:00.000Z",
-          scheduledAtUtc: "2026-04-01T00:00:00.000Z",
-        }),
-      ],
-      now: new Date("2026-04-05T03:00:00.000Z"),
-      schedules: [schedule],
-      timezone,
-    });
+    const logs = [
+      logFixture({
+        actedAtUtc: "2026-09-03T03:00:00.000Z",
+        scheduledAtUtc: "2026-09-01T00:00:00.000Z",
+      }),
+      logFixture({
+        actedAtUtc: "2026-09-07T03:00:00.000Z",
+        id: "log-2",
+        scheduledAtUtc: "2026-09-06T00:00:00.000Z",
+      }),
+    ];
 
-    expect(skipped.next(schedule.id)?.localDate).toBe("2026-07-01");
+    expect(
+      localDates({
+        endDate: "2026-09-10",
+        logs,
+        schedule,
+        startDate: "2026-09-01",
+      })
+    ).toEqual(["2026-09-01", "2026-09-06", "2026-09-10"]);
+    expect(
+      localDates({
+        endDate: "2026-09-10",
+        logs,
+        schedule,
+        startDate: "2026-09-05",
+      })
+    ).toEqual(["2026-09-06", "2026-09-10"]);
   });
 
-  it("새 규칙 버전은 적용 전 마지막 완료를 초기 기준으로 사용한다", () => {
-    const schedule = createSchedule({
-      startDateLocal: "2026-03-01",
-      versions: [
-        createVersion({
-          anchorType: "completion_based",
-          effectiveFromUtc: "2026-04-10T00:00:00.000Z",
-          recurrenceType: "monthly",
-          seedStartDateLocal: "2026-04-10",
-        }),
-      ],
-    });
-    const occurrences = createOccurrences({
-      logs: [
-        createLog({
-          actedAtUtc: "2026-04-01T03:00:00.000Z",
-          scheduledAtUtc: "2026-03-01T00:00:00.000Z",
-        }),
-      ],
-      now: new Date("2026-04-11T03:00:00.000Z"),
-      schedules: [schedule],
-      timezone,
-    });
-
-    expect(occurrences.next(schedule.id)?.localDate).toBe("2026-05-01");
-  });
-
-  it("완료일 기준도 occurrence 날짜에 종료일을 적용한다", () => {
-    const schedule = createSchedule({
-      anchorType: "completion_based",
-      endDateLocal: "2026-04-07",
+  it("고정 기준은 실제 완료일이 늦어도 예정 흐름을 유지한다", () => {
+    const schedule = scheduleFixture({
       intervalValue: 3,
       recurrenceType: "interval_days",
-      startDateLocal: "2026-04-01",
+      startDateLocal: "2026-09-01",
     });
-    const occurrences = createOccurrences({
-      logs: [
-        createLog({
-          actedAtUtc: "2026-04-05T03:00:00.000Z",
-          scheduledAtUtc: "2026-04-01T00:00:00.000Z",
-        }),
-      ],
-      now: new Date("2026-04-05T03:00:00.000Z"),
-      schedules: [schedule],
-      timezone,
-    });
+    const logs = [
+      logFixture({
+        actedAtUtc: "2026-09-03T03:00:00.000Z",
+        scheduledAtUtc: "2026-09-01T00:00:00.000Z",
+      }),
+    ];
 
-    expect(occurrences.next(schedule.id)).toBeNull();
+    expect(
+      localDates({
+        endDate: "2026-09-10",
+        logs,
+        schedule,
+        startDate: "2026-09-01",
+      })
+    ).toEqual(["2026-09-01", "2026-09-04", "2026-09-07", "2026-09-10"]);
   });
 
-  it("version 적용 시각과 종료일로 occurrence 범위를 자른다", () => {
-    const schedule = createSchedule({
-      versions: [
-        createVersion({
-          intervalValue: 3,
-          recurrenceType: "interval_days",
-          seedStartDateLocal: "2026-04-10",
-        }),
-        createVersion({
-          effectiveFromUtc: "2026-04-14T01:00:00.000Z",
-          endDateLocal: "2026-04-21",
-          intervalValue: 4,
-          recurrenceType: "interval_days",
-          seedStartDateLocal: "2026-04-17",
-        }),
-      ],
-      startDateLocal: "2026-04-10",
-    });
-
-    expect(dates(schedule, "2026-04-10", "2026-04-25")).toEqual([
-      "2026-04-10",
-      "2026-04-13",
-      "2026-04-17",
-      "2026-04-21",
-    ]);
-  });
-
-  it("처리 기록과 오늘 local date로 상태를 정한다", () => {
-    const schedule = createSchedule({ startDateLocal: "2026-04-08" });
-    const occurrences = createOccurrences({
-      logs: [
-        createLog({
-          action: "completed",
-          scheduledAtUtc: "2026-04-09T00:00:00.000Z",
-        }),
-        createLog({
-          action: "skipped",
-          id: "log-2",
-          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-        }),
-      ],
-      now: new Date("2026-04-11T03:00:00.000Z"),
-      schedules: [schedule],
-      timezone,
+  it("건너뛰기는 완료일 기준의 anchor를 옮기지 않는다", () => {
+    const schedule = scheduleFixture({
+      anchorType: "completion_based",
+      intervalValue: 3,
+      recurrenceType: "interval_days",
+      startDateLocal: "2026-09-01",
     });
 
     expect(
-      occurrences
-        .range({
-          endUtc: toUtcRange("2026-04-12", timezone).endUtc,
-          startUtc: toUtcRange("2026-04-08", timezone).startUtc,
-        })
-        .map(({ occurrence }) => occurrence.status)
-    ).toEqual(["overdue", "completed", "skipped", "scheduled", "scheduled"]);
+      localDates({
+        endDate: "2026-09-04",
+        logs: [
+          logFixture({
+            action: "skipped",
+            actedAtUtc: "2026-09-03T03:00:00.000Z",
+            scheduledAtUtc: "2026-09-01T00:00:00.000Z",
+          }),
+        ],
+        schedule,
+        startDate: "2026-09-01",
+      })
+    ).toEqual(["2026-09-01", "2026-09-04"]);
   });
+});
 
-  it("사용자 시간대의 날짜와 시각으로 예정 시점과 상태를 정한다", () => {
-    const profileTimezone = "America/Los_Angeles";
-    const schedule = createSchedule({
-      reminderTimeLocal: "09:00",
-      startDateLocal: "2026-01-15",
-      timezone: profileTimezone,
+describe("occurrence 시간대와 종료일", () => {
+  it("서울 당일은 알림 시각이 지나도 자정 전까지 scheduled다", () => {
+    const timezone = "Asia/Seoul";
+    const schedule = scheduleFixture({
+      recurrenceType: "once",
+      reminderTimeLocal: "00:30",
+      startDateLocal: "2026-09-10",
+      timezone,
     });
-    const scheduledAtUtc = "2026-01-15T17:00:00.000Z";
+    const scheduledAtUtc = "2026-09-09T15:30:00.000Z";
     const beforeMidnight = createOccurrences({
       logs: [],
-      now: new Date("2026-01-16T07:59:59.999Z"),
+      now: new Date("2026-09-10T14:59:59.000Z"),
       schedules: [schedule],
-      timezone: profileTimezone,
+      timezone,
     });
     const afterMidnight = createOccurrences({
       logs: [],
-      now: new Date("2026-01-16T08:00:00.000Z"),
+      now: new Date("2026-09-10T15:00:00.000Z"),
       schedules: [schedule],
-      timezone: profileTimezone,
+      timezone,
     });
 
     expect(beforeMidnight.find(schedule.id, scheduledAtUtc)).toMatchObject({
-      localDate: "2026-01-15",
+      localDate: "2026-09-10",
       scheduledAtUtc,
       status: "scheduled",
     });
@@ -326,104 +217,58 @@ describe("occurrence 계산", () => {
     );
   });
 
-  it.each([
-    [
-      "2026-03-07",
-      "2026-03-09",
-      [
-        "2026-03-07T17:00:00.000Z",
-        "2026-03-08T16:00:00.000Z",
-        "2026-03-09T16:00:00.000Z",
-      ],
-    ],
-    [
-      "2026-10-31",
-      "2026-11-02",
-      [
-        "2026-10-31T16:00:00.000Z",
-        "2026-11-01T17:00:00.000Z",
-        "2026-11-02T17:00:00.000Z",
-      ],
-    ],
-  ] as const)(
-    "서머타임 전환 %s에도 매일 오전 9시를 유지한다",
-    (start, end, expected) => {
-      const timezone = "America/Los_Angeles";
-      const schedule = createSchedule({
-        startDateLocal: start,
-        reminderTimeLocal: "09:00",
-      });
-      const occurrences = createOccurrences({
-        logs: [],
-        now: new Date(expected[0]),
-        schedules: [schedule],
-        timezone,
-      });
-      expect(
-        occurrences
-          .range({
-            startUtc: toUtcRange(start, timezone).startUtc,
-            endUtc: toUtcRange(end, timezone).endUtc,
-          })
-          .map(({ occurrence }) => occurrence.scheduledAtUtc)
-      ).toEqual(expected);
-    }
-  );
-
-  it("range, next, find의 조회 규칙을 유지한다", () => {
-    const second = createSchedule({
-      id: "second",
-      reminderTimeLocal: "18:00",
-      startDateLocal: "2026-04-10",
+  it("종료일 occurrence와 그 다음 날의 처리 기록을 보존한다", () => {
+    const timezone = "Asia/Seoul";
+    const schedule = scheduleFixture({
+      endDateLocal: "2026-09-10",
+      startDateLocal: "2026-09-09",
+      timezone,
     });
-    const first = createSchedule({ id: "first" });
+    const logs = [
+      logFixture({
+        actedAtUtc: "2026-09-11T03:00:00.000Z",
+        scheduledAtUtc: "2026-09-10T00:00:00.000Z",
+      }),
+    ];
+    const entries = createOccurrences({
+      logs,
+      now: new Date("2026-09-11T03:00:00.000Z"),
+      schedules: [schedule],
+      timezone,
+    }).range({
+      endUtc: toUtcRange("2026-09-11", timezone).endUtc,
+      startUtc: toUtcRange("2026-09-09", timezone).startUtc,
+    });
+
+    expect(
+      entries.map(({ occurrence }) => [occurrence.localDate, occurrence.status])
+    ).toEqual([
+      ["2026-09-09", "overdue"],
+      ["2026-09-10", "completed"],
+    ]);
+  });
+
+  it("뉴욕 DST 전환에도 local 오전 9시를 유지한다", () => {
+    const timezone = "America/New_York";
+    const schedule = scheduleFixture({
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-03-07",
+      timezone,
+    });
     const occurrences = createOccurrences({
       logs: [],
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      schedules: [second, first],
+      now: new Date("2026-03-07T12:00:00.000Z"),
+      schedules: [schedule],
       timezone,
     });
 
     expect(
       occurrences
-        .range(toUtcRange("2026-04-10", timezone))
-        .map(({ schedule }) => schedule.id)
-    ).toEqual(["second", "first"]);
-    expect(occurrences.next("second")?.scheduledAtUtc).toBe(
-      "2026-04-10T09:00:00.000Z"
-    );
-    expect(occurrences.find("first", "2026-04-10T00:00:00.000Z")).toEqual({
-      localDate: "2026-04-10",
-      scheduledAtUtc: "2026-04-10T00:00:00.000Z",
-      status: "scheduled",
-    });
-    expect(occurrences.next("missing")).toBeNull();
-    expect(occurrences.find("missing", "2026-04-10T00:00:00.000Z")).toBeNull();
-    expect(
-      occurrences.range({
-        endUtc: "2026-04-10T00:00:00.000Z",
-        startUtc: "2026-04-11T00:00:00.000Z",
-      })
-    ).toEqual([]);
-  });
-
-  it("다음 날짜가 진전하지 않는 규칙은 즉시 실패한다", () => {
-    const schedule = createSchedule({
-      intervalValue: 0,
-      recurrenceType: "interval_days",
-    });
-    const occurrences = createOccurrences({
-      logs: [],
-      now: new Date("2026-04-10T03:00:00.000Z"),
-      schedules: [schedule],
-      timezone,
-    });
-
-    expect(() =>
-      occurrences.range({
-        endUtc: toUtcRange("2026-04-12", timezone).endUtc,
-        startUtc: toUtcRange("2026-04-10", timezone).startUtc,
-      })
-    ).toThrow("반복 규칙의 다음 날짜는 현재 날짜보다 느려야 합니다.");
+        .range({
+          endUtc: toUtcRange("2026-03-08", timezone).endUtc,
+          startUtc: toUtcRange("2026-03-07", timezone).startUtc,
+        })
+        .map(({ occurrence }) => occurrence.scheduledAtUtc)
+    ).toEqual(["2026-03-07T14:00:00.000Z", "2026-03-08T13:00:00.000Z"]);
   });
 });

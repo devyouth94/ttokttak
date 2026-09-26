@@ -1,120 +1,143 @@
 import { resolveEdit } from "./edit";
+import { createOccurrences } from "./occurrence";
 import {
+  logFixture,
   scheduleFixture,
-  type ScheduleOverrides,
   testTimezone as timezone,
 } from "../fixtures";
+import { toUtcRange } from "../local-date";
 import type { Schedule } from "../model";
 
-const now = new Date("2026-05-07T03:00:00.000Z");
-
 describe("resolveEdit", () => {
-  it("규칙이 바뀌면 수정 시점부터 적용할 규칙 버전을 만든다", () => {
-    const edit = resolveEdit({
-      completionLogs: [],
-      input: { reminderTimeLocal: "21:00" },
-      item: createItem(),
-      now,
-      timezone,
-    });
+  const now = new Date("2026-05-07T03:00:00.000Z");
 
-    expect(edit?.version).toEqual({
-      anchorType: "fixed",
-      effectiveFromUtc: now.toISOString(),
-      endDateLocal: null,
-      intervalValue: null,
-      notificationsEnabled: true,
-      recurrenceType: "daily",
-      reminderTimeLocal: "21:00",
-      seedStartDateLocal: "2026-05-07",
-      weekdayMask: null,
-    });
-  });
+  it("동일 입력은 결과가 없고 메타 변경은 규칙 버전을 만들지 않는다", () => {
+    const item = scheduleFixture({ startDateLocal: "2026-05-01" });
 
-  it("종료된 일정도 내용만 수정하면 규칙 버전을 만들지 않는다", () => {
+    expect(
+      resolveEdit({ completionLogs: [], input: {}, item, now, timezone })
+    ).toBeNull();
     expect(
       resolveEdit({
         completionLogs: [],
-        input: { title: "종료된 물 마시기" },
-        item: createItem({ endDateLocal: "2026-05-06" }),
+        input: {
+          colorHex: "#123456",
+          description: "설명",
+          title: "새 제목",
+        },
+        item,
         now,
         timezone,
       })
     ).toEqual({
       item: {
-        colorHex: "#9DB7F5",
-        description: null,
-        title: "종료된 물 마시기",
+        colorHex: "#123456",
+        description: "설명",
+        title: "새 제목",
       },
       version: null,
     });
   });
 
-  it("변경된 값이 없으면 수정 결과를 만들지 않는다", () => {
+  it.each([
+    ["알림 사용 여부", { notificationsEnabled: false }],
+    ["종료일", { endDateLocal: "2026-05-20" }],
+  ] as const)("%s 변경은 새 규칙 버전을 만든다", (_label, input) => {
     expect(
       resolveEdit({
         completionLogs: [],
-        input: {},
-        item: createItem(),
+        input,
+        item: scheduleFixture({ startDateLocal: "2026-05-01" }),
         now,
         timezone,
-      })
-    ).toBeNull();
+      })?.version
+    ).not.toBeNull();
   });
 
-  it("종료일은 수정하는 날보다 빠를 수 없다", () => {
+  it("알림 시각 변경 전 occurrence와 기록은 보존하고 이후에 새 규칙을 적용한다", () => {
+    const item = scheduleFixture({
+      reminderTimeLocal: "09:00",
+      startDateLocal: "2026-05-05",
+    });
+    const completionLogs = [
+      logFixture({
+        actedAtUtc: "2026-05-06T01:00:00.000Z",
+        scheduledAtUtc: "2026-05-06T00:00:00.000Z",
+      }),
+    ];
+    const edit = resolveEdit({
+      completionLogs,
+      input: { reminderTimeLocal: "21:00" },
+      item,
+      now,
+      timezone,
+    });
+
+    expect(edit?.version).not.toBeNull();
+    const edited: Schedule = {
+      ...item,
+      versions: [item.versions[0], ...item.versions.slice(1), edit!.version!],
+    };
+    const occurrences = createOccurrences({
+      logs: completionLogs,
+      now,
+      schedules: [edited],
+      timezone,
+    }).range({
+      endUtc: toUtcRange("2026-05-08", timezone).endUtc,
+      startUtc: toUtcRange("2026-05-05", timezone).startUtc,
+    });
+
+    expect(
+      occurrences.map(({ occurrence }) => [
+        occurrence.scheduledAtUtc,
+        occurrence.status,
+      ])
+    ).toEqual([
+      ["2026-05-05T00:00:00.000Z", "overdue"],
+      ["2026-05-06T00:00:00.000Z", "completed"],
+      ["2026-05-07T00:00:00.000Z", "scheduled"],
+      ["2026-05-07T12:00:00.000Z", "scheduled"],
+      ["2026-05-08T12:00:00.000Z", "scheduled"],
+    ]);
+  });
+
+  it("적용 시각과 같은 occurrence는 새 버전에 한 번만 포함한다", () => {
+    const effectiveAtOccurrence = new Date("2026-05-07T00:00:00.000Z");
+    const item = scheduleFixture({ startDateLocal: "2026-05-05" });
+    const edit = resolveEdit({
+      completionLogs: [],
+      input: { notificationsEnabled: false },
+      item,
+      now: effectiveAtOccurrence,
+      timezone,
+    });
+    const edited: Schedule = {
+      ...item,
+      versions: [item.versions[0], ...item.versions.slice(1), edit!.version!],
+    };
+
+    expect(
+      createOccurrences({
+        logs: [],
+        now: effectiveAtOccurrence,
+        schedules: [edited],
+        timezone,
+      })
+        .range(toUtcRange("2026-05-07", timezone))
+        .map(({ occurrence }) => occurrence.scheduledAtUtc)
+    ).toEqual(["2026-05-07T00:00:00.000Z"]);
+  });
+
+  it("새 종료일을 오늘 이전으로 설정하면 저장 전에 거절한다", () => {
     expect(() =>
       resolveEdit({
         completionLogs: [],
         input: { endDateLocal: "2026-05-06" },
-        item: createItem(),
+        item: scheduleFixture({ startDateLocal: "2026-05-01" }),
         now,
         timezone,
       })
-    ).toThrow("종료일은 수정하는 날보다 빠를 수 없습니다.");
-  });
-
-  it("과거 종료일 제거는 다음 future occurrence부터 적용한다", () => {
-    expect(
-      resolveEdit({
-        completionLogs: [],
-        input: { endDateLocal: null },
-        item: createItem({ endDateLocal: "2026-05-06" }),
-        now,
-        timezone,
-      })?.version
-    ).toEqual(
-      expect.objectContaining({
-        endDateLocal: null,
-        recurrenceType: "daily",
-        seedStartDateLocal: "2026-05-08",
-      })
-    );
-  });
-
-  it("한 번 일정으로 바꾸면 종료일을 제거한다", () => {
-    expect(
-      resolveEdit({
-        completionLogs: [],
-        input: { recurrenceType: "once" },
-        item: createItem({ endDateLocal: "2026-05-19" }),
-        now,
-        timezone,
-      })?.version
-    ).toEqual(
-      expect.objectContaining({
-        endDateLocal: null,
-        recurrenceType: "once",
-      })
-    );
+    ).toThrow();
   });
 });
-
-function createItem(overrides: ScheduleOverrides = {}): Schedule {
-  return scheduleFixture({
-    createdAt: "2026-05-01T00:00:00.000Z",
-    startDateLocal: "2026-05-01",
-    title: "물 마시기",
-    ...overrides,
-  });
-}

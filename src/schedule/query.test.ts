@@ -3,149 +3,185 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useSession } from "~/session/provider";
 
-import { getItem } from "./db/items";
-import { listItemLogs } from "./db/logs";
-import { ScheduleNotFoundError } from "./errors";
+import { listItems } from "./db/items";
+import { listLogs } from "./db/logs";
 import { logFixture, scheduleFixture } from "./fixtures";
-import { useScheduleById, useScheduleDetailData } from "./query";
+import { useSchedules } from "./query";
 
-jest.mock("./db/items", () => ({ getItem: jest.fn() }));
-jest.mock("./db/logs", () => ({ listItemLogs: jest.fn() }));
+jest.mock("./db/items", () => ({ listItems: jest.fn() }));
+jest.mock("./db/logs", () => ({ listLogs: jest.fn() }));
 jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
 
 declare const require: (moduleName: string) => unknown;
 const TestRenderer = require("react-test-renderer") as {
   act: (callback: () => Promise<void> | void) => Promise<void>;
   create: (element: ReactElement) => {
-    update: (element: ReactElement) => void;
     unmount: () => void;
+    update: (element: ReactElement) => void;
   };
 };
-const cleanup: (() => Promise<void>)[] = [];
+
+type Session = ReturnType<typeof useSession>;
+
+let session: Session;
 
 beforeEach(() => {
-  jest.resetAllMocks();
-  setSession("ready", "user-a");
+  jest.clearAllMocks();
+  session = sessionValue("loading", "user-a");
+  jest.mocked(useSession).mockImplementation(() => session);
 });
 
-afterEach(async () => {
-  for (const close of cleanup.splice(0)) await close();
-});
-
-it.each([
-  ["loading", "user-a", "item-1"],
-  ["error", "user-a", "item-1"],
-  ["signedOut", null, "item-1"],
-  ["ready", null, "item-1"],
-  ["ready", "user-a", null],
-] as const)(
-  "세션 %s에서 조회할 수 없는 일정은 DB에 요청하지 않는다",
-  async (status, userId, itemId) => {
-    setSession(status, userId);
-    await renderQuery(() => useScheduleById(itemId));
-    expect(getItem).not.toHaveBeenCalled();
-  }
-);
-
-it("같은 일정 ID라도 계정을 바꾸면 이전 계정의 캐시를 노출하지 않는다", async () => {
+it("profile 준비 전 조회를 막고 계정 전환 뒤 A의 늦은 결과를 노출하지 않는다", async () => {
+  const aItems = deferred<Awaited<ReturnType<typeof listItems>>>();
+  const aLogs = deferred<Awaited<ReturnType<typeof listLogs>>>();
+  const aLogsStarted = deferred<void>();
+  const itemA = scheduleFixture({ id: "A1", title: "A 일정" });
+  const itemB = scheduleFixture({ id: "B1", title: "B 일정" });
   jest
-    .mocked(getItem)
-    .mockImplementation(async ({ userId }) =>
-      scheduleFixture({ id: "same-item", title: userId })
+    .mocked(listItems)
+    .mockImplementation(({ userId }) =>
+      userId === "user-a" ? aItems.promise : Promise.resolve([itemB])
     );
-  const query = await renderQuery(() => useScheduleById("same-item"));
-  expect(query.current.data?.title).toBe("user-a");
+  jest.mocked(listLogs).mockImplementation(({ userId }) => {
+    if (userId === "user-a") {
+      aLogsStarted.resolve();
+      return aLogs.promise;
+    }
 
-  let resolve!: (item: Awaited<ReturnType<typeof getItem>>) => void;
-  jest.mocked(getItem).mockReturnValueOnce(
-    new Promise((done) => {
-      resolve = done;
-    })
+    return Promise.resolve([]);
+  });
+  const query = await renderSchedules();
+
+  expect(listItems).not.toHaveBeenCalled();
+
+  session = sessionValue("ready", "user-a");
+  await query.update();
+  expect(listItems).toHaveBeenCalledWith({ userId: "user-a" });
+
+  session = sessionValue("loading", "user-b");
+  await query.update();
+  expect(query.current.items).toEqual([]);
+
+  await TestRenderer.act(async () => {
+    aItems.resolve([itemA]);
+    await aLogsStarted.promise;
+    aLogs.resolve([]);
+    await aLogs.promise;
+  });
+  expect(query.current.items).toEqual([]);
+
+  session = sessionValue("ready", "user-b");
+  await query.update();
+  await TestRenderer.act(() =>
+    query.waitFor((result) => result.items[0]?.id === "B1")
   );
-  setSession("ready", "user-b");
-  await query.update();
-  expect(query.current.data).toBeUndefined();
+  expect(query.current.items).toEqual([itemB]);
 
-  await TestRenderer.act(async () => {
-    resolve(scheduleFixture({ id: "same-item", title: "user-b" }));
-    await settle();
-  });
-  expect(query.current.data?.title).toBe("user-b");
-
-  setSession("ready", "user-a");
-  await query.update();
-  expect(query.current.data?.title).toBe("user-a");
+  await query.close();
 });
 
-it("상세 기록 실패를 빈 성공으로 바꾸지 않고 재조회로 복구한다", async () => {
-  jest.mocked(getItem).mockResolvedValue(scheduleFixture());
+it("기록 조회 실패 뒤 완전한 묶음으로 재조회한다", async () => {
+  session = sessionValue("ready", "user-a");
+  const item = scheduleFixture({ id: "A1" });
+  const logs = [logFixture({ itemId: item.id })];
   const error = new Error("기록 조회 실패");
-  jest.mocked(listItemLogs).mockRejectedValueOnce(error);
-  const query = await renderQuery(() => useScheduleDetailData("item-1"));
-  expect(query.current).toMatchObject({ status: "error", error });
-  if (query.current.status !== "error")
-    throw new Error("실패 상태가 필요합니다.");
+  jest.mocked(listItems).mockResolvedValue([item]);
+  jest.mocked(listLogs).mockRejectedValueOnce(error).mockResolvedValue(logs);
+  const query = await renderSchedules();
 
-  const logs = [logFixture()];
-  jest.mocked(listItemLogs).mockResolvedValue(logs);
-  const retry = query.current.refetch;
-  await TestRenderer.act(async () => {
-    await retry();
-    await settle();
+  await TestRenderer.act(() =>
+    query.waitFor((result) => result.error === error)
+  );
+  expect(query.current).toMatchObject({
+    error,
+    isLoading: false,
+    isReady: true,
+    items: [],
   });
-  expect(query.current).toMatchObject({ status: "ready", logs });
+
+  await TestRenderer.act(async () => {
+    await query.current.refetch();
+  });
+  await TestRenderer.act(() =>
+    query.waitFor((result) => result.items.length === 1)
+  );
+  expect(query.current).toMatchObject({ items: [item], logs });
+
+  await query.close();
 });
 
-it("일정이 없으면 처리 기록을 요청하지 않고 notFound를 반환한다", async () => {
-  jest.mocked(getItem).mockRejectedValue(new ScheduleNotFoundError());
-  const query = await renderQuery(() => useScheduleDetailData("missing"));
-  expect(query.current.status).toBe("notFound");
-  expect(listItemLogs).not.toHaveBeenCalled();
+it("활성 일정이 없으면 기록 요청 없이 빈 결과로 완료한다", async () => {
+  session = sessionValue("ready", "user-a");
+  jest.mocked(listItems).mockResolvedValue([]);
+  const query = await renderSchedules();
+
+  await TestRenderer.act(() => query.waitFor((result) => !result.isLoading));
+  expect(query.current).toMatchObject({ items: [], logs: [] });
+  expect(listLogs).not.toHaveBeenCalled();
+
+  await query.close();
 });
 
-function setSession(
-  status: "loading" | "ready" | "error" | "signedOut",
-  userId: string | null
-) {
-  jest.mocked(useSession).mockReturnValue({
+function sessionValue(status: "loading" | "ready", userId: string): Session {
+  return {
+    profile: status === "ready" ? { timezone: "Asia/Seoul" } : null,
     status,
-    user: userId ? { id: userId } : null,
-    profile: { timezone: "UTC" },
-  } as ReturnType<typeof useSession>);
+    user: { id: userId },
+  } as Session;
 }
 
-async function renderQuery<T>(useValue: () => T) {
+async function renderSchedules() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  let current!: T;
+  let current!: ReturnType<typeof useSchedules>;
+  const waiters: {
+    predicate: (result: ReturnType<typeof useSchedules>) => boolean;
+    resolve: () => void;
+  }[] = [];
+
   function Probe() {
-    current = useValue();
+    current = useSchedules();
+    for (const waiter of [...waiters]) {
+      if (!waiter.predicate(current)) continue;
+      waiters.splice(waiters.indexOf(waiter), 1);
+      waiter.resolve();
+    }
     return null;
   }
+
   const element = () =>
     createElement(QueryClientProvider, { client }, createElement(Probe));
-  let view!: ReturnType<typeof TestRenderer.create>;
+  let renderer!: ReturnType<typeof TestRenderer.create>;
   await TestRenderer.act(async () => {
-    view = TestRenderer.create(element());
+    renderer = TestRenderer.create(element());
   });
-  cleanup.push(async () => {
-    await TestRenderer.act(() => view.unmount());
-    client.clear();
-  });
-  await TestRenderer.act(settle);
+
   return {
     get current() {
       return current;
     },
+    async close() {
+      await TestRenderer.act(() => renderer.unmount());
+      client.clear();
+    },
     async update() {
-      await TestRenderer.act(() => view.update(element()));
-      await TestRenderer.act(settle);
+      await TestRenderer.act(() => renderer.update(element()));
+    },
+    waitFor(predicate: (result: ReturnType<typeof useSchedules>) => boolean) {
+      if (predicate(current)) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        waiters.push({ predicate, resolve });
+      });
     },
   };
 }
 
-async function settle() {
-  // React Query의 구독 알림과 이어지는 상세 기록 조회를 반영한다.
-  await new Promise((done) => setTimeout(done, 20));
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((fulfill) => {
+    resolve = fulfill;
+  });
+
+  return { promise, resolve };
 }
