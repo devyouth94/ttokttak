@@ -1,0 +1,45 @@
+project_id = "ttokttak"
+
+[api]
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+# 기존 운영 프로젝트의 기본 권한을 재현한다.
+auto_expose_new_tables = true
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.seed]
+enabled = false
+
+[studio]
+port = 54323
+
+[storage]
+enabled = false
+
+[realtime]
+enabled = false
+
+[analytics]
+enabled = false
+
+[auth]
+site_url = "ttokttak://"
+additional_redirect_urls = ["ttokttak://**"]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[functions.recover-content-key]
+# 각 handler가 Auth.getUser로 JWT를 검증한다.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.delete-account]
+verify_jwt = false
+import_map = "./functions/deno.json"

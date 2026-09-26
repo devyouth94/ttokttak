@@ -112,6 +112,7 @@ export function DetailManagementMenu({
       <DropdownMenu.Portal>
         <DropdownMenu.Overlay closeOnPress style={StyleSheet.absoluteFill} />
         <DropdownMenu.Content
+          accessible={false}
           align="end"
           avoidCollisions
           insets={{

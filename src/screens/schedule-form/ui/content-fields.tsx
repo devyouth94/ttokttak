@@ -80,6 +80,7 @@ export function ContentFields({
           onFocus={() => setFocusedInput("title")}
           placeholder={t("scheduleForm.placeholders.title")}
           ref={titleInputRef}
+          testID="schedule-title"
           value={titleField.value}
         />
         {titleError && (

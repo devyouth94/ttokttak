@@ -1,0 +1,40 @@
+appId: com.youngzin.ttokttak
+---
+- stopApp
+- openLink: "ttokttak://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082"
+- tapOn:
+    text: "Open|열기"
+    optional: true
+- extendedWaitUntil:
+    visible: "로컬 테스트 로그인|Local test sign-in|홈|Home"
+    timeout: 120000
+- openLink: "ttokttak://local-login"
+- extendedWaitUntil:
+    visible:
+      id: "local-email"
+    timeout: 30000
+- tapOn:
+    id: "local-email"
+- inputText: ${MAESTRO_EMAIL}
+- tapOn:
+    id: "local-password"
+- inputText: ${MAESTRO_PASSWORD}
+- pressKey: Enter
+- tapOn:
+    text: "지금 안 함|Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "홈|Home"
+    timeout: 30000
+- runFlow:
+    file: lifecycle.yaml
+    env:
+      TITLE: "E2E Complete"
+      ACTION: "E2E Complete updated 완료|Complete E2E Complete updated"
+      HISTORY: "완료|Complete"
+- runFlow:
+    file: lifecycle.yaml
+    env:
+      TITLE: "E2E Skip"
+      ACTION: "E2E Skip updated 건너뛰기|Skip E2E Skip updated"
+      HISTORY: "건너뜀|Skip"

@@ -181,3 +181,7 @@ Sentry에는 오류 타입, stack, release, environment와 허용한 tag만 전�
 민감 Edge Function은 인증된 `POST`만 처리하고 `Cache-Control: no-store`를 사용한다.
 native 앱 전용인 현재 범위에서는 공개 health endpoint와 CORS `OPTIONS`를 제공하지 않는다.
 복구와 계정 삭제 rate limit은 instance 메모리 기준의 best-effort 보호이며 분산 제한이 필요할 때 별도 설계한다.
+
+## 개발·테스트 환경
+
+로컬 Supabase는 기존 migration과 Edge Function을 실행하고, 운영과 분리된 Auth 계정·DB·wrapping secret을 사용한다. iOS E2E는 실제 로컬 인증 세션으로 저장 경로를 통과하며 Google·Apple 로그인 자체는 별도로 확인한다. 실행 방법과 테스트별 검증 경계는 [`TESTING.md`](TESTING.md)를 따른다.

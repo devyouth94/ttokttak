@@ -91,6 +91,11 @@ export const appI18nResources = {
         },
       },
       login: {
+        local: {
+          title: "Local test sign-in",
+          email: "Email",
+          password: "Password",
+        },
         appleButton: "Continue with Apple",
         appleHint: "Sign in with your Apple account.",
         appleSignInErrorTitle: "Apple sign-in failed",
@@ -553,6 +558,11 @@ export const appI18nResources = {
         },
       },
       login: {
+        local: {
+          title: "로컬 테스트 로그인",
+          email: "이메일",
+          password: "비밀번호",
+        },
         appleButton: "Apple로 로그인",
         appleHint: "Apple 계정으로 로그인",
         appleSignInErrorTitle: "Apple 로그인 실패",

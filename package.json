@@ -12,7 +12,10 @@
     "lint": "expo lint",
     "test": "jest --runInBand && pnpm supabase:functions:test",
     "supabase:functions:check": "deno lint --config supabase/functions/deno.json supabase/functions && deno check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/recover-content-key/index.ts",
-    "supabase:functions:test": "deno test --config supabase/functions/deno.json --frozen --allow-env supabase/functions/tests"
+    "supabase:functions:test": "deno test --config supabase/functions/deno.json --frozen --allow-env supabase/functions/tests",
+    "start:local": "node scripts/local.mjs start",
+    "test:integration": "node --test tests/integration/*.mjs",
+    "e2e:ios": "node scripts/local.mjs e2e"
   },
   "jest": {
     "preset": "jest-expo",

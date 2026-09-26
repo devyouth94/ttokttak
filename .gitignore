@@ -46,6 +46,7 @@ supabase/functions/.env.*
 .serena/
 .understand-anything/
 supabase/.temp/
+supabase/.branches/
 
 # Logs
 npm-debug.*
@@ -57,3 +58,7 @@ yarn-error.*
 
 # Private articles
 docs/articles/
+
+# 로컬 테스트 도구와 결과
+.local-tools/
+.maestro-results/

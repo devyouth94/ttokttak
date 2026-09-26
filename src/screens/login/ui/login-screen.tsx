@@ -9,8 +9,10 @@ import {
   View,
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { router } from "expo-router";
 
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/legal";
+import { isLocalSignInEnabled } from "~/session/local";
 import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
 import { AppScreen } from "~/ui/app-screen";
@@ -82,6 +84,15 @@ export function LoginScreen(): React.JSX.Element {
 
           <View style={styles.loginArea}>
             <View style={styles.actions}>
+              {isLocalSignInEnabled() && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/local-login")}
+                  style={styles.socialButton}
+                >
+                  <AppText>{t("login.local.title")}</AppText>
+                </Pressable>
+              )}
               <Pressable
                 accessibilityHint={t("login.googleHint")}
                 accessibilityRole="button"

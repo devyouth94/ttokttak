@@ -1,0 +1,52 @@
+appId: com.youngzin.ttokttak
+---
+- tapOn: "목록|Items"
+- tapOn: "일정 추가|Add item"
+- tapOn:
+    id: "schedule-title"
+- inputText: ${TITLE}
+- pressKey: Enter
+- tapOn: "한 번|Once"
+- tapOn: "저장|Save"
+- extendedWaitUntil:
+    visible: "${TITLE} 상세 보기|View ${TITLE} details"
+    timeout: 30000
+- tapOn: "${TITLE} 상세 보기|View ${TITLE} details"
+- tapOn: "일정 관리|Item management"
+- tapOn: "수정|Edit"
+- tapOn:
+    id: "schedule-title"
+- eraseText
+- inputText: ${TITLE + ' updated'}
+- pressKey: Enter
+- tapOn: "수정|Update"
+- extendedWaitUntil:
+    visible: "${TITLE} updated 상세 보기|View ${TITLE} updated details"
+    timeout: 30000
+- openLink: "ttokttak://home"
+- tapOn: ${ACTION}
+- assertNotVisible: ${ACTION}
+# 프로세스를 종료해 메모리 캐시가 아닌 서버 저장 결과를 다시 읽는다.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "홈|Home"
+    timeout: 30000
+- tapOn: "목록|Items"
+- tapOn: "${TITLE} updated 상세 보기|View ${TITLE} updated details"
+- assertVisible: "최근 처리 기록|Recent activity"
+- assertVisible: ${HISTORY}
+- tapOn: "일정 관리|Item management"
+- tapOn: "삭제|Delete"
+- tapOn: "삭제|Delete"
+- extendedWaitUntil:
+    visible: "등록된 일정이 없어요|No items yet"
+    timeout: 30000
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "홈|Home"
+    timeout: 30000
+- tapOn: "목록|Items"
+- assertVisible: "등록된 일정이 없어요|No items yet"
+- assertNotVisible: "${TITLE} updated 상세 보기|View ${TITLE} updated details"
