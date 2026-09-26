@@ -36,20 +36,24 @@ it.each([
   }
 );
 
-it("로컬 Auth에 인증을 요청하고 잘못된 비밀번호 오류를 전달한다", async () => {
+it.each([
+  "http://127.0.0.1:54321",
+  "http://localhost:54321/",
+  "http://10.0.2.2:54321",
+])("%s 로컬 개발 주소에서만 인증을 요청한다", async (url) => {
   Object.assign(globalThis, { __DEV__: true });
-  process.env.EXPO_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
-  const error = new AuthError("잘못된 비밀번호");
+  process.env.EXPO_PUBLIC_SUPABASE_URL = url;
+  const error = new AuthError("인증 실패");
   jest.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
     data: { session: null, user: null },
     error,
   });
 
-  await expect(signInLocal("test@example.com", "wrong-password")).rejects.toBe(
+  await expect(signInLocal("test@example.com", "test-password")).rejects.toBe(
     error
   );
   expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
     email: "test@example.com",
-    password: "wrong-password",
+    password: "test-password",
   });
 });

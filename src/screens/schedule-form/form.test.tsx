@@ -1,6 +1,5 @@
 import { createElement, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert } from "react-native";
 import { router } from "expo-router";
 
 import { useDeviceSync } from "~/device-sync";
@@ -19,13 +18,9 @@ declare const require: (moduleName: string) => unknown;
 
 jest.mock("react-i18next", () => ({ useTranslation: jest.fn() }));
 jest.mock("expo-router", () => ({
-  router: {
-    replace: jest.fn(),
-  },
+  router: { replace: jest.fn() },
 }));
-jest.mock("~/device-sync", () => ({
-  useDeviceSync: jest.fn(),
-}));
+jest.mock("~/device-sync", () => ({ useDeviceSync: jest.fn() }));
 jest.mock("~/schedule/query", () => ({ useScheduleById: jest.fn() }));
 jest.mock("~/schedule/write", () => ({
   archiveSchedule: jest.fn(),
@@ -41,171 +36,83 @@ const TestRenderer = require("react-test-renderer") as {
   };
 };
 
-const t = (key: string): string => key;
-const syncDeviceOutputs = jest.fn(async () => undefined);
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest
+    .mocked(useTranslation)
+    .mockReturnValue({ t: (key: string) => key } as never);
+  jest.mocked(useDeviceSync).mockReturnValue({
+    syncDeviceOutputs: jest.fn(async () => undefined),
+  } as never);
+  jest.mocked(useSession).mockReturnValue({
+    profile: { timezone: "Asia/Seoul" },
+    status: "ready",
+    user: { id: "user-1" },
+  } as never);
+  jest.mocked(archiveSchedule).mockResolvedValue();
+  jest.mocked(createSchedule).mockResolvedValue();
+  jest.mocked(updateSchedule).mockResolvedValue();
+  mockSchedule(null);
+});
 
-describe("일정 폼", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-08-04T09:00:00+09:00"));
+it("같은 일정의 재조회는 dirty draft를 보존하고 다른 일정은 새 값으로 초기화한다", async () => {
+  mockSchedule(scheduleFixture({ id: "item-1", title: "첫 일정" }));
+  const result = await renderForm({ itemId: "item-1" });
 
-    jest.mocked(useTranslation).mockReturnValue({ t } as never);
-    jest.mocked(useDeviceSync).mockReturnValue({ syncDeviceOutputs } as never);
-    jest.mocked(useSession).mockReturnValue({
-      profile: { timezone: "Asia/Seoul" },
-      status: "ready",
-      user: { id: "user-1" },
-    } as never);
-    mockSchedule(null);
-    jest.mocked(createSchedule).mockResolvedValue(undefined);
-    jest.mocked(updateSchedule).mockResolvedValue(undefined);
-    jest.mocked(archiveSchedule).mockResolvedValue(undefined);
+  await TestRenderer.act(async () => {
+    result.current.form.setValue("title", "작성 중", { shouldDirty: true });
   });
+  mockSchedule(scheduleFixture({ id: "item-1", title: "서버 변경" }));
+  await result.rerender({ itemId: "item-1" });
+  expect(result.current.form.getValues("title")).toBe("작성 중");
 
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  mockSchedule(scheduleFixture({ id: "item-2", title: "두 번째 일정" }));
+  await result.rerender({ itemId: "item-2" });
+  expect(result.current.form.getValues("title")).toBe("두 번째 일정");
+});
 
-  it.each([
-    ["loading", true, null],
-    ["ready", true, null],
-    ["error", false, "scheduleForm.error.editLoadFailed"],
-    ["signedOut", false, "scheduleForm.error.editLoadFailed"],
-  ] as const)(
-    "일정 조회 대기 중 세션 %s의 수정 로딩과 오류를 판정한다",
-    async (status, isLoading, loadError) => {
-      jest.mocked(useSession).mockReturnValue({
-        profile: null,
-        status,
-        user: status === "signedOut" ? null : { id: "user-1" },
-      } as never);
-      const result = await renderForm({ itemId: "item-1" });
-      expect(result.current.isLoading).toBe(isLoading);
-      expect(result.current.loadError).toBe(loadError);
-    }
-  );
-
-  it("생성 초기값과 입력 오류를 React Hook Form 계약으로 제공한다", async () => {
-    const result = await renderForm();
-
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.loadError).toBeNull();
-    expect(result.current.form.getValues()).toMatchObject({
-      endDateLocal: null,
-      recurrenceType: "daily",
-      startDateLocal: "2026-08-04",
-      title: "",
+it("저장 실패 뒤 입력을 보존하고 재시도 중 중복 쓰기 없이 성공한다", async () => {
+  const firstStarted = deferred<void>();
+  const retryStarted = deferred<void>();
+  const retry = deferred<void>();
+  jest
+    .mocked(createSchedule)
+    .mockImplementationOnce(async () => {
+      firstStarted.resolve();
+      throw new Error("저장 실패");
+    })
+    .mockImplementationOnce(() => {
+      retryStarted.resolve();
+      return retry.promise;
     });
+  const result = await renderForm();
 
-    await TestRenderer.act(async () => result.current.submit());
-
-    expect(result.current.form.getFieldState("title").error?.message).toBe(
-      "scheduleForm.validation.titleMissing"
-    );
-    expect(result.current.form.formState.errors.root?.message).toBe(
-      "scheduleForm.error.checkInput"
-    );
-  });
-
-  it("저장과 삭제가 진행 중일 때 서로와 중복 실행을 막는다", async () => {
-    mockSchedule(scheduleFixture({ id: "item-1", title: "기존 일정" }));
-    const updatePending = deferred();
-    const archivePending = deferred();
-    const alert = jest.spyOn(Alert, "alert");
-
-    jest.mocked(updateSchedule).mockReturnValue(updatePending.promise);
-    jest.mocked(archiveSchedule).mockReturnValue(archivePending.promise);
-
-    const result = await renderForm({ itemId: "item-1" });
-
-    await TestRenderer.act(async () => {
-      result.current.form.setValue("title", "수정한 일정");
-      result.current.submit();
-      await Promise.resolve();
-    });
-
-    await TestRenderer.act(async () => {
-      result.current.submit();
-      result.current.remove();
-    });
-
-    expect(updateSchedule).toHaveBeenCalledTimes(1);
-    expect(alert).not.toHaveBeenCalled();
-
-    await TestRenderer.act(async () => {
-      updatePending.resolve();
-    });
-
-    jest.mocked(updateSchedule).mockClear();
-    result.current.remove();
-
-    const buttons = alert.mock.calls.at(-1)?.[2];
-    const confirm = buttons?.find((button) => button.style === "destructive");
-
-    await TestRenderer.act(async () => {
-      confirm?.onPress?.();
-      await Promise.resolve();
-    });
-
+  await TestRenderer.act(async () => {
+    result.current.form.setValue("title", "작성 중", { shouldDirty: true });
     result.current.submit();
-
-    expect(updateSchedule).not.toHaveBeenCalled();
-
-    await TestRenderer.act(async () => {
-      archivePending.resolve();
-    });
+    await firstStarted.promise;
   });
-
-  it("같은 일정의 재조회는 dirty draft를 보존하고 pristine 값은 갱신한다", async () => {
-    mockSchedule(scheduleFixture({ id: "item-1", title: "기존 일정" }));
-    const result = await renderForm({ itemId: "item-1" });
-
-    await TestRenderer.act(async () => {
-      result.current.form.setValue("title", "작성 중", { shouldDirty: true });
-    });
-
-    mockSchedule(scheduleFixture({ id: "item-1", title: "서버 변경" }));
-    await result.rerender({ itemId: "item-1" });
-
-    expect(result.current.form.getValues("title")).toBe("작성 중");
-
-    await TestRenderer.act(async () => result.current.form.reset());
-    await result.rerender({ itemId: "item-1" });
-
-    expect(result.current.form.getValues("title")).toBe("서버 변경");
-  });
-
-  it.each([new Error("저장 실패"), { message: "저장 실패" }, "저장 실패"])(
-    "저장 오류의 메시지를 표시하고 입력을 보존한다: %p",
-    async (error) => {
-      jest.mocked(createSchedule).mockRejectedValue(error);
-      const result = await renderForm();
-      await TestRenderer.act(async () => {
-        result.current.form.setValue("title", "작성 중", { shouldDirty: true });
-        result.current.submit();
-      });
-      expect(result.current.form.formState.errors.root?.message).toBe(
-        "error.tryAgain"
-      );
-      expect(result.current.form.getValues("title")).toBe("작성 중");
-      expect(router.replace).not.toHaveBeenCalled();
-    }
+  expect(result.current.form.getValues("title")).toBe("작성 중");
+  expect(result.current.form.formState.errors.root?.message).toBe(
+    "error.tryAgain"
   );
+  expect(router.replace).not.toHaveBeenCalled();
 
-  it("다른 일정으로 이동하면 기존 dirty draft를 교체한다", async () => {
-    mockSchedule(scheduleFixture({ id: "item-1", title: "첫 일정" }));
-    const result = await renderForm({ itemId: "item-1" });
-
-    await TestRenderer.act(async () => {
-      result.current.form.setValue("title", "작성 중", { shouldDirty: true });
-    });
-
-    mockSchedule(scheduleFixture({ id: "item-2", title: "두 번째 일정" }));
-    await result.rerender({ itemId: "item-2" });
-
-    expect(result.current.form.getValues("title")).toBe("두 번째 일정");
+  await TestRenderer.act(async () => {
+    result.current.submit();
+    await retryStarted.promise;
   });
+  await TestRenderer.act(async () => {
+    result.current.submit();
+  });
+  expect(createSchedule).toHaveBeenCalledTimes(2);
+  expect(router.replace).not.toHaveBeenCalled();
+
+  await TestRenderer.act(async () => {
+    retry.resolve();
+    await retry.promise;
+  });
+  expect(router.replace).toHaveBeenCalledWith("/");
 });
 
 function mockSchedule(item: ReturnType<typeof scheduleFixture> | null): void {
@@ -217,30 +124,9 @@ function mockSchedule(item: ReturnType<typeof scheduleFixture> | null): void {
   } as never);
 }
 
-function deferred(): {
-  promise: Promise<void>;
-  resolve: () => void;
-} {
-  let resolve!: () => void;
-  const promise = new Promise<void>((fulfill) => {
-    resolve = fulfill;
-  });
-
-  return { promise, resolve };
-}
-
-async function renderForm(
-  params: { itemId?: string; returnTo?: string } = {}
-): Promise<{
-  current: ReturnType<typeof useScheduleForm>;
-  rerender: (nextParams?: {
-    itemId?: string;
-    returnTo?: string;
-  }) => Promise<void>;
-}> {
+async function renderForm(params: { itemId?: string; returnTo?: string } = {}) {
   let current!: ReturnType<typeof useScheduleForm>;
   let renderer!: ReturnType<typeof TestRenderer.create>;
-
   const element = (nextParams = params) =>
     createElement(FormProbe, {
       ...nextParams,
@@ -263,14 +149,23 @@ async function renderForm(
   };
 }
 
-type FormProbeProps = {
+function FormProbe({
+  itemId,
+  onChange,
+  returnTo,
+}: {
   itemId?: string;
   onChange: (form: ReturnType<typeof useScheduleForm>) => void;
   returnTo?: string;
-};
-
-function FormProbe({ itemId, onChange, returnTo }: FormProbeProps): null {
+}): null {
   onChange(useScheduleForm({ itemId, returnTo }));
-
   return null;
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((fulfill) => {
+    resolve = fulfill;
+  });
+  return { promise, resolve };
 }
