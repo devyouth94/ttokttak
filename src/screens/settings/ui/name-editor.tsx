@@ -4,13 +4,13 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from "react-native";
 
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
-import { borderRadius, spacing, typography } from "~/ui/tokens";
+import { AppTextInput } from "~/ui/app-text-input";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 type NameEditorProps = {
   errorMessage: string | null;
@@ -48,7 +48,7 @@ export function NameEditor({
           style={[styles.nameEditor, { backgroundColor: themeColors.surface }]}
         >
           <AppText variant="body2">{t("settings.nameEditor.title")}</AppText>
-          <TextInput
+          <AppTextInput
             autoCapitalize="none"
             autoCorrect={false}
             editable={!isSaving}
@@ -56,13 +56,6 @@ export function NameEditor({
             onChangeText={onChange}
             placeholder={t("settings.nameEditor.placeholder")}
             placeholderTextColor={themeColors.textSoft}
-            style={[
-              styles.nameInput,
-              {
-                borderColor: themeColors.border,
-                color: themeColors.text,
-              },
-            ]}
             value={value}
           />
           {errorMessage && (
@@ -146,17 +139,6 @@ const styles = StyleSheet.create({
   },
   nameEditorCancelButton: {
     borderWidth: StyleSheet.hairlineWidth,
-  },
-  nameInput: {
-    backgroundColor: "transparent",
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.size.body3,
-    lineHeight: typography.lineHeight.body3,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
   rowPressed: {
     opacity: 0.72,

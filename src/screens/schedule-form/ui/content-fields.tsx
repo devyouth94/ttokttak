@@ -4,14 +4,15 @@ import { useTranslation } from "react-i18next";
 import {
   type LayoutChangeEvent,
   StyleSheet,
-  TextInput,
+  type TextInput,
   View,
 } from "react-native";
 
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
-import { borderRadius, spacing, typography } from "~/ui/tokens";
+import { AppTextInput } from "~/ui/app-text-input";
+import { spacing } from "~/ui/tokens";
 
 import type { ScheduleFormValues } from "../form-values";
 
@@ -60,8 +61,10 @@ export function ContentFields({
         <AppText style={styles.fieldLabel} variant="body2">
           {t("scheduleForm.fields.title")}
         </AppText>
-        <TextInput
+        <AppTextInput
           accessibilityLabel={t("scheduleForm.fields.title")}
+          error={Boolean(titleError)}
+          focused={focusedInput === "title"}
           onBlur={() => {
             titleField.onBlur();
             setFocusedInput(null);
@@ -69,13 +72,7 @@ export function ContentFields({
           onChangeText={changeTitle}
           onFocus={() => setFocusedInput("title")}
           placeholder={t("scheduleForm.placeholders.title")}
-          placeholderTextColor={themeColors.textMuted}
           ref={titleInputRef}
-          style={[
-            styles.textInput,
-            focusedInput === "title" ? styles.inputFocused : undefined,
-            titleError ? styles.inputError : undefined,
-          ]}
           value={titleField.value}
         />
         {titleError && (
@@ -89,8 +86,9 @@ export function ContentFields({
         <AppText style={styles.fieldLabel} variant="body2">
           {t("scheduleForm.fields.description")}
         </AppText>
-        <TextInput
+        <AppTextInput
           accessibilityLabel={t("scheduleForm.fields.descriptionA11y")}
+          focused={focusedInput === "description"}
           multiline
           onBlur={() => {
             descriptionField.onBlur();
@@ -99,12 +97,7 @@ export function ContentFields({
           onChangeText={changeDescription}
           onFocus={() => setFocusedInput("description")}
           placeholder={t("scheduleForm.placeholders.description")}
-          placeholderTextColor={themeColors.textMuted}
-          style={[
-            styles.textInput,
-            styles.multilineInput,
-            focusedInput === "description" ? styles.inputFocused : undefined,
-          ]}
+          style={styles.multilineInput}
           textAlignVertical="top"
           value={descriptionField.value}
         />
@@ -124,28 +117,9 @@ function createStyles(themeColors: ThemeColors) {
     fieldLabel: {
       color: themeColors.text,
     },
-    inputError: {
-      borderColor: themeColors.error,
-    },
-    inputFocused: {
-      borderColor: themeColors.primary,
-    },
     multilineInput: {
       minHeight: 108,
       paddingTop: spacing.md,
-    },
-    textInput: {
-      backgroundColor: "transparent",
-      borderColor: themeColors.border,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      color: themeColors.text,
-      fontFamily: typography.fontFamily.body,
-      fontSize: typography.size.body3,
-      lineHeight: typography.lineHeight.body3,
-      minHeight: 48,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
     },
   });
 }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useController, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import {
   type RecurrenceType,
@@ -10,7 +10,8 @@ import {
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
-import { borderRadius, spacing, typography } from "~/ui/tokens";
+import { AppTextInput } from "~/ui/app-text-input";
+import { borderRadius, spacing } from "~/ui/tokens";
 
 import { WeekdaysField } from "./weekdays-field";
 import { getRecurrenceChange, type ScheduleFormValues } from "../form-values";
@@ -97,8 +98,10 @@ export function RecurrenceSection(): React.JSX.Element {
                 {t("scheduleForm.recurrence.intervalLabel")}
               </AppText>
               <View style={styles.customRecurrenceControls}>
-                <TextInput
+                <AppTextInput
                   accessibilityLabel={t("scheduleForm.recurrence.intervalA11y")}
+                  error={Boolean(intervalError)}
+                  focused={isIntervalFocused}
                   keyboardType="number-pad"
                   onBlur={() => {
                     intervalField.onBlur();
@@ -110,13 +113,7 @@ export function RecurrenceSection(): React.JSX.Element {
                   }}
                   onFocus={() => setIsIntervalFocused(true)}
                   placeholder="1"
-                  placeholderTextColor={themeColors.textMuted}
-                  style={[
-                    styles.textInput,
-                    styles.customRecurrenceInput,
-                    isIntervalFocused ? styles.inputFocused : undefined,
-                    intervalError ? styles.inputError : undefined,
-                  ]}
+                  style={styles.customRecurrenceInput}
                   value={intervalField.value}
                 />
 
@@ -273,12 +270,6 @@ function createStyles(themeColors: ThemeColors) {
     fieldLabel: {
       color: themeColors.text,
     },
-    inputError: {
-      borderColor: themeColors.error,
-    },
-    inputFocused: {
-      borderColor: themeColors.primary,
-    },
     quickRecurrenceContent: {
       gap: spacing.xs,
     },
@@ -346,19 +337,6 @@ function createStyles(themeColors: ThemeColors) {
     },
     subFieldLabel: {
       color: themeColors.text,
-    },
-    textInput: {
-      backgroundColor: "transparent",
-      borderColor: themeColors.border,
-      borderRadius: borderRadius.xl,
-      borderWidth: 1,
-      color: themeColors.text,
-      fontFamily: typography.fontFamily.body,
-      fontSize: typography.size.body3,
-      lineHeight: typography.lineHeight.body3,
-      minHeight: 48,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
     },
   });
 }
