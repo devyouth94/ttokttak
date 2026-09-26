@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { createContext, use, useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
@@ -42,6 +43,7 @@ export function DeviceSyncProvider({
   timezone: string;
   userId: string | null | undefined;
 }>): React.JSX.Element {
+  const { t } = useTranslation();
   const { language } = useAppLanguage();
   const [session, setSession] = useState<ReturnType<
     typeof startDeviceSyncSession
@@ -120,7 +122,7 @@ export function DeviceSyncProvider({
     void Notifications.setNotificationChannelAsync("reminders", {
       enableVibrate: true,
       importance: Notifications.AndroidImportance.HIGH,
-      name: "일정 알림",
+      name: t("notifications.channelName"),
       showBadge: true,
       vibrationPattern: [0, 250, 250, 250],
     }).catch((error) => {
@@ -128,7 +130,7 @@ export function DeviceSyncProvider({
         tags: { feature: "notification-channel-bootstrap" },
       });
     });
-  }, []);
+  }, [t]);
 
   // foreground 복귀 때 권한과 예약 알림을 최신 상태로 맞춘다.
   useEffect(() => {

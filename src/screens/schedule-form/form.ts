@@ -7,7 +7,6 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { format } from "date-fns/format";
 
 import { useDeviceSync } from "~/device-sync";
-import { getErrorMessage } from "~/errors";
 import { getScheduleReturnPath } from "~/route-param";
 import { useScheduleById } from "~/schedule/query";
 import {
@@ -109,8 +108,8 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
       }
 
       router.replace(getScheduleReturnPath(returnTo));
-    } catch (saveError) {
-      form.setError("root", { message: getErrorMessage(saveError) });
+    } catch {
+      form.setError("root", { message: t("error.tryAgain") });
     }
   }
 
@@ -159,8 +158,8 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
       });
 
       router.replace("/");
-    } catch (removeError) {
-      form.setError("root", { message: getErrorMessage(removeError) });
+    } catch {
+      form.setError("root", { message: t("error.tryAgain") });
     } finally {
       setIsDeleting(false);
     }
@@ -185,7 +184,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   const loadError =
     isEdit && !isLoading
       ? schedule.error
-        ? getErrorMessage(schedule.error)
+        ? t("scheduleForm.error.editLoadFailed")
         : sessionStatus !== "ready"
           ? t("scheduleForm.error.editLoadFailed")
           : null

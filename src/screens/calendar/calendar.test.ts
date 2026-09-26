@@ -128,6 +128,7 @@ it("선택 날짜 일정은 시간과 제목 순으로 정렬하고 표시 값�
     language: "ko",
     selectedDate: "2026-04-12",
     timezone: "Asia/Seoul",
+    unavailableTitle: "일정 내용을 복구할 수 없어요",
   });
 
   expect(entries.map(({ itemId }) => itemId)).toEqual([
@@ -143,4 +144,25 @@ it("선택 날짜 일정은 시간과 제목 순으로 정렬하고 표시 값�
       title: "나 일정",
     })
   );
+});
+
+it("복구할 수 없는 일정은 현재 언어의 대체 제목을 사용한다", () => {
+  const [entry] = buildCalendarDayEntries({
+    entries: [
+      createEntry({
+        id: "unrecoverable",
+        scheduledAtUtc: "2026-04-12T00:00:00.000Z",
+        title: "",
+      }),
+    ].map((value) => ({
+      ...value,
+      schedule: { ...value.schedule, contentStatus: "unrecoverable" as const },
+    })),
+    language: "en",
+    selectedDate: "2026-04-12",
+    timezone: "Asia/Seoul",
+    unavailableTitle: "Content unavailable",
+  });
+
+  expect(entry?.title).toBe("Content unavailable");
 });

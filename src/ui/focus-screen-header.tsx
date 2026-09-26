@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 
@@ -16,20 +17,23 @@ type FocusScreenHeaderProps = {
 };
 
 export function FocusScreenHeader({
-  backAccessibilityHint = "이전 화면으로 돌아가요.",
-  backAccessibilityLabel = "뒤로 가기",
+  backAccessibilityHint,
+  backAccessibilityLabel,
   onBack,
   rightSlot,
   title,
 }: FocusScreenHeaderProps): React.JSX.Element {
+  const { t } = useTranslation();
   const themeColors = useThemeColors();
 
   return (
     <ScreenHeader
       leftSlot={
         <Pressable
-          accessibilityHint={backAccessibilityHint}
-          accessibilityLabel={backAccessibilityLabel}
+          accessibilityHint={backAccessibilityHint ?? t("navigation.backHint")}
+          accessibilityLabel={
+            backAccessibilityLabel ?? t("navigation.backLabel")
+          }
           accessibilityRole="button"
           hitSlop={8}
           onPress={onBack}

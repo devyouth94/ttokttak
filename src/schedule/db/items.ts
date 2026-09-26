@@ -40,7 +40,6 @@ type UpdateItemInput = {
 
 const itemSelect = "*, recurring_item_schedule_versions(*)";
 const listLimit = 500;
-const unrecoverableTitle = "일정 내용을 복구할 수 없어요";
 
 function toVersion(row: VersionRow): RuleVersion {
   return {
@@ -102,7 +101,7 @@ async function toSchedule(
       ...item,
       contentStatus: "unrecoverable",
       description: null,
-      title: unrecoverableTitle,
+      title: "",
     };
   }
 }

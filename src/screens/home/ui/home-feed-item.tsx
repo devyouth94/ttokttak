@@ -5,6 +5,7 @@ import { Check, SkipForward } from "lucide-react-native";
 
 import type { HomeFeedCard } from "~/schedule/home-feed";
 import type { OccurrenceAction } from "~/schedule/rules/occurrence";
+import { getScheduleDisplayTitle } from "~/schedule/schedule";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
@@ -28,6 +29,10 @@ export function HomeFeedItem({
   showsActions,
 }: HomeFeedItemProps): React.JSX.Element {
   const { t } = useTranslation();
+  const title = getScheduleDisplayTitle(
+    card.item,
+    t("schedule.contentUnavailableTitle")
+  );
 
   return (
     <View
@@ -42,7 +47,7 @@ export function HomeFeedItem({
       <Pressable
         accessibilityHint={t("home.feed.itemDetailHint")}
         accessibilityLabel={t("home.feed.itemDetailLabel", {
-          title: card.item.title,
+          title,
         })}
         accessibilityRole="button"
         onPress={() => {
@@ -55,7 +60,7 @@ export function HomeFeedItem({
           numberOfLines={1}
           style={{ color: homeFeedCardPalette.text }}
         >
-          {card.item.title}
+          {title}
         </AppText>
         <View style={styles.meta}>
           <AppText
@@ -73,7 +78,7 @@ export function HomeFeedItem({
           <Pressable
             accessibilityHint={t("home.feed.skipHint")}
             accessibilityLabel={t("home.feed.skipLabel", {
-              title: card.item.title,
+              title,
             })}
             accessibilityRole="button"
             onPress={() => {
@@ -94,7 +99,7 @@ export function HomeFeedItem({
           <Pressable
             accessibilityHint={t("home.feed.completeHint")}
             accessibilityLabel={t("home.feed.completeLabel", {
-              title: card.item.title,
+              title,
             })}
             accessibilityRole="button"
             onPress={() => {

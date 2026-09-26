@@ -6,6 +6,7 @@ import type {
   OccurrenceEntry,
   OccurrenceStatus,
 } from "~/schedule/rules/occurrence";
+import { getScheduleDisplayTitle } from "~/schedule/schedule";
 
 const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 
@@ -86,11 +87,13 @@ export function buildCalendarDayEntries({
   language,
   selectedDate,
   timezone,
+  unavailableTitle,
 }: {
   entries: OccurrenceEntry[];
   language: AppLanguage;
   selectedDate: string;
   timezone: string;
+  unavailableTitle: string;
 }): CalendarDayEntry[] {
   return entries
     .filter((entry) => entry.occurrence.localDate === selectedDate)
@@ -105,7 +108,7 @@ export function buildCalendarDayEntries({
         "time",
         language
       ),
-      title: schedule.title,
+      title: getScheduleDisplayTitle(schedule, unavailableTitle),
     }))
     .sort((left, right) => {
       const timeDifference = left.scheduledAtUtc.localeCompare(

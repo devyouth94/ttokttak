@@ -4,7 +4,6 @@ import { Alert } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
 import { useDeviceSync } from "~/device-sync";
-import { getErrorMessage } from "~/errors";
 import { useSession } from "~/session/provider";
 
 let hasShownPrompt = false;
@@ -43,10 +42,10 @@ export function useHomeNotificationPrompt(): void {
         },
         {
           onPress: () => {
-            void requestPermission().catch((error) => {
+            void requestPermission().catch(() => {
               Alert.alert(
                 t("home.notificationPermission.errorTitle"),
-                getErrorMessage(error)
+                t("error.tryAgain")
               );
             });
           },

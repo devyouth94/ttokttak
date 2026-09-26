@@ -24,10 +24,10 @@ export default function HomeTabPage(): React.JSX.Element {
 
   const home = useHomeFeed();
   const layout = useHomeFeedLayout(insets.bottom);
-
-  const profileName = profile?.display_name?.trim() || "사용자";
-
   useHomeNotificationPrompt();
+
+  const profileName =
+    profile?.display_name?.trim() || t("home.header.defaultName");
 
   if (home.status === "starting") {
     return (

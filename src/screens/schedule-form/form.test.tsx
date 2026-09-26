@@ -251,7 +251,7 @@ describe("일정 폼", () => {
         result.current.submit();
       });
       expect(result.current.form.formState.errors.root?.message).toBe(
-        "저장 실패"
+        "error.tryAgain"
       );
       expect(result.current.form.getValues("title")).toBe("작성 중");
       expect(router.replace).not.toHaveBeenCalled();

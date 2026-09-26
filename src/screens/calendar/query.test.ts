@@ -1,4 +1,5 @@
 import { createElement, type ReactElement } from "react";
+import { useTranslation } from "react-i18next";
 
 import { scheduleFixture } from "~/schedule/fixtures";
 import { useNow } from "~/schedule/now";
@@ -8,6 +9,7 @@ import { useCalendarScreen } from "./query";
 
 jest.mock("~/schedule/now", () => ({ useNow: jest.fn() }));
 jest.mock("~/schedule/query", () => ({ useSchedules: jest.fn() }));
+jest.mock("react-i18next", () => ({ useTranslation: jest.fn() }));
 
 declare const require: (moduleName: string) => unknown;
 
@@ -24,6 +26,9 @@ let queryResult: ReturnType<typeof useSchedules>;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest
+    .mocked(useTranslation)
+    .mockReturnValue({ t: (key: string) => key } as never);
   jest.mocked(useNow).mockReturnValue(now);
   queryResult = {
     error: null,
@@ -71,6 +76,17 @@ it("완료 기록 로딩 중에는 임시 occurrence를 노출하지 않는다",
   const calendar = await renderCalendar();
 
   expect(calendar.current.occurrenceEntries).toEqual([]);
+});
+
+it("조회 오류 원문 대신 번역된 공통 메시지를 제공한다", async () => {
+  queryResult = {
+    ...queryResult,
+    error: new Error("서버 내부 오류"),
+  };
+
+  const calendar = await renderCalendar();
+
+  expect(calendar.current.errorMessage).toBe("error.tryAgain");
 });
 
 it("시간대가 바뀌면 오늘을 보고 있을 때 선택 날짜도 맞춘다", async () => {

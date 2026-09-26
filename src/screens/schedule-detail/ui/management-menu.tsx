@@ -6,7 +6,6 @@ import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { EllipsisVertical } from "lucide-react-native";
 
 import { useDeviceSync } from "~/device-sync";
-import { getErrorMessage } from "~/errors";
 import { getScheduleReturnPath } from "~/route-param";
 import type { Schedule } from "~/schedule/schedule";
 import { archiveSchedule } from "~/schedule/write";
@@ -51,8 +50,8 @@ export function DetailManagementMenu({
     try {
       await archiveSchedule({ itemId: item.id, syncDeviceOutputs });
       router.replace(getScheduleReturnPath(returnTo));
-    } catch (error) {
-      Alert.alert(t("scheduleDetail.inlineErrorTitle"), getErrorMessage(error));
+    } catch {
+      Alert.alert(t("scheduleDetail.inlineErrorTitle"), t("error.tryAgain"));
     } finally {
       setIsArchiving(false);
     }

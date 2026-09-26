@@ -44,4 +44,21 @@ describe("표시 언어 리소스", () => {
       "첫 알림일은 8월 11일 화요일입니다.",
     ]);
   });
+
+  it("공통 오류와 복구 불가 일정 제목을 언어별로 제공한다", async () => {
+    const english = await createTestI18n("en");
+    const korean = await createTestI18n("ko");
+
+    expect([
+      english.t("error.tryAgain"),
+      korean.t("error.tryAgain"),
+      english.t("schedule.contentUnavailableTitle"),
+      korean.t("schedule.contentUnavailableTitle"),
+    ]).toEqual([
+      "Something went wrong. Please try again.",
+      "문제가 생겼어요. 다시 시도해 주세요.",
+      "Content unavailable",
+      "일정 내용을 복구할 수 없어요",
+    ]);
+  });
 });

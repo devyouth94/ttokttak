@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
-import { AppState } from "react-native";
+import { useTranslation } from "react-i18next";
+import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 
@@ -40,6 +41,7 @@ jest.mock("expo-notifications", () => ({
 }));
 jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 jest.mock("~/i18n/provider", () => ({ useAppLanguage: jest.fn() }));
+jest.mock("react-i18next", () => ({ useTranslation: jest.fn() }));
 jest.mock("~/device-sync-session", () => ({
   clearDeviceOutputs: jest.fn(),
   startDeviceSyncSession: jest.fn(),
@@ -63,9 +65,16 @@ describe("DeviceSyncProvider", () => {
   beforeEach(() => {
     language = "ko";
     jest.clearAllMocks();
+    Object.defineProperty(Platform, "OS", {
+      configurable: true,
+      value: "ios",
+    });
     jest
       .mocked(useAppLanguage)
       .mockImplementation(() => ({ language }) as never);
+    jest
+      .mocked(useTranslation)
+      .mockReturnValue({ t: (key: string) => key } as never);
     jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       canAskAgain: true,
       granted: true,
@@ -77,6 +86,9 @@ describe("DeviceSyncProvider", () => {
     jest
       .mocked(Notifications.clearLastNotificationResponseAsync)
       .mockResolvedValue();
+    jest
+      .mocked(Notifications.setNotificationChannelAsync)
+      .mockResolvedValue(null);
     jest.mocked(syncDeviceOutputs).mockResolvedValue();
     jest.mocked(clearDeviceOutputs).mockResolvedValue();
     jest.mocked(startDeviceSyncSession).mockImplementation((userId) => {
@@ -93,6 +105,24 @@ describe("DeviceSyncProvider", () => {
         },
       };
     });
+  });
+
+  it("Android 알림 채널 이름을 번역 리소스에서 가져온다", async () => {
+    Object.defineProperty(Platform, "OS", {
+      configurable: true,
+      value: "android",
+    });
+
+    let renderer!: ReturnType<typeof TestRenderer.create>;
+    await TestRenderer.act(async () => {
+      renderer = TestRenderer.create(notificationProvider());
+    });
+
+    expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+      "reminders",
+      expect.objectContaining({ name: "notifications.channelName" })
+    );
+    await TestRenderer.act(() => renderer.unmount());
   });
 
   it("세션, 언어, foreground와 알림 tap에서 현재 알림을 다시 맞춘다", async () => {

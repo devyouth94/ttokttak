@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { getErrorMessage } from "~/errors";
 import { getFirstRouteParam } from "~/route-param";
 import { useDetailQuery } from "~/screens/schedule-detail/query";
 import { DetailHistorySection } from "~/screens/schedule-detail/ui/history-section";
@@ -89,7 +88,7 @@ export default function RecurringItemDetailPage(): React.JSX.Element {
                 !resolvedItemId
                   ? t("scheduleDetail.error.missingPath")
                   : detailQuery.error
-                    ? getErrorMessage(detailQuery.error)
+                    ? t("error.tryAgain")
                     : undefined
               }
               style={styles.error}

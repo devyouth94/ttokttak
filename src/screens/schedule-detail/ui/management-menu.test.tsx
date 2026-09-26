@@ -106,7 +106,7 @@ describe("일정 상세 관리 메뉴", () => {
     expect(alert).toHaveBeenNthCalledWith(
       2,
       "scheduleDetail.inlineErrorTitle",
-      "삭제 실패"
+      "error.tryAgain"
     );
     expect(router.replace).not.toHaveBeenCalled();
   });

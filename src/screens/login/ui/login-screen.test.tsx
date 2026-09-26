@@ -111,7 +111,7 @@ it("로그인과 법적 문서 열기 실패를 기존 안내로 표시한다", 
 
   expect(Alert.alert).toHaveBeenCalledWith(
     "login.googleSignInErrorTitle",
-    "로그인 실패"
+    "error.tryAgain"
   );
   expect(Alert.alert).toHaveBeenCalledWith(
     "login.termsOpenErrorTitle",

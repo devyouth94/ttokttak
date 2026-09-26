@@ -44,8 +44,9 @@ export function SelectedDateSection({
         language,
         selectedDate,
         timezone,
+        unavailableTitle: t("schedule.contentUnavailableTitle"),
       }),
-    [language, occurrenceEntries, selectedDate, timezone]
+    [language, occurrenceEntries, selectedDate, t, timezone]
   );
 
   return (

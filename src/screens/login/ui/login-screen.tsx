@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 
-import { getErrorMessage } from "~/errors";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/legal";
 import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
@@ -32,14 +31,14 @@ export function LoginScreen(): React.JSX.Element {
   const legalSuffix = t("login.legalSuffix");
 
   function handleGoogleSignIn(): void {
-    void signInGoogle().catch((error) => {
-      Alert.alert(t("login.googleSignInErrorTitle"), getErrorMessage(error));
+    void signInGoogle().catch(() => {
+      Alert.alert(t("login.googleSignInErrorTitle"), t("error.tryAgain"));
     });
   }
 
   function handleAppleSignIn(): void {
-    void signInApple().catch((error) => {
-      Alert.alert(t("login.appleSignInErrorTitle"), getErrorMessage(error));
+    void signInApple().catch(() => {
+      Alert.alert(t("login.appleSignInErrorTitle"), t("error.tryAgain"));
     });
   }
 

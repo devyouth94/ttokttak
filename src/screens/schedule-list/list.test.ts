@@ -87,6 +87,21 @@ describe("일정 목록", () => {
     });
   });
 
+  it("복구할 수 없는 일정은 현재 언어의 대체 제목을 사용한다", async () => {
+    const list = await renderList({
+      items: [
+        item({
+          contentStatus: "unrecoverable",
+          id: "unrecoverable",
+          title: "",
+        }),
+      ],
+      language: "en",
+    });
+
+    expect(list.current.rows[0]?.title).toBe("Content unavailable");
+  });
+
   it("기본 제목순과 선택한 생성순을 적용한다", async () => {
     const list = await renderList({
       items: [
@@ -162,6 +177,19 @@ async function renderList({
 }) {
   jest.mocked(useTranslation).mockReturnValue({
     i18n: { language, resolvedLanguage: language },
+    t: (key: string) => {
+      if (key === "scheduleList.noUpcomingTime") {
+        return language === "en" ? "No upcoming time" : "예정 없음";
+      }
+
+      if (key === "schedule.contentUnavailableTitle") {
+        return language === "en"
+          ? "Content unavailable"
+          : "일정 내용을 복구할 수 없어요";
+      }
+
+      return key;
+    },
   } as never);
   jest.mocked(useNow).mockReturnValue(now);
   jest.mocked(useSchedules).mockReturnValue({

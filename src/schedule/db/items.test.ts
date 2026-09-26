@@ -142,7 +142,7 @@ describe("schedule items DB", () => {
     ).resolves.toMatchObject({
       contentStatus: "unrecoverable",
       description: null,
-      title: "일정 내용을 복구할 수 없어요",
+      title: "",
     });
   });
 

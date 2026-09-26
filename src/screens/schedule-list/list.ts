@@ -8,7 +8,7 @@ import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
 import type { Occurrence } from "~/schedule/rules/occurrence";
 import { createOccurrences } from "~/schedule/rules/occurrence";
-import type { Schedule } from "~/schedule/schedule";
+import { getScheduleDisplayTitle, type Schedule } from "~/schedule/schedule";
 
 type Row = {
   colorHex: string;
@@ -21,13 +21,8 @@ type Row = {
 
 export type Sort = "createdDesc" | "titleAsc";
 
-const noNextOccurrenceLabelByLanguage = {
-  en: "No upcoming time",
-  ko: "예정 없음",
-} as const satisfies Record<AppLanguage, string>;
-
 export function useScheduleList() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -51,10 +46,12 @@ export function useScheduleList() {
         occurrence: occurrences.next(schedule.id),
         schedule,
       })),
+      noNextOccurrenceLabel: t("scheduleList.noUpcomingTime"),
       sort,
       timezone: queryTimezone,
+      unavailableTitle: t("schedule.contentUnavailableTitle"),
     });
-  }, [items, language, logs, now, queryTimezone, sort]);
+  }, [items, language, logs, now, queryTimezone, sort, t]);
 
   const status = query.isLoading ? "loading" : query.error ? "error" : "ready";
 
@@ -82,24 +79,31 @@ export function useScheduleList() {
 function toRows({
   language,
   nextOccurrenceEntries,
+  noNextOccurrenceLabel,
   sort = "titleAsc",
   timezone,
+  unavailableTitle,
 }: {
   language: AppLanguage;
   nextOccurrenceEntries: {
     occurrence: Occurrence | null;
     schedule: Schedule;
   }[];
+  noNextOccurrenceLabel: string;
   sort?: Sort;
   timezone: string;
+  unavailableTitle: string;
 }): Row[] {
   return [...nextOccurrenceEntries]
     .sort((left, right) => {
       const byCreatedAt = right.schedule.createdAt.localeCompare(
         left.schedule.createdAt
       );
-      const byTitle = left.schedule.title.localeCompare(
-        right.schedule.title,
+      const byTitle = getScheduleDisplayTitle(
+        left.schedule,
+        unavailableTitle
+      ).localeCompare(
+        getScheduleDisplayTitle(right.schedule, unavailableTitle),
         language
       );
 
@@ -112,9 +116,9 @@ function toRows({
       id: schedule.id,
       nextOccurrenceTimeLabel: occurrence
         ? formatTimestamp(occurrence.scheduledAtUtc, timezone, "time", language)
-        : noNextOccurrenceLabelByLanguage[language],
+        : noNextOccurrenceLabel,
       nextScheduledAtUtc: occurrence?.scheduledAtUtc ?? null,
       recurrenceLabel: getRecurrenceLabel(schedule, language),
-      title: schedule.title,
+      title: getScheduleDisplayTitle(schedule, unavailableTitle),
     }));
 }

@@ -7,7 +7,11 @@ import { useAppLanguage } from "~/i18n/provider";
 import { getColorHexLabel } from "~/schedule/display/color";
 import { formatLocal } from "~/schedule/display/date";
 import { getRecurrenceLabel } from "~/schedule/display/label";
-import { currentRule, type Schedule } from "~/schedule/schedule";
+import {
+  currentRule,
+  getScheduleDisplayTitle,
+  type Schedule,
+} from "~/schedule/schedule";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { StateMessage } from "~/ui/state-message";
@@ -34,6 +38,10 @@ export function DetailSummarySection({
     ? t("scheduleDetail.summary.notificationEnabled")
     : t("scheduleDetail.summary.notificationDisabled");
   const colorLabel = getColorHexLabel(item.colorHex, language);
+  const title = getScheduleDisplayTitle(
+    item,
+    t("schedule.contentUnavailableTitle")
+  );
 
   return (
     <>
@@ -50,7 +58,7 @@ export function DetailSummarySection({
           style={[styles.title, { color: themeColors.text }]}
           variant="title"
         >
-          {item.title}
+          {title}
         </AppText>
 
         <View style={styles.badgeStack}>

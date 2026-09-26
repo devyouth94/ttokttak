@@ -20,6 +20,9 @@ export const appI18nResources = {
       app: {
         name: "ttokttak",
       },
+      error: {
+        tryAgain: "Something went wrong. Please try again.",
+      },
       session: {
         error: {
           description: "Could not prepare your account. Please try again.",
@@ -71,6 +74,7 @@ export const appI18nResources = {
           upcomingCaption: "Home shows items for the next 14 days",
         },
         header: {
+          defaultName: "User",
           greeting: "Hello,\n{{name}}!",
         },
         notificationPermission: {
@@ -133,6 +137,8 @@ export const appI18nResources = {
         },
       },
       navigation: {
+        backHint: "Return to the previous screen.",
+        backLabel: "Go back",
         createItemHint: "Open the item creation screen.",
         createItemLabel: "Add item",
         tabs: {
@@ -141,6 +147,12 @@ export const appI18nResources = {
           schedule: "Items",
           settings: "Settings",
         },
+      },
+      notifications: {
+        channelName: "Item reminders",
+      },
+      schedule: {
+        contentUnavailableTitle: "Content unavailable",
       },
       scheduleDetail: {
         contentRecovery: {
@@ -354,6 +366,7 @@ export const appI18nResources = {
         },
         headerTitle: "Items",
         loadingA11yLabel: "Loading item list",
+        noUpcomingTime: "No upcoming time",
         row: {
           detailHint: "Open the item detail screen.",
           detailLabel: "View {{title}} details",
@@ -469,6 +482,9 @@ export const appI18nResources = {
       app: {
         name: "똑딱",
       },
+      error: {
+        tryAgain: "문제가 생겼어요. 다시 시도해 주세요.",
+      },
       session: {
         error: {
           description: "계정 정보를 준비하지 못했어요. 다시 시도해 주세요.",
@@ -520,6 +536,7 @@ export const appI18nResources = {
           upcomingCaption: "홈에서는 앞으로 14일간의 일정만 보여요",
         },
         header: {
+          defaultName: "사용자",
           greeting: "안녕하세요,\n{{name}}님!",
         },
         notificationPermission: {
@@ -582,6 +599,8 @@ export const appI18nResources = {
         },
       },
       navigation: {
+        backHint: "이전 화면으로 돌아가요.",
+        backLabel: "뒤로 가기",
         createItemHint: "일정 만들기 화면으로 이동해요.",
         createItemLabel: "일정 추가",
         tabs: {
@@ -590,6 +609,12 @@ export const appI18nResources = {
           schedule: "목록",
           settings: "설정",
         },
+      },
+      notifications: {
+        channelName: "일정 알림",
+      },
+      schedule: {
+        contentUnavailableTitle: "일정 내용을 복구할 수 없어요",
       },
       scheduleDetail: {
         contentRecovery: {
@@ -801,6 +826,7 @@ export const appI18nResources = {
         },
         headerTitle: "일정 목록",
         loadingA11yLabel: "일정 목록을 불러오는 중",
+        noUpcomingTime: "예정 없음",
         row: {
           detailHint: "일정 상세 화면으로 이동해요.",
           detailLabel: "{{title}} 상세 보기",
