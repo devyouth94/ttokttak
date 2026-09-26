@@ -3,12 +3,17 @@ import { parse } from "date-fns/parse";
 import type { TFunction } from "i18next";
 import { z } from "zod/v4";
 
-import { colorHexPattern, defaultColorHex } from "~/schedule/display/color";
+import { colorHexPattern, defaultColorHex } from "~/schedule/color";
 import {
   anchorTypes,
-  firstDate,
+  type CreateScheduleInput,
+  currentRule,
   type RecurrenceType,
   recurrenceTypes,
+  type Schedule,
+} from "~/schedule/model";
+import {
+  firstDate,
   requiresInterval,
   requiresWeekdays,
   supportsCompletion,
@@ -17,11 +22,6 @@ import {
   validateInput,
   type ValidationIssueCode,
 } from "~/schedule/rules/validate";
-import {
-  type CreateScheduleInput,
-  currentRule,
-  type Schedule,
-} from "~/schedule/schedule";
 
 const formShape = z.object({
   anchorType: z.enum(anchorTypes),

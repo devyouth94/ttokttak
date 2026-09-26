@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { useDeviceSync } from "~/device-sync";
 import { scheduleFixture } from "~/schedule/fixtures";
 import { archiveSchedule } from "~/schedule/write";
+import { useSession } from "~/session/provider";
 
 import { DetailManagementMenu } from "./management-menu";
 
@@ -30,6 +31,7 @@ jest.mock("~/device-sync", () => ({
   useDeviceSync: jest.fn(),
 }));
 jest.mock("~/schedule/write", () => ({ archiveSchedule: jest.fn() }));
+jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
 jest.mock("~/theme/provider", () => ({
   useThemeColors: () => ({
     error: "#f00",
@@ -60,6 +62,9 @@ describe("일정 상세 관리 메뉴", () => {
       .mocked(useTranslation)
       .mockReturnValue({ t: (key: string) => key } as never);
     jest.mocked(useDeviceSync).mockReturnValue({ syncDeviceOutputs } as never);
+    jest
+      .mocked(useSession)
+      .mockReturnValue({ user: { id: "user-1" } } as never);
     jest.mocked(archiveSchedule).mockResolvedValue(undefined);
   });
 
@@ -93,6 +98,7 @@ describe("일정 상세 관리 메뉴", () => {
     expect(archiveSchedule).toHaveBeenCalledWith({
       itemId: item.id,
       syncDeviceOutputs,
+      userId: "user-1",
     });
     expect(router.replace).toHaveBeenCalledWith("/schedule");
   });

@@ -1,8 +1,6 @@
 import { fromZonedTime } from "date-fns-tz";
 
-import type { OccurrenceLog } from "./rules/occurrence";
-import type { RuleVersion } from "./rules/recurrence";
-import type { Schedule } from "./schedule";
+import type { OccurrenceLog, RuleVersion, Schedule } from "./model";
 
 export const testTimezone = "Asia/Seoul";
 

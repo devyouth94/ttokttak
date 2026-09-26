@@ -148,13 +148,16 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
         {
           style: "destructive",
           text: t("scheduleForm.deleteAlert.confirm"),
-          onPress: () => void confirmRemove(itemId),
+          onPress: () => void confirmRemove(itemId, user.id),
         },
       ]
     );
   }
 
-  async function confirmRemove(currentItemId: string): Promise<void> {
+  async function confirmRemove(
+    currentItemId: string,
+    userId: string
+  ): Promise<void> {
     setIsDeleting(true);
     form.clearErrors("root");
 
@@ -162,6 +165,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
       await archiveSchedule({
         itemId: currentItemId,
         syncDeviceOutputs,
+        userId,
       });
 
       router.replace("/");

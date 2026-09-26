@@ -2,9 +2,9 @@ import { createElement, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 
 import { scheduleFixture, type ScheduleOverrides } from "~/schedule/fixtures";
+import type { Schedule } from "~/schedule/model";
 import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
-import type { Schedule } from "~/schedule/schedule";
 
 import { useScheduleList } from "./list";
 

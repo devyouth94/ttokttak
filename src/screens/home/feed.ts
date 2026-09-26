@@ -5,12 +5,12 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { useDeviceSync } from "~/device-sync";
 import { useAppLanguage } from "~/i18n/provider";
-import { createHomeSections } from "~/schedule/home-feed";
 import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
 import { useSession } from "~/session/provider";
 
 import { useHomeActions } from "./action";
+import { createHomeSections } from "./presentation";
 
 /**
  * 홈의 선택 날짜, 조회, 재진입 재조회와 occurrence 처리 상태를 제공한다.

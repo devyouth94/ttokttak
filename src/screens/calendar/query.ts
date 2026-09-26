@@ -6,9 +6,10 @@ import { parse } from "date-fns/parse";
 import { startOfMonth } from "date-fns/startOfMonth";
 import { formatInTimeZone } from "date-fns-tz";
 
+import { toUtcRange } from "~/schedule/local-date";
 import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
-import { createOccurrences, toUtcRange } from "~/schedule/rules/occurrence";
+import { createOccurrences } from "~/schedule/rules/occurrence";
 
 import { syncSelectedDateToTimezone } from "./calendar";
 

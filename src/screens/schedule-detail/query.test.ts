@@ -1,48 +1,28 @@
 import { createElement, type ReactElement } from "react";
-import { useQuery } from "@tanstack/react-query";
 
-import { listItemLogs } from "~/schedule/db/logs";
-import { ScheduleNotFoundError } from "~/schedule/errors";
 import { logFixture, scheduleFixture, testTimezone } from "~/schedule/fixtures";
-import { useScheduleById } from "~/schedule/query";
-import { useSession } from "~/session/provider";
+import { useScheduleDetailData } from "~/schedule/query";
 
 import { type DetailQueryResult, useDetailQuery } from "./query";
 
-jest.mock("~/schedule/query", () => ({ useScheduleById: jest.fn() }));
-
-jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }));
-jest.mock("~/schedule/db/logs", () => ({ listItemLogs: jest.fn() }));
-jest.mock("~/session/provider", () => ({ useSession: jest.fn() }));
+jest.mock("~/schedule/query", () => ({ useScheduleDetailData: jest.fn() }));
 
 declare const require: (moduleName: string) => unknown;
 const TestRenderer = require("react-test-renderer") as {
   act: (callback: () => void) => Promise<void>;
   create: (element: ReactElement) => { unmount: () => void };
 };
-const refetchSchedule = jest.fn();
-const refetchDetail = jest.fn();
-const scheduleResult = {
-  error: null,
-  isPending: false,
-  data: scheduleFixture(),
-  refetch: refetchSchedule,
-};
-const detailResult = {
-  data: [],
-  error: null,
-  isPending: false,
-  refetch: refetchDetail,
-};
+const refetch = jest.fn();
+
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.mocked(useSession).mockReturnValue({
-    profile: { timezone: testTimezone },
+  jest.mocked(useScheduleDetailData).mockReturnValue({
+    item: scheduleFixture(),
+    logs: [],
+    refetch,
     status: "ready",
-    user: { id: "user-1" },
-  } as never);
-  jest.mocked(useScheduleById).mockReturnValue(scheduleResult as never);
-  jest.mocked(useQuery).mockReturnValue(detailResult as never);
+    timezone: testTimezone,
+  });
 });
 
 describe("상세 occurrence 계산", () => {
@@ -53,14 +33,7 @@ describe("상세 occurrence 계산", () => {
       scheduledAtUtc: "2026-04-08T00:00:00.000Z",
     });
     const recentLog = logFixture();
-    jest
-      .mocked(useQuery)
-      .mockReturnValue({ ...detailResult, data: [oldLog, recentLog] } as never);
-
-    jest.mocked(useScheduleById).mockReturnValue({
-      ...scheduleResult,
-      data: item,
-    } as never);
+    mockReady(item, [oldLog, recentLog]);
 
     const result = expectReady(
       await renderDetail({
@@ -76,11 +49,7 @@ describe("상세 occurrence 계산", () => {
 
   it("지난 일정이 없으면 다음 일정을 대표로 삼는다", async () => {
     const item = scheduleFixture();
-
-    jest.mocked(useScheduleById).mockReturnValue({
-      ...scheduleResult,
-      data: item,
-    } as never);
+    mockReady(item, []);
 
     const result = expectReady(
       await renderDetail({
@@ -99,10 +68,7 @@ describe("상세 occurrence 계산", () => {
       actedAtUtc: "2026-04-10T01:00:00.000Z",
       scheduledAtUtc: "2026-04-10T00:00:00.000Z",
     });
-
-    jest
-      .mocked(useQuery)
-      .mockReturnValue({ ...detailResult, data: [completedLog] } as never);
+    mockReady(item, [completedLog]);
 
     const result = expectReady(
       await renderDetail({
@@ -120,7 +86,7 @@ describe("상세 occurrence 계산", () => {
   });
 });
 
-it("전체 기록을 바꾸지 않고 처리 시각 최신순 5건을 파생하며 동률은 입력 순서를 유지한다", async () => {
+it("전체 기록을 바꾸지 않고 처리 시각 최신순 5건을 파생한다", async () => {
   const logs = [12, 16, 11, 15, 14, 16, 13].map((day, index) =>
     logFixture({
       id: `log-${index}`,
@@ -131,121 +97,48 @@ it("전체 기록을 바꾸지 않고 처리 시각 최신순 5건을 파생하�
   );
   Object.freeze(logs);
   const originalLogs = [...logs];
-  jest
-    .mocked(useQuery)
-    .mockReturnValue({ ...detailResult, data: logs } as never);
+  mockReady(scheduleFixture(), logs);
+
   const result = expectReady(await renderDetail());
+
   expect(result.history).toEqual([logs[1], logs[5], logs[3], logs[4], logs[6]]);
   expect(logs).toEqual(originalLogs);
 });
 
-it("사용자별 상세 key로 전체 기록만 조회하고 일정과 기록을 함께 재조회한다", async () => {
-  await renderDetail();
-  const options = jest.mocked(useQuery).mock.calls[0]![0];
-  expect(options).toMatchObject({
-    enabled: true,
-    queryKey: ["schedule", "user-1", "detail", "item-1"],
-  });
-  const queryFn = options.queryFn as () => Promise<unknown>;
-  await queryFn();
-  expect(listItemLogs).toHaveBeenCalledWith({
-    itemId: "item-1",
-    userId: "user-1",
-  });
-  expect(listItemLogs).toHaveBeenCalledTimes(1);
-  const error = new Error("기록 조회 실패");
-  jest.mocked(useQuery).mockReturnValue({ ...detailResult, error } as never);
-  const result = expectError(await renderDetail());
-  await result.refetch();
-  expect(refetchSchedule).toHaveBeenCalledTimes(1);
-  expect(refetchDetail).toHaveBeenCalledTimes(1);
-  jest.mocked(useSession).mockReturnValue({
-    profile: { timezone: testTimezone },
-    status: "ready",
-    user: { id: "user-2" },
-  } as never);
-  await renderDetail();
-  expect(jest.mocked(useQuery).mock.calls.at(-1)?.[0].queryKey).toEqual([
-    "schedule",
-    "user-2",
-    "detail",
-    "item-1",
-  ]);
-});
-
-it("일정 데이터가 없으면 기록을 조회하지 않고 일정만 재조회한다", async () => {
-  jest
-    .mocked(useScheduleById)
-    .mockReturnValue({ ...scheduleResult, data: undefined } as never);
-  const result = expectError(await renderDetail());
-  expect(jest.mocked(useQuery).mock.calls[0]?.[0].enabled).toBe(false);
-  await result.refetch();
-  expect(refetchSchedule).toHaveBeenCalledTimes(1);
-  expect(refetchDetail).not.toHaveBeenCalled();
-});
-
-it("경로 인자가 없으면 일정 없음이 아닌 일반 오류로 판정한다", async () => {
-  const result = expectError(await renderDetail({ itemId: null }));
-
-  expect(result.error).toBeNull();
-  expect(useScheduleById).toHaveBeenCalledWith(null);
-  expect(jest.mocked(useQuery).mock.calls[0]?.[0].enabled).toBe(false);
-});
-
-it.each([
-  ["loading", "loading"],
-  ["ready", "loading"],
-  ["error", "error"],
-  ["signedOut", "error"],
-] as const)(
-  "일정 조회 대기 중 세션 %s를 %s 상태로 판정한다",
-  async (status, expectedStatus) => {
-    jest.mocked(useSession).mockReturnValue({
-      profile: null,
-      status,
-      user: status === "signedOut" ? null : { id: "user-1" },
-    } as never);
-    jest.mocked(useScheduleById).mockReturnValue({
-      ...scheduleResult,
-      data: undefined,
-      isPending: true,
-    } as never);
-    jest
-      .mocked(useQuery)
-      .mockReturnValue({ ...detailResult, isPending: true } as never);
-    const result = await renderDetail();
-    expect(result.status).toBe(expectedStatus);
-    expect(jest.mocked(useQuery).mock.calls[0]?.[0].enabled).toBe(false);
+it.each(["loading", "notFound"] as const)(
+  "조회 모듈의 %s 상태를 그대로 전달한다",
+  async (status) => {
+    jest.mocked(useScheduleDetailData).mockReturnValue({ status });
+    expect((await renderDetail()).status).toBe(status);
   }
 );
 
-it("일정 없음과 일반 조회 오류를 다른 상태로 구분한다", async () => {
-  jest.mocked(useScheduleById).mockReturnValue({
-    ...scheduleResult,
-    data: undefined,
-    error: new ScheduleNotFoundError(),
-  } as never);
-  expect((await renderDetail()).status).toBe("notFound");
-
-  const error = new Error("일정 조회 실패");
-  jest.mocked(useScheduleById).mockReturnValue({
-    ...scheduleResult,
-    data: undefined,
+it("조회 오류와 재조회 동작을 그대로 전달한다", async () => {
+  const error = new Error("조회 실패");
+  jest.mocked(useScheduleDetailData).mockReturnValue({
     error,
-  } as never);
-  expect(expectError(await renderDetail()).error).toBe(error);
+    refetch,
+    status: "error",
+  });
+
+  const result = await renderDetail();
+
+  expect(result).toEqual({ error, refetch, status: "error" });
+  expect(useScheduleDetailData).toHaveBeenCalledWith("item-1");
 });
 
-it("기록 로딩과 실패를 상세 화면에 전달한다", async () => {
-  jest
-    .mocked(useQuery)
-    .mockReturnValue({ ...detailResult, isPending: true } as never);
-  expect((await renderDetail()).status).toBe("loading");
-  const error = new Error("기록 조회 실패");
-  jest.mocked(useQuery).mockReturnValue({ ...detailResult, error } as never);
-  const result = expectError(await renderDetail());
-  expect(result.error).toBe(error);
-});
+function mockReady(
+  item: ReturnType<typeof scheduleFixture>,
+  logs: ReturnType<typeof logFixture>[]
+): void {
+  jest.mocked(useScheduleDetailData).mockReturnValue({
+    item,
+    logs,
+    refetch,
+    status: "ready",
+    timezone: testTimezone,
+  });
+}
 
 function expectReady(
   result: DetailQueryResult
@@ -254,18 +147,6 @@ function expectReady(
 
   if (result.status !== "ready") {
     throw new Error(`상세 ready 상태가 필요하지만 ${result.status}입니다.`);
-  }
-
-  return result;
-}
-
-function expectError(
-  result: DetailQueryResult
-): Extract<DetailQueryResult, { status: "error" }> {
-  expect(result.status).toBe("error");
-
-  if (result.status !== "error") {
-    throw new Error(`상세 error 상태가 필요하지만 ${result.status}입니다.`);
   }
 
   return result;

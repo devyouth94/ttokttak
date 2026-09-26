@@ -2,32 +2,7 @@ import { addDays } from "date-fns/addDays";
 import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
 import { formatInTimeZone } from "date-fns-tz";
 
-export const recurrenceTypes = [
-  "once",
-  "daily",
-  "interval_days",
-  "weekly",
-  "interval_weeks",
-  "monthly",
-  "interval_months",
-] as const;
-
-export const anchorTypes = ["fixed", "completion_based"] as const;
-
-export type RecurrenceType = (typeof recurrenceTypes)[number];
-export type AnchorType = (typeof anchorTypes)[number];
-
-export type RuleVersion = {
-  anchorType: AnchorType;
-  effectiveFromUtc: string;
-  endDateLocal: string | null;
-  intervalValue: number | null;
-  notificationsEnabled: boolean;
-  recurrenceType: RecurrenceType;
-  reminderTimeLocal: string;
-  seedStartDateLocal: string;
-  weekdayMask: number[] | null;
-};
+import type { RecurrenceType } from "../model";
 
 const CALENDAR_HOUR = 12;
 

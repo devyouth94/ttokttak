@@ -7,8 +7,9 @@ import { EllipsisVertical } from "lucide-react-native";
 
 import { useDeviceSync } from "~/device-sync";
 import { getScheduleReturnPath } from "~/route-param";
-import type { Schedule } from "~/schedule/schedule";
+import type { Schedule } from "~/schedule/model";
 import { archiveSchedule } from "~/schedule/write";
+import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
@@ -24,6 +25,7 @@ export function DetailManagementMenu({
 }: DetailManagementMenuProps): React.JSX.Element {
   const { t } = useTranslation();
   const { syncDeviceOutputs } = useDeviceSync();
+  const { user } = useSession();
   const themeColors = useThemeColors();
 
   const [isArchiving, setIsArchiving] = useState(false);
@@ -43,14 +45,20 @@ export function DetailManagementMenu({
   }
 
   async function handleDeleteConfirm(): Promise<void> {
-    if (isArchiving) {
+    const userId = user?.id;
+
+    if (isArchiving || !userId) {
       return;
     }
 
     setIsArchiving(true);
 
     try {
-      await archiveSchedule({ itemId: item.id, syncDeviceOutputs });
+      await archiveSchedule({
+        itemId: item.id,
+        syncDeviceOutputs,
+        userId,
+      });
       router.replace(getScheduleReturnPath(returnTo));
     } catch {
       Alert.alert(t("scheduleDetail.inlineErrorTitle"), t("error.tryAgain"));

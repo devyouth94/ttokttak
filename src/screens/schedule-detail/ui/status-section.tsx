@@ -7,7 +7,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { useAppLanguage } from "~/i18n/provider";
 import { formatTimestamp } from "~/schedule/display/date";
 import { getActionLabel } from "~/schedule/display/label";
-import type { Occurrence } from "~/schedule/rules/occurrence";
+import type { Occurrence } from "~/schedule/model";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";

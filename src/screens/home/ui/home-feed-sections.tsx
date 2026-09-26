@@ -1,10 +1,10 @@
 import { View, type ViewStyle } from "react-native";
 
-import type { HomeFeedCard, HomeFeedSection } from "~/schedule/home-feed";
-import type { OccurrenceAction } from "~/schedule/rules/occurrence";
+import type { OccurrenceAction } from "~/schedule/model";
 import { spacing } from "~/ui/tokens";
 
 import { HomeFeedSectionCard } from "./home-feed-section-card";
+import type { HomeFeedCard, HomeFeedSection } from "../presentation";
 
 const FEED_SECTION_STACK_OVERLAP = spacing.lg;
 

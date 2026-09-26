@@ -12,16 +12,14 @@ import Svg, {
 import { Check } from "lucide-react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
-import {
-  contrastingColor,
-  getColorOptions,
-  normalizeColorHex,
-} from "~/schedule/display/color";
+import { normalizeColorHex } from "~/schedule/color";
+import { getColorOptions } from "~/schedule/display/color";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
+import { contrastingColor } from "./color-space";
 import { CustomColorPicker } from "./custom-picker";
 import type { ScheduleFormValues } from "../../form-values";
 import { useScheduleFormSetters } from "../../use-form-setters";

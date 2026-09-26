@@ -1,17 +1,15 @@
 import { formatInTimeZone } from "date-fns-tz";
 
-import {
-  createOccurrences,
-  type OccurrenceLog,
-  toUtcRange,
-} from "./occurrence";
-import type { RuleVersion } from "./recurrence";
+import { createOccurrences } from "./occurrence";
 import { assertInput } from "./validate";
+import { toUtcRange } from "../local-date";
 import {
   type CreateScheduleInput,
   currentRule,
+  type OccurrenceLog,
+  type RuleVersion,
   type Schedule,
-} from "../schedule";
+} from "../model";
 
 export type EditScheduleInput = Partial<
   Omit<CreateScheduleInput, "startDateLocal">

@@ -8,10 +8,8 @@ import {
   type NotificationStep,
   NotificationSyncError,
 } from "~/notifications/sync";
-import { listItems } from "~/schedule/db/items";
-import { listLogs } from "~/schedule/db/logs";
-import type { OccurrenceLog } from "~/schedule/rules/occurrence";
-import type { Schedule } from "~/schedule/schedule";
+import type { OccurrenceLog, Schedule } from "~/schedule/model";
+import { readActiveScheduleData } from "~/schedule/read";
 import { captureException } from "~/sentry";
 import { supabase } from "~/supabase";
 import { applyHomeWidget } from "~/widgets/home";
@@ -156,12 +154,12 @@ async function syncDeviceOutputsNow(
 }
 
 async function loadData(userId: string, step: NotificationStep) {
-  const items = await step("items", () => listItems({ userId }));
-  const itemIds = items.map((item) => item.id);
-  const completionLogs = itemIds.length
-    ? await step("logs", () => listLogs({ itemIds, userId }))
-    : [];
-  return { items, completionLogs };
+  const { logs, schedules } = await readActiveScheduleData(
+    { userId },
+    (stage, operation) => step(stage, operation)
+  );
+
+  return { completionLogs: logs, items: schedules };
 }
 
 async function getAccessToken(userId: string): Promise<string | null> {

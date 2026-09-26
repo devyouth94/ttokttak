@@ -4,7 +4,7 @@ import {
   type ScheduleOverrides,
   testTimezone as timezone,
 } from "../fixtures";
-import type { Schedule } from "../schedule";
+import type { Schedule } from "../model";
 
 const now = new Date("2026-05-07T03:00:00.000Z");
 

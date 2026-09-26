@@ -1,9 +1,6 @@
-import { colorByKey, type ColorKey } from "~/schedule/display/color";
+import { colorByKey, type ColorKey } from "~/schedule/color";
 import { scheduleFixture } from "~/schedule/fixtures";
-import type {
-  OccurrenceEntry,
-  OccurrenceStatus,
-} from "~/schedule/rules/occurrence";
+import type { OccurrenceEntry, OccurrenceStatus } from "~/schedule/model";
 
 import {
   buildCalendarDayEntries,

@@ -1,12 +1,17 @@
 import { captureException } from "~/sentry";
 
+import { invalidateScheduleCache } from "./cache";
 import * as db from "./db/items";
 import { createLogs, listItemLogs } from "./db/logs";
-import { refreshSchedules } from "./query";
+import type {
+  CreateScheduleInput,
+  OccurrenceAction,
+  OccurrenceEntry,
+  OccurrenceLog,
+} from "./model";
+import { selectOccurrencesToRecord } from "./occurrence-policy";
 import { type EditScheduleInput, resolveEdit } from "./rules/edit";
-import type { OccurrenceAction } from "./rules/occurrence";
 import { assertInput } from "./rules/validate";
-import type { CreateScheduleInput } from "./schedule";
 
 type CommonOptions = {
   syncDeviceOutputs: () => Promise<void>;
@@ -30,7 +35,7 @@ export async function createSchedule({
     userId,
   });
 
-  await finishScheduleWrite(syncDeviceOutputs);
+  await finishScheduleWrite(userId, syncDeviceOutputs);
 }
 
 export async function updateSchedule({
@@ -65,44 +70,53 @@ export async function updateSchedule({
     });
   }
 
-  await finishScheduleWrite(syncDeviceOutputs);
+  await finishScheduleWrite(userId, syncDeviceOutputs);
 }
 
 export async function archiveSchedule({
   itemId,
   syncDeviceOutputs,
-}: {
-  itemId: string;
-  syncDeviceOutputs: () => Promise<void>;
-}): Promise<void> {
+  userId,
+}: CommonOptions & { itemId: string }): Promise<void> {
   await db.archiveItem(itemId);
-  await finishScheduleWrite(syncDeviceOutputs);
+  await finishScheduleWrite(userId, syncDeviceOutputs);
 }
 
-/** occurrence 처리 기록을 저장하고 파생된 기기·화면 상태를 갱신한다. */
-export async function recordOccurrences({
+/** occurrence 처리 의도를 기록하고 파생된 기기·화면 상태를 갱신한다. */
+export async function processOccurrence({
   action,
-  itemId,
-  scheduledAtUtc,
+  logs,
+  now,
   syncDeviceOutputs,
+  target,
+  timezone,
   userId,
 }: CommonOptions & {
   action: OccurrenceAction;
-  itemId: string;
-  scheduledAtUtc: string[];
+  logs: OccurrenceLog[];
+  now: Date;
+  target: OccurrenceEntry;
+  timezone: string;
 }): Promise<void> {
-  if (scheduledAtUtc.length > 0) {
+  const occurrences = selectOccurrencesToRecord({
+    logs,
+    now,
+    target,
+    timezone,
+  });
+
+  if (occurrences.length > 0) {
     await createLogs(
-      scheduledAtUtc.map((scheduledAtUtc) => ({
+      occurrences.map(({ scheduledAtUtc }) => ({
         action,
-        itemId,
+        itemId: target.schedule.id,
         scheduledAtUtc,
         userId,
       }))
     );
   }
 
-  await finishScheduleWrite(syncDeviceOutputs, {
+  await finishScheduleWrite(userId, syncDeviceOutputs, {
     feature: "home-feed-occurrence-notification-sync",
     reason:
       action === "completed" ? "occurrence-completed" : "occurrence-skipped",
@@ -110,6 +124,7 @@ export async function recordOccurrences({
 }
 
 async function finishScheduleWrite(
+  userId: string,
   syncDeviceOutputs: () => Promise<void>,
   tags: { feature: string; reason?: string } = {
     feature: "schedule-mutation-notification-sync",
@@ -123,5 +138,5 @@ async function finishScheduleWrite(
     });
   }
 
-  await refreshSchedules();
+  await invalidateScheduleCache(userId);
 }

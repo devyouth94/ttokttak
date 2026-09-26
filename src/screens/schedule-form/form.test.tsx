@@ -170,6 +170,7 @@ describe("일정 폼", () => {
     expect(archiveSchedule).toHaveBeenCalledWith({
       itemId: "item-1",
       syncDeviceOutputs,
+      userId: "user-1",
     });
   });
 

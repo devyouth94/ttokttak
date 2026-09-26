@@ -9,11 +9,12 @@ import {
 } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
-import { hexToHsv, hsvToHex } from "~/schedule/display/color";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
+
+import { hexToHsv, hsvToHex } from "./color-space";
 
 type CustomColorPickerProps = {
   colorHex: string;

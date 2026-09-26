@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
-import type { OccurrenceEntry } from "~/schedule/rules/occurrence";
+import type { OccurrenceEntry } from "~/schedule/model";
 import { ItemRow } from "~/schedule/ui/item-row";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";

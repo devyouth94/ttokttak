@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { type AppLanguage, normalizeAppLanguage } from "~/i18n/language";
 import { formatTimestamp } from "~/schedule/display/date";
-import { getRecurrenceLabel } from "~/schedule/display/label";
+import {
+  getRecurrenceLabel,
+  getScheduleDisplayTitle,
+} from "~/schedule/display/label";
+import type { Occurrence, Schedule } from "~/schedule/model";
 import { useNow } from "~/schedule/now";
 import { useSchedules } from "~/schedule/query";
-import type { Occurrence } from "~/schedule/rules/occurrence";
 import { createOccurrences } from "~/schedule/rules/occurrence";
-import { getScheduleDisplayTitle, type Schedule } from "~/schedule/schedule";
 
 type Row = {
   colorHex: string;

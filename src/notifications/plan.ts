@@ -1,18 +1,17 @@
 import type { NotificationRequest } from "expo-notifications";
 import { addDays } from "date-fns/addDays";
-import { formatInTimeZone } from "date-fns-tz";
 
 import type { AppLanguage } from "~/i18n/language";
 import { formatTimestamp } from "~/schedule/display/date";
+import { toUtcRange } from "~/schedule/local-date";
 import {
-  addLocalDays,
-  createOccurrences,
-  OCCURRENCE_LOOKBACK_DAYS,
+  currentRule,
   type OccurrenceLog,
-  toUtcRange,
-} from "~/schedule/rules/occurrence";
+  type Schedule,
+} from "~/schedule/model";
+import { countPendingAtTimes } from "~/schedule/occurrence-policy";
+import { createOccurrences } from "~/schedule/rules/occurrence";
 import { supportsCompletion } from "~/schedule/rules/recurrence";
-import { currentRule, type Schedule } from "~/schedule/schedule";
 
 export const REMINDER_PREFIX = "ttokttak:reminder:";
 const MAX_NOTIFICATIONS = 60;
@@ -42,12 +41,15 @@ export function planNotifications(input: PlanInput) {
       left.scheduledAtUtc.localeCompare(right.scheduledAtUtc)
     )
     .slice(0, available);
-  const badgeCounts = getBadgeCounts(
-    items,
-    completionLogs,
-    [now, ...candidates.map(({ scheduledAtUtc }) => new Date(scheduledAtUtc))],
-    timezone
-  );
+  const badgeCounts = countPendingAtTimes({
+    logs: completionLogs,
+    schedules: items,
+    times: [
+      now,
+      ...candidates.map(({ scheduledAtUtc }) => new Date(scheduledAtUtc)),
+    ],
+    timezone,
+  });
   const wanted = candidates.map((candidate) => ({
     ...candidate,
     identifier: `${REMINDER_PREFIX}${userId}:${candidate.itemId}:${candidate.scheduledAtUtc}`,
@@ -154,55 +156,4 @@ function getCandidates({
       ),
     }));
   });
-}
-
-/** occurrence는 한 번 만들고 각 시각의 지난 일정 Set과 오늘 개수를 센다. */
-function getBadgeCounts(
-  items: Schedule[],
-  logs: OccurrenceLog[],
-  times: Date[],
-  timezone: string
-): Map<string, number> {
-  const first = times[0]!;
-  const last = times.at(-1)!;
-  const firstLocalDate = formatInTimeZone(first, timezone, "yyyy-MM-dd");
-  const entries = createOccurrences({
-    logs,
-    now: last,
-    schedules: items.filter((item) => !item.isArchived),
-    timezone,
-  })
-    .range({
-      startUtc: toUtcRange(
-        addLocalDays(firstLocalDate, -OCCURRENCE_LOOKBACK_DAYS),
-        timezone
-      ).startUtc,
-      endUtc: last.toISOString(),
-    })
-    .filter(
-      ({ occurrence }) =>
-        occurrence.status !== "completed" && occurrence.status !== "skipped"
-    );
-
-  // ponytail: 최대 61개 시각에서 선형 스캔한다. 대규모 일정에서 병목이 확인되면 날짜별 인덱스를 추가한다.
-  return new Map(
-    times.map((time) => {
-      const nowUtc = time.toISOString();
-      const today = formatInTimeZone(time, timezone, "yyyy-MM-dd");
-      const start = addLocalDays(today, -OCCURRENCE_LOOKBACK_DAYS);
-      const overdueItems = new Set<string>();
-      let dueToday = 0;
-      for (const { occurrence, schedule } of entries) {
-        if (occurrence.localDate >= start && occurrence.localDate < today) {
-          overdueItems.add(schedule.id);
-        } else if (
-          occurrence.localDate === today &&
-          occurrence.scheduledAtUtc <= nowUtc
-        ) {
-          dueToday += 1;
-        }
-      }
-      return [nowUtc, overdueItems.size + dueToday];
-    })
-  );
 }

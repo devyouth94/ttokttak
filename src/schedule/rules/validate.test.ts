@@ -1,6 +1,6 @@
 import { validateInput, type ValidationIssueCode } from "./validate";
-import { defaultColorHex } from "../display/color";
-import type { CreateScheduleInput } from "../schedule";
+import { defaultColorHex } from "../color";
+import type { CreateScheduleInput } from "../model";
 
 function createInput(
   overrides: Partial<CreateScheduleInput> = {}

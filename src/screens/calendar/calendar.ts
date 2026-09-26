@@ -2,11 +2,8 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import type { AppLanguage } from "~/i18n/language";
 import { formatTimestamp } from "~/schedule/display/date";
-import type {
-  OccurrenceEntry,
-  OccurrenceStatus,
-} from "~/schedule/rules/occurrence";
-import { getScheduleDisplayTitle } from "~/schedule/schedule";
+import { getScheduleDisplayTitle } from "~/schedule/display/label";
+import type { OccurrenceEntry, OccurrenceStatus } from "~/schedule/model";
 
 const CALENDAR_MAX_VISIBLE_MARKERS = 5;
 

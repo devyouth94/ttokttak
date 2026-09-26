@@ -1,12 +1,12 @@
-import { createOccurrences, toUtcRange } from "./occurrence";
-import type { RecurrenceType } from "./recurrence";
+import { createOccurrences } from "./occurrence";
 import {
   logFixture as createLog,
   ruleFixture as createVersion,
   scheduleFixture as createSchedule,
   testTimezone as timezone,
 } from "../fixtures";
-import type { Schedule } from "../schedule";
+import { toUtcRange } from "../local-date";
+import type { RecurrenceType, Schedule } from "../model";
 
 function dates(
   schedule: Schedule,

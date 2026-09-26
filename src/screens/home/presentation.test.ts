@@ -2,11 +2,13 @@ import type { TFunction } from "i18next";
 
 import {
   logFixture,
+  ruleFixture,
   scheduleFixture,
   type ScheduleOverrides,
   testTimezone as timezone,
-} from "./fixtures";
-import { createHomeSections } from "./home-feed";
+} from "~/schedule/fixtures";
+
+import { createHomeSections } from "./presentation";
 
 const defaults = {
   language: "ko" as const,
@@ -180,6 +182,33 @@ describe("홈 피드 계산", () => {
     });
     expect(sections[0]?.items).toEqual([]);
     expect(sections[1]?.items[0]?.id).toBe("item-1:2026-04-09T15:00:00.000Z");
+  });
+
+  it("지난 occurrence는 당시 예정 시각을 표시한다", () => {
+    const sections = createHomeSections({
+      ...defaults,
+      now: new Date("2026-09-26T06:00:00.000Z"),
+      schedules: [
+        item({
+          startDateLocal: "2026-09-25",
+          versions: [
+            ruleFixture({
+              effectiveFromUtc: "2026-09-24T15:00:00.000Z",
+              reminderTimeLocal: "09:00",
+              seedStartDateLocal: "2026-09-25",
+            }),
+            ruleFixture({
+              effectiveFromUtc: "2026-09-26T03:00:00.000Z",
+              reminderTimeLocal: "21:00",
+              seedStartDateLocal: "2026-09-26",
+            }),
+          ],
+        }),
+      ],
+      selectedDateId: "2026-09-26",
+    });
+
+    expect(sections[0]?.items[0]?.metaLine).toContain("오전 9:00");
   });
 });
 

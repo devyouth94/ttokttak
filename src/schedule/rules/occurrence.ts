@@ -1,47 +1,20 @@
-import { addDays } from "date-fns/addDays";
-import { format } from "date-fns/format";
-import { parse } from "date-fns/parse";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import {
   firstDate,
   nextDate,
   type RecurrenceRule,
-  type RuleVersion,
   supportsCompletion,
 } from "./recurrence";
-import type { Schedule } from "../schedule";
-
-export type OccurrenceStatus =
-  | "completed"
-  | "overdue"
-  | "scheduled"
-  | "skipped";
-export type OccurrenceAction = "completed" | "skipped";
-
-export type OccurrenceLog = {
-  id: string;
-  itemId: string;
-  scheduledAtUtc: string;
-  action: OccurrenceAction;
-  actedAtUtc: string;
-};
-
-export type Occurrence = {
-  localDate: string;
-  scheduledAtUtc: string;
-  status: OccurrenceStatus;
-};
-
-export type UtcRange = {
-  endUtc: string;
-  startUtc: string;
-};
-
-export type OccurrenceEntry = {
-  occurrence: Occurrence;
-  schedule: Schedule;
-};
+import type { UtcRange } from "../local-date";
+import type {
+  Occurrence,
+  OccurrenceEntry,
+  OccurrenceLog,
+  OccurrenceStatus,
+  RuleVersion,
+  Schedule,
+} from "../model";
 
 type ScheduleLogs = {
   byTime: Map<string, OccurrenceLog>;
@@ -53,27 +26,6 @@ type VersionRule = RecurrenceRule & {
   effectiveFromUtc: string;
   reminderTimeLocal: string;
 };
-
-export const OCCURRENCE_LOOKBACK_DAYS = 730;
-
-/** yyyy-MM-dd local date에 날짜 수를 더한다. */
-export function addLocalDays(localDate: string, amount: number): string {
-  return format(
-    addDays(parse(localDate, "yyyy-MM-dd", new Date()), amount),
-    "yyyy-MM-dd"
-  );
-}
-
-/** local date 하루를 timezone 기준 UTC 범위로 바꾼다. */
-export function toUtcRange(localDate: string, timezone: string): UtcRange {
-  return {
-    endUtc: fromZonedTime(`${localDate}T23:59:59.999`, timezone).toISOString(),
-    startUtc: fromZonedTime(
-      `${localDate}T00:00:00.000`,
-      timezone
-    ).toISOString(),
-  };
-}
 
 /**
  * 일정과 처리 기록에서 occurrence를 계산하고 범위·다음·특정 시점으로 조회한다.

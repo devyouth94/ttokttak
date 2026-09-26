@@ -4,19 +4,20 @@ import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 
 import type { AppLanguage } from "~/i18n/language";
-
-import { formatLocal } from "./display/date";
-import { getRecurrenceLabel } from "./display/label";
+import { formatLocal, formatTimestamp } from "~/schedule/display/date";
+import { getRecurrenceLabel } from "~/schedule/display/label";
+import { addLocalDays, toUtcRange } from "~/schedule/local-date";
+import type {
+  Occurrence,
+  OccurrenceEntry,
+  OccurrenceLog,
+  Schedule,
+} from "~/schedule/model";
 import {
-  addLocalDays,
-  createOccurrences,
-  type Occurrence,
-  OCCURRENCE_LOOKBACK_DAYS,
-  type OccurrenceEntry,
-  type OccurrenceLog,
-  toUtcRange,
-} from "./rules/occurrence";
-import { currentRule, type Schedule } from "./schedule";
+  selectLatestOverdue,
+  selectScheduledOnDate,
+} from "~/schedule/occurrence-policy";
+import { createOccurrences } from "~/schedule/rules/occurrence";
 
 const UPCOMING_DAYS = 14;
 
@@ -69,11 +70,16 @@ export function createHomeSections({
       : t("home.feed.emptySelectedDate", { date: title }),
     id: "selected-date",
     items: createCards(
-      getSelectedDateEntries(occurrences, selectedDateId, timezone),
+      selectScheduledOnDate({
+        localDate: selectedDateId,
+        occurrences,
+        timezone,
+      }),
       "selected-date",
       dates.today,
       language,
-      t
+      t,
+      timezone
     ),
     title,
   };
@@ -86,11 +92,12 @@ export function createHomeSections({
     emptyMessage: t("home.feed.emptyOverdue"),
     id: "overdue",
     items: createCards(
-      getLatestOverdueEntries(occurrences, dates.overdueStart, now, timezone),
+      selectLatestOverdue({ now, occurrences, timezone }),
       "overdue",
       dates.today,
       language,
-      t
+      t,
+      timezone
     ),
     title: t("home.feed.sectionOverdue"),
   };
@@ -100,16 +107,18 @@ export function createHomeSections({
     emptyMessage: t("home.feed.emptyUpcoming"),
     id: "upcoming",
     items: createCards(
-      getUpcomingEntries(
-        occurrences,
-        dates.upcomingStart,
-        dates.upcomingEnd,
-        timezone
+      occurrences.range(
+        {
+          endUtc: toUtcRange(dates.upcomingEnd, timezone).endUtc,
+          startUtc: toUtcRange(dates.upcomingStart, timezone).startUtc,
+        },
+        "scheduled"
       ),
       "upcoming",
       dates.today,
       language,
-      t
+      t,
+      timezone
     ),
     title: t("home.feed.sectionUpcoming"),
   };
@@ -122,67 +131,10 @@ function getHomeDates(now: Date, selectedDateId: string, timezone: string) {
 
   return {
     isToday: selectedDateId === today,
-    overdueStart: addLocalDays(today, -OCCURRENCE_LOOKBACK_DAYS),
     today,
     upcomingEnd: addLocalDays(today, UPCOMING_DAYS),
     upcomingStart: addLocalDays(today, 1),
   };
-}
-
-function getSelectedDateEntries(
-  occurrences: ReturnType<typeof createOccurrences>,
-  selectedDateId: string,
-  timezone: string
-): OccurrenceEntry[] {
-  return occurrences.range(toUtcRange(selectedDateId, timezone), "scheduled");
-}
-
-/**
- * 같은 일정에서 여러 occurrence가 밀려도 홈에는 가장 최근 하나만 보여준다.
- * 사용자가 이 항목을 처리하면 action module이 이전 미처리 occurrence까지 처리한다.
- */
-function getLatestOverdueEntries(
-  occurrences: ReturnType<typeof createOccurrences>,
-  overdueStart: string,
-  now: Date,
-  timezone: string
-): OccurrenceEntry[] {
-  const entries = occurrences.range(
-    {
-      endUtc: now.toISOString(),
-      startUtc: toUtcRange(overdueStart, timezone).startUtc,
-    },
-    "overdue"
-  );
-  const latest = new Map<string, OccurrenceEntry>();
-
-  for (const entry of entries) {
-    const previous = latest.get(entry.schedule.id);
-
-    if (
-      !previous ||
-      entry.occurrence.scheduledAtUtc > previous.occurrence.scheduledAtUtc
-    ) {
-      latest.set(entry.schedule.id, entry);
-    }
-  }
-
-  return [...latest.values()];
-}
-
-function getUpcomingEntries(
-  occurrences: ReturnType<typeof createOccurrences>,
-  upcomingStart: string,
-  upcomingEnd: string,
-  timezone: string
-): OccurrenceEntry[] {
-  return occurrences.range(
-    {
-      endUtc: toUtcRange(upcomingEnd, timezone).endUtc,
-      startUtc: toUtcRange(upcomingStart, timezone).startUtc,
-    },
-    "scheduled"
-  );
 }
 
 function createCards(
@@ -190,12 +142,14 @@ function createCards(
   sectionId: HomeFeedSection["id"],
   today: string,
   language: AppLanguage,
-  t: TFunction
+  t: TFunction,
+  timezone: string
 ): HomeFeedCard[] {
   return entries
     .map(({ schedule: item, occurrence }): HomeFeedCard => {
-      const timeLabel = formatLocal(
-        currentRule(item).reminderTimeLocal,
+      const timeLabel = formatTimestamp(
+        occurrence.scheduledAtUtc,
+        timezone,
         "time",
         language
       );

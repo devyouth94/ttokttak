@@ -79,3 +79,68 @@ it.each([false, true])(
     }
   }
 );
+
+it.each([
+  ["빈 목록에 추가", [], [scheduleFixture({ id: "new" })]],
+  [
+    "같은 개수의 일정 교체",
+    [scheduleFixture({ id: "old" })],
+    [scheduleFixture({ id: "new" })],
+  ],
+  ["전체 삭제", [scheduleFixture({ id: "old" })], []],
+] as const)(
+  "새로고침 완료가 최신 일정 ID의 전체 기록 준비를 포함한다: %s",
+  async (_name, initial, next) => {
+    jest.clearAllMocks();
+    jest.mocked(useSession).mockReturnValue({
+      status: "ready",
+      user: { id: "user-1" },
+      profile: { timezone: "UTC" },
+    } as never);
+    jest.mocked(listItems).mockResolvedValueOnce([...initial]);
+    jest.mocked(listItems).mockResolvedValueOnce([...next]);
+    jest.mocked(listLogs).mockResolvedValue([]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    let result!: ReturnType<typeof useSchedules>;
+    function Probe() {
+      result = useSchedules();
+      return null;
+    }
+    let renderer!: ReturnType<typeof TestRenderer.create>;
+
+    try {
+      await TestRenderer.act(async () => {
+        renderer = TestRenderer.create(
+          createElement(QueryClientProvider, { client }, createElement(Probe))
+        );
+      });
+      await TestRenderer.act(async () => {
+        await new Promise((done) => setTimeout(done, 10));
+      });
+
+      expect(result.items.map(({ id }) => id)).toEqual(
+        initial.map(({ id }) => id)
+      );
+
+      await TestRenderer.act(async () => {
+        await result.refetch();
+        await new Promise((done) => setTimeout(done, 0));
+      });
+
+      expect(result.items.map(({ id }) => id)).toEqual(
+        next.map(({ id }) => id)
+      );
+      if (next.length > 0) {
+        expect(listLogs).toHaveBeenLastCalledWith({
+          itemIds: next.map(({ id }) => id),
+          userId: "user-1",
+        });
+      }
+    } finally {
+      await TestRenderer.act(() => renderer?.unmount());
+      client.clear();
+    }
+  }
+);

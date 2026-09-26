@@ -1,10 +1,17 @@
+import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
+import { parse } from "date-fns/parse";
 import { formatInTimeZone } from "date-fns-tz";
 import type { TFunction } from "i18next";
 
 import type { AppLanguage } from "~/i18n/language";
-import { createHomeSections } from "~/schedule/home-feed";
-import type { OccurrenceLog } from "~/schedule/rules/occurrence";
-import { getScheduleDisplayTitle, type Schedule } from "~/schedule/schedule";
+import { formatTimestamp } from "~/schedule/display/date";
+import { getScheduleDisplayTitle } from "~/schedule/display/label";
+import type { OccurrenceLog, Schedule } from "~/schedule/model";
+import {
+  selectLatestOverdue,
+  selectScheduledOnDate,
+} from "~/schedule/occurrence-policy";
+import { createOccurrences } from "~/schedule/rules/occurrence";
 
 export type HomeWidgetProps = {
   emptyMessage: string;
@@ -17,7 +24,7 @@ export type HomeWidgetProps = {
   moreSmall: string;
 };
 
-/** 기존 홈 projection에서 위젯에 저장할 최소 표시 데이터만 고른다. */
+/** 공통 occurrence 선택 결과를 위젯의 최소 표시 데이터로 만든다. */
 export function createHomeWidgetProps({
   language,
   logs,
@@ -33,29 +40,68 @@ export function createHomeWidgetProps({
   t: TFunction;
   timezone: string;
 }): HomeWidgetProps {
-  const cards = createHomeSections({
-    language,
+  const occurrences = createOccurrences({
     logs,
     now,
     schedules,
-    selectedDateId: formatInTimeZone(now, timezone, "yyyy-MM-dd"),
-    t,
     timezone,
-  }).flatMap((section) => (section.id === "upcoming" ? [] : section.items));
+  });
+  const today = formatInTimeZone(now, timezone, "yyyy-MM-dd");
+  const entries = [
+    ...selectLatestOverdue({ now, occurrences, timezone }).sort((left, right) =>
+      right.occurrence.scheduledAtUtc.localeCompare(
+        left.occurrence.scheduledAtUtc
+      )
+    ),
+    ...selectScheduledOnDate({
+      localDate: today,
+      occurrences,
+      timezone,
+    }).sort((left, right) =>
+      left.occurrence.scheduledAtUtc.localeCompare(
+        right.occurrence.scheduledAtUtc
+      )
+    ),
+  ];
 
   return {
     emptyMessage: t("home.widget.empty"),
-    items: cards.slice(0, 6).map((card) => ({
-      color: card.item.colorHex,
-      detail: card.compactMetaLine,
+    items: entries.slice(0, 6).map(({ occurrence, schedule }) => ({
+      color: schedule.colorHex,
+      detail: getDetail(occurrence, today, timezone, language, t),
       title: getScheduleDisplayTitle(
-        card.item,
+        schedule,
         t("schedule.contentUnavailableTitle")
       ),
     })),
-    moreMedium: getMoreLabel(cards.length, 6, t),
-    moreSmall: getMoreLabel(cards.length, 3, t),
+    moreMedium: getMoreLabel(entries.length, 6, t),
+    moreSmall: getMoreLabel(entries.length, 3, t),
   };
+}
+
+function getDetail(
+  occurrence: { localDate: string; scheduledAtUtc: string },
+  today: string,
+  timezone: string,
+  language: AppLanguage,
+  t: TFunction
+): string {
+  const time = formatTimestamp(
+    occurrence.scheduledAtUtc,
+    timezone,
+    "time",
+    language
+  );
+
+  if (occurrence.localDate >= today) {
+    return time;
+  }
+
+  const days = differenceInCalendarDays(
+    parse(today, "yyyy-MM-dd", new Date()),
+    parse(occurrence.localDate, "yyyy-MM-dd", new Date())
+  );
+  return [t("home.feed.overdueDays", { count: days }), time].join(" · ");
 }
 
 function getMoreLabel(total: number, visible: number, t: TFunction): string {

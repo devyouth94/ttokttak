@@ -6,12 +6,11 @@ import { Bell, BellOff } from "lucide-react-native";
 import { useAppLanguage } from "~/i18n/provider";
 import { getColorHexLabel } from "~/schedule/display/color";
 import { formatLocal } from "~/schedule/display/date";
-import { getRecurrenceLabel } from "~/schedule/display/label";
 import {
-  currentRule,
+  getRecurrenceLabel,
   getScheduleDisplayTitle,
-  type Schedule,
-} from "~/schedule/schedule";
+} from "~/schedule/display/label";
+import { currentRule, type Schedule } from "~/schedule/model";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { StateMessage } from "~/ui/state-message";

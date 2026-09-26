@@ -3,22 +3,23 @@ import { fromZonedTime } from "date-fns-tz";
 import type { Database } from "~/database.types";
 import { supabase } from "~/supabase";
 
+import { nearestColorKey } from "../color";
 import {
   createContentDecryptor,
   decryptContent,
   encryptContent,
 } from "../content/cipher";
-import { nearestColorKey } from "../display/color";
 import {
   ScheduleContentUnrecoverableError,
   ScheduleNotFoundError,
 } from "../errors";
 import type {
   AnchorType,
+  CreateScheduleInput,
   RecurrenceType,
   RuleVersion,
-} from "../rules/recurrence";
-import type { CreateScheduleInput, Schedule } from "../schedule";
+  Schedule,
+} from "../model";
 
 type ItemRow = Database["public"]["Tables"]["recurring_items"]["Row"];
 type VersionRow =

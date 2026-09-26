@@ -1,19 +1,7 @@
-import { useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-
-import { listItemLogs } from "~/schedule/db/logs";
-import { ScheduleNotFoundError } from "~/schedule/errors";
-import { useScheduleById } from "~/schedule/query";
-import {
-  createOccurrences,
-  type Occurrence,
-  type OccurrenceLog,
-  toUtcRange,
-} from "~/schedule/rules/occurrence";
-import type { Schedule } from "~/schedule/schedule";
-import { useSession } from "~/session/provider";
-
-const emptyLogs: OccurrenceLog[] = [];
+import { toUtcRange } from "~/schedule/local-date";
+import type { Occurrence, OccurrenceLog, Schedule } from "~/schedule/model";
+import { useScheduleDetailData } from "~/schedule/query";
+import { createOccurrences } from "~/schedule/rules/occurrence";
 
 export type DetailQueryResult =
   | { status: "loading" }
@@ -42,60 +30,13 @@ export function useDetailQuery({
   now: Date;
   scheduledAtUtc?: string;
 }): DetailQueryResult {
-  const { profile, status: sessionStatus, user } = useSession();
-  const isReady = sessionStatus === "ready";
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const userId = user?.id ?? null;
+  const data = useScheduleDetailData(itemId);
 
-  const {
-    data: item = null,
-    error: itemError,
-    isPending: isItemPending,
-    refetch: refetchItem,
-  } = useScheduleById(itemId);
-
-  const {
-    data: logs = emptyLogs,
-    error: logsError,
-    isPending: isLogsPending,
-    refetch: refetchLogs,
-  } = useDetailLogsQuery({
-    enabled: isReady && Boolean(userId) && Boolean(itemId) && Boolean(item),
-    itemId,
-    userId,
-  });
-
-  const refetch = useCallback(async (): Promise<void> => {
-    if (!item) {
-      await refetchItem();
-      return;
-    }
-
-    await Promise.all([refetchItem(), refetchLogs()]);
-  }, [item, refetchItem, refetchLogs]);
-
-  if (itemId && sessionStatus === "loading") {
-    return { status: "loading" };
+  if (data.status !== "ready") {
+    return data;
   }
 
-  if (!itemId || !isReady || !userId) {
-    return { error: itemError ?? logsError, refetch, status: "error" };
-  }
-
-  if (isItemPending || (item && isLogsPending)) {
-    return { status: "loading" };
-  }
-
-  if (itemError instanceof ScheduleNotFoundError) {
-    return { status: "notFound" };
-  }
-
-  const error = itemError ?? logsError;
-
-  if (error || !item) {
-    return { error, refetch, status: "error" };
-  }
+  const { item, logs, timezone } = data;
 
   const history = [...logs]
     .sort((left, right) => right.actedAtUtc.localeCompare(left.actedAtUtc))
@@ -133,20 +74,4 @@ export function useDetailQuery({
     status: "ready",
     timezone,
   };
-}
-
-function useDetailLogsQuery({
-  enabled,
-  itemId,
-  userId,
-}: {
-  enabled: boolean;
-  itemId: string | null;
-  userId: string | null;
-}) {
-  return useQuery({
-    enabled,
-    queryFn: () => listItemLogs({ itemId: itemId!, userId: userId! }),
-    queryKey: ["schedule", userId ?? "signed-out", "detail", itemId],
-  });
 }

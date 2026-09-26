@@ -3,10 +3,8 @@ import { useController, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import {
-  type RecurrenceType,
-  requiresInterval,
-} from "~/schedule/rules/recurrence";
+import type { RecurrenceType } from "~/schedule/model";
+import { requiresInterval } from "~/schedule/rules/recurrence";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";

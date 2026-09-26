@@ -1,8 +1,6 @@
 import type { AppLanguage } from "~/i18n/language";
 
-import type { OccurrenceAction } from "../rules/occurrence";
-import type { Schedule } from "../schedule";
-import { currentRule } from "../schedule";
+import { currentRule, type OccurrenceAction, type Schedule } from "../model";
 
 const actionLabels = {
   en: { completed: "Complete", skipped: "Skip" },
@@ -25,6 +23,16 @@ export function getActionLabel(
   language: AppLanguage = "ko"
 ): string {
   return actionLabels[language][action];
+}
+
+/** 복구할 수 없는 암호문 대신 현재 언어의 대체 제목을 반환한다. */
+export function getScheduleDisplayTitle(
+  schedule: Pick<Schedule, "contentStatus" | "title">,
+  unavailableTitle: string
+): string {
+  return schedule.contentStatus === "unrecoverable"
+    ? unavailableTitle
+    : schedule.title;
 }
 
 /** 일정 반복 규칙의 표시 문구를 반환한다. */

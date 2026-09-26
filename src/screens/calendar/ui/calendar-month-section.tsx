@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import type { AppLanguage } from "~/i18n/language";
 import { useAppLanguage } from "~/i18n/provider";
 import { formatLocal } from "~/schedule/display/date";
-import type { OccurrenceEntry } from "~/schedule/rules/occurrence";
+import type { OccurrenceEntry } from "~/schedule/model";
 import type { ThemeColors } from "~/theme/colors";
 import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
