@@ -1,7 +1,11 @@
 import type { ReactElement } from "react";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
-import { prepareProfile, type Profile } from "~/account/profile";
+import {
+  prepareProfile,
+  type Profile,
+  updateName as saveName,
+} from "~/account/profile";
 import { captureException } from "~/sentry";
 import { supabase } from "~/supabase";
 
@@ -157,6 +161,43 @@ describe("SessionProvider", () => {
     await TestRenderer.act(async () => {
       first.resolve(createProfile("user-1"));
       await first.promise;
+    });
+
+    expect(getSession().profile).toBe(secondProfile);
+  });
+
+  it("계정 전환 뒤 완료된 이전 사용자의 이름 저장을 무시한다", async () => {
+    const saved = createDeferred<Profile>();
+    const firstProfile = createProfile("user-1");
+    const secondProfile = createProfile("user-2");
+
+    jest
+      .mocked(prepareProfile)
+      .mockResolvedValueOnce(firstProfile)
+      .mockResolvedValueOnce(secondProfile);
+    jest.mocked(saveName).mockReturnValueOnce(saved.promise);
+    const getSession = await renderSession();
+
+    await TestRenderer.act(async () => {
+      emitAuthChange("SIGNED_IN", createSession("user-1"));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    let updatePromise!: Promise<void>;
+    await TestRenderer.act(() => {
+      updatePromise = getSession().updateName("이전 사용자 이름");
+    });
+
+    await TestRenderer.act(async () => {
+      emitAuthChange("SIGNED_IN", createSession("user-2"));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await TestRenderer.act(async () => {
+      saved.resolve({ ...firstProfile, display_name: "이전 사용자 이름" });
+      await updatePromise;
     });
 
     expect(getSession().profile).toBe(secondProfile);

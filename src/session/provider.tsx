@@ -93,7 +93,12 @@ export function SessionProvider({
       throw new Error("로그인이 필요합니다.");
     }
 
-    setProfile(await saveName(user.id, name));
+    const request = requestRef.current;
+    const nextProfile = await saveName(user.id, name);
+
+    if (request === requestRef.current) {
+      setProfile(nextProfile);
+    }
   }
 
   function removeAccount(): Promise<void> {
