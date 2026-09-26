@@ -23,13 +23,13 @@ export type Sort = "createdDesc" | "titleAsc";
 
 export function useScheduleList() {
   const { i18n, t } = useTranslation();
-  const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
+  const now = useNow();
+  const query = useSchedules();
 
   const [refreshing, setRefreshing] = useState(false);
   const [sort, setSort] = useState<Sort>("titleAsc");
 
-  const now = useNow();
-  const query = useSchedules();
+  const language = normalizeAppLanguage(i18n.resolvedLanguage ?? i18n.language);
   const { items, logs, timezone: queryTimezone } = query;
 
   const rows = useMemo(() => {

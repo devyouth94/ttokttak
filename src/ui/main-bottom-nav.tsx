@@ -18,19 +18,18 @@ import { spacing } from "~/ui/tokens";
 
 export const MAIN_BOTTOM_NAV_RESERVED_HEIGHT = 92;
 const IOS_MAIN_TAB_CONTENT_BOTTOM_INSET = 160;
-
-export function getMainTabContentBottomInset(safeAreaBottom: number): number {
-  return Platform.OS === "ios"
-    ? IOS_MAIN_TAB_CONTENT_BOTTOM_INSET
-    : MAIN_BOTTOM_NAV_RESERVED_HEIGHT + safeAreaBottom;
-}
-
 const TAB_ICONS = {
   calendar: CalendarDays,
   home: House,
   schedule: ListTodo,
   settings: Settings2,
 } as const;
+
+export function getMainTabContentBottomInset(safeAreaBottom: number): number {
+  return Platform.OS === "ios"
+    ? IOS_MAIN_TAB_CONTENT_BOTTOM_INSET
+    : MAIN_BOTTOM_NAV_RESERVED_HEIGHT + safeAreaBottom;
+}
 
 export function MainBottomNav({
   descriptors,

@@ -12,6 +12,8 @@
 - 날짜 포맷은 `date-fns`와 `date-fns-tz`를 우선 사용한다.
 - `as unknown as` 캐스트는 사용하지 않는다.
 - 타입은 `z.infer` 등으로 직접 맞춘다.
+- 파일은 imports → 공개 타입·상수 → 핵심 export → private helper·local component → styles 순서로 읽히게 배치한다. 모듈 초기화와 네이티브 등록 순서는 우선한다.
+- 컴포넌트와 hook은 의존성 읽기 → local state·ref → 파생 값 → 사용자 동작 → lifecycle effect → 반환 순서로 배치한다.
 
 ## Docs
 

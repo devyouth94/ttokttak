@@ -59,6 +59,56 @@ export function supportsCompletion(recurrenceType: RecurrenceType): boolean {
   );
 }
 
+/** 반복 규칙이 만드는 첫 local date를 반환한다. */
+export function firstDate(rule: RecurrenceRule): string | null {
+  if (
+    rule.recurrenceType === "weekly" ||
+    rule.recurrenceType === "interval_weeks"
+  ) {
+    return weeklyDate(rule, rule.startDateLocal);
+  }
+
+  return rule.startDateLocal;
+}
+
+/** 현재 local date 다음에 오는 local date를 반환한다. */
+export function nextDate(
+  rule: RecurrenceRule,
+  currentDate: string,
+  anchorDate: string = currentDate
+): string | null {
+  let next: string | null;
+
+  switch (rule.recurrenceType) {
+    case "once":
+      return null;
+    case "daily":
+      next = formatDate(addDays(parseDate(currentDate), 1));
+      break;
+    case "interval_days":
+      next = formatDate(
+        addDays(parseDate(currentDate), rule.intervalValue ?? 1)
+      );
+      break;
+    case "weekly":
+    case "interval_weeks":
+      next = weeklyDate(rule, formatDate(addDays(parseDate(currentDate), 1)));
+      break;
+    case "monthly":
+      next = addMonths(currentDate, anchorDate, 1);
+      break;
+    case "interval_months":
+      next = addMonths(currentDate, anchorDate, rule.intervalValue ?? 1);
+      break;
+  }
+
+  if (next != null && next <= currentDate) {
+    throw new Error("반복 규칙의 다음 날짜는 현재 날짜보다 느려야 합니다.");
+  }
+
+  return next;
+}
+
 function parseDate(localDate: string): Date {
   const [year, month, day] = localDate.split("-").map(Number);
 
@@ -126,54 +176,4 @@ function weeklyDate(rule: RecurrenceRule, minimumDate: string): string | null {
   }
 
   return formatDate(addDays(week, interval * 7 + weekdays[0]!));
-}
-
-/** 반복 규칙이 만드는 첫 local date를 반환한다. */
-export function firstDate(rule: RecurrenceRule): string | null {
-  if (
-    rule.recurrenceType === "weekly" ||
-    rule.recurrenceType === "interval_weeks"
-  ) {
-    return weeklyDate(rule, rule.startDateLocal);
-  }
-
-  return rule.startDateLocal;
-}
-
-/** 현재 local date 다음에 오는 local date를 반환한다. */
-export function nextDate(
-  rule: RecurrenceRule,
-  currentDate: string,
-  anchorDate: string = currentDate
-): string | null {
-  let next: string | null;
-
-  switch (rule.recurrenceType) {
-    case "once":
-      return null;
-    case "daily":
-      next = formatDate(addDays(parseDate(currentDate), 1));
-      break;
-    case "interval_days":
-      next = formatDate(
-        addDays(parseDate(currentDate), rule.intervalValue ?? 1)
-      );
-      break;
-    case "weekly":
-    case "interval_weeks":
-      next = weeklyDate(rule, formatDate(addDays(parseDate(currentDate), 1)));
-      break;
-    case "monthly":
-      next = addMonths(currentDate, anchorDate, 1);
-      break;
-    case "interval_months":
-      next = addMonths(currentDate, anchorDate, rule.intervalValue ?? 1);
-      break;
-  }
-
-  if (next != null && next <= currentDate) {
-    throw new Error("반복 규칙의 다음 날짜는 현재 날짜보다 느려야 합니다.");
-  }
-
-  return next;
 }

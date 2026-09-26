@@ -37,6 +37,23 @@ export function ThemeProvider({
 
   // 마지막으로 읽거나 저장한 값을 기록해 늦게 끝난 초기 로딩이 사용자 선택을 덮지 않게 한다.
   const storedPreferenceRef = useRef<ThemePreference | null>(null);
+  const resolvedTheme = resolveTheme({
+    colorScheme,
+    preference: themePreference,
+  });
+
+  async function setThemePreference(
+    nextPreference: ThemePreference
+  ): Promise<void> {
+    if (storedPreferenceRef.current === nextPreference) {
+      return;
+    }
+
+    // 저장에 실패하면 현재 화면을 유지하고, 성공한 값만 화면에 적용한다.
+    await AsyncStorage.setItem(THEME_STORAGE_KEY, nextPreference);
+    storedPreferenceRef.current = nextPreference;
+    setPreference(nextPreference);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -67,24 +84,6 @@ export function ThemeProvider({
       isMounted = false;
     };
   }, []);
-
-  async function setThemePreference(
-    nextPreference: ThemePreference
-  ): Promise<void> {
-    if (storedPreferenceRef.current === nextPreference) {
-      return;
-    }
-
-    // 저장에 실패하면 현재 화면을 유지하고, 성공한 값만 화면에 적용한다.
-    await AsyncStorage.setItem(THEME_STORAGE_KEY, nextPreference);
-    storedPreferenceRef.current = nextPreference;
-    setPreference(nextPreference);
-  }
-
-  const resolvedTheme = resolveTheme({
-    colorScheme,
-    preference: themePreference,
-  });
 
   const value = {
     colors: themeColors[resolvedTheme],

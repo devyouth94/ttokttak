@@ -99,10 +99,6 @@ export function createFormValues(openedAt = new Date()): ScheduleFormValues {
   };
 }
 
-function defaultWeekdayMask(startDateLocal: string): number[] {
-  return [parse(startDateLocal, "yyyy-MM-dd", new Date()).getDay()];
-}
-
 export function getRecurrenceChange(
   values: ScheduleFormValues,
   recurrenceType: RecurrenceType
@@ -234,4 +230,8 @@ export function toScheduleInput(
       ? [...values.weekdayMask].sort((left, right) => left - right)
       : null,
   };
+}
+
+function defaultWeekdayMask(startDateLocal: string): number[] {
+  return [parse(startDateLocal, "yyyy-MM-dd", new Date()).getDay()];
 }

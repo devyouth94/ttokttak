@@ -18,12 +18,6 @@ type EditableProfileDisplayNameInput = {
   profileName: string | null | undefined;
 };
 
-function normalizeNullableName(
-  value: string | null | undefined
-): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
 export function getEditableProfileDisplayName({
   email,
   metadataName,
@@ -62,4 +56,10 @@ export function validateProfileDisplayName(
     errorMessage: null,
     value: normalizedValue,
   };
+}
+
+function normalizeNullableName(
+  value: string | null | undefined
+): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }

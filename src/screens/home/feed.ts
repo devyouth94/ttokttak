@@ -20,25 +20,11 @@ import { useHomeActions } from "./action";
 export function useHomeFeed() {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-
   const { profile } = useSession();
   const { syncDeviceOutputs } = useDeviceSync();
-
   const isFocused = useIsFocused();
-  const hasFocusedOnceRef = useRef(false);
-
   const now = useNow();
-  const initialTimezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const [selectedDateId, setSelectedDateId] = useState(() =>
-    formatInTimeZone(new Date(), initialTimezone, "yyyy-MM-dd")
-  );
-  const previousTimezoneRef = useRef(initialTimezone);
-
   const query = useSchedules();
-  const refetch = query.refetch;
-  const status = getStatus(query);
-
   const actions = useHomeActions({
     completionLogs: query.logs,
     syncDeviceOutputs,
@@ -46,6 +32,16 @@ export function useHomeFeed() {
     userId: query.userId,
   });
 
+  const initialTimezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const hasFocusedOnceRef = useRef(false);
+  const [selectedDateId, setSelectedDateId] = useState(() =>
+    formatInTimeZone(new Date(), initialTimezone, "yyyy-MM-dd")
+  );
+  const previousTimezoneRef = useRef(initialTimezone);
+
+  const refetch = query.refetch;
+  const status = getStatus(query);
   const sections = createHomeSections({
     language,
     logs: query.logs,
@@ -60,6 +56,11 @@ export function useHomeFeed() {
       (item) => !actions.processingIds.includes(item.id)
     ),
   }));
+
+  async function retry(): Promise<void> {
+    actions.clearError();
+    await refetch();
+  }
 
   // 사용자가 오늘을 보고 있을 때만 시간대 변경에 맞춰 선택 날짜를 옮긴다.
   useEffect(() => {
@@ -100,11 +101,6 @@ export function useHomeFeed() {
 
     void refetch();
   }, [isFocused, query.isReady, query.userId, refetch]);
-
-  const retry = async (): Promise<void> => {
-    actions.clearError();
-    await refetch();
-  };
 
   return {
     errorMessage:

@@ -74,6 +74,32 @@ export function SessionProvider({
     }
   }, []);
 
+  function retry(): Promise<void> {
+    return user ? loadProfile(user) : Promise.resolve();
+  }
+
+  async function signOut(): Promise<void> {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
+
+    await signOutGoogle();
+  }
+
+  async function updateName(name: string): Promise<void> {
+    if (!user) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    setProfile(await saveName(user.id, name));
+  }
+
+  function removeAccount(): Promise<void> {
+    return deleteAccount(user);
+  }
+
   useEffect(() => {
     const {
       data: { subscription },
@@ -100,29 +126,15 @@ export function SessionProvider({
   }, [loadProfile]);
 
   const value: SessionValue = {
-    status,
-    user,
+    deleteAccount: removeAccount,
     profile,
+    retry,
     signInApple,
     signInGoogle,
-    retry: () => (user ? loadProfile(user) : Promise.resolve()),
-    signOut: async () => {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
-
-      await signOutGoogle();
-    },
-    updateName: async (name: string) => {
-      if (!user) {
-        throw new Error("로그인이 필요합니다.");
-      }
-
-      setProfile(await saveName(user.id, name));
-    },
-    deleteAccount: () => deleteAccount(user),
+    signOut,
+    status,
+    updateName,
+    user,
   };
 
   return <SessionContext value={value}>{children}</SessionContext>;

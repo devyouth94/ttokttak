@@ -22,6 +22,86 @@ type EditResult = {
   version: RuleVersion | null;
 };
 
+/** 수정 입력을 저장할 일정 값과 새 규칙 버전으로 계산한다. */
+export function resolveEdit({
+  completionLogs,
+  input: changes,
+  item,
+  now,
+  timezone,
+}: {
+  completionLogs: OccurrenceLog[];
+  input: EditScheduleInput;
+  item: Schedule;
+  now: Date;
+  timezone: string;
+}): EditResult | null {
+  const merged: CreateScheduleInput = {
+    ...toInput(item),
+    ...changes,
+    startDateLocal: item.startDateLocal,
+  };
+  const input: CreateScheduleInput = {
+    ...merged,
+    endDateLocal: merged.recurrenceType === "once" ? null : merged.endDateLocal,
+  };
+  const validatesNewEndDate =
+    Object.prototype.hasOwnProperty.call(changes, "endDateLocal") &&
+    changes.endDateLocal != null;
+
+  assertInput(input, {
+    minimumEndDateLocal: validatesNewEndDate
+      ? formatInTimeZone(now, timezone, "yyyy-MM-dd")
+      : undefined,
+  });
+
+  const hasRuleChanges = ruleChanged(item, input);
+
+  if (!itemChanged(item, input) && !hasRuleChanges) {
+    return null;
+  }
+
+  const result: EditResult = {
+    item: {
+      colorHex: input.colorHex,
+      description: input.description,
+      title: input.title,
+    },
+    version: null,
+  };
+
+  if (!hasRuleChanges) {
+    return result;
+  }
+
+  const effectiveFromUtc = now.toISOString();
+  const version = {
+    anchorType: input.anchorType,
+    effectiveFromUtc,
+    endDateLocal: input.endDateLocal,
+    intervalValue: input.intervalValue,
+    notificationsEnabled: input.notificationsEnabled,
+    recurrenceType: input.recurrenceType,
+    reminderTimeLocal: input.reminderTimeLocal,
+    weekdayMask: input.weekdayMask,
+  };
+
+  return {
+    ...result,
+    version: {
+      ...version,
+      seedStartDateLocal:
+        nextStartDate({
+          completionLogs,
+          effectiveFromUtc,
+          item,
+          timezone,
+          version,
+        }) ?? item.startDateLocal,
+    },
+  };
+}
+
 function toInput(item: Schedule): CreateScheduleInput {
   const rule = currentRule(item);
 
@@ -101,84 +181,4 @@ function nextStartDate({
       timezone,
     }).next(item.id)?.localDate ?? null
   );
-}
-
-/** 수정 입력을 저장할 일정 값과 새 규칙 버전으로 계산한다. */
-export function resolveEdit({
-  completionLogs,
-  input: changes,
-  item,
-  now,
-  timezone,
-}: {
-  completionLogs: OccurrenceLog[];
-  input: EditScheduleInput;
-  item: Schedule;
-  now: Date;
-  timezone: string;
-}): EditResult | null {
-  const merged: CreateScheduleInput = {
-    ...toInput(item),
-    ...changes,
-    startDateLocal: item.startDateLocal,
-  };
-  const input: CreateScheduleInput = {
-    ...merged,
-    endDateLocal: merged.recurrenceType === "once" ? null : merged.endDateLocal,
-  };
-  const validatesNewEndDate =
-    Object.prototype.hasOwnProperty.call(changes, "endDateLocal") &&
-    changes.endDateLocal != null;
-
-  assertInput(input, {
-    minimumEndDateLocal: validatesNewEndDate
-      ? formatInTimeZone(now, timezone, "yyyy-MM-dd")
-      : undefined,
-  });
-
-  const hasRuleChanges = ruleChanged(item, input);
-
-  if (!itemChanged(item, input) && !hasRuleChanges) {
-    return null;
-  }
-
-  const result: EditResult = {
-    item: {
-      colorHex: input.colorHex,
-      description: input.description,
-      title: input.title,
-    },
-    version: null,
-  };
-
-  if (!hasRuleChanges) {
-    return result;
-  }
-
-  const effectiveFromUtc = now.toISOString();
-  const version = {
-    anchorType: input.anchorType,
-    effectiveFromUtc,
-    endDateLocal: input.endDateLocal,
-    intervalValue: input.intervalValue,
-    notificationsEnabled: input.notificationsEnabled,
-    recurrenceType: input.recurrenceType,
-    reminderTimeLocal: input.reminderTimeLocal,
-    weekdayMask: input.weekdayMask,
-  };
-
-  return {
-    ...result,
-    version: {
-      ...version,
-      seedStartDateLocal:
-        nextStartDate({
-          completionLogs,
-          effectiveFromUtc,
-          item,
-          timezone,
-          version,
-        }) ?? item.startDateLocal,
-    },
-  };
 }

@@ -13,10 +13,6 @@ const emptyItems: Schedule[] = [];
 const emptyLogs: OccurrenceLog[] = [];
 const rootKey = ["schedule"] as const;
 
-function userKey(userId: string): readonly string[] {
-  return [...rootKey, userId];
-}
-
 /** 활성 일정과 전체 처리 기록을 화면 사이에서 공유한다. */
 export function useSchedules() {
   const { profile, status: sessionStatus, user } = useSession();
@@ -43,6 +39,11 @@ export function useSchedules() {
     refetch: refetchLogs,
   } = useLogsQuery({ enabled, itemIds, userId });
 
+  const isLoading =
+    sessionStatus === "loading" ||
+    (enabled && (isItemsPending || (itemIds.length > 0 && isLogsPending)));
+  const error = itemsError ?? logsError;
+
   const refetch = useCallback(async (): Promise<void> => {
     await refetchItems();
 
@@ -50,11 +51,6 @@ export function useSchedules() {
       await refetchLogs();
     }
   }, [itemIds.length, refetchItems, refetchLogs]);
-
-  const isLoading =
-    sessionStatus === "loading" ||
-    (enabled && (isItemsPending || (itemIds.length > 0 && isLogsPending)));
-  const error = itemsError ?? logsError;
 
   return {
     error,
@@ -83,6 +79,10 @@ export function useScheduleById(itemId: string | null) {
 /** 활성 일정 조회를 무효화하고 현재 화면의 데이터를 다시 읽는다. */
 export async function refreshSchedules(): Promise<void> {
   await queryClient.invalidateQueries({ queryKey: rootKey });
+}
+
+function userKey(userId: string): readonly string[] {
+  return [...rootKey, userId];
 }
 
 function useItemsQuery({

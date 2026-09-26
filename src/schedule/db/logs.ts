@@ -13,29 +13,6 @@ export type CreateLogInput = {
   userId: string;
 };
 
-function normalizeUtc(value: string): string {
-  return new Date(value).toISOString();
-}
-
-function toLog(row: LogRow): OccurrenceLog {
-  return {
-    actedAtUtc: normalizeUtc(row.acted_at_utc),
-    action: row.action as OccurrenceLog["action"],
-    id: row.id,
-    itemId: row.item_id,
-    scheduledAtUtc: normalizeUtc(row.scheduled_at_utc),
-  };
-}
-
-function toInsert(input: CreateLogInput): LogInsert {
-  return {
-    action: input.action,
-    item_id: input.itemId,
-    scheduled_at_utc: normalizeUtc(input.scheduledAtUtc),
-    user_id: input.userId,
-  };
-}
-
 /**
  * 처리 기록 전체를 조회한다. itemIds 생략은 사용자 전체, 빈 배열은 조회 없음이다.
  * 페이지별 전체 건수를 확인하되 여러 요청이 하나의 DB snapshot을 보장하지는 않는다.
@@ -103,4 +80,27 @@ export async function createLogs(
   if (error) {
     throw error;
   }
+}
+
+function normalizeUtc(value: string): string {
+  return new Date(value).toISOString();
+}
+
+function toLog(row: LogRow): OccurrenceLog {
+  return {
+    actedAtUtc: normalizeUtc(row.acted_at_utc),
+    action: row.action as OccurrenceLog["action"],
+    id: row.id,
+    itemId: row.item_id,
+    scheduledAtUtc: normalizeUtc(row.scheduled_at_utc),
+  };
+}
+
+function toInsert(input: CreateLogInput): LogInsert {
+  return {
+    action: input.action,
+    item_id: input.itemId,
+    scheduled_at_utc: normalizeUtc(input.scheduledAtUtc),
+    user_id: input.userId,
+  };
 }

@@ -41,71 +41,6 @@ type UpdateItemInput = {
 const itemSelect = "*, recurring_item_schedule_versions(*)";
 const listLimit = 500;
 
-function toVersion(row: VersionRow): RuleVersion {
-  return {
-    anchorType: row.anchor_type as AnchorType,
-    effectiveFromUtc: new Date(row.effective_from_utc).toISOString(),
-    endDateLocal: row.end_date_local ?? null,
-    intervalValue: row.interval_value,
-    notificationsEnabled: row.notifications_enabled,
-    recurrenceType: row.recurrence_type as RecurrenceType,
-    reminderTimeLocal: row.reminder_time_local.slice(0, 5),
-    seedStartDateLocal: row.seed_start_date_local,
-    weekdayMask: row.weekday_mask,
-  };
-}
-
-function getVersions(versions: RuleVersion[]): Schedule["versions"] {
-  const [first, ...rest] = versions.sort((left, right) =>
-    left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
-  );
-
-  if (!first) {
-    throw new Error("반복 규칙 버전을 찾을 수 없습니다.");
-  }
-
-  return [first, ...rest];
-}
-
-async function toSchedule(
-  row: ItemWithVersionsRow,
-  decrypt: typeof decryptContent
-): Promise<Schedule> {
-  const item = {
-    colorHex: row.color_hex,
-    createdAt: row.created_at,
-    id: row.id,
-    isArchived: row.is_archived,
-    startDateLocal: row.start_date_local,
-    versions: getVersions(
-      (row.recurring_item_schedule_versions ?? []).map(toVersion)
-    ),
-  };
-
-  try {
-    const content = await decrypt({
-      descriptionCiphertext: row.description_ciphertext,
-      keyVersion: row.content_key_version,
-      metadata: row.content_encryption_metadata,
-      titleCiphertext: row.title_ciphertext,
-      userId: row.user_id,
-    });
-
-    return {
-      ...item,
-      description: content.description,
-      title: content.title,
-    };
-  } catch {
-    return {
-      ...item,
-      contentStatus: "unrecoverable",
-      description: null,
-      title: "",
-    };
-  }
-}
-
 /** 사용자의 활성 일정을 조회한다. */
 export async function listItems(
   input: { userId: string },
@@ -244,5 +179,70 @@ export async function archiveItem(
 
   if (error) {
     throw error;
+  }
+}
+
+function toVersion(row: VersionRow): RuleVersion {
+  return {
+    anchorType: row.anchor_type as AnchorType,
+    effectiveFromUtc: new Date(row.effective_from_utc).toISOString(),
+    endDateLocal: row.end_date_local ?? null,
+    intervalValue: row.interval_value,
+    notificationsEnabled: row.notifications_enabled,
+    recurrenceType: row.recurrence_type as RecurrenceType,
+    reminderTimeLocal: row.reminder_time_local.slice(0, 5),
+    seedStartDateLocal: row.seed_start_date_local,
+    weekdayMask: row.weekday_mask,
+  };
+}
+
+function getVersions(versions: RuleVersion[]): Schedule["versions"] {
+  const [first, ...rest] = versions.sort((left, right) =>
+    left.effectiveFromUtc.localeCompare(right.effectiveFromUtc)
+  );
+
+  if (!first) {
+    throw new Error("반복 규칙 버전을 찾을 수 없습니다.");
+  }
+
+  return [first, ...rest];
+}
+
+async function toSchedule(
+  row: ItemWithVersionsRow,
+  decrypt: typeof decryptContent
+): Promise<Schedule> {
+  const item = {
+    colorHex: row.color_hex,
+    createdAt: row.created_at,
+    id: row.id,
+    isArchived: row.is_archived,
+    startDateLocal: row.start_date_local,
+    versions: getVersions(
+      (row.recurring_item_schedule_versions ?? []).map(toVersion)
+    ),
+  };
+
+  try {
+    const content = await decrypt({
+      descriptionCiphertext: row.description_ciphertext,
+      keyVersion: row.content_key_version,
+      metadata: row.content_encryption_metadata,
+      titleCiphertext: row.title_ciphertext,
+      userId: row.user_id,
+    });
+
+    return {
+      ...item,
+      description: content.description,
+      title: content.title,
+    };
+  } catch {
+    return {
+      ...item,
+      contentStatus: "unrecoverable",
+      description: null,
+      title: "",
+    };
   }
 }

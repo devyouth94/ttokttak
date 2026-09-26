@@ -52,9 +52,6 @@ export function ScheduleFormBody({
 }: ScheduleFormBodyProps): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useThemeColors();
-
-  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
-
   const {
     formState: { errors, isSubmitting, submitCount },
   } = useFormContext<ScheduleFormValues>();
@@ -64,6 +61,7 @@ export function ScheduleFormBody({
   const scrollViewRef = useRef<ScrollView>(null);
   const titleInputRef = useRef<TextInput>(null);
 
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const screenTitle = isEdit
     ? t("scheduleForm.title.edit")
     : t("scheduleForm.title.create");

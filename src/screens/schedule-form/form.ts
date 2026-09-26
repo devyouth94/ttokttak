@@ -34,21 +34,20 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   const { t } = useTranslation();
   const { syncDeviceOutputs } = useDeviceSync();
   const { profile, status: sessionStatus, user } = useSession();
-  const timezone =
-    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-
   const isEdit = Boolean(itemId);
   const schedule = useScheduleById(isEdit ? (itemId ?? null) : null);
+  const hydratedItemIdRef = useRef(schedule.data?.id ?? null);
+
+  const [openedAt] = useState(() => new Date());
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const timezone =
+    profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const item = schedule.data;
   const isLoading =
     isEdit &&
     (sessionStatus === "loading" ||
       (sessionStatus === "ready" && Boolean(user) && schedule.isPending));
-  const hydratedItemIdRef = useRef(item?.id ?? null);
-
-  const [openedAt] = useState(() => new Date());
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const today = format(openedAt, "yyyy-MM-dd");
 
   const schema = useMemo(
@@ -64,6 +63,14 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   });
   const { isDirty, isSubmitting } = form.formState;
   const reset = form.reset;
+  const loadError =
+    isEdit && !isLoading
+      ? schedule.error
+        ? t("scheduleForm.error.editLoadFailed")
+        : sessionStatus !== "ready"
+          ? t("scheduleForm.error.editLoadFailed")
+          : null
+      : null;
 
   async function save(formValues: ScheduleFormValues): Promise<void> {
     if (!profile || !user) {
@@ -180,15 +187,6 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     reset(toFormValues(item));
     hydratedItemIdRef.current = item.id;
   }, [isDirty, isEdit, reset, item]);
-
-  const loadError =
-    isEdit && !isLoading
-      ? schedule.error
-        ? t("scheduleForm.error.editLoadFailed")
-        : sessionStatus !== "ready"
-          ? t("scheduleForm.error.editLoadFailed")
-          : null
-      : null;
 
   return {
     form,

@@ -14,18 +14,6 @@ import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
-function ratio(value: number, total: number): number {
-  return Math.min(1, Math.max(0, value / total));
-}
-
-function markerPosition(value: number, total: number, radius: number): number {
-  if (total <= radius * 2) {
-    return total / 2;
-  }
-
-  return Math.min(total - radius, Math.max(radius, value));
-}
-
 export function CustomColorPicker({
   colorHex,
   onChange,
@@ -39,14 +27,12 @@ export function CustomColorPicker({
 }): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useThemeColors();
-
-  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
-
-  const color = hexToHsv(colorHex);
-
-  const [hue, setHue] = useState(color.hue);
+  const [hue, setHue] = useState(() => hexToHsv(colorHex).hue);
   const [planeSize, setPlaneSize] = useState({ height: 0, width: 0 });
   const [hueWidth, setHueWidth] = useState(0);
+
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
+  const color = hexToHsv(colorHex);
 
   function selectSaturationAndValue(event: GestureResponderEvent): void {
     if (!planeSize.width || !planeSize.height) {
@@ -270,6 +256,18 @@ export function CustomColorPicker({
       </Pressable>
     </Modal>
   );
+}
+
+function ratio(value: number, total: number): number {
+  return Math.min(1, Math.max(0, value / total));
+}
+
+function markerPosition(value: number, total: number, radius: number): number {
+  if (total <= radius * 2) {
+    return total / 2;
+  }
+
+  return Math.min(total - radius, Math.max(radius, value));
 }
 
 function createStyles(themeColors: ReturnType<typeof useThemeColors>) {

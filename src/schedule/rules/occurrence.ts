@@ -75,63 +75,6 @@ export function toUtcRange(localDate: string, timezone: string): UtcRange {
   };
 }
 
-function scheduledAt(
-  localDate: string,
-  reminderTimeLocal: string,
-  timezone: string
-): string {
-  return fromZonedTime(
-    `${localDate}T${reminderTimeLocal}:00`,
-    timezone
-  ).toISOString();
-}
-
-function toRule(version: RuleVersion): VersionRule {
-  return {
-    anchorType: version.anchorType,
-    effectiveFromUtc: version.effectiveFromUtc,
-    endDateLocal: version.endDateLocal,
-    intervalValue: version.intervalValue,
-    recurrenceType: version.recurrenceType,
-    reminderTimeLocal: version.reminderTimeLocal,
-    startDateLocal: version.seedStartDateLocal,
-    weekdayMask: version.weekdayMask,
-  };
-}
-
-function statusOf(
-  scheduledAtUtc: string,
-  logs: ScheduleLogs,
-  nowUtc: string,
-  timezone: string
-): OccurrenceStatus {
-  const action = logs.byTime.get(scheduledAtUtc)?.action;
-
-  if (action) {
-    return action;
-  }
-
-  return formatInTimeZone(scheduledAtUtc, timezone, "yyyy-MM-dd") <
-    formatInTimeZone(nowUtc, timezone, "yyyy-MM-dd")
-    ? "overdue"
-    : "scheduled";
-}
-
-function completionAnchor(
-  logs: ScheduleLogs,
-  effectiveFromUtc: string,
-  fallback: string,
-  timezone: string
-): string {
-  const completed = logs.completed.find(
-    ({ actedAtUtc }) => actedAtUtc < effectiveFromUtc
-  );
-
-  return completed
-    ? formatInTimeZone(completed.actedAtUtc, timezone, "yyyy-MM-dd")
-    : fallback;
-}
-
 /**
  * 일정과 처리 기록에서 occurrence를 계산하고 범위·다음·특정 시점으로 조회한다.
  * `range`는 입력 일정 순서를 유지하고 일정 안에서는 시간 오름차순으로 반환한다.
@@ -305,4 +248,61 @@ export function createOccurrences({
   }
 
   return { find, next, range };
+}
+
+function scheduledAt(
+  localDate: string,
+  reminderTimeLocal: string,
+  timezone: string
+): string {
+  return fromZonedTime(
+    `${localDate}T${reminderTimeLocal}:00`,
+    timezone
+  ).toISOString();
+}
+
+function toRule(version: RuleVersion): VersionRule {
+  return {
+    anchorType: version.anchorType,
+    effectiveFromUtc: version.effectiveFromUtc,
+    endDateLocal: version.endDateLocal,
+    intervalValue: version.intervalValue,
+    recurrenceType: version.recurrenceType,
+    reminderTimeLocal: version.reminderTimeLocal,
+    startDateLocal: version.seedStartDateLocal,
+    weekdayMask: version.weekdayMask,
+  };
+}
+
+function statusOf(
+  scheduledAtUtc: string,
+  logs: ScheduleLogs,
+  nowUtc: string,
+  timezone: string
+): OccurrenceStatus {
+  const action = logs.byTime.get(scheduledAtUtc)?.action;
+
+  if (action) {
+    return action;
+  }
+
+  return formatInTimeZone(scheduledAtUtc, timezone, "yyyy-MM-dd") <
+    formatInTimeZone(nowUtc, timezone, "yyyy-MM-dd")
+    ? "overdue"
+    : "scheduled";
+}
+
+function completionAnchor(
+  logs: ScheduleLogs,
+  effectiveFromUtc: string,
+  fallback: string,
+  timezone: string
+): string {
+  const completed = logs.completed.find(
+    ({ actedAtUtc }) => actedAtUtc < effectiveFromUtc
+  );
+
+  return completed
+    ? formatInTimeZone(completed.actedAtUtc, timezone, "yyyy-MM-dd")
+    : fallback;
 }

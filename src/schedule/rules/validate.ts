@@ -36,21 +36,6 @@ type ValidationOptions = {
   minimumEndDateLocal?: string;
 };
 
-function hasValidWeekdays(weekdays: number[] | null): boolean {
-  if (!weekdays || weekdays.length === 0) {
-    return false;
-  }
-
-  return (
-    new Set(weekdays).size === weekdays.length &&
-    weekdays.every((day) => Number.isInteger(day) && day >= 0 && day <= 6)
-  );
-}
-
-function hasValidInterval(interval: number | null): boolean {
-  return Number.isInteger(interval) && interval != null && interval >= 1;
-}
-
 /** 일정 입력이 반복 규칙과 날짜 제약을 만족하는지 확인한다. */
 export function validateInput(
   input: CreateScheduleInput,
@@ -216,4 +201,19 @@ export function assertInput(
   if (issues.length > 0) {
     throw new Error(issues.map((issue) => issue.message).join(" "));
   }
+}
+
+function hasValidWeekdays(weekdays: number[] | null): boolean {
+  if (!weekdays || weekdays.length === 0) {
+    return false;
+  }
+
+  return (
+    new Set(weekdays).size === weekdays.length &&
+    weekdays.every((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+  );
+}
+
+function hasValidInterval(interval: number | null): boolean {
+  return Number.isInteger(interval) && interval != null && interval >= 1;
 }

@@ -20,9 +20,6 @@ import { useScheduleFormSetters } from "../use-form-setters";
 export function RecurrenceSection(): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useThemeColors();
-
-  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
-
   const { clearErrors, control, getValues } =
     useFormContext<ScheduleFormValues>();
   const { setField } = useScheduleFormSetters();
@@ -36,6 +33,7 @@ export function RecurrenceSection(): React.JSX.Element {
 
   const [isIntervalFocused, setIsIntervalFocused] = useState(false);
 
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const usesCustomInterval = requiresInterval(recurrenceType);
 
   const basicRecurrenceOptions = [

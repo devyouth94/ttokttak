@@ -16,16 +16,6 @@ export type Key = {
 
 export const keyVersion = 1;
 
-function assertVersion(version: number): void {
-  if (version !== keyVersion) {
-    throw new Error("지원하지 않는 일정 내용 암호화 키 버전입니다.");
-  }
-}
-
-function getStoreKey(userId: string, version: number): string {
-  return `ttokttak.user-content-key.v${version}.${userId}`;
-}
-
 /** content key를 서버 복구용 key로 감싸 저장한다. */
 export async function saveWrappedKey(input: {
   encodedKey: string;
@@ -44,43 +34,6 @@ export async function saveWrappedKey(input: {
     wrapMetadata: wrapped.wrapMetadata,
     wrappedKey: wrapped.wrappedKey,
   });
-}
-
-async function backfillWrappedKey(input: {
-  encodedKey: string;
-  keyVersion: number;
-  userId: string;
-}): Promise<void> {
-  if (
-    await findContentKey({
-      keyVersion: input.keyVersion,
-      userId: input.userId,
-    })
-  ) {
-    return;
-  }
-
-  await saveWrappedKey(input);
-}
-
-async function getStoredKey(input: {
-  keyVersion: number;
-  userId: string;
-}): Promise<Key | null> {
-  const storeKey = getStoreKey(input.userId, input.keyVersion);
-  const encoded = await getItemAsync(storeKey);
-
-  if (!encoded) {
-    return getServerKey(input);
-  }
-
-  await backfillWrappedKey({ ...input, encodedKey: encoded });
-
-  return {
-    encoded,
-    source: "local",
-    value: await AESEncryptionKey.import(encoded, "base64"),
-  };
 }
 
 /** 서버에서 content key를 복구하고 기기에 저장한다. */
@@ -137,4 +90,51 @@ export async function getOrCreateKey(
   await setItemAsync(getStoreKey(userId, keyVersion), encodedKey);
 
   return key;
+}
+
+function assertVersion(version: number): void {
+  if (version !== keyVersion) {
+    throw new Error("지원하지 않는 일정 내용 암호화 키 버전입니다.");
+  }
+}
+
+function getStoreKey(userId: string, version: number): string {
+  return `ttokttak.user-content-key.v${version}.${userId}`;
+}
+
+async function backfillWrappedKey(input: {
+  encodedKey: string;
+  keyVersion: number;
+  userId: string;
+}): Promise<void> {
+  if (
+    await findContentKey({
+      keyVersion: input.keyVersion,
+      userId: input.userId,
+    })
+  ) {
+    return;
+  }
+
+  await saveWrappedKey(input);
+}
+
+async function getStoredKey(input: {
+  keyVersion: number;
+  userId: string;
+}): Promise<Key | null> {
+  const storeKey = getStoreKey(input.userId, input.keyVersion);
+  const encoded = await getItemAsync(storeKey);
+
+  if (!encoded) {
+    return getServerKey(input);
+  }
+
+  await backfillWrappedKey({ ...input, encodedKey: encoded });
+
+  return {
+    encoded,
+    source: "local",
+    value: await AESEncryptionKey.import(encoded, "base64"),
+  };
 }

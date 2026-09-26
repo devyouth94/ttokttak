@@ -45,15 +45,15 @@ export function DeviceSyncProvider({
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
-  const [session, setSession] = useState<ReturnType<
-    typeof startDeviceSyncSession
-  > | null>(null);
-
   const {
     refreshPermission,
     requestPermission: requestDevicePermission,
     ...permissionState
   } = useNotificationPermission();
+
+  const [session, setSession] = useState<ReturnType<
+    typeof startDeviceSyncSession
+  > | null>(null);
 
   /** 세션 안에서 데이터를 한 번 준비하고 두 출력을 갱신한다. */
   const syncDeviceOutputs = useCallback(async (): Promise<void> => {
@@ -98,6 +98,11 @@ export function DeviceSyncProvider({
     },
     []
   );
+
+  /** 알림 tap 뒤 홈으로 이동한 시점의 예약 알림을 다시 맞춘다. */
+  const handleTap = useCallback((): void => {
+    void syncSafely("local-notification-tap-sync");
+  }, [syncSafely]);
 
   // Provider는 세션 수명만 전달하고 병합·무효화·쓰기 순서는 기기 세션이 소유한다.
   useEffect(() => {
@@ -148,11 +153,6 @@ export function DeviceSyncProvider({
   useEffect(() => {
     if (userId) void syncSafely("local-notification-context-sync");
   }, [syncSafely, userId]);
-
-  /** 알림 tap 뒤 홈으로 이동한 시점의 예약 알림을 다시 맞춘다. */
-  const handleTap = useCallback((): void => {
-    void syncSafely("local-notification-tap-sync");
-  }, [syncSafely]);
 
   useReminderResponse(handleTap);
 

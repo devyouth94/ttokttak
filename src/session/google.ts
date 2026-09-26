@@ -5,6 +5,26 @@ const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID!;
 
 let configured = false;
 
+/** Google 인증 결과로 Supabase 세션을 만든다. */
+export async function signInGoogle(
+  getToken: () => Promise<string> = requestToken
+): Promise<void> {
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: await getToken(),
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+/** 현재 기기의 Google 로그인 상태를 정리한다. */
+export async function signOutGoogle(): Promise<void> {
+  const google = await getGoogle();
+  await google.GoogleSignin.signOut();
+}
+
 async function getGoogle() {
   const google = await import("@react-native-google-signin/google-signin");
 
@@ -53,24 +73,4 @@ async function requestToken(): Promise<string> {
       ? error
       : new Error(`Google 로그인 중 오류가 발생했습니다: ${String(error)}`);
   }
-}
-
-/** Google 인증 결과로 Supabase 세션을 만든다. */
-export async function signInGoogle(
-  getToken: () => Promise<string> = requestToken
-): Promise<void> {
-  const { error } = await supabase.auth.signInWithIdToken({
-    provider: "google",
-    token: await getToken(),
-  });
-
-  if (error) {
-    throw error;
-  }
-}
-
-/** 현재 기기의 Google 로그인 상태를 정리한다. */
-export async function signOutGoogle(): Promise<void> {
-  const google = await getGoogle();
-  await google.GoogleSignin.signOut();
 }

@@ -16,6 +16,45 @@ const notificationSyncErrorCodes = new Set([
   "verification-mismatch",
 ]);
 
+/** Sentry 오류 event를 개인정보가 포함되지 않은 허용 목록으로 제한한다. */
+export function sanitizeEvent(
+  event: ErrorEvent,
+  originalException?: unknown
+): ErrorEvent {
+  return {
+    debug_meta: event.debug_meta,
+    dist: event.dist,
+    environment: event.environment,
+    event_id: event.event_id,
+    exception: event.exception && {
+      values: event.exception.values?.map((exception) => ({
+        stacktrace: sanitizeStack(exception.stacktrace),
+        type: exception.type,
+      })),
+    },
+    level: event.level,
+    platform: event.platform,
+    release: event.release,
+    sdk: event.sdk,
+    tags: sanitizeTags({
+      ...event.tags,
+      ...getNotificationSyncTags(originalException),
+    }),
+    threads: event.threads && {
+      values: event.threads.values.map((thread) => ({
+        crashed: thread.crashed,
+        current: thread.current,
+        id: thread.id,
+        main: thread.main,
+        name: thread.name,
+        stacktrace: sanitizeStack(thread.stacktrace),
+      })),
+    },
+    timestamp: event.timestamp,
+    type: undefined,
+  };
+}
+
 /** Stack frame에서 실행 중 수집된 변수와 허용하지 않은 정보를 제거한다. */
 function sanitizeStack(stacktrace?: Stacktrace): Stacktrace | undefined {
   return (
@@ -86,43 +125,4 @@ function getNotificationSyncTags(error: unknown): ErrorEvent["tags"] {
   }
 
   return tags;
-}
-
-/** Sentry 오류 event를 개인정보가 포함되지 않은 허용 목록으로 제한한다. */
-export function sanitizeEvent(
-  event: ErrorEvent,
-  originalException?: unknown
-): ErrorEvent {
-  return {
-    debug_meta: event.debug_meta,
-    dist: event.dist,
-    environment: event.environment,
-    event_id: event.event_id,
-    exception: event.exception && {
-      values: event.exception.values?.map((exception) => ({
-        stacktrace: sanitizeStack(exception.stacktrace),
-        type: exception.type,
-      })),
-    },
-    level: event.level,
-    platform: event.platform,
-    release: event.release,
-    sdk: event.sdk,
-    tags: sanitizeTags({
-      ...event.tags,
-      ...getNotificationSyncTags(originalException),
-    }),
-    threads: event.threads && {
-      values: event.threads.values.map((thread) => ({
-        crashed: thread.crashed,
-        current: thread.current,
-        id: thread.id,
-        main: thread.main,
-        name: thread.name,
-        stacktrace: sanitizeStack(thread.stacktrace),
-      })),
-    },
-    timestamp: event.timestamp,
-    type: undefined,
-  };
 }

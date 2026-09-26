@@ -18,10 +18,6 @@ import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { borderRadius, spacing } from "~/ui/tokens";
 
-function parseLocalValue(value: string, mode: "date" | "time"): Date {
-  return parse(value, mode === "date" ? "yyyy-MM-dd" : "HH:mm", new Date());
-}
-
 export function DateTimePickerField({
   accessibilityHint,
   accessibilityLabel,
@@ -55,11 +51,9 @@ export function DateTimePickerField({
 }): React.JSX.Element {
   const { t } = useTranslation();
   const { colors: themeColors, resolvedTheme } = useTheme();
-
-  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
-
   const [draft, setDraft] = useState<Date | null>(null);
 
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const minimumDate = minimumLocalDate
     ? parseLocalValue(minimumLocalDate, "date")
     : undefined;
@@ -203,6 +197,10 @@ export function DateTimePickerField({
       )}
     </View>
   );
+}
+
+function parseLocalValue(value: string, mode: "date" | "time"): Date {
+  return parse(value, mode === "date" ? "yyyy-MM-dd" : "HH:mm", new Date());
 }
 
 function createStyles(themeColors: ReturnType<typeof useTheme>["colors"]) {

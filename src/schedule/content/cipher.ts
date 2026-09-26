@@ -32,6 +32,54 @@ type Metadata = {
   keyStorage: "expo-secure-store" | "server-wrapped";
 };
 
+/** 일정 제목과 설명을 암호화한다. */
+export async function encryptContent(input: {
+  description: string | null;
+  title: string;
+  userId: string;
+}): Promise<EncryptedContent> {
+  const key = await getOrCreateKey(input.userId);
+
+  return {
+    descriptionCiphertext:
+      input.description !== null
+        ? await encryptText(input.description, key)
+        : null,
+    keyVersion,
+    metadata: {
+      algorithm: "AES-GCM",
+      encoding: "combined-base64",
+      keyStorage: "server-wrapped",
+    },
+    titleCiphertext: await encryptText(input.title, key),
+  };
+}
+
+/** 일정 제목과 설명을 복호화한다. */
+export function decryptContent(
+  content: EncryptedContent & { userId: string }
+): Promise<DecryptedContent> {
+  return decrypt(content, getKey, getServerKey, saveWrappedKey);
+}
+
+/** 한 목록 안에서 같은 content key 조회를 공유하는 복호화 함수를 만든다. */
+export function createContentDecryptor(): typeof decryptContent {
+  const keys = new Map<string, Promise<Key>>();
+  const serverKeys = new Map<string, Promise<Key | null>>();
+  const wrappedKeys = new Map<string, Promise<void>>();
+
+  return (content) => {
+    const id = JSON.stringify([content.userId, content.keyVersion]);
+
+    return decrypt(
+      content,
+      (input) => getSharedPromise(keys, id, () => getKey(input)),
+      (input) => getSharedPromise(serverKeys, id, () => getServerKey(input)),
+      (input) => getSharedPromise(wrappedKeys, id, () => saveWrappedKey(input))
+    );
+  };
+}
+
 function base64ToBytes(value: string): Uint8Array {
   return Uint8Array.from([...atob(value)], (char) => char.charCodeAt(0));
 }
@@ -112,54 +160,6 @@ async function decrypt(
 
     return decryptWithKey(content, serverKey.value);
   }
-}
-
-/** 일정 제목과 설명을 암호화한다. */
-export async function encryptContent(input: {
-  description: string | null;
-  title: string;
-  userId: string;
-}): Promise<EncryptedContent> {
-  const key = await getOrCreateKey(input.userId);
-
-  return {
-    descriptionCiphertext:
-      input.description !== null
-        ? await encryptText(input.description, key)
-        : null,
-    keyVersion,
-    metadata: {
-      algorithm: "AES-GCM",
-      encoding: "combined-base64",
-      keyStorage: "server-wrapped",
-    },
-    titleCiphertext: await encryptText(input.title, key),
-  };
-}
-
-/** 일정 제목과 설명을 복호화한다. */
-export function decryptContent(
-  content: EncryptedContent & { userId: string }
-): Promise<DecryptedContent> {
-  return decrypt(content, getKey, getServerKey, saveWrappedKey);
-}
-
-/** 한 목록 안에서 같은 content key 조회를 공유하는 복호화 함수를 만든다. */
-export function createContentDecryptor(): typeof decryptContent {
-  const keys = new Map<string, Promise<Key>>();
-  const serverKeys = new Map<string, Promise<Key | null>>();
-  const wrappedKeys = new Map<string, Promise<void>>();
-
-  return (content) => {
-    const id = JSON.stringify([content.userId, content.keyVersion]);
-
-    return decrypt(
-      content,
-      (input) => getSharedPromise(keys, id, () => getKey(input)),
-      (input) => getSharedPromise(serverKeys, id, () => getServerKey(input)),
-      (input) => getSharedPromise(wrappedKeys, id, () => saveWrappedKey(input))
-    );
-  };
 }
 
 function getSharedPromise<Value>(

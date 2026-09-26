@@ -5,11 +5,6 @@ import { supabase } from "~/supabase";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-function getName(user: User): string | null {
-  const name = user.user_metadata?.full_name;
-  return typeof name === "string" && name.trim() ? name.trim() : null;
-}
-
 /** 사용자의 프로필 표시 이름을 저장한다. */
 export async function updateName(
   userId: string,
@@ -83,4 +78,9 @@ export async function prepareProfile(user: User): Promise<Profile> {
   }
 
   throw insertError;
+}
+
+function getName(user: User): string | null {
+  const name = user.user_metadata?.full_name;
+  return typeof name === "string" && name.trim() ? name.trim() : null;
 }

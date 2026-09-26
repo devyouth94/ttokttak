@@ -113,36 +113,6 @@ export async function applyNotifications(
   }
 }
 
-/** 처리됐거나 현재 사용자에게 속하지 않는 표시 알림을 제거한다. */
-async function dismissStaleNotifications({
-  items,
-  completionLogs,
-  userId,
-}: DeviceSyncInput): Promise<void> {
-  const ownerPrefix = `${PREFIX}${userId}:`;
-  const activeItemPrefixes = items.map((item) => `${ownerPrefix}${item.id}:`);
-  const handledIds = new Set(
-    completionLogs.map(
-      (log) => `${ownerPrefix}${log.itemId}:${log.scheduledAtUtc}`
-    )
-  );
-  const notifications = await Notifications.getPresentedNotificationsAsync();
-
-  await settleWrites(
-    notifications
-      .map(({ request }) => request.identifier)
-      .filter(
-        (identifier) =>
-          identifier.startsWith(PREFIX) &&
-          (!identifier.startsWith(ownerPrefix) ||
-            handledIds.has(identifier) ||
-            !activeItemPrefixes.some((prefix) => identifier.startsWith(prefix)))
-      )
-      .map((identifier) => Notifications.dismissNotificationAsync(identifier)),
-    "app-icon-badge-sync"
-  );
-}
-
 /** 현재 기기의 똑딱 예약·표시 알림·배지를 정리한다. 세션의 쓰기 큐 안에서 호출한다. */
 export async function clearNotifications(): Promise<void> {
   await settleWrites(
@@ -170,6 +140,36 @@ export async function clearNotifications(): Promise<void> {
       Notifications.setBadgeCountAsync(0),
     ],
     "local-notification-cleanup"
+  );
+}
+
+/** 처리됐거나 현재 사용자에게 속하지 않는 표시 알림을 제거한다. */
+async function dismissStaleNotifications({
+  items,
+  completionLogs,
+  userId,
+}: DeviceSyncInput): Promise<void> {
+  const ownerPrefix = `${PREFIX}${userId}:`;
+  const activeItemPrefixes = items.map((item) => `${ownerPrefix}${item.id}:`);
+  const handledIds = new Set(
+    completionLogs.map(
+      (log) => `${ownerPrefix}${log.itemId}:${log.scheduledAtUtc}`
+    )
+  );
+  const notifications = await Notifications.getPresentedNotificationsAsync();
+
+  await settleWrites(
+    notifications
+      .map(({ request }) => request.identifier)
+      .filter(
+        (identifier) =>
+          identifier.startsWith(PREFIX) &&
+          (!identifier.startsWith(ownerPrefix) ||
+            handledIds.has(identifier) ||
+            !activeItemPrefixes.some((prefix) => identifier.startsWith(prefix)))
+      )
+      .map((identifier) => Notifications.dismissNotificationAsync(identifier)),
+    "app-icon-badge-sync"
   );
 }
 

@@ -29,25 +29,25 @@ export function ColorField(): React.JSX.Element {
   const { t } = useTranslation();
   const { language } = useAppLanguage();
   const themeColors = useThemeColors();
-  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
-
   const { setField } = useScheduleFormSetters();
-
   const { control } = useFormContext<ScheduleFormValues>();
   const selected = useWatch({ control, name: "colorHex" });
 
+  const [isCustomSelected, setIsCustomSelected] = useState(() => {
+    const initialColorHex = normalizeColorHex(selected);
+    return !getColorOptions(language).some(
+      (option) => option.swatchColor === initialColorHex
+    );
+  });
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const previousColorHex = useRef(normalizeColorHex(selected));
+
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const colorHex = normalizeColorHex(selected);
   const colorOptions = getColorOptions(language);
   const selectedPreset = colorOptions.find(
     (option) => option.swatchColor === colorHex
   )?.value;
-
-  const [isCustomSelected, setIsCustomSelected] = useState(
-    selectedPreset === undefined
-  );
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
-
-  const previousColorHex = useRef(colorHex);
 
   function selectColor(nextColor: string): void {
     setField("colorHex", normalizeColorHex(nextColor));

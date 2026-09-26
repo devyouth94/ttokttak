@@ -19,24 +19,6 @@ export class AppleAuthRequiredError extends Error {
   }
 }
 
-function isApple(user: User): boolean {
-  const { provider, providers } = user.app_metadata;
-  return (
-    provider === "apple" ||
-    (Array.isArray(providers) && providers.includes("apple"))
-  );
-}
-
-async function requestAppleCode(): Promise<string> {
-  const credential = await AppleAuthentication.signInAsync();
-
-  if (!credential.authorizationCode) {
-    throw new AppleAuthRequiredError();
-  }
-
-  return credential.authorizationCode;
-}
-
 /** 현재 사용자 계정과 로컬 세션 데이터를 함께 삭제한다. */
 export async function deleteAccount(user: User | null): Promise<void> {
   if (!user) {
@@ -65,4 +47,22 @@ export async function deleteAccount(user: User | null): Promise<void> {
 
   await signOutGoogle();
   await clearDeviceOutputs();
+}
+
+function isApple(user: User): boolean {
+  const { provider, providers } = user.app_metadata;
+  return (
+    provider === "apple" ||
+    (Array.isArray(providers) && providers.includes("apple"))
+  );
+}
+
+async function requestAppleCode(): Promise<string> {
+  const credential = await AppleAuthentication.signInAsync();
+
+  if (!credential.authorizationCode) {
+    throw new AppleAuthRequiredError();
+  }
+
+  return credential.authorizationCode;
 }
