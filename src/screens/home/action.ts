@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { createLogs } from "~/schedule/db/logs";
 import {
   createOccurrences,
   type Occurrence,
@@ -10,7 +9,7 @@ import {
   toUtcRange,
 } from "~/schedule/rules/occurrence";
 import type { Schedule } from "~/schedule/schedule";
-import { finishScheduleWrite } from "~/schedule/write";
+import { recordOccurrences } from "~/schedule/write";
 import { captureException } from "~/sentry";
 
 type HomeOccurrenceTarget = {
@@ -80,7 +79,7 @@ export function useHomeActions({
 }
 
 /**
- * 홈 occurrence를 기록하고 알림과 피드 데이터를 다시 맞춘다.
+ * 홈에서 처리할 occurrence를 고르고 일정 쓰기 명령에 전달한다.
  * 지난 일정은 선택한 occurrence까지의 미처리 항목을 함께 처리한다.
  */
 export async function processHomeOccurrence({
@@ -102,21 +101,12 @@ export async function processHomeOccurrence({
 }): Promise<void> {
   const unresolved = getUnresolvedOccurrences({ logs, now, target, timezone });
 
-  if (unresolved.length > 0) {
-    await createLogs(
-      unresolved.map((occurrence) => ({
-        action,
-        itemId: target.item.id,
-        scheduledAtUtc: occurrence.scheduledAtUtc,
-        userId,
-      }))
-    );
-  }
-
-  await finishScheduleWrite(syncDeviceOutputs, {
-    feature: "home-feed-occurrence-notification-sync",
-    reason:
-      action === "completed" ? "occurrence-completed" : "occurrence-skipped",
+  await recordOccurrences({
+    action,
+    itemId: target.item.id,
+    scheduledAtUtc: unresolved.map((occurrence) => occurrence.scheduledAtUtc),
+    syncDeviceOutputs,
+    userId,
   });
 }
 

@@ -1,10 +1,15 @@
 import { captureException } from "~/sentry";
 
 import * as db from "./db/items";
-import { listItemLogs } from "./db/logs";
+import { createLogs, listItemLogs } from "./db/logs";
 import { scheduleFixture } from "./fixtures";
 import { refreshSchedules } from "./query";
-import { archiveSchedule, createSchedule, updateSchedule } from "./write";
+import {
+  archiveSchedule,
+  createSchedule,
+  recordOccurrences,
+  updateSchedule,
+} from "./write";
 
 jest.mock("./db/items", () => ({
   archiveItem: jest.fn(),
@@ -12,7 +17,10 @@ jest.mock("./db/items", () => ({
   getItem: jest.fn(),
   updateItem: jest.fn(),
 }));
-jest.mock("./db/logs", () => ({ listItemLogs: jest.fn() }));
+jest.mock("./db/logs", () => ({
+  createLogs: jest.fn(),
+  listItemLogs: jest.fn(),
+}));
 jest.mock("./query", () => ({ refreshSchedules: jest.fn() }));
 jest.mock("~/sentry", () => ({ captureException: jest.fn() }));
 
@@ -39,6 +47,7 @@ describe("일정 저장", () => {
     jest.mocked(db.createItem).mockResolvedValue(undefined);
     jest.mocked(db.getItem).mockResolvedValue(scheduleFixture());
     jest.mocked(db.updateItem).mockResolvedValue(undefined);
+    jest.mocked(createLogs).mockResolvedValue(undefined);
     jest.mocked(listItemLogs).mockResolvedValue([]);
     jest.mocked(refreshSchedules).mockResolvedValue(undefined);
   });
@@ -93,6 +102,124 @@ describe("일정 저장", () => {
       tags: { feature: "schedule-mutation-notification-sync" },
     });
     expect(refreshSchedules).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["completed", "skipped"] as const)(
+    "%s occurrence 처리 기록을 한 번 저장한 뒤 순서대로 후처리한다",
+    async (action) => {
+      const syncDeviceOutputs = jest.fn(async () => undefined);
+
+      await recordOccurrences({
+        action,
+        itemId: "item-1",
+        scheduledAtUtc: [
+          "2026-04-10T00:00:00.000Z",
+          "2026-04-11T00:00:00.000Z",
+        ],
+        syncDeviceOutputs,
+        userId,
+      });
+
+      expect(createLogs).toHaveBeenCalledWith([
+        {
+          action,
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-10T00:00:00.000Z",
+          userId,
+        },
+        {
+          action,
+          itemId: "item-1",
+          scheduledAtUtc: "2026-04-11T00:00:00.000Z",
+          userId,
+        },
+      ]);
+      expect(createLogs).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(createLogs).mock.invocationCallOrder[0]).toBeLessThan(
+        syncDeviceOutputs.mock.invocationCallOrder[0]!
+      );
+      expect(syncDeviceOutputs.mock.invocationCallOrder[0]).toBeLessThan(
+        jest.mocked(refreshSchedules).mock.invocationCallOrder[0]!
+      );
+    }
+  );
+
+  it("빈 occurrence 대상은 저장하지 않고 후처리한다", async () => {
+    const syncDeviceOutputs = jest.fn(async () => undefined);
+
+    await recordOccurrences({
+      action: "completed",
+      itemId: "item-1",
+      scheduledAtUtc: [],
+      syncDeviceOutputs,
+      userId,
+    });
+
+    expect(createLogs).not.toHaveBeenCalled();
+    expect(syncDeviceOutputs).toHaveBeenCalledTimes(1);
+    expect(refreshSchedules).toHaveBeenCalledTimes(1);
+  });
+
+  it("occurrence 저장 실패 뒤에는 후처리하지 않는다", async () => {
+    const error = new Error("저장 실패");
+    const syncDeviceOutputs = jest.fn();
+    jest.mocked(createLogs).mockRejectedValue(error);
+
+    await expect(
+      recordOccurrences({
+        action: "completed",
+        itemId: "item-1",
+        scheduledAtUtc: ["2026-04-10T00:00:00.000Z"],
+        syncDeviceOutputs,
+        userId,
+      })
+    ).rejects.toBe(error);
+
+    expect(syncDeviceOutputs).not.toHaveBeenCalled();
+    expect(refreshSchedules).not.toHaveBeenCalled();
+  });
+
+  it.each(["completed", "skipped"] as const)(
+    "기기 갱신 실패 뒤에도 query를 갱신하고 %s 진단을 유지한다",
+    async (action) => {
+      const error = new Error("알림 동기화 실패");
+
+      await recordOccurrences({
+        action,
+        itemId: "item-1",
+        scheduledAtUtc: ["2026-04-10T00:00:00.000Z"],
+        syncDeviceOutputs: async () => {
+          throw error;
+        },
+        userId,
+      });
+
+      expect(captureException).toHaveBeenCalledWith(error, {
+        tags: {
+          feature: "home-feed-occurrence-notification-sync",
+          reason:
+            action === "completed"
+              ? "occurrence-completed"
+              : "occurrence-skipped",
+        },
+      });
+      expect(refreshSchedules).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it("query 갱신 실패는 호출자에게 전달한다", async () => {
+    const error = new Error("query 갱신 실패");
+    jest.mocked(refreshSchedules).mockRejectedValue(error);
+
+    await expect(
+      recordOccurrences({
+        action: "completed",
+        itemId: "item-1",
+        scheduledAtUtc: ["2026-04-10T00:00:00.000Z"],
+        syncDeviceOutputs: async () => undefined,
+        userId,
+      })
+    ).rejects.toBe(error);
   });
 
   it("복구 불가 일정은 수정하지 않는다", async () => {

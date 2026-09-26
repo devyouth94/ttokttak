@@ -1,9 +1,10 @@
 import { captureException } from "~/sentry";
 
 import * as db from "./db/items";
-import { listItemLogs } from "./db/logs";
+import { createLogs, listItemLogs } from "./db/logs";
 import { refreshSchedules } from "./query";
 import { type EditScheduleInput, resolveEdit } from "./rules/edit";
+import type { OccurrenceAction } from "./rules/occurrence";
 import { assertInput } from "./rules/validate";
 import type { CreateScheduleInput } from "./schedule";
 
@@ -78,7 +79,37 @@ export async function archiveSchedule({
   await finishScheduleWrite(syncDeviceOutputs);
 }
 
-export async function finishScheduleWrite(
+/** occurrence 처리 기록을 저장하고 파생된 기기·화면 상태를 갱신한다. */
+export async function recordOccurrences({
+  action,
+  itemId,
+  scheduledAtUtc,
+  syncDeviceOutputs,
+  userId,
+}: CommonOptions & {
+  action: OccurrenceAction;
+  itemId: string;
+  scheduledAtUtc: string[];
+}): Promise<void> {
+  if (scheduledAtUtc.length > 0) {
+    await createLogs(
+      scheduledAtUtc.map((scheduledAtUtc) => ({
+        action,
+        itemId,
+        scheduledAtUtc,
+        userId,
+      }))
+    );
+  }
+
+  await finishScheduleWrite(syncDeviceOutputs, {
+    feature: "home-feed-occurrence-notification-sync",
+    reason:
+      action === "completed" ? "occurrence-completed" : "occurrence-skipped",
+  });
+}
+
+async function finishScheduleWrite(
   syncDeviceOutputs: () => Promise<void>,
   tags: { feature: string; reason?: string } = {
     feature: "schedule-mutation-notification-sync",
