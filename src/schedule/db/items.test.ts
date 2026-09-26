@@ -3,6 +3,7 @@ import {
   decryptContent,
   encryptContent,
 } from "~/schedule/content/cipher";
+import { ScheduleNotFoundError } from "~/schedule/errors";
 
 import {
   archiveItem,
@@ -143,6 +144,25 @@ describe("schedule items DB", () => {
       description: null,
       title: "일정 내용을 복구할 수 없어요",
     });
+  });
+
+  it("빈 조회 결과를 일정 없음 오류로 구분한다", async () => {
+    const { client } = createClient(createQuery(null));
+
+    await expect(
+      getItem({ id: "item-1", userId: "user-1" }, client)
+    ).rejects.toBeInstanceOf(ScheduleNotFoundError);
+  });
+
+  it("일정 조회 오류는 원본을 유지한다", async () => {
+    const error = new Error("조회 실패");
+    const query = createQuery(null);
+    query.maybeSingle.mockResolvedValue({ data: null, error });
+    const { client } = createClient(query);
+
+    await expect(
+      getItem({ id: "item-1", userId: "user-1" }, client)
+    ).rejects.toBe(error);
   });
 
   it("새 일정을 암호화하고 초기 규칙 버전을 RPC로 저장한다", async () => {

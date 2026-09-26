@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { listItemLogs } from "~/schedule/db/logs";
+import { ScheduleNotFoundError } from "~/schedule/errors";
 import { useScheduleById } from "~/schedule/query";
 import {
   createOccurrences,
@@ -9,9 +10,27 @@ import {
   type OccurrenceLog,
   toUtcRange,
 } from "~/schedule/rules/occurrence";
+import type { Schedule } from "~/schedule/schedule";
 import { useSession } from "~/session/provider";
 
 const emptyLogs: OccurrenceLog[] = [];
+
+export type DetailQueryResult =
+  | { status: "loading" }
+  | { status: "notFound" }
+  | {
+      error: unknown | null;
+      refetch: () => Promise<void>;
+      status: "error";
+    }
+  | {
+      basisOccurrence: Occurrence | null;
+      history: OccurrenceLog[];
+      item: Schedule;
+      overdueCount: number;
+      status: "ready";
+      timezone: string;
+    };
 
 /** 상세 화면의 대표 occurrence와 지난 occurrence를 계산한다. */
 export function useDetailQuery({
@@ -22,7 +41,7 @@ export function useDetailQuery({
   itemId: string | null;
   now: Date;
   scheduledAtUtc?: string;
-}) {
+}): DetailQueryResult {
   const { profile, status: sessionStatus, user } = useSession();
   const isReady = sessionStatus === "ready";
   const timezone =
@@ -56,52 +75,63 @@ export function useDetailQuery({
     await Promise.all([refetchItem(), refetchLogs()]);
   }, [item, refetchItem, refetchLogs]);
 
-  const isLoading =
-    (Boolean(itemId) &&
-      (sessionStatus === "loading" ||
-        (isReady && Boolean(userId) && isItemPending))) ||
-    (Boolean(item) && isLogsPending);
+  if (itemId && sessionStatus === "loading") {
+    return { status: "loading" };
+  }
+
+  if (!itemId || !isReady || !userId) {
+    return { error: itemError ?? logsError, refetch, status: "error" };
+  }
+
+  if (isItemPending || (item && isLogsPending)) {
+    return { status: "loading" };
+  }
+
+  if (itemError instanceof ScheduleNotFoundError) {
+    return { status: "notFound" };
+  }
+
+  const error = itemError ?? logsError;
+
+  if (error || !item) {
+    return { error, refetch, status: "error" };
+  }
+
   const history = [...logs]
     .sort((left, right) => right.actedAtUtc.localeCompare(left.actedAtUtc))
     .slice(0, 5);
   let basisOccurrence: Occurrence | null = null;
   let overdueCount = 0;
 
-  if (item) {
-    const occurrences = createOccurrences({
-      logs,
-      now,
-      schedules: [item],
-      timezone,
-    });
-    const overdueEntries = occurrences.range(
-      {
-        endUtc: now.toISOString(),
-        startUtc: toUtcRange(item.startDateLocal, timezone).startUtc,
-      },
-      "overdue"
-    );
-    const nextOccurrence = occurrences.next(item.id);
-    const entryOccurrence = scheduledAtUtc
-      ? occurrences.find(item.id, scheduledAtUtc)
-      : null;
+  const occurrences = createOccurrences({
+    logs,
+    now,
+    schedules: [item],
+    timezone,
+  });
+  const overdueEntries = occurrences.range(
+    {
+      endUtc: now.toISOString(),
+      startUtc: toUtcRange(item.startDateLocal, timezone).startUtc,
+    },
+    "overdue"
+  );
+  const nextOccurrence = occurrences.next(item.id);
+  const entryOccurrence = scheduledAtUtc
+    ? occurrences.find(item.id, scheduledAtUtc)
+    : null;
 
-    basisOccurrence =
-      entryOccurrence ?? overdueEntries.at(-1)?.occurrence ?? nextOccurrence;
-    overdueCount = overdueEntries.length;
-  }
+  basisOccurrence =
+    entryOccurrence ?? overdueEntries.at(-1)?.occurrence ?? nextOccurrence;
+  overdueCount = overdueEntries.length;
 
   return {
     basisOccurrence,
-    error: itemError ?? logsError,
     history,
-    isLoading,
     item,
-    logs,
     overdueCount,
-    refetch,
+    status: "ready",
     timezone,
-    userId,
   };
 }
 

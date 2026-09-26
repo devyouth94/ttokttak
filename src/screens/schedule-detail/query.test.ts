@@ -2,11 +2,12 @@ import { createElement, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { listItemLogs } from "~/schedule/db/logs";
+import { ScheduleNotFoundError } from "~/schedule/errors";
 import { logFixture, scheduleFixture, testTimezone } from "~/schedule/fixtures";
 import { useScheduleById } from "~/schedule/query";
 import { useSession } from "~/session/provider";
 
-import { useDetailQuery } from "./query";
+import { type DetailQueryResult, useDetailQuery } from "./query";
 
 jest.mock("~/schedule/query", () => ({ useScheduleById: jest.fn() }));
 
@@ -61,10 +62,12 @@ describe("상세 occurrence 계산", () => {
       data: item,
     } as never);
 
-    const result = await renderDetail({
-      itemId: item.id,
-      now: new Date("2026-04-12T03:00:00.000Z"),
-    });
+    const result = expectReady(
+      await renderDetail({
+        itemId: item.id,
+        now: new Date("2026-04-12T03:00:00.000Z"),
+      })
+    );
 
     expect(result.history).toEqual([oldLog, recentLog]);
     expect(result.overdueCount).toBe(2);
@@ -79,10 +82,12 @@ describe("상세 occurrence 계산", () => {
       data: item,
     } as never);
 
-    const result = await renderDetail({
-      itemId: item.id,
-      now: new Date("2026-04-10T03:00:00.000Z"),
-    });
+    const result = expectReady(
+      await renderDetail({
+        itemId: item.id,
+        now: new Date("2026-04-10T03:00:00.000Z"),
+      })
+    );
 
     expect(result.overdueCount).toBe(0);
     expect(result.basisOccurrence?.localDate).toBe("2026-04-11");
@@ -99,11 +104,13 @@ describe("상세 occurrence 계산", () => {
       .mocked(useQuery)
       .mockReturnValue({ ...detailResult, data: [completedLog] } as never);
 
-    const result = await renderDetail({
-      itemId: item.id,
-      now: new Date("2026-04-12T03:00:00.000Z"),
-      scheduledAtUtc: completedLog.scheduledAtUtc,
-    });
+    const result = expectReady(
+      await renderDetail({
+        itemId: item.id,
+        now: new Date("2026-04-12T03:00:00.000Z"),
+        scheduledAtUtc: completedLog.scheduledAtUtc,
+      })
+    );
 
     expect(result.basisOccurrence).toMatchObject({
       localDate: "2026-04-10",
@@ -123,16 +130,17 @@ it("전체 기록을 바꾸지 않고 처리 시각 최신순 5건을 파생하�
     })
   );
   Object.freeze(logs);
+  const originalLogs = [...logs];
   jest
     .mocked(useQuery)
     .mockReturnValue({ ...detailResult, data: logs } as never);
-  const result = await renderDetail();
+  const result = expectReady(await renderDetail());
   expect(result.history).toEqual([logs[1], logs[5], logs[3], logs[4], logs[6]]);
-  expect(result.logs).toBe(logs);
+  expect(logs).toEqual(originalLogs);
 });
 
 it("사용자별 상세 key로 전체 기록만 조회하고 일정과 기록을 함께 재조회한다", async () => {
-  const result = await renderDetail();
+  await renderDetail();
   const options = jest.mocked(useQuery).mock.calls[0]![0];
   expect(options).toMatchObject({
     enabled: true,
@@ -145,6 +153,9 @@ it("사용자별 상세 key로 전체 기록만 조회하고 일정과 기록을
     userId: "user-1",
   });
   expect(listItemLogs).toHaveBeenCalledTimes(1);
+  const error = new Error("기록 조회 실패");
+  jest.mocked(useQuery).mockReturnValue({ ...detailResult, error } as never);
+  const result = expectError(await renderDetail());
   await result.refetch();
   expect(refetchSchedule).toHaveBeenCalledTimes(1);
   expect(refetchDetail).toHaveBeenCalledTimes(1);
@@ -162,27 +173,33 @@ it("사용자별 상세 key로 전체 기록만 조회하고 일정과 기록을
   ]);
 });
 
-it("일정이 없으면 기록을 조회하지 않고 일정만 재조회한다", async () => {
+it("일정 데이터가 없으면 기록을 조회하지 않고 일정만 재조회한다", async () => {
   jest
     .mocked(useScheduleById)
     .mockReturnValue({ ...scheduleResult, data: undefined } as never);
-  const result = await renderDetail();
+  const result = expectError(await renderDetail());
   expect(jest.mocked(useQuery).mock.calls[0]?.[0].enabled).toBe(false);
-  expect(result.basisOccurrence).toBeNull();
-  expect(result.overdueCount).toBe(0);
   await result.refetch();
   expect(refetchSchedule).toHaveBeenCalledTimes(1);
   expect(refetchDetail).not.toHaveBeenCalled();
 });
 
+it("경로 인자가 없으면 일정 없음이 아닌 일반 오류로 판정한다", async () => {
+  const result = expectError(await renderDetail({ itemId: null }));
+
+  expect(result.error).toBeNull();
+  expect(useScheduleById).toHaveBeenCalledWith(null);
+  expect(jest.mocked(useQuery).mock.calls[0]?.[0].enabled).toBe(false);
+});
+
 it.each([
-  ["loading", true],
-  ["ready", true],
-  ["error", false],
-  ["signedOut", false],
+  ["loading", "loading"],
+  ["ready", "loading"],
+  ["error", "error"],
+  ["signedOut", "error"],
 ] as const)(
-  "일정 조회 대기 중 세션 %s의 상세 로딩을 판정한다",
-  async (status, isLoading) => {
+  "일정 조회 대기 중 세션 %s를 %s 상태로 판정한다",
+  async (status, expectedStatus) => {
     jest.mocked(useSession).mockReturnValue({
       profile: null,
       status,
@@ -197,22 +214,62 @@ it.each([
       .mocked(useQuery)
       .mockReturnValue({ ...detailResult, isPending: true } as never);
     const result = await renderDetail();
-    expect(result.isLoading).toBe(isLoading);
+    expect(result.status).toBe(expectedStatus);
     expect(jest.mocked(useQuery).mock.calls[0]?.[0].enabled).toBe(false);
   }
 );
+
+it("일정 없음과 일반 조회 오류를 다른 상태로 구분한다", async () => {
+  jest.mocked(useScheduleById).mockReturnValue({
+    ...scheduleResult,
+    data: undefined,
+    error: new ScheduleNotFoundError(),
+  } as never);
+  expect((await renderDetail()).status).toBe("notFound");
+
+  const error = new Error("일정 조회 실패");
+  jest.mocked(useScheduleById).mockReturnValue({
+    ...scheduleResult,
+    data: undefined,
+    error,
+  } as never);
+  expect(expectError(await renderDetail()).error).toBe(error);
+});
 
 it("기록 로딩과 실패를 상세 화면에 전달한다", async () => {
   jest
     .mocked(useQuery)
     .mockReturnValue({ ...detailResult, isPending: true } as never);
-  expect((await renderDetail()).isLoading).toBe(true);
+  expect((await renderDetail()).status).toBe("loading");
   const error = new Error("기록 조회 실패");
   jest.mocked(useQuery).mockReturnValue({ ...detailResult, error } as never);
-  const result = await renderDetail();
-  expect(result.isLoading).toBe(false);
+  const result = expectError(await renderDetail());
   expect(result.error).toBe(error);
 });
+
+function expectReady(
+  result: DetailQueryResult
+): Extract<DetailQueryResult, { status: "ready" }> {
+  expect(result.status).toBe("ready");
+
+  if (result.status !== "ready") {
+    throw new Error(`상세 ready 상태가 필요하지만 ${result.status}입니다.`);
+  }
+
+  return result;
+}
+
+function expectError(
+  result: DetailQueryResult
+): Extract<DetailQueryResult, { status: "error" }> {
+  expect(result.status).toBe("error");
+
+  if (result.status !== "error") {
+    throw new Error(`상세 error 상태가 필요하지만 ${result.status}입니다.`);
+  }
+
+  return result;
+}
 
 async function renderDetail(
   overrides: Partial<Parameters<typeof useDetailQuery>[0]> = {}

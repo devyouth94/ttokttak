@@ -7,6 +7,7 @@ import {
   encryptContent,
 } from "~/schedule/content/cipher";
 import { nearestColorKey } from "~/schedule/display/color";
+import { ScheduleNotFoundError } from "~/schedule/errors";
 import type {
   AnchorType,
   RecurrenceType,
@@ -147,7 +148,7 @@ export async function getItem(
   }
 
   if (!data) {
-    throw new Error("반복 항목을 찾을 수 없습니다.");
+    throw new ScheduleNotFoundError();
   }
 
   return toSchedule(data as ItemWithVersionsRow, decryptContent);

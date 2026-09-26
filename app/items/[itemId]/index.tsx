@@ -15,8 +15,6 @@ import { FocusScreenHeader } from "~/ui/focus-screen-header";
 import { StateMessage } from "~/ui/state-message";
 import { spacing } from "~/ui/tokens";
 
-const ITEM_NOT_FOUND_MESSAGE = "반복 항목을 찾을 수 없습니다.";
-
 export default function RecurringItemDetailPage(): React.JSX.Element {
   const { itemId, returnTo, scheduledAtUtc } = useLocalSearchParams<{
     itemId?: string | string[];
@@ -38,24 +36,10 @@ export default function RecurringItemDetailPage(): React.JSX.Element {
     now,
     scheduledAtUtc: resolvedScheduledAtUtc,
   });
-  const { basisOccurrence, item, timezone } = detailQuery;
-
-  let queryErrorMessage: string | null = null;
-
-  if (!resolvedItemId) {
-    queryErrorMessage = t("scheduleDetail.error.missingPath");
-  } else if (detailQuery.error) {
-    queryErrorMessage = getErrorMessage(detailQuery.error);
-  }
-
-  const isNotFound =
-    !item &&
-    !detailQuery.isLoading &&
-    (queryErrorMessage === ITEM_NOT_FOUND_MESSAGE ||
-      queryErrorMessage === null);
   const isEntryOccurrence = Boolean(
+    detailQuery.status === "ready" &&
     resolvedScheduledAtUtc &&
-    basisOccurrence?.scheduledAtUtc === resolvedScheduledAtUtc
+    detailQuery.basisOccurrence?.scheduledAtUtc === resolvedScheduledAtUtc
   );
 
   return (
@@ -65,15 +49,17 @@ export default function RecurringItemDetailPage(): React.JSX.Element {
           router.back();
         }}
         rightSlot={
-          item &&
-          !queryErrorMessage && (
-            <DetailManagementMenu item={item} returnTo={resolvedReturnTo} />
+          detailQuery.status === "ready" && (
+            <DetailManagementMenu
+              item={detailQuery.item}
+              returnTo={resolvedReturnTo}
+            />
           )
         }
         title={t("scheduleDetail.headerTitle")}
       />
 
-      {detailQuery.isLoading && (
+      {detailQuery.status === "loading" && (
         <ActivityIndicator
           accessibilityLabel={t("scheduleDetail.loadingA11yLabel")}
           accessibilityRole="progressbar"
@@ -83,13 +69,13 @@ export default function RecurringItemDetailPage(): React.JSX.Element {
         />
       )}
 
-      {!detailQuery.isLoading && (
+      {detailQuery.status !== "loading" && (
         <ScrollView
           bounces={false}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {queryErrorMessage && !isNotFound && (
+          {detailQuery.status === "error" && (
             <StateMessage
               action={{
                 accessibilityHint: t("scheduleDetail.error.retryHint"),
@@ -99,13 +85,19 @@ export default function RecurringItemDetailPage(): React.JSX.Element {
                   void detailQuery.refetch();
                 },
               }}
-              description={queryErrorMessage}
+              description={
+                !resolvedItemId
+                  ? t("scheduleDetail.error.missingPath")
+                  : detailQuery.error
+                    ? getErrorMessage(detailQuery.error)
+                    : undefined
+              }
               style={styles.error}
               title={t("scheduleDetail.error.title")}
             />
           )}
 
-          {isNotFound && (
+          {detailQuery.status === "notFound" && (
             <StateMessage
               action={{
                 accessibilityHint: t("scheduleDetail.notFound.homeHint"),
@@ -121,21 +113,21 @@ export default function RecurringItemDetailPage(): React.JSX.Element {
             />
           )}
 
-          {!queryErrorMessage && !isNotFound && item && (
+          {detailQuery.status === "ready" && (
             <>
-              <DetailSummarySection item={item} />
+              <DetailSummarySection item={detailQuery.item} />
 
               <DetailStatusSection
                 isEntryOccurrence={isEntryOccurrence}
                 now={now}
-                occurrence={basisOccurrence}
+                occurrence={detailQuery.basisOccurrence}
                 overdueCount={detailQuery.overdueCount}
-                timezone={timezone}
+                timezone={detailQuery.timezone}
               />
 
               <DetailHistorySection
                 logs={detailQuery.history}
-                timezone={timezone}
+                timezone={detailQuery.timezone}
               />
             </>
           )}
