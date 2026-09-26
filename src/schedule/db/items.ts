@@ -9,7 +9,10 @@ import {
   encryptContent,
 } from "../content/cipher";
 import { nearestColorKey } from "../display/color";
-import { ScheduleNotFoundError } from "../errors";
+import {
+  ScheduleContentUnrecoverableError,
+  ScheduleNotFoundError,
+} from "../errors";
 import type {
   AnchorType,
   RecurrenceType,
@@ -238,7 +241,11 @@ async function toSchedule(
       description: content.description,
       title: content.title,
     };
-  } catch {
+  } catch (error) {
+    if (!(error instanceof ScheduleContentUnrecoverableError)) {
+      throw error;
+    }
+
     return {
       ...item,
       contentStatus: "unrecoverable",

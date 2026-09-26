@@ -1,3 +1,5 @@
+import { FunctionsFetchError } from "@supabase/supabase-js";
+
 import {
   archiveItem,
   createItem,
@@ -10,7 +12,10 @@ import {
   decryptContent,
   encryptContent,
 } from "../content/cipher";
-import { ScheduleNotFoundError } from "../errors";
+import {
+  ScheduleContentUnrecoverableError,
+  ScheduleNotFoundError,
+} from "../errors";
 
 jest.mock("~/supabase", () => ({ supabase: {} }));
 jest.mock("~/schedule/content/cipher", () => ({
@@ -133,7 +138,9 @@ describe("schedule items DB", () => {
   });
 
   it("복호화 실패를 복구 불가 일정으로 제공한다", async () => {
-    jest.mocked(decryptContent).mockRejectedValue(new Error("복호화 실패"));
+    jest
+      .mocked(decryptContent)
+      .mockRejectedValue(new ScheduleContentUnrecoverableError());
     const { client } = createClient();
 
     await expect(
@@ -143,6 +150,16 @@ describe("schedule items DB", () => {
       description: null,
       title: "",
     });
+  });
+
+  it("content key 복구 네트워크 오류는 조회 오류로 유지한다", async () => {
+    const error = new FunctionsFetchError(new Error("네트워크 실패"));
+    jest.mocked(decryptContent).mockRejectedValue(error);
+    const { client } = createClient();
+
+    await expect(
+      getItem({ id: "item-1", userId: "user-1" }, client)
+    ).rejects.toBe(error);
   });
 
   it("빈 조회 결과를 일정 없음 오류로 구분한다", async () => {

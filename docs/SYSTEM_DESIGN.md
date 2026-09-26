@@ -93,6 +93,7 @@ Edge Function은 key만 wrap하거나 recover하며 일정 암호문을 복호�
 
 복구 감사 이벤트에는 사용자, 동작, key version과 낮은 해상도 결과만 남긴다.
 평문, key, 암호문과 내부 예외 메시지는 기록하지 않으며 사용자가 직접 조회할 수 없다.
+지원하지 않는 metadata·key version, key 부재 또는 서버 key로도 복호화할 수 없는 경우만 복구 불가로 분류한다. SecureStore·DB·Edge Function 오류는 조회 실패로 전파해 재시도할 수 있게 한다.
 복구 불가 일정은 숨기지 않고 fallback 제목과 빈 설명을 사용하며 상세에서 삭제만 허용한다.
 
 ## 계정 삭제

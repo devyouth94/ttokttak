@@ -5,6 +5,7 @@ import {
   saveContentKey,
   wrapContentKey,
 } from "../db/content-key";
+import { ScheduleContentUnrecoverableError } from "../errors";
 
 const mockGetItem = jest.fn();
 const mockSetItem = jest.fn();
@@ -81,9 +82,9 @@ describe("schedule content key", () => {
   });
 
   it("복호화 key가 없으면 새 key를 만들지 않는다", async () => {
-    await expect(getKey({ keyVersion: 1, userId: "user-1" })).rejects.toThrow(
-      "일정 내용 암호화 키를 복구할 수 없습니다."
-    );
+    await expect(
+      getKey({ keyVersion: 1, userId: "user-1" })
+    ).rejects.toBeInstanceOf(ScheduleContentUnrecoverableError);
 
     expect(mockGenerate).not.toHaveBeenCalled();
     expect(saveContentKey).not.toHaveBeenCalled();

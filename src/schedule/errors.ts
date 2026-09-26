@@ -4,3 +4,10 @@ export class ScheduleNotFoundError extends Error {
     this.name = "ScheduleNotFoundError";
   }
 }
+
+export class ScheduleContentUnrecoverableError extends Error {
+  constructor(message = "일정 내용을 복구할 수 없습니다.") {
+    super(message);
+    this.name = "ScheduleContentUnrecoverableError";
+  }
+}

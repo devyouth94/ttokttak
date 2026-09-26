@@ -13,6 +13,7 @@ import {
   keyVersion,
   saveWrappedKey,
 } from "./key";
+import { ScheduleContentUnrecoverableError } from "../errors";
 
 type EncryptedContent = {
   descriptionCiphertext: string | null;
@@ -104,7 +105,9 @@ function assertMetadata(metadata: Record<string, unknown>): Metadata {
     (metadata.keyStorage !== "server-wrapped" &&
       metadata.keyStorage !== "expo-secure-store")
   ) {
-    throw new Error("일정 내용 암호화 메타데이터를 읽을 수 없습니다.");
+    throw new ScheduleContentUnrecoverableError(
+      "일정 내용 암호화 메타데이터를 읽을 수 없습니다."
+    );
   }
 
   return metadata as Metadata;
@@ -134,32 +137,37 @@ async function decrypt(
     userId: content.userId,
   };
   const key = await loadKey(input);
+  let decrypted: DecryptedContent;
 
   try {
-    const decrypted = await decryptWithKey(content, key.value);
-
-    if (
-      key.source === "local" &&
-      key.encoded &&
-      metadata.keyStorage === "expo-secure-store"
-    ) {
-      await storeWrappedKey({ ...input, encodedKey: key.encoded });
-    }
-
-    return decrypted;
-  } catch (error) {
+    decrypted = await decryptWithKey(content, key.value);
+  } catch {
     if (key.source === "server") {
-      throw error;
+      throw new ScheduleContentUnrecoverableError();
     }
 
     const serverKey = await loadServerKey(input);
 
     if (!serverKey) {
-      throw error;
+      throw new ScheduleContentUnrecoverableError();
     }
 
-    return decryptWithKey(content, serverKey.value);
+    try {
+      return await decryptWithKey(content, serverKey.value);
+    } catch {
+      throw new ScheduleContentUnrecoverableError();
+    }
   }
+
+  if (
+    key.source === "local" &&
+    key.encoded &&
+    metadata.keyStorage === "expo-secure-store"
+  ) {
+    await storeWrappedKey({ ...input, encodedKey: key.encoded });
+  }
+
+  return decrypted;
 }
 
 function getSharedPromise<Value>(

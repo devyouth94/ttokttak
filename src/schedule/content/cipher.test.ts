@@ -4,6 +4,7 @@ import {
   encryptContent,
 } from "./cipher";
 import { getKey, getOrCreateKey, getServerKey, saveWrappedKey } from "./key";
+import { ScheduleContentUnrecoverableError } from "../errors";
 
 const mockDecrypt = jest.fn();
 const mockEncrypt = jest.fn();
@@ -115,6 +116,30 @@ describe("schedule content", () => {
       keyVersion: 1,
       userId: "user-1",
     });
+  });
+
+  it("서버 key 복구 오류를 그대로 전파한다", async () => {
+    const error = new Error("서버 key 복구 실패");
+    jest.mocked(getKey).mockResolvedValue({
+      encoded: "wrong-key",
+      source: "local",
+      value: { id: "wrong" },
+    } as never);
+    jest.mocked(getServerKey).mockRejectedValue(error);
+
+    await expect(decryptContent(encrypted)).rejects.toBe(error);
+  });
+
+  it("서버 key로도 복호화할 수 없으면 복구 불가로 분류한다", async () => {
+    jest.mocked(getKey).mockResolvedValue({
+      encoded: "wrong-key",
+      source: "local",
+      value: { id: "wrong" },
+    } as never);
+
+    await expect(decryptContent(encrypted)).rejects.toBeInstanceOf(
+      ScheduleContentUnrecoverableError
+    );
   });
 
   it("기존 SecureStore metadata를 읽으면 서버 wrapped key를 채운다", async () => {

@@ -7,6 +7,7 @@ import {
   saveContentKey,
   wrapContentKey,
 } from "../db/content-key";
+import { ScheduleContentUnrecoverableError } from "../errors";
 
 export type Key = {
   encoded: string | null;
@@ -66,7 +67,9 @@ export async function getKey(input: {
   const key = await getStoredKey(input);
 
   if (!key) {
-    throw new Error("일정 내용 암호화 키를 복구할 수 없습니다.");
+    throw new ScheduleContentUnrecoverableError(
+      "일정 내용 암호화 키를 복구할 수 없습니다."
+    );
   }
 
   return key;
@@ -94,7 +97,9 @@ export async function getOrCreateKey(
 
 function assertVersion(version: number): void {
   if (version !== keyVersion) {
-    throw new Error("지원하지 않는 일정 내용 암호화 키 버전입니다.");
+    throw new ScheduleContentUnrecoverableError(
+      "지원하지 않는 일정 내용 암호화 키 버전입니다."
+    );
   }
 }
 
