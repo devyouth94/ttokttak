@@ -23,7 +23,34 @@
 
 테스트 통과나 결함 주입 실험의 탐지 개수만으로 존치 여부를 판단하지 않는다. 데이터 유실·계정 혼용·경합·도메인 경계를 보호하는지, 상위 검사가 같은 결과를 이미 확인하는지로 판단한다.
 
-단순 복구 경고·로그인 오류 안내·제목 수정 시 오류 문구 제거의 개별 검사는 제외한다. 일정 제목 입력·수정 저장은 Maestro, 빈 이름 차단은 계정 화면 검사, 언어별 날짜·시간 표시는 홈 표시 검사에서 확인하므로 하위의 중복 검사는 유지하지 않는다. 삭제한 안내 문구 검사와 동일한 범위를 E2E가 모두 대체하는 것은 아니다.
+단순 복구 경고·로그인 오류 안내·제목 수정 시 오류 문구 제거의 개별 검사는 제외한다. 일정 제목 입력·수정 저장은 Maestro, 빈 이름 차단은 계정 화면 검사, 시간대·간격 표시는 일정 표시 검사에서 확인하므로 하위의 중복 검사는 유지하지 않는다. 삭제한 안내 문구 검사와 동일한 범위를 E2E가 모두 대체하는 것은 아니다.
+
+## 자동 방어 범위
+
+| 계약  | 검사 위치                                                                                                                                                         | 막는 손해                                                 |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| J1~J4 | `src/schedule/rules/*.test.ts`, `src/schedule/occurrence-policy.test.ts`, `src/schedule/write.test.ts`                                                            | 잘못된 예정 시점·상태·처리 대상과 과거 기록 변경          |
+| J5~J7 | `src/schedule/write.test.ts`, `src/schedule/db/*.test.ts`, `src/schedule/{read,query}.test.ts`, `src/schedule/content/*.test.ts`, `src/session/provider.test.tsx` | 저장 실패 오인, 부분 조회, 계정 혼용과 내용 복구 단절     |
+| J8    | `src/notifications/plan.test.ts`, `src/device-sync-session.test.ts`                                                                                               | 로그아웃 뒤 이전 계정 출력 부활과 잘못된 알림 재예약      |
+| J9    | `src/screens/schedule-form/form.test.tsx`                                                                                                                         | 재조회·저장 실패 때 사용자가 입력한 내용 유실             |
+| J10   | `src/session/local.test.ts`, `deployment-config.test.js`                                                                                                          | 운영 빌드의 테스트 로그인·개발 dotenv 유입                |
+| B1~B4 | `tests/integration/schedule.mjs`                                                                                                                                  | DB 원자성·멱등성·소유권·삭제 cascade 회귀                 |
+| F1~F3 | `supabase/functions/tests/edge-functions_test.ts`                                                                                                                 | 인증 우회, 잘못된 key binding과 복구 비밀정보 노출        |
+| E1~E2 | `.maestro/e1-lifecycle.yaml`, `.maestro/e2-*.yaml`                                                                                                                | 실제 앱 저장·재조회·계정 격리·local key 유실 뒤 복구 실패 |
+
+필수 계약 밖에서는 언어 초기화 실패, 캘린더 locale 적용 시점, 표시 이름의 빈 값 차단, 시간대·복수 간격 표시만 별도 검사한다. 이 검사는 occurrence 계산을 화면별로 반복하지 않는다. 색상·route param·테마·정적 UI prop·일반 오류 문구·위젯 투영은 자동 검사에서 제외한다.
+
+## 빠른 검사
+
+외부 서비스 없이 실행한다.
+
+```sh
+pnpm exec jest --runInBand
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm supabase:functions:check
+pnpm supabase:functions:test
+```
 
 ## 로컬 실행
 
@@ -48,7 +75,6 @@ E2E는 이름이 `Ttokttak E2E`인 전용 폐기 가능 시뮬레이터에서만
 다른 터미널에서 실행한다.
 
 ```sh
-pnpm jest --runInBand
 pnpm test:integration
 pnpm e2e:ios
 ```
