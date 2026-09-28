@@ -190,6 +190,7 @@ export function DateTimePickerField({
                 minimumDate={minimumDate}
                 mode={mode}
                 onChange={changePicker}
+                style={styles.modalPicker}
                 textColor={themeColors.text}
                 themeVariant={resolvedTheme}
                 value={draft}
@@ -270,6 +271,9 @@ function createStyles(themeColors: ThemeColors) {
       justifyContent: "space-between",
       paddingBottom: spacing.sm,
       paddingHorizontal: spacing.lg,
+    },
+    modalPicker: {
+      alignSelf: "center",
     },
     modalTextButton: {
       minWidth: 44,
