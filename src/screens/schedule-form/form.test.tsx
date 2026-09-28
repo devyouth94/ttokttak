@@ -1,5 +1,6 @@
 import { createElement, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "react-native";
 import { router } from "expo-router";
 
 import { useDeviceSync } from "~/device-sync";
@@ -52,6 +53,7 @@ beforeEach(() => {
   jest.mocked(archiveSchedule).mockResolvedValue();
   jest.mocked(createSchedule).mockResolvedValue();
   jest.mocked(updateSchedule).mockResolvedValue();
+  jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
   mockSchedule(null);
 });
 
@@ -93,7 +95,8 @@ it("저장 실패 뒤 입력을 보존하고 재시도 중 중복 쓰기 없이 
     await firstStarted.promise;
   });
   expect(result.current.form.getValues("title")).toBe("작성 중");
-  expect(result.current.form.formState.errors.root?.message).toBe(
+  expect(Alert.alert).toHaveBeenCalledWith(
+    "scheduleForm.error.saveFailedTitle",
     "error.tryAgain"
   );
   expect(router.replace).not.toHaveBeenCalled();
@@ -113,6 +116,22 @@ it("저장 실패 뒤 입력을 보존하고 재시도 중 중복 쓰기 없이 
     await retry.promise;
   });
   expect(router.replace).toHaveBeenCalledWith("/");
+});
+
+it("수정 일정 로드 실패를 재시도 가능한 상태로 노출한다", async () => {
+  const refetch = jest.fn(async () => undefined);
+  jest.mocked(useScheduleById).mockReturnValue({
+    data: undefined,
+    error: new Error("조회 실패"),
+    isPending: false,
+    refetch,
+  } as never);
+
+  const result = await renderForm({ itemId: "item-1" });
+
+  expect(result.current.loadFailed).toBe(true);
+  await result.current.retryLoad();
+  expect(refetch).toHaveBeenCalledTimes(1);
 });
 
 function mockSchedule(item: ReturnType<typeof scheduleFixture> | null): void {

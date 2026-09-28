@@ -273,9 +273,11 @@ export const appI18nResources = {
           toggleLabel: "Use end date",
         },
         error: {
-          checkInput: "Check the information you entered.",
+          deleteFailedTitle: "Could not delete the item",
           editLoadFailed: "Could not load the item to edit.",
-          title: "Needs attention",
+          retryHint: "Reload the item to edit.",
+          retryLabel: "Try again",
+          saveFailedTitle: "Could not save the item",
         },
         fields: {
           color: "Item color",
@@ -739,9 +741,11 @@ export const appI18nResources = {
           toggleLabel: "종료일 사용",
         },
         error: {
-          checkInput: "입력한 내용을 확인해 주세요.",
+          deleteFailedTitle: "일정을 삭제하지 못했어요",
           editLoadFailed: "수정할 항목을 불러올 수 없습니다.",
-          title: "확인 필요",
+          retryHint: "수정할 일정을 다시 불러와요.",
+          retryLabel: "다시 시도",
+          saveFailedTitle: "일정을 저장하지 못했어요",
         },
         fields: {
           color: "색상",

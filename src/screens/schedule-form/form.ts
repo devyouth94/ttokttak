@@ -48,6 +48,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     isEdit &&
     (sessionStatus === "loading" ||
       (sessionStatus === "ready" && Boolean(user) && schedule.isPending));
+  const loadFailed = isEdit && !isLoading && !item;
   const today = format(openedAt, "yyyy-MM-dd");
 
   const schema = useMemo(
@@ -63,14 +64,6 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
   });
   const { isDirty, isSubmitting } = form.formState;
   const reset = form.reset;
-  const loadError =
-    isEdit && !isLoading
-      ? schedule.error
-        ? t("scheduleForm.error.editLoadFailed")
-        : sessionStatus !== "ready"
-          ? t("scheduleForm.error.editLoadFailed")
-          : null
-      : null;
 
   async function save(formValues: ScheduleFormValues): Promise<void> {
     if (!profile || !user) {
@@ -82,8 +75,6 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     }
 
     const input = toScheduleInput(formValues);
-
-    form.clearErrors("root");
 
     try {
       if (isEdit && itemId) {
@@ -116,7 +107,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
 
       router.replace(getScheduleReturnPath(returnTo));
     } catch {
-      form.setError("root", { message: t("error.tryAgain") });
+      Alert.alert(t("scheduleForm.error.saveFailedTitle"), t("error.tryAgain"));
     }
   }
 
@@ -125,11 +116,7 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
       return;
     }
 
-    void form.handleSubmit(save, () => {
-      form.setError("root", {
-        message: t("scheduleForm.error.checkInput"),
-      });
-    })();
+    void form.handleSubmit(save)();
   }
 
   function remove(): void {
@@ -159,7 +146,6 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     userId: string
   ): Promise<void> {
     setIsDeleting(true);
-    form.clearErrors("root");
 
     try {
       await archiveSchedule({
@@ -170,7 +156,10 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
 
       router.replace("/");
     } catch {
-      form.setError("root", { message: t("error.tryAgain") });
+      Alert.alert(
+        t("scheduleForm.error.deleteFailedTitle"),
+        t("error.tryAgain")
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -197,8 +186,9 @@ export function useScheduleForm({ itemId, returnTo }: Params) {
     isDeleting,
     isEdit,
     isLoading,
-    loadError,
+    loadFailed,
     remove,
+    retryLoad: schedule.refetch,
     submit,
     today,
   } as const;

@@ -34,7 +34,6 @@ type SectionOffsets = Partial<Record<ErrorSection, number>>;
 type ScheduleFormBodyProps = {
   isDeleting: boolean;
   isEdit: boolean;
-  loadError: string | null;
   onBack: () => void;
   remove: () => void;
   submit: () => void;
@@ -45,7 +44,6 @@ export function ScheduleFormBody({
   onBack,
   isDeleting,
   isEdit,
-  loadError,
   remove,
   submit,
   today,
@@ -65,7 +63,6 @@ export function ScheduleFormBody({
   const screenTitle = isEdit
     ? t("scheduleForm.title.edit")
     : t("scheduleForm.title.create");
-  const screenError = errors.root?.message ?? loadError;
   const disabled = isDeleting || isSubmitting;
 
   function saveSectionOffset(
@@ -122,17 +119,6 @@ export function ScheduleFormBody({
             showsVerticalScrollIndicator={false}
             style={styles.scrollView}
           >
-            {screenError && (
-              <View style={styles.errorCard}>
-                <AppText style={styles.errorTitle} variant="title">
-                  {t("scheduleForm.error.title")}
-                </AppText>
-                <AppText style={styles.errorText} variant="body">
-                  {screenError}
-                </AppText>
-              </View>
-            )}
-
             <ContentFields
               onTitleLayout={(event) => saveSectionOffset("title", event)}
               titleInputRef={titleInputRef}
@@ -255,18 +241,6 @@ function createStyles(themeColors: ThemeColors) {
     },
     editSaveButton: {
       flex: 1,
-    },
-    errorCard: {
-      backgroundColor: themeColors.errorContainer,
-      borderRadius: borderRadius.lg,
-      gap: spacing.xs,
-      padding: spacing.md,
-    },
-    errorText: {
-      color: themeColors.error,
-    },
-    errorTitle: {
-      color: themeColors.error,
     },
     footer: {
       backgroundColor: themeColors.background,
