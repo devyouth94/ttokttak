@@ -114,6 +114,7 @@ export function RecurrenceSection(): React.JSX.Element {
                   onFocus={() => setIsIntervalFocused(true)}
                   placeholder="1"
                   style={styles.customRecurrenceInput}
+                  testID="schedule-interval"
                   value={intervalField.value}
                 />
 

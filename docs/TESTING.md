@@ -4,7 +4,7 @@
 
 - Jest: occurrence 경계, 입력 검증, 오류·경합·암호화 처리를 공개 interface에서 검증한다. mock은 외부 경계에 사용한다.
 - 통합: 실제 로컬 Auth·PostgREST·DB·Edge Function을 연결해 소유권, 제약, 원자성과 키 복구를 검증한다. SQL 문서의 문자열 검사는 사용하지 않는다.
-- Maestro: iOS 앱에서 일정 생성·수정·완료·건너뛰기·삭제와 재실행 후 저장 상태를 확인한다. 소셜 로그인 자체는 이 검사 범위에 포함하지 않는다.
+- Maestro: iOS 앱에서 일정 lifecycle과 계정 격리·서버 content key 복구를 확인한다. 소셜 로그인 자체는 이 검사 범위에 포함하지 않는다.
 
 문구 원문 복제, 내부 key 배열 모양, 상위 검사와 중복되는 단순 mock 전달 검사는 삭제한다. 약한 검사를 보강해 존치시키는 것을 기본값으로 삼지 않는다. 중복 검사부터 삭제하고, 데이터 유실·권한·경합·도메인 경계처럼 독립적으로 보호할 이유가 있는 검사만 보강한다.
 
@@ -41,6 +41,8 @@ content key wrapping secret은 `supabase/functions/.env.local`에 무작위로 �
 
 시뮬레이터에는 이 프로젝트의 Expo development build(`com.youngzin.ttokttak`)가 설치되어 있어야 한다. 새 기기는 Expo prebuild 경로로 개발 빌드를 만든다. 생성된 네이티브 소스는 직접 수정하지 않는다.
 
+E2E는 이름이 `Ttokttak E2E`인 전용 폐기 가능 시뮬레이터에서만 실행한다. 여러 전용 시뮬레이터가 있으면 `TTOKTTAK_E2E_SIMULATOR_UDID`로 대상을 고른다. runner는 해당 이름을 다시 확인한 뒤 시간대를 `Asia/Seoul`로 설정하고 keychain을 초기화하므로 개인 기기나 일상 개발용 시뮬레이터를 사용하지 않는다.
+
 수동 확인용 계정은 로컬 Studio(`http://127.0.0.1:54323`)의 Auth에서 만들고 앱의 로컬 테스트 로그인으로 접속한다. `pnpm start`와 개발용 네이티브 실행 명령도 같은 로컬 설정을 읽는다. DB만 시작하려면 `supabase start`를 사용한다. 키 복구가 필요한 앱 동작에는 Edge Function도 실행해야 하므로 `pnpm start:local`을 사용한다. E2E는 이 명령의 8082 서버를 사용한다.
 
 다른 터미널에서 실행한다.
@@ -51,7 +53,9 @@ pnpm test:integration
 pnpm e2e:ios
 ```
 
-E2E는 실행마다 새로운 로컬 테스트 계정을 만들고 실제 Auth로 로그인한다. 공개된 테스트 비밀번호는 로컬 fixture이며 운영 계정에는 사용하지 않는다. 로컬 로그인 화면은 개발 빌드와 허용된 로컬 주소에서만 열리고, 인증 요청 직전에도 같은 조건을 확인한다. 운영 URL을 받는 옵션은 제공하지 않는다.
+E2E는 실행마다 새로운 로컬 테스트 계정 세 개를 만들고 실제 Auth로 로그인한다. E1은 일정 생성·수정·완료·건너뛰기·재실행·삭제를, E2는 A/B 계정 격리와 local key 삭제 뒤 서버 wrapped key 복구를 확인한다. 실행 중 서울 기준 날짜가 바뀌면 fixture를 이어 쓰지 않고 실패한다.
+
+공개된 테스트 비밀번호는 로컬 fixture이며 운영 계정에는 사용하지 않는다. 로컬 로그인 화면은 개발 빌드와 허용된 로컬 주소에서만 열리고, 인증 요청 직전에도 같은 조건을 확인한다. 운영 URL을 받는 옵션은 제공하지 않는다.
 
 Maestro는 PATH 또는 `.local-tools/maestro/bin/maestro`에서 찾는다. 결과는 `.maestro-results/`에 남기며 커밋하지 않는다. 실패한 계정과 데이터는 원인 확인을 위해 로컬에 남긴다.
 
@@ -65,4 +69,4 @@ supabase db reset --local
 
 운영에 연결된 CLI 이력이 있으므로 초기화에 `--linked`나 원격 `--db-url`을 사용하지 않는다. 운영 데이터·secret을 seed로 복사하지 않는다. 과거 원격 푸시 migration에 필요한 운영 secret도 넣지 않는다.
 
-Google·Apple 로그인은 별도 개발 환경에서 실제 계정으로 로그인·앱 복귀·세션 생성까지 확인한다. 로컬 일정 E2E의 통과가 소셜 로그인이나 OS 알림 표시의 통과를 뜻하지 않는다. Android E2E는 후속 범위다.
+Google·Apple 로그인은 별도 개발 환경에서 실제 계정으로 로그인·앱 복귀·세션 생성까지 확인한다. 실제 기기에서는 알림 권한 허용·거부, 알림 표시·tap·로그아웃 뒤 정리와 위젯 표시를 수동 확인한다. 로컬 일정 E2E의 통과가 소셜 로그인이나 OS 알림 표시의 통과를 뜻하지 않는다. production build·OTA의 backend와 public env는 release 절차에서 확인하며 Android E2E는 후속 범위다.

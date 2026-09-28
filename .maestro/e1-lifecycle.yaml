@@ -1,0 +1,142 @@
+appId: com.youngzin.ttokttak
+---
+- clearKeychain
+- runFlow:
+    file: login.yaml
+
+# 오늘 기준 3일 간격·완료일 기준 일정을 만든다. 기본 알림 시각은 저장 시점에 이미 지난 현재 분이다.
+- tapOn: "목록|Items"
+- tapOn: "일정 추가|Add item"
+- tapOn:
+    id: "schedule-title"
+- inputText: "E1 Completion"
+- tapOn:
+    id: "schedule-description"
+- inputText: "E1 original memo"
+- swipe:
+    start: "95%,45%"
+    end: "95%,25%"
+    duration: 300
+- scrollUntilVisible:
+    element:
+      text: "직접 설정|Custom"
+    direction: DOWN
+- tapOn: "직접 설정|Custom"
+- tapOn:
+    id: "schedule-interval"
+    point: "90%,50%"
+- eraseText: 1
+- inputText: "3"
+- swipe:
+    start: "95%,45%"
+    end: "95%,25%"
+    duration: 300
+- scrollUntilVisible:
+    element:
+      id: "schedule-completion-based"
+    direction: DOWN
+- tapOn:
+    id: "schedule-completion-based"
+- tapOn:
+    id: "schedule-submit"
+- extendedWaitUntil:
+    visible: "E1 Completion 상세 보기|View E1 Completion details"
+    timeout: 30000
+
+- runFlow:
+    file: create-once.yaml
+    env:
+      DESCRIPTION: "E1 once memo"
+      TITLE: "E1 Once"
+
+# 제목과 메모를 수정하고, 제품 명세대로 제목은 상세에서 확인한다.
+- tapOn: "E1 Completion 상세 보기|View E1 Completion details"
+- assertVisible: "3일마다|Every 3 days"
+- assertVisible: "완료일 기준|Completion-based"
+- tapOn:
+    id: "schedule-management-menu"
+- tapOn:
+    id: "schedule-edit"
+- tapOn:
+    id: "schedule-title"
+    point: "95%,50%"
+- eraseText
+- inputText: "E1 Completion updated"
+- tapOn:
+    id: "schedule-description"
+    point: "95%,20%"
+- eraseText
+- inputText: "E1 updated memo"
+- swipe:
+    start: "95%,45%"
+    end: "95%,25%"
+    duration: 300
+- tapOn:
+    id: "schedule-submit"
+- extendedWaitUntil:
+    visible: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+    timeout: 30000
+- tapOn: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+- assertVisible: "E1 Completion updated"
+- tapOn: "뒤로 가기|Go back"
+- assertVisible: "E1 Once 상세 보기|View E1 Once details"
+
+# 완료와 건너뛰기 후 오늘 처리 버튼이 사라지는지 확인한다.
+- tapOn: "홈|Home"
+- tapOn: "E1 Completion updated 완료|Complete E1 Completion updated"
+- assertNotVisible: "E1 Completion updated 완료|Complete E1 Completion updated"
+- tapOn: "E1 Once 건너뛰기|Skip E1 Once"
+- assertNotVisible: "E1 Once 건너뛰기|Skip E1 Once"
+
+# 프로세스를 종료해 메모리 캐시가 아닌 서버 저장 결과를 다시 읽는다.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "홈|Home"
+    timeout: 30000
+- tapOn: "목록|Items"
+- assertVisible: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+- assertVisible: "E1 Once 상세 보기|View E1 Once details"
+- tapOn: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+- assertVisible: "최근 처리 기록|Recent activity"
+- assertVisible: "완료|Complete"
+- assertVisible: "${MAESTRO_E1_NEXT_DATE}"
+- tapOn:
+    id: "schedule-management-menu"
+- tapOn:
+    id: "schedule-edit"
+- assertVisible:
+    id: "schedule-description"
+    text: "E1 updated memo"
+- tapOn: "뒤로 가기|Go back"
+- tapOn: "뒤로 가기|Go back"
+- tapOn: "E1 Once 상세 보기|View E1 Once details"
+- assertVisible: "최근 처리 기록|Recent activity"
+- assertVisible: "건너뜀|Skip"
+- tapOn: "뒤로 가기|Go back"
+
+# 삭제 취소와 확정을 모두 거친 뒤 다른 일정은 남아 있어야 한다.
+- tapOn: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+- tapOn:
+    id: "schedule-management-menu"
+- tapOn:
+    id: "schedule-delete"
+- tapOn: "취소|Cancel"
+- assertVisible: "E1 Completion updated"
+- tapOn:
+    point: "90%,11%"
+- tapOn:
+    id: "schedule-delete"
+- tapOn: "삭제|Delete"
+- extendedWaitUntil:
+    notVisible: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+    timeout: 30000
+- assertVisible: "E1 Once 상세 보기|View E1 Once details"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "홈|Home"
+    timeout: 30000
+- tapOn: "목록|Items"
+- assertNotVisible: "E1 Completion updated 상세 보기|View E1 Completion updated details"
+- assertVisible: "E1 Once 상세 보기|View E1 Once details"

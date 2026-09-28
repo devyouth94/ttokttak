@@ -103,6 +103,7 @@ export function ContentFields({
           onFocus={() => setFocusedInput("description")}
           placeholder={t("scheduleForm.placeholders.description")}
           style={styles.multilineInput}
+          testID="schedule-description"
           textAlignVertical="top"
           value={descriptionField.value}
         />

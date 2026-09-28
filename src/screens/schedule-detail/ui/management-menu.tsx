@@ -99,6 +99,7 @@ export function DetailManagementMenu({
           accessibilityLabel={t("scheduleDetail.management.menuLabel")}
           accessibilityRole="button"
           disabled={isArchiving}
+          testID="schedule-management-menu"
           style={({ pressed }) => [
             styles.button,
             isArchiving && styles.disabled,
@@ -134,6 +135,7 @@ export function DetailManagementMenu({
               closeOnPress
               onPress={handleEdit}
               style={styles.item}
+              testID="schedule-edit"
             >
               <AppText
                 numberOfLines={1}
@@ -150,6 +152,7 @@ export function DetailManagementMenu({
             closeOnPress
             onPress={handleDelete}
             style={styles.item}
+            testID="schedule-delete"
           >
             <AppText
               numberOfLines={1}

@@ -1,0 +1,19 @@
+appId: com.youngzin.ttokttak
+---
+# 전용 폐기 가능 시뮬레이터에서만 실행된다. 기기 키를 지운 뒤 서버 wrapped key로 복구한다.
+- clearKeychain
+- runFlow:
+    file: login.yaml
+- tapOn: "목록|Items"
+- extendedWaitUntil:
+    visible: "E2 Private 상세 보기|View E2 Private details"
+    timeout: 30000
+- tapOn: "E2 Private 상세 보기|View E2 Private details"
+- assertVisible: "E2 Private"
+- tapOn:
+    id: "schedule-management-menu"
+- tapOn:
+    id: "schedule-edit"
+- assertVisible:
+    id: "schedule-description"
+    text: "E2 encrypted memo"

@@ -1,0 +1,31 @@
+appId: com.youngzin.ttokttak
+---
+- runFlow:
+    file: login.yaml
+- assertNotVisible: "E2 Private"
+- assertNotVisible: "E2 encrypted memo"
+- tapOn: "목록|Items"
+- assertNotVisible: "E2 Private 상세 보기|View E2 Private details"
+- assertNotVisible: "E2 encrypted memo"
+- openLink: "ttokttak://items/${MAESTRO_E2_A_ITEM_ID}"
+- extendedWaitUntil:
+    visible: "일정을 찾을 수 없어요|Could not find the item"
+    timeout: 30000
+- assertNotVisible: "E2 Private"
+- tapOn: "홈으로 이동|Go home"
+- tapOn: "설정|Settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out"
+    direction: DOWN
+- swipe:
+    start: "90%,70%"
+    end: "90%,40%"
+    duration: 300
+- tapOn:
+    id: "settings-sign-out"
+    point: "50%,20%"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "로컬 테스트 로그인|Local test sign-in"
+    timeout: 30000

@@ -104,9 +104,11 @@ export function ScheduleOptions(): React.JSX.Element {
               </Pressable>
             </View>
             <Switch
+              accessibilityLabel={t("scheduleForm.completionBased.title")}
               disabled={!canUseCompletion}
               onValueChange={toggleCompletion}
               style={styles.optionToggleSwitch}
+              testID="schedule-completion-based"
               thumbColor={themeColors.primaryForeground}
               trackColor={{
                 false: themeColors.controlTrack,

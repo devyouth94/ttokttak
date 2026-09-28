@@ -116,6 +116,7 @@ export function ScheduleFormBody({
 
           <ScrollView
             contentContainerStyle={styles.scrollContent}
+            keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
             ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
@@ -164,6 +165,7 @@ export function ScheduleFormBody({
                   disabled ? styles.saveButtonDisabled : undefined,
                   pressed && !disabled ? styles.saveButtonPressed : undefined,
                 ]}
+                testID="schedule-submit"
               >
                 {isSubmitting ? (
                   <ActivityIndicator color={themeColors.primaryForeground} />

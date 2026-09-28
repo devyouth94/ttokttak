@@ -86,6 +86,7 @@ export function AccountManagementSection(): React.JSX.Element {
         onPress={() => {
           void signOutCurrentSession();
         }}
+        testID="settings-sign-out"
         title={t("settings.accountManagement.signOut")}
       />
       <SettingsRow

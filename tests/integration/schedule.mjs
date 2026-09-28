@@ -199,6 +199,12 @@ test("사용자 데이터와 content key를 계정 사이에서 격리한다", a
     body: { action: "wrap", encodedKey, keyVersion: 1 },
   });
   assert.equal(wrapped.error, null);
+  const ownerRecovery = await owner.client.functions.invoke(
+    "recover-content-key",
+    { body: { action: "recover", keyVersion: 1 } }
+  );
+  assert.equal(ownerRecovery.error, null);
+  assert.equal(ownerRecovery.data.encodedKey, encodedKey);
 
   for (const [table, column, value] of [
     ["profiles", "id", owner.userId],

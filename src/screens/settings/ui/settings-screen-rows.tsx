@@ -17,6 +17,7 @@ type SettingsRowProps = {
   isDisabled?: boolean;
   isFirst?: boolean;
   onPress?: () => void;
+  testID?: string;
   tone?: "default" | "danger";
   title: string;
 };
@@ -51,6 +52,7 @@ export function SettingsRow({
   isDisabled = false,
   isFirst = false,
   onPress,
+  testID,
   tone = "default",
   title,
 }: SettingsRowProps): React.JSX.Element {
@@ -61,6 +63,7 @@ export function SettingsRow({
       accessibilityRole={onPress ? "button" : undefined}
       disabled={!onPress || isDisabled}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => [
         styles.row,
         !isFirst
