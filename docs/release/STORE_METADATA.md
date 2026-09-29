@@ -29,7 +29,7 @@
 
 ### 짧은 설명
 
-복용, 교체, 정비, 학습처럼 주기가 있는 생활 항목을 일정으로 관리하고 기록하세요.
+필터 교체, 정비, 학습처럼 주기가 있는 생활 항목을 일정으로 관리하고 기록하세요.
 
 ### 설명
 
@@ -49,11 +49,11 @@
 
 알림은 기기 로컬 알림을 기본으로 사용합니다.
 기기 상태, OS 설정, 알림 권한, 시간대 설정, 배터리 정책에 따라 알림이 표시되지 않거나 지연될 수 있습니다.
-복용, 안전, 업무 마감처럼 중요한 일정에는 똑딱 알림만을 유일한 확인 수단으로 사용하지 마세요.
+안전, 업무 마감처럼 중요한 일정에는 똑딱 알림만을 유일한 확인 수단으로 사용하지 마세요.
 
 ### 키워드
 
-반복 일정, 리마인더, 알림, 루틴, 습관, 일정 관리, 할 일, 복용, 기록, 생활 관리
+반복 일정, 리마인더, 알림, 루틴, 습관, 일정 관리, 할 일, 정비, 기록, 생활 관리
 
 ### 지원 URL
 
@@ -78,7 +78,7 @@
 3. 일정 생성 — `얼마나 자주 반복할지` / `직접 정해보세요`
 4. 캘린더 — `이번 달에 챙길 일,` / `달력에서 확인하세요`
 5. 상세·기록 — `지난번에 언제 했는지` / `기록으로 확인하세요`
-6. 일정 목록 — `비타민도, 필터 교체도` / `한곳에서 챙기세요`
+6. 일정 목록 — `정비도, 필터 교체도` / `한곳에서 챙기세요`
 
 ## English
 
@@ -92,7 +92,7 @@ Recurring life reminders
 
 ### Short Description
 
-Track recurring life items like medication, replacements, maintenance, and study routines.
+Track recurring life items like filter replacements, maintenance, and study routines.
 
 ### Description
 
@@ -113,11 +113,11 @@ Key features:
 
 ttokttak uses device-local notifications as its default reminder path.
 Notifications may be delayed or may not appear depending on device state, OS settings, notification permissions, timezone settings, and battery policy.
-Do not use ttokttak as the only confirmation method for critical medication, safety, or deadline-related items.
+Do not use ttokttak as the only confirmation method for critical safety or deadline-related items.
 
 ### Keywords
 
-recurring schedule, reminder, notification, routine, habit, planner, task, medication, log, life management
+recurring schedule, reminder, notification, routine, habit, planner, task, maintenance, log, life management
 
 ### Support URL
 
