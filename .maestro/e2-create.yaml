@@ -11,19 +11,5 @@ appId: com.youngzin.ttokttak
 - tapOn: "E2 Private 상세 보기|View E2 Private details"
 - assertVisible: "E2 Private"
 - tapOn: "뒤로 가기|Go back"
-- tapOn: "설정|Settings"
-- scrollUntilVisible:
-    element:
-      id: "settings-sign-out"
-    direction: DOWN
-- swipe:
-    start: "90%,70%"
-    end: "90%,40%"
-    duration: 300
-- tapOn:
-    id: "settings-sign-out"
-    point: "50%,20%"
-    retryTapIfNoChange: true
-- extendedWaitUntil:
-    visible: "로컬 테스트 로그인|Local test sign-in"
-    timeout: 30000
+- runFlow:
+    file: sign-out.yaml

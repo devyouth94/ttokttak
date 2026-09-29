@@ -129,11 +129,9 @@ async function runE2e() {
       MAESTRO_EMAIL: lifecycleAccount.email,
       MAESTRO_PASSWORD: lifecycleAccount.password,
     });
-  } catch (error) {
+  } finally {
     ensureFixtureDate(fixtureDate);
-    throw error;
   }
-  ensureFixtureDate(fixtureDate);
   await runMaestro(maestro, simulator.udid, "e2-create", {
     MAESTRO_EMAIL: isolationAccountA.email,
     MAESTRO_PASSWORD: isolationAccountA.password,
