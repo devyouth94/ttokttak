@@ -11,7 +11,7 @@ import {
 import * as AppleAuthentication from "expo-apple-authentication";
 import { router } from "expo-router";
 
-import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "~/legal";
+import { PRIVACY_POLICY_URL, SUPPORT_URL, TERMS_OF_SERVICE_URL } from "~/legal";
 import { isLocalSignInEnabled } from "~/session/local";
 import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
@@ -44,7 +44,7 @@ export function LoginScreen(): React.JSX.Element {
     });
   }
 
-  function openLegalDocument(
+  function openExternalDocument(
     url: string,
     titleKey: string,
     messageKey: string
@@ -153,7 +153,7 @@ export function LoginScreen(): React.JSX.Element {
                 accessibilityRole="link"
                 hitSlop={8}
                 onPress={() =>
-                  openLegalDocument(
+                  openExternalDocument(
                     TERMS_OF_SERVICE_URL,
                     "login.termsOpenErrorTitle",
                     "login.termsOpenErrorMessage"
@@ -183,7 +183,7 @@ export function LoginScreen(): React.JSX.Element {
                 accessibilityRole="link"
                 hitSlop={8}
                 onPress={() =>
-                  openLegalDocument(
+                  openExternalDocument(
                     PRIVACY_POLICY_URL,
                     "login.privacyOpenErrorTitle",
                     "login.privacyOpenErrorMessage"
@@ -212,6 +212,31 @@ export function LoginScreen(): React.JSX.Element {
                 </AppText>
               )}
             </View>
+            <Pressable
+              accessibilityRole="link"
+              hitSlop={8}
+              onPress={() =>
+                openExternalDocument(
+                  SUPPORT_URL,
+                  "login.supportOpenErrorTitle",
+                  "login.supportOpenErrorMessage"
+                )
+              }
+              style={({ pressed }) => [
+                styles.supportLinkButton,
+                pressed && styles.legalLinkPressed,
+              ]}
+            >
+              <AppText
+                style={[
+                  styles.legalText,
+                  styles.legalLink,
+                  { color: themeColors.text },
+                ]}
+              >
+                {t("login.support")}
+              </AppText>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -270,5 +295,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 1,
     shadowRadius: 20,
+  },
+  supportLinkButton: {
+    alignSelf: "center",
+    borderRadius: borderRadius.xs,
   },
 });
