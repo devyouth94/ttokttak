@@ -17,10 +17,10 @@
 ```sh
 pnpm test
 pnpm test:integration
-pnpm e2e:ios
+pnpm test:e2e
 ```
 
-통합 검사와 E2E는 로컬 개발 환경이 실행 중이어야 한다. 운영 build와 OTA 검증은 [`release/RELEASE.md`](release/RELEASE.md)를 따른다.
+통합 검사와 E2E 전에 `pnpm start:local-server`를 실행한다. E2E에는 별도로 `pnpm expo start`로 실행한 Metro가 필요하다. 운영 build와 OTA 검증은 [`release/RELEASE.md`](release/RELEASE.md)를 따른다.
 
 ## 안전
 

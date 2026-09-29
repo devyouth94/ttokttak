@@ -12,7 +12,7 @@ export function localBackend() {
       })
     );
   } catch {
-    throw new Error("로컬 Supabase를 먼저 실행하세요: pnpm start:local");
+    throw new Error("로컬 서버를 먼저 실행하세요: pnpm start:local-server");
   }
   if (status.API_URL !== "http://127.0.0.1:54321") {
     throw new Error("테스트는 127.0.0.1:54321에서만 실행합니다.");

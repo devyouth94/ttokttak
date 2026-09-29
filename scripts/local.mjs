@@ -18,7 +18,7 @@ process.on("SIGTERM", () => finish(0));
 
 try {
   if (mode === "start") {
-    startLocalDevelopment();
+    startLocalBackend();
     for (const child of children) {
       child.on("error", () => finish(1));
       child.on("exit", (code) => finish(code ?? 1));
@@ -38,7 +38,7 @@ try {
   finish(1);
 }
 
-function startLocalDevelopment() {
+function startLocalBackend() {
   console.log("로컬 Supabase를 시작합니다.");
   execFileSync("supabase", ["start"], { stdio: ["ignore", "pipe", "pipe"] });
   const secrets = "supabase/functions/.env.local";
@@ -55,32 +55,10 @@ function startLocalDevelopment() {
       stdio: "inherit",
     })
   );
-  children.push(
-    spawn(
-      process.execPath,
-      [
-        "node_modules/expo/bin/cli",
-        "start",
-        "--dev-client",
-        "--clear",
-        "--localhost",
-        "--port",
-        "8082",
-      ],
-      {
-        detached: true,
-        stdio: "inherit",
-        env: {
-          ...process.env,
-          NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --dns-result-order=ipv4first`,
-        },
-      }
-    )
-  );
 }
 
 async function runE2e() {
-  const metro = await fetch("http://localhost:8082/status");
+  const metro = await fetch("http://localhost:8081/status");
   if ((await metro.text()) !== "packager-status:running") {
     throw new Error("로컬 Metro가 필요합니다.");
   }

@@ -4,19 +4,16 @@
   "version": "1.0.4",
   "scripts": {
     "start": "expo start",
+    "start:local-server": "node scripts/local.mjs start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "ios:latest": "expo run:ios --device \"iPhone 17 Pro\"",
     "ios:compact": "expo run:ios --device \"iPhone SE (2nd generation)\"",
-    "web": "expo start --web",
-    "build:production": "EXPO_NO_DOTENV=1 eas build --profile production",
     "lint": "expo lint",
-    "test": "jest --runInBand && pnpm supabase:functions:test",
-    "supabase:functions:check": "deno lint --config supabase/functions/deno.json supabase/functions && deno check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/recover-content-key/index.ts",
-    "supabase:functions:test": "deno test --config supabase/functions/deno.json --frozen --allow-env supabase/functions/tests",
-    "start:local": "node scripts/local.mjs start",
+    "build:production": "EXPO_NO_DOTENV=1 eas build --profile production",
+    "test": "jest --runInBand && deno lint --config supabase/functions/deno.json supabase/functions && deno check --config supabase/functions/deno.json supabase/functions/delete-account/index.ts supabase/functions/recover-content-key/index.ts && deno test --config supabase/functions/deno.json --frozen --allow-env supabase/functions/tests",
     "test:integration": "node --test tests/integration/*.mjs",
-    "e2e:ios": "node scripts/local.mjs e2e"
+    "test:e2e": "node scripts/local.mjs e2e"
   },
   "jest": {
     "preset": "jest-expo",

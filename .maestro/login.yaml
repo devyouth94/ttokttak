@@ -1,7 +1,7 @@
 appId: com.youngzin.ttokttak
 ---
 - stopApp
-- openLink: "ttokttak://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082"
+- openLink: "ttokttak://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
 - tapOn:
     text: "Open|열기"
     optional: true
