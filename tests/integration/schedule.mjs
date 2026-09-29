@@ -257,6 +257,11 @@ test("사용자 데이터와 content key를 계정 사이에서 격리한다", a
     .select("id");
   assert.equal(hiddenVersionUpdate.error, null);
   assert.deepEqual(hiddenVersionUpdate.data, []);
+  assert.equal(
+    (await readItem(owner, itemId)).recurring_item_schedule_versions[0]
+      .reminder_time_local,
+    "09:00:00"
+  );
 
   const hiddenLogUpdate = await other.client
     .from("completion_logs")
