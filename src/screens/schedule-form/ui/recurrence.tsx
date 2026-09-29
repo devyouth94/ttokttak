@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useController, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import type { RecurrenceType } from "~/schedule/model";
 import { requiresInterval } from "~/schedule/rules/recurrence";
@@ -9,6 +10,11 @@ import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
 import { AppTextInput } from "~/ui/app-text-input";
+import {
+  FORM_SECTION_ENTER,
+  LAYOUT_TRANSITION,
+  QUICK_FADE_OUT,
+} from "~/ui/motion";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { WeekdaysField } from "./weekdays-field";
@@ -81,7 +87,10 @@ export function RecurrenceSection(): React.JSX.Element {
         {t("scheduleForm.sections.recurrence")}
       </AppText>
 
-      <View style={styles.recurrenceSettingsStack}>
+      <Animated.View
+        layout={LAYOUT_TRANSITION}
+        style={styles.recurrenceSettingsStack}
+      >
         <View style={styles.recurrenceModeTabs}>
           <ModeTab
             label={t("scheduleForm.recurrence.basicTab")}
@@ -98,7 +107,13 @@ export function RecurrenceSection(): React.JSX.Element {
         </View>
 
         {usesCustomInterval ? (
-          <View style={styles.quickRecurrenceContent}>
+          <Animated.View
+            entering={FORM_SECTION_ENTER}
+            exiting={QUICK_FADE_OUT}
+            key="custom"
+            layout={LAYOUT_TRANSITION}
+            style={styles.quickRecurrenceContent}
+          >
             <View style={styles.customRecurrenceControlGroup}>
               <AppText style={styles.subFieldLabel} variant="body2">
                 {t("scheduleForm.recurrence.intervalLabel")}
@@ -137,10 +152,24 @@ export function RecurrenceSection(): React.JSX.Element {
               )}
             </View>
 
-            {recurrenceType === "interval_weeks" && <WeekdaysField />}
-          </View>
+            {recurrenceType === "interval_weeks" && (
+              <Animated.View
+                entering={FORM_SECTION_ENTER}
+                exiting={QUICK_FADE_OUT}
+                layout={LAYOUT_TRANSITION}
+              >
+                <WeekdaysField />
+              </Animated.View>
+            )}
+          </Animated.View>
         ) : (
-          <View style={styles.quickRecurrenceContent}>
+          <Animated.View
+            entering={FORM_SECTION_ENTER}
+            exiting={QUICK_FADE_OUT}
+            key="basic"
+            layout={LAYOUT_TRANSITION}
+            style={styles.quickRecurrenceContent}
+          >
             <View style={styles.quickRecurrenceGrid}>
               {basicRecurrenceOptions.map((option) => (
                 <OptionButton
@@ -161,10 +190,18 @@ export function RecurrenceSection(): React.JSX.Element {
               />
             </View>
 
-            {recurrenceType === "weekly" && <WeekdaysField />}
-          </View>
+            {recurrenceType === "weekly" && (
+              <Animated.View
+                entering={FORM_SECTION_ENTER}
+                exiting={QUICK_FADE_OUT}
+                layout={LAYOUT_TRANSITION}
+              >
+                <WeekdaysField />
+              </Animated.View>
+            )}
+          </Animated.View>
         )}
-      </View>
+      </Animated.View>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, StyleSheet } from "react-native";
+import Animated, { useReducedMotion } from "react-native-reanimated";
 import { router } from "expo-router";
 import * as DropdownMenu from "@rn-primitives/dropdown-menu";
 import { EllipsisVertical } from "lucide-react-native";
@@ -12,6 +13,7 @@ import { archiveSchedule } from "~/schedule/write";
 import { useSession } from "~/session/provider";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
+import { MENU_ENTER, MENU_REDUCED_ENTER } from "~/ui/motion";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 type DetailManagementMenuProps = {
@@ -27,6 +29,7 @@ export function DetailManagementMenu({
   const { syncDeviceOutputs } = useDeviceSync();
   const { user } = useSession();
   const themeColors = useThemeColors();
+  const reducedMotion = useReducedMotion();
 
   const [isArchiving, setIsArchiving] = useState(false);
 
@@ -115,6 +118,7 @@ export function DetailManagementMenu({
         <DropdownMenu.Content
           accessible={false}
           align="end"
+          asChild
           avoidCollisions
           insets={{
             bottom: spacing.lg,
@@ -129,39 +133,43 @@ export function DetailManagementMenu({
             { backgroundColor: themeColors.surface },
           ])}
         >
-          {item.contentStatus !== "unrecoverable" && (
+          <Animated.View
+            entering={reducedMotion ? MENU_REDUCED_ENTER : MENU_ENTER}
+          >
+            {item.contentStatus !== "unrecoverable" && (
+              <DropdownMenu.Item
+                accessibilityHint={t("scheduleDetail.management.editHint")}
+                closeOnPress
+                onPress={handleEdit}
+                style={styles.item}
+                testID="schedule-edit"
+              >
+                <AppText
+                  numberOfLines={1}
+                  style={[styles.text, { color: themeColors.text }]}
+                  variant="label"
+                >
+                  {t("scheduleDetail.management.edit")}
+                </AppText>
+              </DropdownMenu.Item>
+            )}
+
             <DropdownMenu.Item
-              accessibilityHint={t("scheduleDetail.management.editHint")}
+              accessibilityHint={t("scheduleDetail.management.deleteHint")}
               closeOnPress
-              onPress={handleEdit}
+              onPress={handleDelete}
               style={styles.item}
-              testID="schedule-edit"
+              testID="schedule-delete"
             >
               <AppText
                 numberOfLines={1}
-                style={[styles.text, { color: themeColors.text }]}
+                style={[styles.text, { color: themeColors.error }]}
                 variant="label"
               >
-                {t("scheduleDetail.management.edit")}
+                {t("scheduleDetail.management.delete")}
               </AppText>
             </DropdownMenu.Item>
-          )}
-
-          <DropdownMenu.Item
-            accessibilityHint={t("scheduleDetail.management.deleteHint")}
-            closeOnPress
-            onPress={handleDelete}
-            style={styles.item}
-            testID="schedule-delete"
-          >
-            <AppText
-              numberOfLines={1}
-              style={[styles.text, { color: themeColors.error }]}
-              variant="label"
-            >
-              {t("scheduleDetail.management.delete")}
-            </AppText>
-          </DropdownMenu.Item>
+          </Animated.View>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -179,6 +187,7 @@ const styles = StyleSheet.create({
   content: {
     borderRadius: borderRadius.lg,
     padding: 4,
+    transformOrigin: "top right",
     width: 80,
   },
   disabled: {

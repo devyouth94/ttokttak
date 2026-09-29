@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Platform, StyleSheet, Switch, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { format } from "date-fns/format";
 import { CalendarDays, Clock3 } from "lucide-react-native";
 
@@ -10,6 +11,11 @@ import { formatLocal } from "~/schedule/display/date";
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
+import {
+  FORM_SECTION_ENTER,
+  LAYOUT_TRANSITION,
+  QUICK_FADE_OUT,
+} from "~/ui/motion";
 import { spacing } from "~/ui/tokens";
 
 import { DateTimePickerField } from "./picker";
@@ -108,7 +114,10 @@ export function DateFields({
   }
 
   return (
-    <View style={styles.scheduleSettingsGroup}>
+    <Animated.View
+      layout={LAYOUT_TRANSITION}
+      style={styles.scheduleSettingsGroup}
+    >
       <View style={styles.row}>
         <DateTimePickerField
           accessibilityHint={t("scheduleForm.picker.startDateHint")}
@@ -165,7 +174,12 @@ export function DateFields({
       </View>
 
       {showsEndDate && (
-        <View style={styles.endDateControl}>
+        <Animated.View
+          entering={FORM_SECTION_ENTER}
+          exiting={QUICK_FADE_OUT}
+          layout={LAYOUT_TRANSITION}
+          style={styles.endDateControl}
+        >
           <View style={styles.optionToggleRow}>
             <AppText style={styles.optionToggleLabel} variant="body2">
               {t("scheduleForm.fields.endDate")}
@@ -187,32 +201,38 @@ export function DateFields({
           </View>
 
           {hasEndDate && endDateLocal && (
-            <DateTimePickerField
-              accessibilityHint={t("scheduleForm.picker.endDateHint")}
-              accessibilityLabel={t("scheduleForm.picker.endDateLabel")}
-              displayValue={formatLocal(endDateLocal, "fullDate", language)}
-              error={errors.endDateLocal?.message}
-              icon={
-                <CalendarDays
-                  absoluteStrokeWidth
-                  color={themeColors.text}
-                  size={18}
-                  strokeWidth={1.2}
-                />
-              }
-              minimumLocalDate={minimumEndDateLocal}
-              mode="date"
-              onChange={changeEndDate}
-              style={styles.endDateField}
-              title={t("scheduleForm.picker.endDateTitle")}
-              localValue={
-                endDateLocal < minimumEndDateLocal
-                  ? minimumEndDateLocal
-                  : endDateLocal
-              }
-            />
+            <Animated.View
+              entering={FORM_SECTION_ENTER}
+              exiting={QUICK_FADE_OUT}
+              layout={LAYOUT_TRANSITION}
+            >
+              <DateTimePickerField
+                accessibilityHint={t("scheduleForm.picker.endDateHint")}
+                accessibilityLabel={t("scheduleForm.picker.endDateLabel")}
+                displayValue={formatLocal(endDateLocal, "fullDate", language)}
+                error={errors.endDateLocal?.message}
+                icon={
+                  <CalendarDays
+                    absoluteStrokeWidth
+                    color={themeColors.text}
+                    size={18}
+                    strokeWidth={1.2}
+                  />
+                }
+                minimumLocalDate={minimumEndDateLocal}
+                mode="date"
+                onChange={changeEndDate}
+                style={styles.endDateField}
+                title={t("scheduleForm.picker.endDateTitle")}
+                localValue={
+                  endDateLocal < minimumEndDateLocal
+                    ? minimumEndDateLocal
+                    : endDateLocal
+                }
+              />
+            </Animated.View>
           )}
-        </View>
+        </Animated.View>
       )}
 
       {!isEdit && firstReminder && (
@@ -220,7 +240,7 @@ export function DateFields({
           {firstReminder}
         </AppText>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

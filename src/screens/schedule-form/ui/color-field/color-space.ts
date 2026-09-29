@@ -40,9 +40,11 @@ export function hsvToHex({
   saturation: number;
   value: number;
 }): string {
+  "worklet";
+
   const h = ((hue % 360) + 360) % 360;
-  const s = clamp(saturation);
-  const v = clamp(value);
+  const s = Math.min(1, Math.max(0, saturation));
+  const v = Math.min(1, Math.max(0, value));
   const chroma = v * s;
   const segment = h / 60;
   const secondary = chroma * (1 - Math.abs((segment % 2) - 1));
@@ -85,8 +87,4 @@ function hexToRgb(colorHex: string) {
     green: Number.parseInt(colorHex.slice(3, 5), 16),
     red: Number.parseInt(colorHex.slice(1, 3), 16),
   };
-}
-
-function clamp(value: number): number {
-  return Math.min(1, Math.max(0, value));
 }

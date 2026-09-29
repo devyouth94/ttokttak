@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { RefreshControl, StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
@@ -11,6 +12,7 @@ import { ListSortMenu } from "~/screens/schedule-list/ui/sort-menu";
 import { useThemeColors } from "~/theme/provider";
 import { AppScreen } from "~/ui/app-screen";
 import { getMainTabContentBottomInset } from "~/ui/main-bottom-nav";
+import { LAYOUT_TRANSITION } from "~/ui/motion";
 import { ScreenHeader } from "~/ui/screen-header";
 import { StateMessage } from "~/ui/state-message";
 import { spacing } from "~/ui/tokens";
@@ -59,13 +61,14 @@ export default function ScheduleTabPage(): React.JSX.Element {
       )}
 
       {list.status === "ready" && (
-        <FlatList
+        <Animated.FlatList
           contentContainerStyle={[
             styles.listContent,
             list.rows.length === 0 && styles.emptyListContent,
             { paddingBottom: getMainTabContentBottomInset(insets.bottom) },
           ]}
           data={list.rows}
+          itemLayoutAnimation={LAYOUT_TRANSITION}
           keyExtractor={(row) => row.id}
           ListHeaderComponent={
             <>
@@ -99,6 +102,7 @@ export default function ScheduleTabPage(): React.JSX.Element {
             />
           )}
           showsVerticalScrollIndicator={false}
+          skipEnteringExitingAnimations
         />
       )}
     </AppScreen>

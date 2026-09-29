@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Modal,
   Platform,
   Pressable,
   type StyleProp,
@@ -17,6 +16,7 @@ import { parse } from "date-fns/parse";
 import type { ThemeColors } from "~/theme/colors";
 import { useTheme } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
+import { BottomSheetModal } from "~/ui/bottom-sheet-modal";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 type DateTimePickerFieldProps = {
@@ -140,65 +140,58 @@ export function DateTimePickerField({
         />
       )}
 
-      {Platform.OS === "ios" && draft && (
-        <Modal
-          animationType="fade"
-          onRequestClose={() => setDraft(null)}
-          transparent
-          visible
-        >
-          <Pressable
-            onPress={() => setDraft(null)}
-            style={styles.modalBackdrop}
-          >
-            <Pressable style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <Pressable
-                  accessibilityLabel={t("scheduleForm.actions.cancel")}
-                  accessibilityRole="button"
-                  onPress={() => setDraft(null)}
-                  style={({ pressed }) => [
-                    styles.modalTextButton,
-                    pressed ? styles.actionPressed : undefined,
-                  ]}
-                >
-                  <AppText style={styles.modalCancelText} variant="body2">
-                    {t("scheduleForm.actions.cancel")}
-                  </AppText>
-                </Pressable>
-                <AppText style={styles.modalTitle} variant="body2">
-                  {title}
+      <BottomSheetModal
+        onClose={() => setDraft(null)}
+        visible={Platform.OS === "ios" && draft !== null}
+      >
+        {draft && (
+          <>
+            <View style={styles.modalHeader}>
+              <Pressable
+                accessibilityLabel={t("scheduleForm.actions.cancel")}
+                accessibilityRole="button"
+                onPress={() => setDraft(null)}
+                style={({ pressed }) => [
+                  styles.modalTextButton,
+                  pressed ? styles.actionPressed : undefined,
+                ]}
+              >
+                <AppText style={styles.modalCancelText} variant="body2">
+                  {t("scheduleForm.actions.cancel")}
                 </AppText>
-                <Pressable
-                  accessibilityLabel={t("scheduleForm.actions.confirm")}
-                  accessibilityRole="button"
-                  onPress={confirmIosPicker}
-                  style={({ pressed }) => [
-                    styles.modalTextButton,
-                    pressed ? styles.actionPressed : undefined,
-                  ]}
-                >
-                  <AppText style={styles.modalConfirmText} variant="body2">
-                    {t("scheduleForm.actions.confirm")}
-                  </AppText>
-                </Pressable>
-              </View>
+              </Pressable>
+              <AppText style={styles.modalTitle} variant="body2">
+                {title}
+              </AppText>
+              <Pressable
+                accessibilityLabel={t("scheduleForm.actions.confirm")}
+                accessibilityRole="button"
+                onPress={confirmIosPicker}
+                style={({ pressed }) => [
+                  styles.modalTextButton,
+                  pressed ? styles.actionPressed : undefined,
+                ]}
+              >
+                <AppText style={styles.modalConfirmText} variant="body2">
+                  {t("scheduleForm.actions.confirm")}
+                </AppText>
+              </Pressable>
+            </View>
 
-              <DateTimePicker
-                accentColor={themeColors.primary}
-                display="spinner"
-                minimumDate={minimumDate}
-                mode={mode}
-                onChange={changePicker}
-                style={styles.modalPicker}
-                textColor={themeColors.text}
-                themeVariant={resolvedTheme}
-                value={draft}
-              />
-            </Pressable>
-          </Pressable>
-        </Modal>
-      )}
+            <DateTimePicker
+              accentColor={themeColors.primary}
+              display="spinner"
+              minimumDate={minimumDate}
+              mode={mode}
+              onChange={changePicker}
+              style={styles.modalPicker}
+              textColor={themeColors.text}
+              themeVariant={resolvedTheme}
+              value={draft}
+            />
+          </>
+        )}
+      </BottomSheetModal>
     </View>
   );
 }
@@ -246,20 +239,8 @@ function createStyles(themeColors: ThemeColors) {
     inputError: {
       borderColor: themeColors.error,
     },
-    modalBackdrop: {
-      backgroundColor: themeColors.scrim,
-      flex: 1,
-      justifyContent: "flex-end",
-    },
     modalCancelText: {
       color: themeColors.textMuted,
-    },
-    modalCard: {
-      backgroundColor: themeColors.background,
-      borderTopLeftRadius: borderRadius.lg,
-      borderTopRightRadius: borderRadius.lg,
-      paddingBottom: spacing.lg,
-      paddingTop: spacing.sm,
     },
     modalConfirmText: {
       color: themeColors.primary,

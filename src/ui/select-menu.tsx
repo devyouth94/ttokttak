@@ -1,10 +1,12 @@
 import { Pressable, StyleSheet, View } from "react-native";
+import Animated, { useReducedMotion } from "react-native-reanimated";
 import * as Select from "@rn-primitives/select";
 import { Check, ChevronDown } from "lucide-react-native";
 
 import { useThemeColors } from "~/theme/provider";
 
 import { AppText } from "./app-text";
+import { MENU_ENTER, MENU_REDUCED_ENTER } from "./motion";
 import { borderRadius, spacing } from "./tokens";
 
 export type SelectOption<Value extends string> = {
@@ -31,6 +33,7 @@ export function SelectMenu<Value extends string>({
   onChange,
 }: SelectMenuProps<Value>): React.JSX.Element {
   const themeColors = useThemeColors();
+  const reducedMotion = useReducedMotion();
 
   const selectedOption =
     options.find((option) => option.value === value) ?? options[0]!;
@@ -83,6 +86,7 @@ export function SelectMenu<Value extends string>({
 
         <Select.Content
           align="end"
+          asChild
           insets={{
             bottom: spacing.lg,
             left: spacing.md,
@@ -95,30 +99,34 @@ export function SelectMenu<Value extends string>({
             { backgroundColor: themeColors.surface },
           ])}
         >
-          {options.map((option) => (
-            <Select.Item
-              accessibilityHint={option.accessibilityHint}
-              key={option.value}
-              label={option.label}
-              style={styles.item}
-              value={option.value}
-            >
-              <View style={styles.textSlot}>
-                <AppText
-                  ellipsizeMode="tail"
-                  numberOfLines={1}
-                  style={{ color: themeColors.text }}
-                  variant="label"
-                >
-                  {option.label}
-                </AppText>
-              </View>
+          <Animated.View
+            entering={reducedMotion ? MENU_REDUCED_ENTER : MENU_ENTER}
+          >
+            {options.map((option) => (
+              <Select.Item
+                accessibilityHint={option.accessibilityHint}
+                key={option.value}
+                label={option.label}
+                style={styles.item}
+                value={option.value}
+              >
+                <View style={styles.textSlot}>
+                  <AppText
+                    ellipsizeMode="tail"
+                    numberOfLines={1}
+                    style={{ color: themeColors.text }}
+                    variant="label"
+                  >
+                    {option.label}
+                  </AppText>
+                </View>
 
-              <Select.ItemIndicator style={styles.indicator}>
-                <Check color={themeColors.text} size={16} />
-              </Select.ItemIndicator>
-            </Select.Item>
-          ))}
+                <Select.ItemIndicator style={styles.indicator}>
+                  <Check color={themeColors.text} size={16} />
+                </Select.ItemIndicator>
+              </Select.Item>
+            ))}
+          </Animated.View>
         </Select.Content>
       </Select.Portal>
     </Select.Root>
@@ -130,6 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     minWidth: 180,
     padding: spacing.xxs,
+    transformOrigin: "top right",
   },
   disabledTrigger: {
     opacity: 0.56,

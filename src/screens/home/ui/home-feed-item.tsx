@@ -1,11 +1,20 @@
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
+import Animated, {
+  type EntryExitAnimationFunction,
+  ReduceMotion,
+  useReducedMotion,
+  withTiming,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { Check, SkipForward } from "lucide-react-native";
 
 import { getScheduleDisplayTitle } from "~/schedule/display/label";
 import type { OccurrenceAction } from "~/schedule/model";
 import { AppText } from "~/ui/app-text";
+import { EASE_OUT, LAYOUT_TRANSITION, QUICK_FADE_OUT } from "~/ui/motion";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { homeFeedCardPalette } from "./home-feed-card-palette";
@@ -13,7 +22,23 @@ import type { HomeFeedCard } from "../presentation";
 
 const ACTION_BORDER_WIDTH = 1;
 const ACTION_STROKE_WIDTH = 2;
+const ITEM_EXIT: EntryExitAnimationFunction = () => {
+  "worklet";
 
+  const config = {
+    duration: 180,
+    easing: EASE_OUT,
+    reduceMotion: ReduceMotion.Never,
+  };
+
+  return {
+    animations: {
+      opacity: withTiming(0, config),
+      transform: [{ translateY: withTiming(-6, config) }],
+    },
+    initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
+  };
+};
 type HomeFeedItemProps = {
   card: HomeFeedCard;
   isLast: boolean;
@@ -29,13 +54,46 @@ export function HomeFeedItem({
   showsActions,
 }: HomeFeedItemProps): React.JSX.Element {
   const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
+
+  const submittedActionRef = useRef<OccurrenceAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<OccurrenceAction | null>(
+    null
+  );
+
   const title = getScheduleDisplayTitle(
     card.item,
     t("schedule.contentUnavailableTitle")
   );
 
+  function startAction(action: OccurrenceAction): void {
+    if (pendingAction) {
+      return;
+    }
+
+    if (action === "completed") {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    setPendingAction(action);
+  }
+
+  useEffect(() => {
+    if (!pendingAction || submittedActionRef.current) {
+      return;
+    }
+
+    submittedActionRef.current = pendingAction;
+    onAction(card, pendingAction);
+  }, [card, onAction, pendingAction]);
+
   return (
-    <View
+    <Animated.View
+      exiting={
+        pendingAction ? (reducedMotion ? QUICK_FADE_OUT : ITEM_EXIT) : undefined
+      }
+      layout={LAYOUT_TRANSITION}
+      pointerEvents={pendingAction ? "none" : "auto"}
       style={[
         styles.row,
         !isLast && {
@@ -81,9 +139,11 @@ export function HomeFeedItem({
               title,
             })}
             accessibilityRole="button"
+            hitSlop={5}
             onPress={() => {
-              onAction(card, "skipped");
+              startAction("skipped");
             }}
+            pressRetentionOffset={12}
             style={({ pressed }) => [
               styles.actionIcon,
               { borderColor: homeFeedCardPalette.actionBorder },
@@ -102,9 +162,11 @@ export function HomeFeedItem({
               title,
             })}
             accessibilityRole="button"
+            hitSlop={5}
             onPress={() => {
-              onAction(card, "completed");
+              startAction("completed");
             }}
+            pressRetentionOffset={12}
             style={({ pressed }) => [
               styles.actionIcon,
               { borderColor: homeFeedCardPalette.actionBorder },
@@ -119,7 +181,7 @@ export function HomeFeedItem({
           </Pressable>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

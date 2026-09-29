@@ -1,17 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  type GestureResponderEvent,
-  Modal,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import { scheduleOnRN } from "react-native-worklets";
 
 import type { ThemeColors } from "~/theme/colors";
 import { useThemeColors } from "~/theme/provider";
 import { AppText } from "~/ui/app-text";
+import { BottomSheetModal } from "~/ui/bottom-sheet-modal";
 import { borderRadius, spacing } from "~/ui/tokens";
 
 import { hexToHsv, hsvToHex } from "./color-space";
@@ -31,36 +32,141 @@ export function CustomColorPicker({
 }: CustomColorPickerProps): React.JSX.Element {
   const { t } = useTranslation();
   const themeColors = useThemeColors();
-  const [hue, setHue] = useState(() => hexToHsv(colorHex).hue);
-  const [planeSize, setPlaneSize] = useState({ height: 0, width: 0 });
-  const [hueWidth, setHueWidth] = useState(0);
+
+  const initialColor = hexToHsv(colorHex);
+  const [hue, setHue] = useState(initialColor.hue);
+  const hueValue = useSharedValue(initialColor.hue);
+  const saturationValue = useSharedValue(initialColor.saturation);
+  const brightnessValue = useSharedValue(initialColor.value);
+  const planeWidth = useSharedValue(0);
+  const planeHeight = useSharedValue(0);
+  const hueWidth = useSharedValue(0);
 
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const color = hexToHsv(colorHex);
 
-  function selectSaturationAndValue(event: GestureResponderEvent): void {
-    if (!planeSize.width || !planeSize.height) {
-      return;
+  const planeStyle = useAnimatedStyle(() => ({
+    backgroundColor: hsvToHex({
+      hue: hueValue.get(),
+      saturation: 1,
+      value: 1,
+    }),
+  }));
+  const planeHandleStyle = useAnimatedStyle(() => {
+    const width = planeWidth.get();
+    const height = planeHeight.get();
+
+    return {
+      backgroundColor: hsvToHex({
+        hue: hueValue.get(),
+        saturation: saturationValue.get(),
+        value: brightnessValue.get(),
+      }),
+      transform: [
+        {
+          translateX: markerPosition(saturationValue.get() * width, width, 12),
+        },
+        {
+          translateY: markerPosition(
+            (1 - brightnessValue.get()) * height,
+            height,
+            12
+          ),
+        },
+      ],
+    };
+  });
+  const hueHandleStyle = useAnimatedStyle(() => {
+    const width = hueWidth.get();
+
+    return {
+      backgroundColor: hsvToHex({
+        hue: hueValue.get(),
+        saturation: 1,
+        value: 1,
+      }),
+      transform: [
+        {
+          translateX: markerPosition((hueValue.get() / 360) * width, width, 6),
+        },
+      ],
+    };
+  });
+
+  const commitColor = useCallback(
+    (nextHue: number, nextSaturation: number, nextValue: number): void => {
+      setHue(nextHue);
+      onChange(
+        hsvToHex({
+          hue: nextHue,
+          saturation: nextSaturation,
+          value: nextValue,
+        })
+      );
+    },
+    [onChange]
+  );
+  const planeGesture = useMemo(() => {
+    function updatePlane(x: number, y: number): void {
+      "worklet";
+
+      const width = planeWidth.get();
+      const height = planeHeight.get();
+
+      if (!width || !height) {
+        return;
+      }
+
+      saturationValue.set(ratio(x, width));
+      brightnessValue.set(1 - ratio(y, height));
     }
 
-    onChange(
-      hsvToHex({
-        hue,
-        saturation: ratio(event.nativeEvent.locationX, planeSize.width),
-        value: 1 - ratio(event.nativeEvent.locationY, planeSize.height),
-      })
-    );
-  }
+    return Gesture.Pan()
+      .minDistance(0)
+      .onBegin((event) => updatePlane(event.x, event.y))
+      .onUpdate((event) => updatePlane(event.x, event.y))
+      .onEnd(() => {
+        scheduleOnRN(
+          commitColor,
+          hueValue.get(),
+          saturationValue.get(),
+          brightnessValue.get()
+        );
+      });
+  }, [
+    brightnessValue,
+    commitColor,
+    hueValue,
+    planeHeight,
+    planeWidth,
+    saturationValue,
+  ]);
+  const hueGesture = useMemo(() => {
+    function updateHue(x: number): void {
+      "worklet";
 
-  function selectHue(event: GestureResponderEvent): void {
-    if (!hueWidth) {
-      return;
+      const width = hueWidth.get();
+
+      if (!width) {
+        return;
+      }
+
+      hueValue.set(ratio(x, width) * 360);
     }
 
-    const nextHue = ratio(event.nativeEvent.locationX, hueWidth) * 360;
-    setHue(nextHue);
-    onChange(hsvToHex({ ...color, hue: nextHue }));
-  }
+    return Gesture.Pan()
+      .minDistance(0)
+      .onBegin((event) => updateHue(event.x))
+      .onUpdate((event) => updateHue(event.x))
+      .onEnd(() => {
+        scheduleOnRN(
+          commitColor,
+          hueValue.get(),
+          saturationValue.get(),
+          brightnessValue.get()
+        );
+      });
+  }, [brightnessValue, commitColor, hueValue, hueWidth, saturationValue]);
 
   function adjustPlane(actionName: string): void {
     const step = 0.1;
@@ -89,184 +195,158 @@ export function CustomColorPicker({
   }
 
   useEffect(() => {
-    if (color.saturation > 0) {
-      setHue(color.hue);
+    if (!visible) {
+      return;
     }
-  }, [color.hue, color.saturation]);
+
+    const nextColor = hexToHsv(colorHex);
+    const nextHue = nextColor.saturation > 0 ? nextColor.hue : hue;
+
+    hueValue.set(nextHue);
+    saturationValue.set(nextColor.saturation);
+    brightnessValue.set(nextColor.value);
+
+    if (nextColor.saturation > 0) {
+      setHue(nextColor.hue);
+    }
+  }, [brightnessValue, colorHex, hue, hueValue, saturationValue, visible]);
 
   return (
-    <Modal
-      animationType="fade"
-      onRequestClose={onClose}
-      transparent
-      visible={visible}
-    >
-      <Pressable onPress={onClose} style={styles.backdrop}>
-        <Pressable style={styles.card}>
-          <View style={styles.header}>
-            <View style={styles.textButton} />
-            <AppText style={styles.title} variant="body2">
-              {t("scheduleForm.color.customTitle")}
-            </AppText>
-            <Pressable
-              accessibilityLabel={t("scheduleForm.actions.done")}
-              accessibilityRole="button"
-              onPress={onClose}
-              style={({ pressed }) => [
-                styles.textButton,
-                pressed ? styles.actionPressed : undefined,
-              ]}
-            >
-              <AppText style={styles.confirmText} variant="body2">
-                {t("scheduleForm.actions.done")}
-              </AppText>
-            </Pressable>
-          </View>
-
-          <View style={styles.content}>
-            <View
-              accessible
-              accessibilityActions={[
-                { name: "increment" },
-                { name: "decrement" },
-                {
-                  label: t("scheduleForm.color.increaseSaturation"),
-                  name: "increaseSaturation",
-                },
-                {
-                  label: t("scheduleForm.color.decreaseSaturation"),
-                  name: "decreaseSaturation",
-                },
-              ]}
-              accessibilityLabel={t("scheduleForm.color.planeLabel")}
-              accessibilityRole="adjustable"
-              accessibilityValue={{
-                text: t("scheduleForm.color.planeValue", {
-                  brightness: Math.round(color.value * 100),
-                  saturation: Math.round(color.saturation * 100),
-                }),
-              }}
-              onAccessibilityAction={(event) =>
-                adjustPlane(event.nativeEvent.actionName)
-              }
-              onLayout={(event) => setPlaneSize(event.nativeEvent.layout)}
-              onMoveShouldSetResponder={() => true}
-              onResponderGrant={selectSaturationAndValue}
-              onResponderMove={selectSaturationAndValue}
-              onResponderTerminationRequest={() => false}
-              onStartShouldSetResponder={() => true}
-              style={[
-                styles.plane,
-                {
-                  backgroundColor: hsvToHex({
-                    hue,
-                    saturation: 1,
-                    value: 1,
-                  }),
-                  borderColor: themeColors.border,
-                },
-              ]}
-            >
-              <Svg height="100%" pointerEvents="none" width="100%">
-                <Defs>
-                  <LinearGradient id="color-white" x1="0" x2="1" y1="0" y2="0">
-                    <Stop offset="0" stopColor="#FFFFFF" stopOpacity="1" />
-                    <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-                  </LinearGradient>
-                  <LinearGradient id="color-black" x1="0" x2="0" y1="0" y2="1">
-                    <Stop offset="0" stopColor="#000000" stopOpacity="0" />
-                    <Stop offset="1" stopColor="#000000" stopOpacity="1" />
-                  </LinearGradient>
-                </Defs>
-                <Rect fill="url(#color-white)" height="100%" width="100%" />
-                <Rect fill="url(#color-black)" height="100%" width="100%" />
-              </Svg>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.planeHandle,
-                  {
-                    backgroundColor: colorHex,
-                    left: markerPosition(
-                      color.saturation * planeSize.width,
-                      planeSize.width,
-                      12
-                    ),
-                    top: markerPosition(
-                      (1 - color.value) * planeSize.height,
-                      planeSize.height,
-                      12
-                    ),
-                  },
-                ]}
-              />
-            </View>
-
-            <View
-              accessible
-              accessibilityActions={[
-                { name: "increment" },
-                { name: "decrement" },
-              ]}
-              accessibilityLabel={t("scheduleForm.color.hueLabel")}
-              accessibilityRole="adjustable"
-              accessibilityValue={{
-                min: 0,
-                max: 360,
-                now: Math.round(hue),
-              }}
-              onAccessibilityAction={(event) =>
-                adjustHue(event.nativeEvent.actionName)
-              }
-              onLayout={(event) => setHueWidth(event.nativeEvent.layout.width)}
-              onMoveShouldSetResponder={() => true}
-              onResponderGrant={selectHue}
-              onResponderMove={selectHue}
-              onResponderTerminationRequest={() => false}
-              onStartShouldSetResponder={() => true}
-              style={[styles.hue, { borderColor: themeColors.border }]}
-            >
-              <Svg height="100%" pointerEvents="none" width="100%">
-                <Defs>
-                  <LinearGradient id="color-hue" x1="0" x2="1" y1="0" y2="0">
-                    <Stop offset="0" stopColor="#FF0000" />
-                    <Stop offset="0.167" stopColor="#FFFF00" />
-                    <Stop offset="0.333" stopColor="#00FF00" />
-                    <Stop offset="0.5" stopColor="#00FFFF" />
-                    <Stop offset="0.667" stopColor="#0000FF" />
-                    <Stop offset="0.833" stopColor="#FF00FF" />
-                    <Stop offset="1" stopColor="#FF0000" />
-                  </LinearGradient>
-                </Defs>
-                <Rect fill="url(#color-hue)" height="100%" width="100%" />
-              </Svg>
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.hueHandle,
-                  {
-                    backgroundColor: hsvToHex({
-                      hue,
-                      saturation: 1,
-                      value: 1,
-                    }),
-                    left: markerPosition((hue / 360) * hueWidth, hueWidth, 6),
-                  },
-                ]}
-              />
-            </View>
-          </View>
+    <BottomSheetModal onClose={onClose} visible={visible}>
+      <View style={styles.header}>
+        <View style={styles.textButton} />
+        <AppText style={styles.title} variant="body2">
+          {t("scheduleForm.color.customTitle")}
+        </AppText>
+        <Pressable
+          accessibilityLabel={t("scheduleForm.actions.done")}
+          accessibilityRole="button"
+          onPress={onClose}
+          style={({ pressed }) => [
+            styles.textButton,
+            pressed ? styles.actionPressed : undefined,
+          ]}
+        >
+          <AppText style={styles.confirmText} variant="body2">
+            {t("scheduleForm.actions.done")}
+          </AppText>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </View>
+
+      <View style={styles.content}>
+        <GestureDetector gesture={planeGesture}>
+          <Animated.View
+            accessible
+            accessibilityActions={[
+              { name: "increment" },
+              { name: "decrement" },
+              {
+                label: t("scheduleForm.color.increaseSaturation"),
+                name: "increaseSaturation",
+              },
+              {
+                label: t("scheduleForm.color.decreaseSaturation"),
+                name: "decreaseSaturation",
+              },
+            ]}
+            accessibilityLabel={t("scheduleForm.color.planeLabel")}
+            accessibilityRole="adjustable"
+            accessibilityValue={{
+              text: t("scheduleForm.color.planeValue", {
+                brightness: Math.round(color.value * 100),
+                saturation: Math.round(color.saturation * 100),
+              }),
+            }}
+            onAccessibilityAction={(event) =>
+              adjustPlane(event.nativeEvent.actionName)
+            }
+            onLayout={(event) => {
+              planeWidth.set(event.nativeEvent.layout.width);
+              planeHeight.set(event.nativeEvent.layout.height);
+            }}
+            style={[
+              styles.plane,
+              { borderColor: themeColors.border },
+              planeStyle,
+            ]}
+          >
+            <Svg height="100%" pointerEvents="none" width="100%">
+              <Defs>
+                <LinearGradient id="color-white" x1="0" x2="1" y1="0" y2="0">
+                  <Stop offset="0" stopColor="#FFFFFF" stopOpacity="1" />
+                  <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                </LinearGradient>
+                <LinearGradient id="color-black" x1="0" x2="0" y1="0" y2="1">
+                  <Stop offset="0" stopColor="#000000" stopOpacity="0" />
+                  <Stop offset="1" stopColor="#000000" stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect fill="url(#color-white)" height="100%" width="100%" />
+              <Rect fill="url(#color-black)" height="100%" width="100%" />
+            </Svg>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.planeHandle, planeHandleStyle]}
+            />
+          </Animated.View>
+        </GestureDetector>
+
+        <GestureDetector gesture={hueGesture}>
+          <Animated.View
+            accessible
+            accessibilityActions={[
+              { name: "increment" },
+              { name: "decrement" },
+            ]}
+            accessibilityLabel={t("scheduleForm.color.hueLabel")}
+            accessibilityRole="adjustable"
+            accessibilityValue={{
+              min: 0,
+              max: 360,
+              now: Math.round(hue),
+            }}
+            onAccessibilityAction={(event) =>
+              adjustHue(event.nativeEvent.actionName)
+            }
+            onLayout={(event) => {
+              hueWidth.set(event.nativeEvent.layout.width);
+            }}
+            style={[styles.hue, { borderColor: themeColors.border }]}
+          >
+            <Svg height="100%" pointerEvents="none" width="100%">
+              <Defs>
+                <LinearGradient id="color-hue" x1="0" x2="1" y1="0" y2="0">
+                  <Stop offset="0" stopColor="#FF0000" />
+                  <Stop offset="0.167" stopColor="#FFFF00" />
+                  <Stop offset="0.333" stopColor="#00FF00" />
+                  <Stop offset="0.5" stopColor="#00FFFF" />
+                  <Stop offset="0.667" stopColor="#0000FF" />
+                  <Stop offset="0.833" stopColor="#FF00FF" />
+                  <Stop offset="1" stopColor="#FF0000" />
+                </LinearGradient>
+              </Defs>
+              <Rect fill="url(#color-hue)" height="100%" width="100%" />
+            </Svg>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.hueHandle, hueHandleStyle]}
+            />
+          </Animated.View>
+        </GestureDetector>
+      </View>
+    </BottomSheetModal>
   );
 }
 
 function ratio(value: number, total: number): number {
+  "worklet";
+
   return Math.min(1, Math.max(0, value / total));
 }
 
 function markerPosition(value: number, total: number, radius: number): number {
+  "worklet";
+
   if (total <= radius * 2) {
     return total / 2;
   }
@@ -278,18 +358,6 @@ function createStyles(themeColors: ThemeColors) {
   return StyleSheet.create({
     actionPressed: {
       opacity: 0.72,
-    },
-    backdrop: {
-      backgroundColor: themeColors.scrim,
-      flex: 1,
-      justifyContent: "flex-end",
-    },
-    card: {
-      backgroundColor: themeColors.background,
-      borderTopLeftRadius: borderRadius.lg,
-      borderTopRightRadius: borderRadius.lg,
-      paddingBottom: spacing.lg,
-      paddingTop: spacing.sm,
     },
     confirmText: {
       color: themeColors.primary,
@@ -317,6 +385,7 @@ function createStyles(themeColors: ThemeColors) {
       borderRadius: borderRadius.pill,
       borderWidth: 3,
       height: 28,
+      left: 0,
       marginLeft: -6,
       position: "absolute",
       top: -1,
@@ -333,9 +402,11 @@ function createStyles(themeColors: ThemeColors) {
       borderRadius: borderRadius.pill,
       borderWidth: 3,
       height: 24,
+      left: 0,
       marginLeft: -12,
       marginTop: -12,
       position: "absolute",
+      top: 0,
       width: 24,
     },
     textButton: {
